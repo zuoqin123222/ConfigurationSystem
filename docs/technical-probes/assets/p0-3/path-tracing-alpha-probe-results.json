@@ -1,0 +1,191 @@
+{
+	"schemaVersion": 3,
+	"probe": "PathTracingAlphaProbe",
+	"engineVersion": "5.8.1-56057345+++UE5+Release-5.8",
+	"buildConfiguration": "Development",
+	"withEditor": true,
+	"graphicsRHI": "D3D12 (SM6)",
+	"gpuAdapterName": "NVIDIA GeForce RTX 5080",
+	"sceneCreated": true,
+	"publicPathTracingAdapterApplied": true,
+	"requiredSamples": 16,
+	"targetSampleCount": 16,
+	"finalSampleIndex": 16,
+	"width": 640,
+	"height": 360,
+	"bgra8Read": true,
+	"rgba16fRead": true,
+	"rawBackgroundAlpha": 255,
+	"rawBackgroundAlphaRgba16f": 1,
+	"coverageInverted": true,
+	"glowRecoveredPixels": 45027,
+	"glowRecoveredPixelsRgba16f": 28901,
+	"bgra8CoveredCubeCount": 3,
+	"rgba16fCoveredCubeCount": 3,
+	"loadedMaterials": [
+		"/Engine/EngineMaterials/DefaultMaterial.DefaultMaterial",
+		"/Engine/EngineDebugMaterials/M_SimpleTranslucent.M_SimpleTranslucent",
+		"/Engine/EngineMaterials/EmissiveMeshMaterial.EmissiveMeshMaterial"
+	],
+	"missingMaterials": [],
+	"bgra8":
+	{
+		"transparentPixels": 24890,
+		"opaquePixels": 180741,
+		"translucentPixels": 24769,
+		"transparentRgbPollutedPixels": 24890,
+		"maxTransparentRgb": 0.90588235855102539,
+		"contentBounds":
+		{
+			"hasContent": true,
+			"minX": 67,
+			"minY": 107,
+			"maxXExclusive": 398,
+			"maxYExclusive": 266,
+			"width": 331,
+			"height": 159
+		}
+	},
+	"rgba16f":
+	{
+		"transparentPixels": 24890,
+		"opaquePixels": 180741,
+		"translucentPixels": 24769,
+		"transparentRgbPollutedPixels": 24890,
+		"maxTransparentRgb": 0.80078125,
+		"contentBounds":
+		{
+			"hasContent": true,
+			"minX": 67,
+			"minY": 107,
+			"maxXExclusive": 398,
+			"maxYExclusive": 266,
+			"width": 331,
+			"height": 159
+		}
+	},
+	"normalizedBgra8":
+	{
+		"transparentPixels": 135714,
+		"opaquePixels": 24890,
+		"translucentPixels": 69796,
+		"transparentRgbPollutedPixels": 0,
+		"maxTransparentRgb": 0,
+		"contentBounds":
+		{
+			"hasContent": true,
+			"minX": 67,
+			"minY": 61,
+			"maxXExclusive": 573,
+			"maxYExclusive": 299,
+			"width": 506,
+			"height": 238
+		}
+	},
+	"normalizedRgba16f":
+	{
+		"transparentPixels": 151840,
+		"opaquePixels": 24890,
+		"translucentPixels": 53670,
+		"transparentRgbPollutedPixels": 0,
+		"maxTransparentRgb": 0,
+		"contentBounds":
+		{
+			"hasContent": true,
+			"minX": 67,
+			"minY": 99,
+			"maxXExclusive": 573,
+			"maxYExclusive": 269,
+			"width": 506,
+			"height": 170
+		}
+	},
+	"croppedNormalizedBgra8":
+	{
+		"transparentPixels": 25742,
+		"opaquePixels": 24890,
+		"translucentPixels": 69796,
+		"transparentRgbPollutedPixels": 0,
+		"maxTransparentRgb": 0,
+		"contentBounds":
+		{
+			"hasContent": true,
+			"minX": 0,
+			"minY": 0,
+			"maxXExclusive": 506,
+			"maxYExclusive": 238,
+			"width": 506,
+			"height": 238
+		}
+	},
+	"croppedNormalizedRgba16f":
+	{
+		"transparentPixels": 7460,
+		"opaquePixels": 24890,
+		"translucentPixels": 53670,
+		"transparentRgbPollutedPixels": 0,
+		"maxTransparentRgb": 0,
+		"contentBounds":
+		{
+			"hasContent": true,
+			"minX": 0,
+			"minY": 0,
+			"maxXExclusive": 506,
+			"maxYExclusive": 170,
+			"width": 506,
+			"height": 170
+		}
+	},
+	"normalizationRequired": true,
+	"alphaMode": "straight",
+	"webReady": true,
+	"outputs":
+	{
+		"png": "PathTracingAlphaProbe.png",
+		"exr": "PathTracingAlphaProbe.exr",
+		"croppedPng": "PathTracingAlphaProbe-Cropped.png",
+		"croppedExr": "PathTracingAlphaProbe-Cropped.exr",
+		"normalizedPng": "PathTracingAlphaProbe-Normalized.png",
+		"normalizedExr": "PathTracingAlphaProbe-Normalized.exr",
+		"croppedNormalizedPng": "PathTracingAlphaProbe-Cropped-Normalized.png",
+		"croppedNormalizedExr": "PathTracingAlphaProbe-Cropped-Normalized.exr",
+		"pngWritten": true,
+		"exrWritten": true,
+		"croppedPngWritten": true,
+		"croppedExrWritten": true,
+		"normalizedPngWritten": true,
+		"normalizedExrWritten": true,
+		"croppedNormalizedPngWritten": true,
+		"croppedNormalizedExrWritten": true,
+		"previews":
+		{
+			"black":
+			{
+				"path": "PathTracingAlphaProbe-Cropped-Normalized-Black.png",
+				"written": true
+			},
+			"white":
+			{
+				"path": "PathTracingAlphaProbe-Cropped-Normalized-White.png",
+				"written": true
+			},
+			"gray":
+			{
+				"path": "PathTracingAlphaProbe-Cropped-Normalized-Gray.png",
+				"written": true
+			},
+			"red":
+			{
+				"path": "PathTracingAlphaProbe-Cropped-Normalized-Red.png",
+				"written": true
+			},
+			"checkerboard":
+			{
+				"path": "PathTracingAlphaProbe-Cropped-Normalized-Checkerboard.png",
+				"written": true
+			}
+		}
+	},
+	"passed": true,
+	"failureReason": ""
+}

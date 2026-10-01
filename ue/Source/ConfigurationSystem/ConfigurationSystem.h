@@ -6,6 +6,7 @@
 
 struct FStreamableHandle;
 class FPathTracingProbe;
+class FPathTracingAlphaProbe;
 
 /** 游戏模块，同时按命令行显式启用相互独立的 Runtime 技术探针。 */
 class FConfigurationSystemModule final : public FDefaultGameModuleImpl
@@ -27,4 +28,5 @@ private:
 	TArray<FPrimaryAssetId> ProbeAssetIds;
 	FString ProbeOutputPath;
 	TSharedPtr<FPathTracingProbe> PathTracingProbe;
+	TSharedPtr<FPathTracingAlphaProbe> PathTracingAlphaProbe;
 };

@@ -290,7 +290,7 @@ GET  /assets/renders/*
 
 - P0-1（已通过）：Primary Asset 在 UE5.8.1 Editor、Cook、Development、Shipping 中发现和加载一致，见 `docs/technical-probes/PRIMARY_ASSET_PROBE.md`。
 - P0-2（已通过）：Runtime Path Tracing 在 UE5.8.1 Development/Shipping 中可用，公开 ViewState API 支持精确进度，见 `docs/technical-probes/PATH_TRACING_RUNTIME_PROBE.md`。
-- P0-3：Path Tracing 输出 PNG/EXR，在玻璃、灯具和多种背景合成下 Alpha 正确。
+- P0-3（已通过）：Path Tracing 可输出 PNG/EXR；原始反向 Alpha 经 Coverage 转换、自发光恢复、透明 RGB 清理和裁切后可用于 Web，见 `docs/technical-probes/PATH_TRACING_ALPHA_PROBE.md`。
 - P0-4：完成车辆层级审计，并实现一个支持中途反向的车门或机盖原型。
 - P0-5：Development/Shipping 最小包进入项目地图，无 Editor 模块泄漏和缺失资产。
 

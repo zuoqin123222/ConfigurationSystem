@@ -408,7 +408,7 @@
             <div class="feature"><div class="feature__title">车辆动作</div><div class="feature__body">提供车灯、车门、机盖、后备箱和轮胎开关；内车架联动机盖、轮毂联动车身回弹、内饰联动屏幕与灯光。</div></div>
             <div class="feature"><div class="feature__title">环境</div><div class="feature__body">影棚和暗色展厅两套 HDRI/灯光/曝光预设，切换时先插值亮度再替换环境。</div></div>
             <div class="feature"><div class="feature__title">Path Tracing</div><div class="feature__body">P0-2 已确认 UE5.8.1 的公开 ViewState API 可提供精确百分比；Development 与 Shipping 均能切换、重置、重新累积并返回实时模式，不依赖 Renderer Private。</div></div>
-            <div class="feature"><div class="feature__title">透明出图</div><div class="feature__body">Editor 工具遍历全部 16 个配置和四个视角，输出 64 张 Alpha PNG 和 manifest；自动检查 RGBA、尺寸、Alpha、哈希和裁切。</div></div>
+            <div class="feature"><div class="feature__title">透明出图</div><div class="feature__body">P0-3 已确认原始反向 Alpha 必须经过 Coverage 转换、自发光恢复、透明 RGB 清理和裁切；Editor 工具将按该流程输出 64 张 straight-alpha PNG 和 manifest。</div></div>
           </div>
 
           <h3>C++ 责任边界</h3>
@@ -449,7 +449,7 @@
 
           <div class="batch">
             <div class="batch__head"><h3>批次 0.5 · 五项技术探针</h3><span class="batch__gate">门槛：全部通过或明确降级</span></div>
-            <ul><li>Primary Asset 在 Editor、Cook、Development、Shipping 中发现数量一致。</li><li>确认 Runtime Path Tracing 的 Shipping 支持和进度方案。</li><li>验证车漆、玻璃、灯具的 PNG/EXR Alpha 合成。</li><li>完成车辆层级审计和一个可逆动作原型。</li><li>最小双配置包进入项目地图且无 Editor 模块泄漏。</li></ul>
+            <ul><li>P0-1 已通过：Primary Asset 在 Editor、Cook、Development、Shipping 中发现数量一致。</li><li>P0-2 已通过：Runtime Path Tracing 支持 Shipping 和精确进度。</li><li>P0-3 已通过：不透明、半透明、自发光 PNG/EXR 经规范化后可在多背景合成。</li><li>完成车辆层级审计和一个可逆动作原型。</li><li>最小双配置包进入项目地图且无 Editor 模块泄漏。</li></ul>
           </div>
 
           <div class="batch">

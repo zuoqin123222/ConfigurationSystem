@@ -97,7 +97,9 @@ MVP 采用精确进度方案：
 
 ### 透明输出
 
-“文件含 Alpha”不足以证明可供 Web 使用。必须固定：
+P0-3 已确认“文件含 Alpha”不足以证明可供 Web 使用：UE5.8.1 Path Tracing Viewport 原始输出采用反向透明度，并且加法自发光可能在零 coverage 下保留 RGB。发布前必须执行 Coverage 反转、自发光恢复、透明 RGB 清理和 Alpha 裁切。
+
+正式出图必须固定：
 
 - 输出尺寸和色彩空间。
 - `alphaMode` 是 straight 还是 premultiplied。
@@ -107,7 +109,7 @@ MVP 采用精确进度方案：
 - Bloom、DOF、降噪和 Alpha 累积设置。
 - PNG 失败时是否采用 EXR 中间文件再转换。
 
-自动校验至少检查 RGBA、尺寸、文件哈希、Alpha 非全 0/全 255、透明区 RGB 污染和车辆裁切。
+自动校验至少检查 RGBA、尺寸、文件哈希、Alpha 非全 0/全 255、透明区 RGB 污染、反向 Alpha、自发光恢复和车辆裁切。P0-3 的规范化 PNG/EXR 已通过黑、白、灰、红和棋盘背景合成。
 
 ### 车辆资产结构
 
