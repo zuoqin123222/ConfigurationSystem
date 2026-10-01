@@ -1,0 +1,91 @@
+# Unreal Engine 生成目录
+**/Binaries/
+**/DerivedDataCache/
+**/Intermediate/
+**/Saved/
+
+# Unreal Engine 与 IDE 生成文件
+*.sln
+*.slnx
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.code-workspace
+.vs/
+.vscode/
+.idea/
+
+# Unreal Engine 本地构建与分析输出
+*.pdb
+*.obj
+*.pch
+*.exp
+*.lib
+*.dll
+*.exe
+*.ipa
+*.apk
+*.aab
+*.app
+*.dSYM/
+*.target
+*.modules
+*.version
+
+# Unreal Engine 自动备份
+**/Developers/
+**/Collections/
+**/__ExternalActors__/
+**/__ExternalObjects__/
+
+# Web / Node.js
+/web/**/node_modules/
+/web/**/.next/
+/web/**/.nuxt/
+/web/**/.svelte-kit/
+/web/**/dist/
+/web/**/build/
+/web/**/coverage/
+/web/**/.cache/
+/web/**/.parcel-cache/
+/web/**/.turbo/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# Server / Python
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+**/venv/
+
+# Server / .NET
+**/bin/
+**/obj/
+
+# 本地环境与密钥
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+
+# 日志与临时文件
+**/logs/
+**/*.log
+**/*.tmp
+**/*.temp
+**/*.bak
+**/*.swp
+**/*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/

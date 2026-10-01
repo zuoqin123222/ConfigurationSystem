@@ -1,0 +1,19 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "Automotive",
+	"Description": "汽车选配 Windows 桌面端，提供完整选配效果与车辆实时渲染。",
+	"Modules": [
+		{
+			"Name": "ConfigurationSystem",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		}
+	]
+}

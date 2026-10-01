@@ -12,9 +12,21 @@
 
 ```text
 ConfigurationSystem/
-├── ue/       # UE5.8 Windows 桌面端主工程
+├── ue/       # UE5.8 Windows 桌面端 C++ 主工程
 ├── web/      # 响应式 Web 选配端
 └── server/   # 图片资源与选配服务
 ```
 
-具体开发、构建和部署方式将在各子工程确定技术方案后分别补充。
+## UE 桌面端
+
+工程入口为 `ue/ConfigurationSystem.uproject`，当前基础配置包括：
+
+- UE5.8 C++ Runtime 与 Editor Target。
+- Enhanced Input 输入系统。
+- Windows DX12 与 Shader Model 6。
+- Lumen 全局光照和反射、Nanite、虚拟阴影贴图。
+- 禁用静态光照，以实时车辆展示为默认方向。
+
+首次打开前，请确认已安装 UE5.8 和对应的 Visual Studio C++ 工具链。右键 `ConfigurationSystem.uproject` 生成 Visual Studio 项目文件，编译 `ConfigurationSystemEditor` 后打开工程。
+
+具体业务模块、Web 技术栈和 Server 部署方式将在方案确定后分别补充。
