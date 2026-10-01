@@ -9,5 +9,7 @@ public class ConfigurationSystemEditorTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.Latest;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
 		ExtraModuleNames.Add("ConfigurationSystem");
+		// 显式编译测试资产生成命令所在的 Editor 模块。
+		ExtraModuleNames.Add("ConfigurationSystemEditor");
 	}
 }

@@ -12,8 +12,11 @@ public class ConfigurationSystem : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"AssetRegistry",
 				"InputCore",
-				"EnhancedInput"
+				"EnhancedInput",
+				// 探针在 Runtime 中生成稳定的 JSON 报告。
+				"Json"
 			}
 		);
 	}

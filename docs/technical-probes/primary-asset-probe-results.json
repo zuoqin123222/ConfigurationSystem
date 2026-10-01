@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "probeId": "P0-1-primary-asset-scan-cook",
+  "status": "PASS",
+  "engine": {
+    "version": "5.8.1",
+    "changelist": 56057345,
+    "branch": "++UE5+Release-5.8"
+  },
+  "expected": {
+    "primaryAssetType": "PrimaryAssetProbe",
+    "primaryAssetId": "PrimaryAssetProbe:DA_ProbeUnreferenced",
+    "primaryAssetPath": "/Game/PrimaryAssetProbe/DA_ProbeUnreferenced.DA_ProbeUnreferenced",
+    "softTexturePath": "/Game/PrimaryAssetProbe/T_ProbeUnreferenced.T_ProbeUnreferenced",
+    "count": 1
+  },
+  "runs": [
+    {
+      "stage": "Editor",
+      "buildConfiguration": "Development",
+      "withEditor": true,
+      "requiresCookedData": false,
+      "requestedCount": 1,
+      "loadRequestCompleted": true,
+      "primaryAssetLoaded": true,
+      "softTextureLoaded": true,
+      "passed": true
+    },
+    {
+      "stage": "WindowsPackage",
+      "buildConfiguration": "Development",
+      "withEditor": false,
+      "requiresCookedData": true,
+      "requestedCount": 1,
+      "loadRequestCompleted": true,
+      "primaryAssetLoaded": true,
+      "softTextureLoaded": true,
+      "passed": true
+    },
+    {
+      "stage": "WindowsPackage",
+      "buildConfiguration": "Shipping",
+      "withEditor": false,
+      "requiresCookedData": true,
+      "requestedCount": 1,
+      "loadRequestCompleted": true,
+      "primaryAssetLoaded": true,
+      "softTextureLoaded": true,
+      "passed": true
+    }
+  ],
+  "invariant": "EditorCount == DevelopmentCount == ShippingCount == 1"
+}

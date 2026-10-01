@@ -2,6 +2,13 @@
 
 汽车选配系统，包含 UE5.8 Windows 桌面端、响应式 Web 选配端和配套 Server。
 
+## 规划文档
+
+- [MVP 实施计划](docs/MVP_PLAN.md)
+- [MVP 多重验证报告](docs/MVP_PLAN_REVIEW.md)
+- [P0-1 Primary Asset 扫描与 Cook 探针](docs/technical-probes/PRIMARY_ASSET_PROBE.md)
+- [MVP 可视化评审版](automotive-configurator-mvp-plan/automotive-configurator-mvp-plan.html)
+
 ## 项目组成
 
 - **UE5.8 桌面端**：主工程，提供完整的车辆选配效果与车辆实时渲染。
@@ -29,4 +36,4 @@ ConfigurationSystem/
 
 首次打开前，请确认已安装 UE5.8 和对应的 Visual Studio C++ 工具链。右键 `ConfigurationSystem.uproject` 生成 Visual Studio 项目文件，编译 `ConfigurationSystemEditor` 后打开工程。
 
-具体业务模块、Web 技术栈和 Server 部署方式将在方案确定后分别补充。
+当前目录是初始 UE 骨架，目标目录迁移、业务模块、Web 技术栈和 Server 方案见 MVP 实施计划。

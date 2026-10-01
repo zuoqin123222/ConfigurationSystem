@@ -4,6 +4,10 @@
 **/Intermediate/
 **/Saved/
 
+# 项目打包与发布产物
+/package/
+/.trae-html-share-packages/
+
 # Unreal Engine 与 IDE 生成文件
 *.sln
 *.slnx
