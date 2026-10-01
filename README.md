@@ -9,6 +9,8 @@
 - [P0-1 Primary Asset 扫描与 Cook 探针](docs/technical-probes/PRIMARY_ASSET_PROBE.md)
 - [P0-2 Runtime Path Tracing 与进度探针](docs/technical-probes/PATH_TRACING_RUNTIME_PROBE.md)
 - [P0-3 Path Tracing 透明出图探针](docs/technical-probes/PATH_TRACING_ALPHA_PROBE.md)
+- [P0-4 车辆层级与可逆动作探针](docs/technical-probes/VEHICLE_HIERARCHY_PROBE.md)
+- [车辆资产接入规范](docs/VEHICLE_ASSET_REQUIREMENTS.md)
 - [MVP 可视化评审版](automotive-configurator-mvp-plan/automotive-configurator-mvp-plan.html)
 
 ## 项目组成

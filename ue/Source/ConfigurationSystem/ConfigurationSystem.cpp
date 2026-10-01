@@ -17,6 +17,7 @@
 #include "PrimaryAssetProbeData.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
+#include "VehicleHierarchyProbe.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogPrimaryAssetProbe, Log, All);
 
@@ -47,6 +48,14 @@ IMPLEMENT_PRIMARY_GAME_MODULE(
 void FConfigurationSystemModule::StartupModule()
 {
 	FDefaultGameModuleImpl::StartupModule();
+
+	if (FParse::Param(FCommandLine::Get(), TEXT("VehicleHierarchyProbe")))
+	{
+		// P0-4 层级/执行器探针独占本次进程，并在写出 JSON 后主动退出。
+		VehicleHierarchyProbe = MakeShared<FVehicleHierarchyProbe>();
+		VehicleHierarchyProbe->Start();
+		return;
+	}
 
 	if (FParse::Param(FCommandLine::Get(), TEXT("PathTracingAlphaProbe")))
 	{
@@ -85,6 +94,12 @@ void FConfigurationSystemModule::StartupModule()
 
 void FConfigurationSystemModule::ShutdownModule()
 {
+	if (VehicleHierarchyProbe.IsValid())
+	{
+		VehicleHierarchyProbe->Shutdown();
+		VehicleHierarchyProbe.Reset();
+	}
+
 	if (PathTracingAlphaProbe.IsValid())
 	{
 		PathTracingAlphaProbe->Shutdown();

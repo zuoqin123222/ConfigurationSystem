@@ -1,0 +1,119 @@
+{
+	"schemaVersion": 3,
+	"probe": "VehicleHierarchyProbe",
+	"engineVersion": "5.8.1-56057345+++UE5+Release-5.8",
+	"actualVehicleAssetPresent": false,
+	"status": "PROTOTYPE_PASS_ASSET_PENDING",
+	"cubeHierarchyGenerated": true,
+	"hierarchyAudit":
+	{
+		"passed": true,
+		"taggedComponentCounts":
+		{
+			"Vehicle.Root": 1,
+			"Vehicle.Body": 1,
+			"Vehicle.Part.Door.FrontLeft": 1,
+			"Vehicle.Part.Hood": 1,
+			"Vehicle.Part.Trunk": 1,
+			"Vehicle.Part.Wheel.FrontLeft": 1,
+			"Vehicle.Part.Wheel.FrontRight": 1,
+			"Vehicle.Part.Wheel.RearLeft": 1,
+			"Vehicle.Part.Wheel.RearRight": 1
+		},
+		"issues": [],
+		"tagSchema":
+		{
+			"root": "Vehicle.Root",
+			"body": "Vehicle.Body",
+			"partPrefix": "Vehicle.Part.",
+			"requiredTags": [
+				"Vehicle.Root",
+				"Vehicle.Body",
+				"Vehicle.Part.Door.FrontLeft",
+				"Vehicle.Part.Hood",
+				"Vehicle.Part.Trunk",
+				"Vehicle.Part.Wheel.FrontLeft",
+				"Vehicle.Part.Wheel.FrontRight",
+				"Vehicle.Part.Wheel.RearLeft",
+				"Vehicle.Part.Wheel.RearRight"
+			],
+			"uniqueAndMovableRequired": true
+		},
+		"pivotChecks":
+		{
+			"allPartPivotsDirectlyAttachedToBody": true,
+			"doorMeshIsDirectPivotChild": true,
+			"doorMeshHasNoTags": true,
+			"doorMeshOffsetFromHingePivot": true,
+			"actuatorTargetsDoorPivot": true
+		}
+	},
+	"negativeAuditTests": [
+		{
+			"name": "missingHoodTag",
+			"expectedIssueSubstring": "缺少必需 ComponentTag：Vehicle.Part.Hood。",
+			"auditPassed": false,
+			"rejected": true,
+			"expectedIssueFound": true,
+			"restoredAuditPassed": true,
+			"passed": true,
+			"issues": [
+				"缺少必需 ComponentTag：Vehicle.Part.Hood。"
+			]
+		},
+		{
+			"name": "duplicateHoodTagOnBody",
+			"expectedIssueSubstring": "ComponentTag Vehicle.Part.Hood 重复",
+			"auditPassed": false,
+			"rejected": true,
+			"expectedIssueFound": true,
+			"restoredAuditPassed": true,
+			"passed": true,
+			"issues": [
+				"ComponentTag Vehicle.Part.Hood 重复，共 2 处。"
+			]
+		},
+		{
+			"name": "staticTrunkPivot",
+			"expectedIssueSubstring": "组件 TrunkPivot（标签 Vehicle.Part.Trunk）的 Mobility 不是 Movable。",
+			"auditPassed": false,
+			"rejected": true,
+			"expectedIssueFound": true,
+			"restoredAuditPassed": true,
+			"passed": true,
+			"issues": [
+				"组件 TrunkPivot（标签 Vehicle.Part.Trunk）的 Mobility 不是 Movable。"
+			]
+		},
+		{
+			"name": "wheelRearRightAttachedToRoot",
+			"expectedIssueSubstring": "Vehicle.Part.Wheel.RearRight Pivot 必须直接挂接到 Vehicle.Body。",
+			"auditPassed": false,
+			"rejected": true,
+			"expectedIssueFound": true,
+			"restoredAuditPassed": true,
+			"passed": true,
+			"issues": [
+				"Vehicle.Part.Wheel.RearRight Pivot 必须直接挂接到 Vehicle.Body。"
+			]
+		}
+	],
+	"allInvalidFixturesRejected": true,
+	"actuatorTests":
+	{
+		"setOpenSameValueIsIdempotent": true,
+		"maximumIdempotentCommandJump": 0,
+		"reverseAtApproximatelyFortyPercent": true,
+		"fullOpenClose": true,
+		"threeRepeatedCycles": true,
+		"completedCycles": 3,
+		"maximumCommandJump": 0,
+		"maximumStepJump": 2.166420272733045,
+		"maximumStepJumpThreshold": 2.2000000000000002,
+		"stepJumpWithinThreshold": true,
+		"maximumInterpolationError": 2.9575586669421963e-06,
+		"maximumTerminalError": 0
+	},
+	"passed": true,
+	"failureReason": ""
+}
