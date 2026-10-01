@@ -114,7 +114,7 @@ void FConfigurationSystemModule::RunPrimaryAssetProbe()
 	UAssetManager& AssetManager = UAssetManager::Get();
 	const FPrimaryAssetType ProbeType(TEXT("PrimaryAssetProbe"));
 
-	// 不主动补扫目录：这里专门验证 DefaultEngine.ini 的启动扫描配置是否生效。
+	// 不主动补扫目录：这里专门验证 DefaultGame.ini 的启动扫描配置是否生效。
 	AssetManager.GetPrimaryAssetIdList(ProbeType, ProbeAssetIds);
 	ProbeAssetIds.Sort([](const FPrimaryAssetId& Left, const FPrimaryAssetId& Right)
 	{
