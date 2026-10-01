@@ -43,7 +43,7 @@ MVP 采用“一台演示车、一套共享配置、三端完整闭环”的范�
 
 ## 目录目标
 
-当前 `ue/` 是尚未在本轮编译验证的基础 C++ 骨架，`web/` 和 `server/` 尚未建立。第一批工作将工程迁移为以下结构：
+当前基础 C++ 骨架已迁移到 `source/clients/ue/`，并已建立 `source/clients/web/`、`source/server/` 及被 Git 忽略的 `package/` 目录。目标结构如下：
 
 ```text
 ConfigurationSystem/
@@ -65,7 +65,7 @@ ConfigurationSystem/
 └── .gitignore
 ```
 
-`.gitignore` 已忽略整个 `package/`；目录迁移时还需将现有 `/web/` 规则迁移到 `/source/clients/web/`。源码目录不得包含打包产物。出图先写入 UE 的临时输出，校验完整后再通过发布脚本原子发布到新版本目录；失败时保留旧版本，不允许发布部分结果。
+`.gitignore` 已忽略整个 `package/`，Web 生成目录规则已指向 `/source/clients/web/`。源码目录不得包含打包产物。出图先写入 UE 的临时输出，校验完整后再通过发布脚本原子发布到新版本目录；失败时保留旧版本，不允许发布部分结果。
 
 ## 共享数据契约
 
@@ -277,7 +277,7 @@ GET  /assets/renders/*
 
 可并行：
 
-- A：迁移 `ue/` 到 `source/clients/ue/`，建立 `source/` 和 `package/` 结构。
+- A：已将 UE 工程迁移到 `source/clients/ue/`，并建立 `source/` 和 `package/` 结构。
 - B：编写 catalog、manifest Schema、OpenAPI 和 ID 规则。
 - C：整理演示车资产清单、部件标签、材质槽和动画可用性。
 - D：建立 `docs/AI_WORKFLOW.md`、`docs/ARCHITECTURE.md`、`docs/DECISIONS.md`。

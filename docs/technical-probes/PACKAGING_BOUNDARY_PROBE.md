@@ -101,7 +101,7 @@ editorModuleLoaded = false
 
 ```powershell
 & 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' `
-  'D:\ConfigurationSystem\ue\ConfigurationSystem.uproject' `
+  'D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject' `
   -unattended -NoSplash -NullRHI `
   '-ExecCmds=PackagingProbe.CreateProjectMap,QUIT_EDITOR' -log
 ```
@@ -111,7 +111,7 @@ editorModuleLoaded = false
 ```powershell
 & 'C:\Program Files\Epic Games\UE_5.8\Engine\Build\BatchFiles\RunUAT.bat' `
   BuildCookRun `
-  '-Project=D:\ConfigurationSystem\ue\ConfigurationSystem.uproject' `
+  '-Project=D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject' `
   -noP4 -platform=Win64 -clientconfig=Development `
   -build -cook -stage -pak -archive `
   '-archivedirectory=<临时 Development 目录>' `

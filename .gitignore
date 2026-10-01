@@ -45,16 +45,21 @@
 **/__ExternalObjects__/
 
 # Web / Node.js
-/web/**/node_modules/
-/web/**/.next/
-/web/**/.nuxt/
-/web/**/.svelte-kit/
-/web/**/dist/
-/web/**/build/
-/web/**/coverage/
-/web/**/.cache/
-/web/**/.parcel-cache/
-/web/**/.turbo/
+/source/clients/web/**/node_modules/
+/source/clients/web/**/.next/
+/source/clients/web/**/.nuxt/
+/source/clients/web/**/.svelte-kit/
+/source/clients/web/**/dist/
+/source/clients/web/**/build/
+/source/clients/web/**/coverage/
+/source/clients/web/**/.cache/
+/source/clients/web/**/.parcel-cache/
+/source/clients/web/**/.turbo/
+/source/server/**/node_modules/
+/source/server/**/dist/
+/source/server/**/build/
+/source/server/**/coverage/
+/source/server/**/.cache/
 **/npm-debug.log*
 **/yarn-debug.log*
 **/yarn-error.log*

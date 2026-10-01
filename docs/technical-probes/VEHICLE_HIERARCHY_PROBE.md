@@ -128,7 +128,7 @@ Result.Blend(ClosedTransform, OpenTransform, Eased);
 
 ```powershell
 $Arguments = @(
-  'D:\ConfigurationSystem\ue\ConfigurationSystem.uproject',
+  'D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject',
   '-game',
   '-unattended',
   '-NoSplash',
@@ -143,7 +143,7 @@ $Arguments = @(
 Start-Process `
   -FilePath 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe' `
   -ArgumentList $Arguments `
-  -WorkingDirectory 'D:\ConfigurationSystem\ue' `
+  -WorkingDirectory 'D:\ConfigurationSystem\source\clients\ue' `
   -Wait
 ```
 

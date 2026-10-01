@@ -140,7 +140,7 @@ exactProgressApiAvailable = true
 
 ```powershell
 $Arguments = @(
-  'D:\ConfigurationSystem\ue\ConfigurationSystem.uproject',
+  'D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject',
   '-game',
   '-unattended',
   '-NoSplash',
@@ -150,13 +150,13 @@ $Arguments = @(
   '-ResY=180',
   '-PathTracingProbe',
   '-PathTracingProbeTimeout=120',
-  '-PathTracingProbeOutput=D:\ConfigurationSystem\ue\Saved\PathTracingProbe\EditorGame-5.8.1.json'
+  '-PathTracingProbeOutput=D:\ConfigurationSystem\source\clients\ue\Saved\PathTracingProbe\EditorGame-5.8.1.json'
 )
 
 Start-Process `
   -FilePath 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe' `
   -ArgumentList $Arguments `
-  -WorkingDirectory 'D:\ConfigurationSystem\ue' `
+  -WorkingDirectory 'D:\ConfigurationSystem\source\clients\ue' `
   -Wait
 ```
 

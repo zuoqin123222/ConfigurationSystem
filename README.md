@@ -24,14 +24,21 @@
 
 ```text
 ConfigurationSystem/
-├── ue/       # UE5.8 Windows 桌面端 C++ 主工程
-├── web/      # 响应式 Web 选配端
-└── server/   # 图片资源与选配服务
+├── source/                  # Git 管理的源码
+│   ├── clients/
+│   │   ├── ue/              # UE5.8 Windows 桌面端 C++ 主工程
+│   │   └── web/             # 响应式 Web 选配端
+│   └── server/              # 图片资源与选配服务
+└── package/                 # Git 忽略的本地构建与发布产物
+    ├── clients/
+    │   ├── ue/
+    │   └── web/
+    └── server/
 ```
 
 ## UE 桌面端
 
-工程入口为 `ue/ConfigurationSystem.uproject`，当前基础配置包括：
+工程入口为 `source/clients/ue/ConfigurationSystem.uproject`，当前基础配置包括：
 
 - UE5.8 C++ Runtime 与 Editor Target。
 - Enhanced Input 输入系统。
@@ -41,4 +48,4 @@ ConfigurationSystem/
 
 首次打开前，请确认已安装 UE5.8 和对应的 Visual Studio C++ 工具链。右键 `ConfigurationSystem.uproject` 生成 Visual Studio 项目文件，编译 `ConfigurationSystemEditor` 后打开工程。
 
-当前目录是初始 UE 骨架，目标目录迁移、业务模块、Web 技术栈和 Server 方案见 MVP 实施计划。
+当前 UE 工程是初始骨架，业务模块、Web 技术栈和 Server 方案见 MVP 实施计划。
