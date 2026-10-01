@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/catalog.schema.json",
+  "title": "Configuration System Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "catalogVersion",
+    "currency",
+    "vehicle",
+    "parts",
+    "templates",
+    "interactionCameras",
+    "renderViews"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "catalogVersion": { "$ref": "#/$defs/id" },
+    "currency": { "const": "CNY" },
+    "vehicle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vehicleId", "zhName", "basePriceMinor"],
+      "properties": {
+        "vehicleId": { "$ref": "#/$defs/id" },
+        "zhName": { "$ref": "#/$defs/nonEmptyString" },
+        "basePriceMinor": { "$ref": "#/$defs/minorPrice" }
+      }
+    },
+    "parts": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "$ref": "#/$defs/part" }
+    },
+    "templates": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/template" }
+    },
+    "interactionCameras": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "renderViews": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/renderView" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "minorPrice": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "optionId",
+        "zhName",
+        "priceDeltaMinor",
+        "previewImageUrl",
+        "uePrimaryAssetId"
+      ],
+      "properties": {
+        "optionId": { "$ref": "#/$defs/id" },
+        "zhName": { "$ref": "#/$defs/nonEmptyString" },
+        "priceDeltaMinor": { "$ref": "#/$defs/minorPrice" },
+        "previewImageUrl": {
+          "type": "string",
+          "pattern": "^/assets/previews/[a-z0-9-]+\\.png$"
+        },
+        "uePrimaryAssetId": {
+          "type": "string",
+          "pattern": "^CarMaterialOption:[a-z0-9]+(?:-[a-z0-9]+)*$"
+        }
+      }
+    },
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["partId", "zhName", "displayOrder", "options"],
+      "properties": {
+        "partId": { "enum": ["paint", "wheel", "interior", "frame"] },
+        "zhName": { "$ref": "#/$defs/nonEmptyString" },
+        "displayOrder": { "type": "integer", "minimum": 0 },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/option" }
+        }
+      }
+    },
+    "selections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paint", "wheel", "interior", "frame"],
+      "properties": {
+        "paint": { "$ref": "#/$defs/id" },
+        "wheel": { "$ref": "#/$defs/id" },
+        "interior": { "$ref": "#/$defs/id" },
+        "frame": { "$ref": "#/$defs/id" }
+      }
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["templateId", "zhName", "selections"],
+      "properties": {
+        "templateId": { "$ref": "#/$defs/id" },
+        "zhName": { "$ref": "#/$defs/nonEmptyString" },
+        "selections": { "$ref": "#/$defs/selections" }
+      }
+    },
+    "renderView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["renderViewId", "zhName"],
+      "properties": {
+        "renderViewId": {
+          "enum": ["front", "front-left", "side", "rear-right"]
+        },
+        "zhName": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    }
+  }
+}

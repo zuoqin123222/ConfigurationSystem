@@ -12,6 +12,7 @@
 - [P0-4 车辆层级与可逆动作探针](docs/technical-probes/VEHICLE_HIERARCHY_PROBE.md)
 - [P0-5 Development/Shipping 打包边界探针](docs/technical-probes/PACKAGING_BOUNDARY_PROBE.md)
 - [车辆资产接入规范](docs/VEHICLE_ASSET_REQUIREMENTS.md)
+- [三端数据与 API 契约](contracts/README.md)
 - [MVP 可视化评审版](automotive-configurator-mvp-plan/automotive-configurator-mvp-plan.html)
 
 ## 项目组成

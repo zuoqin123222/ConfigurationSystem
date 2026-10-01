@@ -1,0 +1,171 @@
+{
+  "schemaVersion": "1.0.0",
+  "publicationVersion": "mvp-v1",
+  "catalogVersion": "mvp-v1",
+  "vehicleId": "demo-car",
+  "configurationKeyOrder": ["paint", "wheel", "interior", "frame"],
+  "renderViewIds": ["front", "front-left", "side", "rear-right"],
+  "expectedRenderCount": 64,
+  "configurations": [
+    {
+      "configurationKey": "paint-red__wheel-sport__interior-dark__frame-black",
+      "selections": {
+        "paint": "paint-red",
+        "wheel": "wheel-sport",
+        "interior": "interior-dark",
+        "frame": "frame-black"
+      },
+      "totalPriceMinor": 30000000
+    },
+    {
+      "configurationKey": "paint-red__wheel-sport__interior-dark__frame-red",
+      "selections": {
+        "paint": "paint-red",
+        "wheel": "wheel-sport",
+        "interior": "interior-dark",
+        "frame": "frame-red"
+      },
+      "totalPriceMinor": 30360000
+    },
+    {
+      "configurationKey": "paint-red__wheel-sport__interior-ivory__frame-black",
+      "selections": {
+        "paint": "paint-red",
+        "wheel": "wheel-sport",
+        "interior": "interior-ivory",
+        "frame": "frame-black"
+      },
+      "totalPriceMinor": 30680000
+    },
+    {
+      "configurationKey": "paint-red__wheel-sport__interior-ivory__frame-red",
+      "selections": {
+        "paint": "paint-red",
+        "wheel": "wheel-sport",
+        "interior": "interior-ivory",
+        "frame": "frame-red"
+      },
+      "totalPriceMinor": 31040000
+    },
+    {
+      "configurationKey": "paint-red__wheel-forged__interior-dark__frame-black",
+      "selections": {
+        "paint": "paint-red",
+        "wheel": "wheel-forged",
+        "interior": "interior-dark",
+        "frame": "frame-black"
+      },
+      "totalPriceMinor": 31200000
+    },
+    {
+      "configurationKey": "paint-red__wheel-forged__interior-dark__frame-red",
+      "selections": {
+        "paint": "paint-red",
+        "wheel": "wheel-forged",
+        "interior": "interior-dark",
+        "frame": "frame-red"
+      },
+      "totalPriceMinor": 31560000
+    },
+    {
+      "configurationKey": "paint-red__wheel-forged__interior-ivory__frame-black",
+      "selections": {
+        "paint": "paint-red",
+        "wheel": "wheel-forged",
+        "interior": "interior-ivory",
+        "frame": "frame-black"
+      },
+      "totalPriceMinor": 31880000
+    },
+    {
+      "configurationKey": "paint-red__wheel-forged__interior-ivory__frame-red",
+      "selections": {
+        "paint": "paint-red",
+        "wheel": "wheel-forged",
+        "interior": "interior-ivory",
+        "frame": "frame-red"
+      },
+      "totalPriceMinor": 32240000
+    },
+    {
+      "configurationKey": "paint-silver__wheel-sport__interior-dark__frame-black",
+      "selections": {
+        "paint": "paint-silver",
+        "wheel": "wheel-sport",
+        "interior": "interior-dark",
+        "frame": "frame-black"
+      },
+      "totalPriceMinor": 30880000
+    },
+    {
+      "configurationKey": "paint-silver__wheel-sport__interior-dark__frame-red",
+      "selections": {
+        "paint": "paint-silver",
+        "wheel": "wheel-sport",
+        "interior": "interior-dark",
+        "frame": "frame-red"
+      },
+      "totalPriceMinor": 31240000
+    },
+    {
+      "configurationKey": "paint-silver__wheel-sport__interior-ivory__frame-black",
+      "selections": {
+        "paint": "paint-silver",
+        "wheel": "wheel-sport",
+        "interior": "interior-ivory",
+        "frame": "frame-black"
+      },
+      "totalPriceMinor": 31560000
+    },
+    {
+      "configurationKey": "paint-silver__wheel-sport__interior-ivory__frame-red",
+      "selections": {
+        "paint": "paint-silver",
+        "wheel": "wheel-sport",
+        "interior": "interior-ivory",
+        "frame": "frame-red"
+      },
+      "totalPriceMinor": 31920000
+    },
+    {
+      "configurationKey": "paint-silver__wheel-forged__interior-dark__frame-black",
+      "selections": {
+        "paint": "paint-silver",
+        "wheel": "wheel-forged",
+        "interior": "interior-dark",
+        "frame": "frame-black"
+      },
+      "totalPriceMinor": 32080000
+    },
+    {
+      "configurationKey": "paint-silver__wheel-forged__interior-dark__frame-red",
+      "selections": {
+        "paint": "paint-silver",
+        "wheel": "wheel-forged",
+        "interior": "interior-dark",
+        "frame": "frame-red"
+      },
+      "totalPriceMinor": 32440000
+    },
+    {
+      "configurationKey": "paint-silver__wheel-forged__interior-ivory__frame-black",
+      "selections": {
+        "paint": "paint-silver",
+        "wheel": "wheel-forged",
+        "interior": "interior-ivory",
+        "frame": "frame-black"
+      },
+      "totalPriceMinor": 32760000
+    },
+    {
+      "configurationKey": "paint-silver__wheel-forged__interior-ivory__frame-red",
+      "selections": {
+        "paint": "paint-silver",
+        "wheel": "wheel-forged",
+        "interior": "interior-ivory",
+        "frame": "frame-red"
+      },
+      "totalPriceMinor": 33120000
+    }
+  ]
+}

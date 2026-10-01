@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/bake-manifest.schema.json",
+  "title": "Bake Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "manifestVersion",
+    "catalogVersion",
+    "publicationVersion",
+    "vehicleId",
+    "generatedAt",
+    "renderer",
+    "alphaProcessing",
+    "renders"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "manifestVersion": { "$ref": "#/$defs/id" },
+    "catalogVersion": { "$ref": "#/$defs/id" },
+    "publicationVersion": { "$ref": "#/$defs/id" },
+    "vehicleId": { "$ref": "#/$defs/id" },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "renderer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engineVersion", "mode", "samplesPerPixel"],
+      "properties": {
+        "engineVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": { "const": "path-tracing" },
+        "samplesPerPixel": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "alphaProcessing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alphaMode",
+        "autoDetectCoverageInversion",
+        "clearTransparentRgb",
+        "glowPolicy"
+      ],
+      "properties": {
+        "alphaMode": { "const": "straight" },
+        "autoDetectCoverageInversion": { "type": "boolean" },
+        "clearTransparentRgb": { "type": "boolean" },
+        "glowPolicy": {
+          "enum": ["synthetic-alpha", "separate-layer"]
+        }
+      }
+    },
+    "renders": {
+      "type": "array",
+      "minItems": 64,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/render" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "configurationKey": {
+      "type": "string",
+      "pattern": "^paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+$"
+    },
+    "render": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "configurationKey",
+        "renderViewId",
+        "path",
+        "status"
+      ],
+      "properties": {
+        "configurationKey": { "$ref": "#/$defs/configurationKey" },
+        "renderViewId": {
+          "enum": ["front", "front-left", "side", "rear-right"]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^renders/[a-z0-9-]+/[a-z0-9-]+/paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+/(front|front-left|side|rear-right)\\.png$"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "format": { "const": "png" },
+        "colorSpace": { "const": "sRGB" },
+        "alphaMode": {
+          "const": "straight"
+        },
+        "coverageInverted": {
+          "type": "boolean"
+        },
+        "normalizationRequired": {
+          "type": "boolean"
+        },
+        "glowRecoveredPixels": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "status": {
+          "enum": ["ready", "failed"]
+        },
+        "error": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "status": { "const": "ready" } },
+            "required": ["status"]
+          },
+          "then": {
+            "required": [
+              "width",
+              "height",
+              "format",
+              "colorSpace",
+              "alphaMode",
+              "coverageInverted",
+              "normalizationRequired",
+              "glowRecoveredPixels",
+              "sha256"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "const": "failed" } },
+            "required": ["status"]
+          },
+          "then": { "required": ["error"] }
+        }
+      ]
+    }
+  }
+}

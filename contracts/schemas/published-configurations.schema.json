@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/published-configurations.schema.json",
+  "title": "Published MVP Configurations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "publicationVersion",
+    "catalogVersion",
+    "vehicleId",
+    "configurationKeyOrder",
+    "renderViewIds",
+    "expectedRenderCount",
+    "configurations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "publicationVersion": { "$ref": "#/$defs/id" },
+    "catalogVersion": { "$ref": "#/$defs/id" },
+    "vehicleId": { "$ref": "#/$defs/id" },
+    "configurationKeyOrder": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "paint" },
+        { "const": "wheel" },
+        { "const": "interior" },
+        { "const": "frame" }
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "renderViewIds": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "front" },
+        { "const": "front-left" },
+        { "const": "side" },
+        { "const": "rear-right" }
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "expectedRenderCount": {
+      "const": 64
+    },
+    "configurations": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/configuration" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "configurationKey": {
+      "type": "string",
+      "pattern": "^paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+$"
+    },
+    "selections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paint", "wheel", "interior", "frame"],
+      "properties": {
+        "paint": { "$ref": "#/$defs/id" },
+        "wheel": { "$ref": "#/$defs/id" },
+        "interior": { "$ref": "#/$defs/id" },
+        "frame": { "$ref": "#/$defs/id" }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "configurationKey",
+        "selections",
+        "totalPriceMinor"
+      ],
+      "properties": {
+        "configurationKey": { "$ref": "#/$defs/configurationKey" },
+        "selections": { "$ref": "#/$defs/selections" },
+        "totalPriceMinor": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
