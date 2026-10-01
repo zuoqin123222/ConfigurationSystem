@@ -83,6 +83,8 @@
 Editor发现数 == Cook资产数 == Development发现数 == Shipping发现数
 ```
 
+P0-5 进一步确认 Development 和 Shipping 都从 `/Game/Maps/L_ConfigProbe` 启动，地图硬引用、Primary Asset 与软纹理均可加载；`ConfigurationSystemEditor` 在 Runtime 中不存在且未加载，归档文件级扫描也没有发现 Editor 模块泄漏。
+
 ### Path Tracing 进度
 
 P0-2 已确认 Path Tracer 会渐进累积，且相机变化会使采样归零后重新累积。UE5.8.1 的 `FSceneViewStateInterface` 公开提供当前样本和目标样本，Editor Game、Cooked Development 与 Cooked Shipping 均已实机读取成功。

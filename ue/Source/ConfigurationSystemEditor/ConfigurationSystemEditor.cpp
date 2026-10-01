@@ -1,9 +1,14 @@
 #include "ConfigurationSystemEditor.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Editor.h"
 #include "Engine/Texture2D.h"
+#include "Engine/World.h"
+#include "EngineUtils.h"
+#include "FileHelpers.h"
 #include "HAL/IConsoleManager.h"
 #include "Misc/PackageName.h"
+#include "PackagingProbeMarkerActor.h"
 #include "PrimaryAssetProbeData.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
@@ -16,6 +21,7 @@ namespace PrimaryAssetProbeEditor
 	constexpr TCHAR TextureAssetName[] = TEXT("T_ProbeUnreferenced");
 	constexpr TCHAR DataPackageName[] = TEXT("/Game/PrimaryAssetProbe/DA_ProbeUnreferenced");
 	constexpr TCHAR DataAssetName[] = TEXT("DA_ProbeUnreferenced");
+	constexpr TCHAR ProbeMapPackageName[] = TEXT("/Game/Maps/L_ConfigProbe");
 
 	template <typename AssetType>
 	AssetType* LoadOrCreateAsset(const TCHAR* PackageName, const TCHAR* AssetName, bool& bWasCreated)
@@ -56,6 +62,12 @@ void FConfigurationSystemEditorModule::StartupModule()
 		TEXT("创建或刷新未被地图硬引用的测试纹理和 Primary Data Asset。"),
 		FConsoleCommandDelegate::CreateRaw(this, &FConfigurationSystemEditorModule::CreatePrimaryAssetProbeAssets),
 		ECVF_Default);
+
+	CreateProjectMapCommand = IConsoleManager::Get().RegisterConsoleCommand(
+		TEXT("PackagingProbe.CreateProjectMap"),
+		TEXT("幂等创建、刷新并保存 /Game/Maps/L_ConfigProbe，确保仅放置一个 Runtime marker。"),
+		FConsoleCommandDelegate::CreateRaw(this, &FConfigurationSystemEditorModule::CreatePackagingProbeMap),
+		ECVF_Default);
 }
 
 void FConfigurationSystemEditorModule::ShutdownModule()
@@ -64,6 +76,12 @@ void FConfigurationSystemEditorModule::ShutdownModule()
 	{
 		IConsoleManager::Get().UnregisterConsoleObject(CreateAssetsCommand);
 		CreateAssetsCommand = nullptr;
+	}
+
+	if (CreateProjectMapCommand != nullptr)
+	{
+		IConsoleManager::Get().UnregisterConsoleObject(CreateProjectMapCommand);
+		CreateProjectMapCommand = nullptr;
 	}
 }
 
@@ -120,5 +138,72 @@ void FConfigurationSystemEditorModule::CreatePrimaryAssetProbeAssets()
 	else
 	{
 		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("测试资产保存失败，请检查 Content 目录是否可写。"));
+	}
+}
+
+void FConfigurationSystemEditorModule::CreatePackagingProbeMap()
+{
+	using namespace PrimaryAssetProbeEditor;
+
+	UWorld* World = nullptr;
+	FString ExistingFilename;
+	if (FPackageName::DoesPackageExist(ProbeMapPackageName, &ExistingFilename))
+	{
+		World = UEditorLoadingAndSavingUtils::LoadMap(ExistingFilename);
+	}
+	else
+	{
+		World = UEditorLoadingAndSavingUtils::NewBlankMap(false);
+	}
+
+	if (World == nullptr)
+	{
+		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("无法创建或载入探针地图。"));
+		return;
+	}
+
+	APackagingProbeMarkerActor* MarkerToKeep = nullptr;
+	for (TActorIterator<APackagingProbeMarkerActor> It(World); It; ++It)
+	{
+		if (MarkerToKeep == nullptr)
+		{
+			MarkerToKeep = *It;
+		}
+		else
+		{
+			// 删除重复标记，保证命令可安全重复执行。
+			World->EditorDestroyActor(*It, false);
+		}
+	}
+
+	if (MarkerToKeep == nullptr)
+	{
+		MarkerToKeep = World->SpawnActor<APackagingProbeMarkerActor>(
+			APackagingProbeMarkerActor::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator);
+	}
+
+	if (MarkerToKeep == nullptr)
+	{
+		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("无法在探针地图中生成 Runtime marker。"));
+		return;
+	}
+
+	MarkerToKeep->Marker = 1;
+	MarkerToKeep->SetActorLabel(TEXT("PackagingProbeMarker"));
+	MarkerToKeep->MarkPackageDirty();
+
+	if (UEditorLoadingAndSavingUtils::SaveMap(World, ProbeMapPackageName))
+	{
+		UE_LOG(
+			LogPrimaryAssetProbeEditor,
+			Display,
+			TEXT("打包探针地图已创建/刷新：%s（marker=1）。"),
+			ProbeMapPackageName);
+	}
+	else
+	{
+		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("打包探针地图保存失败。"));
 	}
 }

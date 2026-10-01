@@ -14,6 +14,8 @@ public:
 
 private:
 	void CreatePrimaryAssetProbeAssets();
+	void CreatePackagingProbeMap();
 
 	IConsoleObject* CreateAssetsCommand = nullptr;
+	IConsoleObject* CreateProjectMapCommand = nullptr;
 };

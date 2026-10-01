@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "probeId": "P0-5-packaging-boundary",
+  "status": "PASS",
+  "engineVersion": "5.8.1-56057345+++UE5+Release-5.8",
+  "expectedMap": "/Game/Maps/L_ConfigProbe",
+  "expectedPrimaryAssetId": "PrimaryAssetProbe:DA_ProbeUnreferenced",
+  "runs": [
+    {
+      "buildConfiguration": "Development",
+      "runtimeReport": "packaging-boundary-development.json",
+      "runtimePassed": true,
+      "requiresCookedData": true,
+      "mapLoadedFromCookedPackage": true,
+      "markerCount": 1,
+      "editorModuleExists": false,
+      "editorModuleLoaded": false,
+      "dataAssetLoaded": true,
+      "softTextureLoaded": true,
+      "archiveFileCount": 52,
+      "editorLeakFileCount": 0
+    },
+    {
+      "buildConfiguration": "Shipping",
+      "runtimeReport": "packaging-boundary-shipping.json",
+      "runtimePassed": true,
+      "requiresCookedData": true,
+      "mapLoadedFromCookedPackage": true,
+      "markerCount": 1,
+      "editorModuleExists": false,
+      "editorModuleLoaded": false,
+      "dataAssetLoaded": true,
+      "softTextureLoaded": true,
+      "archiveFileCount": 30,
+      "editorLeakFileCount": 0
+    }
+  ]
+}

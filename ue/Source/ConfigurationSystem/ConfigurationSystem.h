@@ -7,6 +7,7 @@
 struct FStreamableHandle;
 class FPathTracingProbe;
 class FPathTracingAlphaProbe;
+class FPackagingBoundaryProbe;
 class FVehicleHierarchyProbe;
 
 /** 游戏模块，同时按命令行显式启用相互独立的 Runtime 技术探针。 */
@@ -30,5 +31,6 @@ private:
 	FString ProbeOutputPath;
 	TSharedPtr<FPathTracingProbe> PathTracingProbe;
 	TSharedPtr<FPathTracingAlphaProbe> PathTracingAlphaProbe;
+	TSharedPtr<FPackagingBoundaryProbe> PackagingBoundaryProbe;
 	TSharedPtr<FVehicleHierarchyProbe> VehicleHierarchyProbe;
 };

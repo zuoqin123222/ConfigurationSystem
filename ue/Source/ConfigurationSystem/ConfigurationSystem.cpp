@@ -12,6 +12,7 @@
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
+#include "PackagingBoundaryProbe.h"
 #include "PathTracingAlphaProbe.h"
 #include "PathTracingProbe.h"
 #include "PrimaryAssetProbeData.h"
@@ -57,6 +58,14 @@ void FConfigurationSystemModule::StartupModule()
 		return;
 	}
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("PackagingBoundaryProbe")))
+	{
+		// P0-5 探针独占进程，完成地图、Cook 和模块边界检查后写 JSON 退出。
+		PackagingBoundaryProbe = MakeShared<FPackagingBoundaryProbe>();
+		PackagingBoundaryProbe->Start();
+		return;
+	}
+
 	if (FParse::Param(FCommandLine::Get(), TEXT("PathTracingAlphaProbe")))
 	{
 		// Alpha 探针与 P0-2 探针互斥，避免两个探针同时改写 ViewMode 与退出码。
@@ -94,6 +103,12 @@ void FConfigurationSystemModule::StartupModule()
 
 void FConfigurationSystemModule::ShutdownModule()
 {
+	if (PackagingBoundaryProbe.IsValid())
+	{
+		PackagingBoundaryProbe->Shutdown();
+		PackagingBoundaryProbe.Reset();
+	}
+
 	if (VehicleHierarchyProbe.IsValid())
 	{
 		VehicleHierarchyProbe->Shutdown();
