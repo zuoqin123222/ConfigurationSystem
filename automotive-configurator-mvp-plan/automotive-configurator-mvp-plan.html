@@ -407,7 +407,7 @@
             <div class="feature"><div class="feature__title">镜头联动</div><div class="feature__body">同类机位用缓动插值；内外饰切换先淡出至黑色，再换机位并淡入。新操作从当前状态重算，避免跳变。</div></div>
             <div class="feature"><div class="feature__title">车辆动作</div><div class="feature__body">提供车灯、车门、机盖、后备箱和轮胎开关；内车架联动机盖、轮毂联动车身回弹、内饰联动屏幕与灯光。</div></div>
             <div class="feature"><div class="feature__title">环境</div><div class="feature__body">影棚和暗色展厅两套 HDRI/灯光/曝光预设，切换时先插值亮度再替换环境。</div></div>
-            <div class="feature"><div class="feature__title">Path Tracing</div><div class="feature__body">实时与 Path Tracing 模式切换；技术探针决定精确百分比或状态型进度条，禁止依赖 Renderer Private；场景状态变化后重新累积。</div></div>
+            <div class="feature"><div class="feature__title">Path Tracing</div><div class="feature__body">P0-2 已确认 UE5.8.1 的公开 ViewState API 可提供精确百分比；Development 与 Shipping 均能切换、重置、重新累积并返回实时模式，不依赖 Renderer Private。</div></div>
             <div class="feature"><div class="feature__title">透明出图</div><div class="feature__body">Editor 工具遍历全部 16 个配置和四个视角，输出 64 张 Alpha PNG 和 manifest；自动检查 RGBA、尺寸、Alpha、哈希和裁切。</div></div>
           </div>
 
@@ -493,7 +493,7 @@
                 <tr><td data-label="范围">仓库</td><td data-label="通过条件"><code>source/</code> 与 <code>package/</code> 均有 UE、Web、Server；<code>package/</code> 不被 Git 跟踪。</td></tr>
                 <tr><td data-label="范围">材质与模板</td><td data-label="通过条件">新增合规材质无需改 UI 代码即可发现；模板应用后可逐区覆盖。</td></tr>
                 <tr><td data-label="范围">镜头与动作</td><td data-label="通过条件">分区触发机位，内外饰有黑场；灯、门、机盖、后备箱和轮胎可重复开关。</td></tr>
-                <tr><td data-label="范围">Path Tracing</td><td data-label="通过条件">可切换模式，显示探针确认的精确或状态型进度，场景变化后重新累积，不支持硬件明确降级。</td></tr>
+                <tr><td data-label="范围">Path Tracing</td><td data-label="通过条件">可切换模式并显示精确进度，场景变化后归零并重新累积，可返回实时模式，不支持硬件明确降级。</td></tr>
                 <tr><td data-label="范围">出图</td><td data-label="通过条件">64 张透明 PNG 和 manifest 完整，RGBA、尺寸、Alpha、哈希、裁切和命名自动检查通过。</td></tr>
                 <tr><td data-label="范围">Web</td><td data-label="通过条件">390×844 与 1920×1080 无横向溢出，全部选项可触达。</td></tr>
                 <tr><td data-label="范围">一致性</td><td data-label="通过条件">UE、manifest、Server、Web 对同一选择生成完全一致的配置键。</td></tr>

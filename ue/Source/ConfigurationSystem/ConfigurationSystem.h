@@ -5,8 +5,9 @@
 #include "Modules/ModuleManager.h"
 
 struct FStreamableHandle;
+class FPathTracingProbe;
 
-/** 游戏模块，同时承载仅由 -PrimaryAssetProbe 显式启用的自动化探针。 */
+/** 游戏模块，同时按命令行显式启用相互独立的 Runtime 技术探针。 */
 class FConfigurationSystemModule final : public FDefaultGameModuleImpl
 {
 public:
@@ -25,4 +26,5 @@ private:
 	TSharedPtr<FStreamableHandle> ProbeLoadHandle;
 	TArray<FPrimaryAssetId> ProbeAssetIds;
 	FString ProbeOutputPath;
+	TSharedPtr<FPathTracingProbe> PathTracingProbe;
 };

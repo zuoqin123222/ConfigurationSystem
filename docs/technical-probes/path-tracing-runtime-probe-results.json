@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "probeId": "P0-2-runtime-path-tracing-progress",
+  "status": "PASS",
+  "engine": {
+    "version": "5.8.1",
+    "changelist": 56057345,
+    "branch": "++UE5+Release-5.8"
+  },
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5080",
+    "driver": "581.95",
+    "graphicsRHI": "D3D12 (SM6)"
+  },
+  "publicProgressApi": {
+    "available": true,
+    "currentSample": "FSceneViewStateInterface::GetPathTracingSampleIndex",
+    "targetSample": "FSceneViewStateInterface::GetPathTracingSampleCount",
+    "privateRendererHeadersRequired": false
+  },
+  "runs": [
+    {
+      "stage": "EditorGame",
+      "buildConfiguration": "Development",
+      "withEditor": true,
+      "guardedSetViewModeApplied": true,
+      "directApplyViewModeAttempted": false,
+      "viewModeApplied": true,
+      "targetSampleCount": 16,
+      "sampleIndexBeforeRotation": 3,
+      "sampleIndexAfterRotation": 0,
+      "sampleIndexAfterRegrowth": 2,
+      "realtimeModeRestored": true,
+      "exactProgressApiAvailable": true,
+      "passed": true
+    },
+    {
+      "stage": "WindowsPackage",
+      "buildConfiguration": "Development",
+      "withEditor": false,
+      "guardedSetViewModeApplied": false,
+      "directApplyViewModeAttempted": true,
+      "directApplyViewModeApplied": true,
+      "viewModeApplied": true,
+      "targetSampleCount": 16,
+      "sampleIndexBeforeRotation": 3,
+      "sampleIndexAfterRotation": 0,
+      "sampleIndexAfterRegrowth": 2,
+      "realtimeModeRestored": true,
+      "exactProgressApiAvailable": true,
+      "passed": true
+    },
+    {
+      "stage": "WindowsPackage",
+      "buildConfiguration": "Shipping",
+      "withEditor": false,
+      "guardedSetViewModeApplied": false,
+      "directApplyViewModeAttempted": true,
+      "directApplyViewModeApplied": true,
+      "viewModeApplied": true,
+      "targetSampleCount": 16,
+      "sampleIndexBeforeRotation": 3,
+      "sampleIndexAfterRotation": 0,
+      "sampleIndexAfterRegrowth": 2,
+      "realtimeModeRestored": true,
+      "exactProgressApiAvailable": true,
+      "passed": true
+    }
+  ],
+  "decision": {
+    "progressUi": "exact",
+    "runtimeAdapter": "ViewModeIndex plus ApplyViewMode",
+    "shippingSupported": true,
+    "rerunAfterEngineUpgrade": true
+  }
+}

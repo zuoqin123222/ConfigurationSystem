@@ -7,6 +7,7 @@
 - [MVP 实施计划](docs/MVP_PLAN.md)
 - [MVP 多重验证报告](docs/MVP_PLAN_REVIEW.md)
 - [P0-1 Primary Asset 扫描与 Cook 探针](docs/technical-probes/PRIMARY_ASSET_PROBE.md)
+- [P0-2 Runtime Path Tracing 与进度探针](docs/technical-probes/PATH_TRACING_RUNTIME_PROBE.md)
 - [MVP 可视化评审版](automotive-configurator-mvp-plan/automotive-configurator-mvp-plan.html)
 
 ## 项目组成

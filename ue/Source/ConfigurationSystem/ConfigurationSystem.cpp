@@ -12,6 +12,7 @@
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
+#include "PathTracingProbe.h"
 #include "PrimaryAssetProbeData.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
@@ -46,6 +47,14 @@ void FConfigurationSystemModule::StartupModule()
 {
 	FDefaultGameModuleImpl::StartupModule();
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("PathTracingProbe")))
+	{
+		// Path Tracing 探针拥有独立生命周期，不与资产探针共享状态或回调。
+		PathTracingProbe = MakeShared<FPathTracingProbe>();
+		PathTracingProbe->Start();
+		return;
+	}
+
 	if (!FParse::Param(FCommandLine::Get(), TEXT("PrimaryAssetProbe")))
 	{
 		return;
@@ -67,6 +76,12 @@ void FConfigurationSystemModule::StartupModule()
 
 void FConfigurationSystemModule::ShutdownModule()
 {
+	if (PathTracingProbe.IsValid())
+	{
+		PathTracingProbe->Shutdown();
+		PathTracingProbe.Reset();
+	}
+
 	if (EngineInitCompleteHandle.IsValid())
 	{
 		FCoreDelegates::OnFEngineLoopInitComplete.Remove(EngineInitCompleteHandle);

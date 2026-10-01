@@ -208,11 +208,13 @@ MVP 使用统一动作接口，不为每个车型重写 UI：
 Path Tracing 提供：
 
 - 实时模式/Path Tracing 模式按钮。
-- UMG 进度条和“准备、累积、完成”状态。
+- 基于公开 ViewState API 的精确 UMG 进度条，以及“准备、累积、完成”状态。
 - 相机、材质、灯光或车辆状态变化后重置进度。
 - 当前硬件不支持时禁用按钮并显示原因。
 
-UE5.8 技术探针先确认交互视口是否存在稳定公开的精确采样接口。若存在，进度条显示当前/目标样本百分比；若不存在，默认使用不确定进度条、状态文本和 Renderer 自带进度显示，不依赖 Renderer Private 头文件。MRQ 的任务进度只用于 Editor 批量出图，不能冒充交互视口采样进度。
+P0-2 已确认 UE5.8.1 的 `FSceneViewStateInterface` 可公开读取当前样本和目标样本，Development 与 Shipping 都能实现精确进度。产品使用 Scene View Extension 采集快照，不依赖 Renderer Private 头文件。MRQ 的任务进度只用于 Editor 批量出图，不能冒充交互视口采样进度。
+
+Game/Shipping 的标准 `SetViewMode` 会把 Path Tracing 回退到 Lit，因此 `UCarRenderModeService` 使用公开的 `ViewModeIndex + ApplyViewMode` 适配路径，并在返回实时模式时恢复 `VMI_Lit`。该行为必须在每次 UE 升级后重新验证。
 
 实现时参考 Epic Automotive Configurator Sample 的交互方式，但必须按 UE5.8 当前渲染接口重新验证，不能直接复制 UE4.27 的蓝图或控制台变量。Path Tracing 需要单独验证硬件光追、Compute Skin Cache、材质 Shader Permutation、Development/Shipping 支持和无支持硬件时的降级。
 
@@ -287,7 +289,7 @@ GET  /assets/renders/*
 以下五项可以互相并行，但全部通过后才展开 UE 大规模业务实现：
 
 - P0-1（已通过）：Primary Asset 在 UE5.8.1 Editor、Cook、Development、Shipping 中发现和加载一致，见 `docs/technical-probes/PRIMARY_ASSET_PROBE.md`。
-- P0-2：Runtime Path Tracing 在目标硬件及 Shipping 中可用，并确定精确或状态型进度方案。
+- P0-2（已通过）：Runtime Path Tracing 在 UE5.8.1 Development/Shipping 中可用，公开 ViewState API 支持精确进度，见 `docs/technical-probes/PATH_TRACING_RUNTIME_PROBE.md`。
 - P0-3：Path Tracing 输出 PNG/EXR，在玻璃、灯具和多种背景合成下 Alpha 正确。
 - P0-4：完成车辆层级审计，并实现一个支持中途反向的车门或机盖原型。
 - P0-5：Development/Shipping 最小包进入项目地图，无 Editor 模块泄漏和缺失资产。

@@ -85,14 +85,15 @@ Editor发现数 == Cook资产数 == Development发现数 == Shipping发现数
 
 ### Path Tracing 进度
 
-官方行为确认 Path Tracer 会渐进累积，且相机、材质和场景变化会使采样失效。风险在于交互视口的精确当前采样值不一定存在稳定公开 Runtime API。
+P0-2 已确认 Path Tracer 会渐进累积，且相机变化会使采样归零后重新累积。UE5.8.1 的 `FSceneViewStateInterface` 公开提供当前样本和目标样本，Editor Game、Cooked Development 与 Cooked Shipping 均已实机读取成功。
 
-MVP 使用两级方案：
+MVP 采用精确进度方案：
 
-- 默认方案：UMG 显示不确定进度条和“准备、累积、完成”状态，同时允许开启 Renderer 自带进度显示。
-- 条件方案：如果 UE5.8 探针确认有稳定公开接口，再显示精确样本百分比。
-- 不允许 Runtime 直接依赖 Renderer Private 头文件。
-- MRQ 批量出图进度使用 Movie Render Pipeline 的公开任务进度，不与交互视口采样数混用。
+- Scene View Extension 读取公开 ViewState 采样快照。
+- UMG 使用当前样本/目标样本计算百分比。
+- 不依赖 Renderer Private 头文件。
+- Game/Shipping 通过公开 `ViewModeIndex + ApplyViewMode` 适配 Path Tracing，标准 `SetViewMode` 会被守卫回退。
+- MRQ 批量出图进度仍使用 Movie Render Pipeline 的任务进度，不与交互视口采样数混用。
 
 ### 透明输出
 
