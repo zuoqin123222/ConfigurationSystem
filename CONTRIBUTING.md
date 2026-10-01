@@ -45,6 +45,8 @@ git status --short
 - 创建、保存或刷新 `.uasset` 和地图的命令只放在 `ConfigurationSystemEditor`。
 - 业务规则、状态机、价格和配置键优先使用 C++。
 - Data Asset 只保存内容和资产引用；UMG Blueprint 不复制领域规则。
+- C++、命令行或探针无法可靠确认资产和视觉状态时，主动打开 UE5.8 Editor 使用 GUI 检查，不允许猜测结论。
+- GUI 修改或验收后记录资产路径、关键字段和操作结果，并在可行时补充自动回归。
 - Asset Manager 扫描规则写入 `DefaultGame.ini`，不通过运行时补扫掩盖错误。
 - 修改模块依赖、地图或 Cook 配置后，执行 P0-5 Development/Shipping 边界验证。
 
