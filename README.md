@@ -2,8 +2,12 @@
 
 汽车选配系统，包含 UE5.8 Windows 桌面端、响应式 Web 选配端和配套 Server。
 
-## 规划文档
+## 文档
 
+- [系统架构与三端边界](docs/ARCHITECTURE.md)
+- [AI 协作工作流](docs/AI_WORKFLOW.md)
+- [架构决策记录](docs/DECISIONS.md)
+- [贡献与验证指南](CONTRIBUTING.md)
 - [MVP 实施计划](docs/MVP_PLAN.md)
 - [MVP 多重验证报告](docs/MVP_PLAN_REVIEW.md)
 - [P0-1 Primary Asset 扫描与 Cook 探针](docs/technical-probes/PRIMARY_ASSET_PROBE.md)
@@ -30,12 +34,28 @@ ConfigurationSystem/
 │   │   ├── ue/              # UE5.8 Windows 桌面端 C++ 主工程
 │   │   └── web/             # 响应式 Web 选配端
 │   └── server/              # 图片资源与选配服务
+├── contracts/               # 三端共享 Schema、fixture 与 OpenAPI
+├── tools/                   # 仓库级验证工具
+├── docs/                    # 架构、决策、流程与探针证据
 └── package/                 # Git 忽略的本地构建与发布产物
     ├── clients/
     │   ├── ue/
     │   └── web/
-    └── server/
+    ├── server/
+    └── renders/
 ```
+
+`contracts/` 与 `tools/` 当前位于仓库根目录；请勿使用早期计划中的 `source/contracts/` 或 `source/tools/`。`source/` 只保存可审查源码，`package/` 只保存可重建的本地产物。
+
+## 契约验证
+
+安装 Node.js 18 或更高版本后，在仓库根目录执行：
+
+```powershell
+node tools/validate-contracts.mjs
+```
+
+验证器检查 Schema、ID 与引用、canonical key、16 个唯一配置、4 个视角和 64 个图片期望。UE 编译、Cook、Development/Shipping 探针命令见 [贡献与验证指南](CONTRIBUTING.md)。
 
 ## UE 桌面端
 
@@ -47,6 +67,6 @@ ConfigurationSystem/
 - Lumen 全局光照和反射、Nanite、虚拟阴影贴图。
 - 禁用静态光照，以实时车辆展示为默认方向。
 
-首次打开前，请确认已安装 UE5.8 和对应的 Visual Studio C++ 工具链。右键 `ConfigurationSystem.uproject` 生成 Visual Studio 项目文件，编译 `ConfigurationSystemEditor` 后打开工程。
+首次打开前，请确认已安装 UE5.8 和对应的 Visual Studio C++ 工具链。工程文件位于 `source/clients/ue/ConfigurationSystem.uproject`。可生成 Visual Studio 项目文件后编译 `ConfigurationSystemEditor`，也可使用 `CONTRIBUTING.md` 中基于 `Build.bat` 的实际命令。
 
 当前 UE 工程是初始骨架，业务模块、Web 技术栈和 Server 方案见 MVP 实施计划。
