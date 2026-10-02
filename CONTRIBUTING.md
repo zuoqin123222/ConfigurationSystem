@@ -22,6 +22,7 @@ git status --short
 - 产品源码写入 `source/`。
 - 三端共享字段、ID、fixture、Schema 和 API 写入 `contracts/`。
 - 仓库级验证脚本写入 `tools/`。
+- `source/clients/ue/SourceAssets/` 只保存可追溯的源侧参考文件；禁止 `.uasset`、`.umap`、`.tps`。
 - 计划、架构、ADR 和探针记录写入 `docs/`。
 - 构建与发布结果写入被忽略的 `package/`。
 - 不提交 `Binaries/`、`Intermediate/`、`Saved/`、`package/`、Node 构建目录、日志或本地环境文件。
@@ -86,6 +87,7 @@ git status --short
 
 ```powershell
 node tools/validate-contracts.mjs
+node tools/validate-source-assets.mjs
 ```
 
 当前成功摘要应包含：

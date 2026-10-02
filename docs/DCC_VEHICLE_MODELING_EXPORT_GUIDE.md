@@ -55,7 +55,7 @@ vehicle-animation.sidecar.json
 
 1. 在 DCC 中将模型尺寸校准为真实厘米。
 2. 车头朝 `+X`，车辆右侧朝 `+Y`，车顶朝 `+Z`。
-3. `Vehicle.Root` 放在世界原点；车身中心线与 X 轴重合。
+3. DCC 节点 `Vehicle_Root` 放在世界原点；车身中心线与 X 轴重合。
 4. 导出前应用对象级旋转与缩放。
 5. 所有节点 Scale 必须为 `[1,1,1]`；禁止负缩放和未应用的非均匀缩放。
 6. 不得通过 FBX 导入器的补偿旋转掩盖错误坐标。
@@ -79,8 +79,8 @@ sidecar 固定记录：
 最小层级：
 
 ```text
-Vehicle.Root [Vehicle.Root]
-└─ Vehicle.Body [Vehicle.Body]
+Vehicle_Root [Vehicle.Root]
+└─ Vehicle_Body [Vehicle.Body]
    ├─ BodyMesh
    ├─ InteriorMesh
    ├─ FrameMesh
@@ -102,7 +102,8 @@ Vehicle.Root [Vehicle.Root]
 
 - 节点名必须唯一。
 - 每个控制标签必须全局唯一，只放在 Root、Body 或 Pivot，不放在 Mesh。
-- Body 必须直属 Root；所有必需 Pivot 必须直属 Body。
+- `Vehicle_Body` 必须直属 `Vehicle_Root`；所有必需 Pivot 必须直属 `Vehicle_Body`。
+- DCC/FBX 节点使用下划线名称；方括号内的点号字符串是进入 UE 后设置的 ComponentTag。禁止把两者混为同一字段。
 - 每个 Pivot 必须至少有一个直属 Mesh 子节点。
 - 可增加右前门和后排车门，标签沿用 `Vehicle.Part.Door.FrontRight`、`RearLeft`、`RearRight`。
 - 禁止把活动部件合并到车身，禁止依赖 DCC 集合名或对象数组顺序推断部件。

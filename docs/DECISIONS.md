@@ -264,3 +264,28 @@ paint-red__wheel-sport__interior-dark__frame-black
 ## 修改决策的方式
 
 需要改变已接受方案时，新增下一编号 ADR，写明被取代的编号、迁移边界和验证证据。旧记录保留原状态并增加“已被 ADR-xxx 取代”，避免历史提交失去上下文。
+
+## ADR-008 外部 UE 样例隔离与 Maya FBX 重建
+
+- 状态：已接受
+- 文档化日期：2026-10-03
+- 相关证据：`docs/REFERENCE_ASSET_POLICY.md`、`tools/maya/normalize_fbx_maya2025.py`
+
+### 背景
+
+本机安装了 Epic Automotive Configurator 5.8 样例，可用于理解 Variant Manager、车辆部件拆分、Control Rig、环境和汽车材质表现。直接迁移样例 `.uasset` 会引入隐藏依赖、冗余内容、命名冲突和授权边界不清；Fab 页面还标记该内容不允许 AI 使用。
+
+### 决策
+
+样例工程保持在仓库外，只能作为隔离参考源。当前仓库禁止接收样例的 `.uasset`、`.umap`、`.tps`、Blueprint、材质、材质函数、纹理、环境地图、音频和项目配置。
+
+授权允许时，车辆几何必须由资产负责人显式导出为 FBX，再通过 Maya 2025、不可变输入哈希和显式重命名清单规范化。DCC/FBX 使用 `Vehicle_Root`、`Vehicle_Body` 等下划线节点名；UE 导入后另行设置 `Vehicle.Root`、`Vehicle.Body` 等 ComponentTag。
+
+汽车内饰 Shader 只参考公开表现目标和通用 PBR 原理，在当前工程用自己的节点网络、参数、纹理和命名从零创建。未取得覆盖 `Allows usage with AI: No` 的明确授权前，AI 自动化不读取样例资产正文或生成其衍生资产。
+
+### 后果
+
+- `tools/validate-source-assets.mjs` 递归拒绝 Unreal 和 TexturePacker 二进制进入 `SourceAssets`。
+- Maya 工具只接受清单目录内、哈希匹配、用户明确提供的 FBX，不扫描外部样例工程。
+- 正式接入仍必须经过车辆 sidecar、管理员暂存导入、UE GUI 和 Shipping 内容包验证。
+- 平台功能继续使用自建或 CC0 代理资源开发，不以 Epic 样例为阻塞项。

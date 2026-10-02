@@ -17,6 +17,8 @@
 - [P0-5 Development/Shipping 打包边界探针](docs/technical-probes/PACKAGING_BOUNDARY_PROBE.md)
 - [车辆资产接入规范](docs/VEHICLE_ASSET_REQUIREMENTS.md)
 - [DCC 车辆模型制作与导出指南](docs/DCC_VEHICLE_MODELING_EXPORT_GUIDE.md)
+- [参考资产政策](docs/REFERENCE_ASSET_POLICY.md)
+- [外部参考资产与 Maya 规范化验证](docs/technical-probes/REFERENCE_ASSET_PIPELINE.md)
 - [Runtime 内容包契约与安全挂载](docs/CONTENT_PACK_RUNTIME.md)
 - [三端数据与 API 契约](contracts/README.md)
 - [MVP 可视化评审版](automotive-configurator-mvp-plan/automotive-configurator-mvp-plan.html)
@@ -65,6 +67,8 @@ node tools/validate-contracts.mjs
 node tools/validate-vehicle-sidecars.mjs
 node --test tools/validate-vehicle-sidecars.test.mjs
 node --test tools/validate-content-pack.test.mjs
+node --test tools/validate-source-assets.test.mjs
+node tools/validate-source-assets.mjs
 ```
 
 UE 编译、Cook、Development/Shipping 探针命令见 [贡献与验证指南](CONTRIBUTING.md)。

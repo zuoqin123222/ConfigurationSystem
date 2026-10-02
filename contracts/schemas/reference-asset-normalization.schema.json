@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/reference-asset-normalization.schema.json",
+  "title": "Reference Asset Maya FBX Normalization Job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "jobId",
+    "assetId",
+    "provenance",
+    "input",
+    "output",
+    "normalization"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "kind": { "const": "maya-fbx-normalization" },
+    "jobId": { "$ref": "#/$defs/id" },
+    "assetId": { "$ref": "#/$defs/id" },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rightsHolder", "licenseId", "permittedUses"],
+      "properties": {
+        "rightsHolder": { "type": "string", "minLength": 1 },
+        "licenseId": { "type": "string", "minLength": 1 },
+        "permittedUses": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["normalize", "unreal-import", "render"] },
+          "allOf": [
+            { "contains": { "const": "normalize" } },
+            { "contains": { "const": "unreal-import" } }
+          ]
+        }
+      }
+    },
+    "input": { "$ref": "#/$defs/inputArtifact" },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "overwrite"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativeFbxPath" },
+        "overwrite": { "const": false }
+      }
+    },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mayaVersion",
+        "sceneUnit",
+        "upAxis",
+        "fbxFileVersion",
+        "binary",
+        "freezeRotationAndScale",
+        "removeCamerasAndLights",
+        "triangulate",
+        "rootNode",
+        "nodeRenames"
+      ],
+      "properties": {
+        "mayaVersion": { "const": "2025" },
+        "sceneUnit": { "const": "centimeter" },
+        "upAxis": { "const": "+Z" },
+        "fbxFileVersion": { "const": "FBX202000" },
+        "binary": { "const": true },
+        "freezeRotationAndScale": { "const": true },
+        "removeCamerasAndLights": { "const": true },
+        "triangulate": { "type": "boolean" },
+        "rootNode": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+        },
+        "nodeRenames": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to"],
+            "properties": {
+              "from": { "$ref": "#/$defs/nodeName" },
+              "to": { "$ref": "#/$defs/nodeName" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "nodeName": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+    },
+    "relativeFbxPath": {
+      "type": "string",
+      "pattern": "^(?![A-Za-z]:)(?![/\\\\])(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$)).+\\.[Ff][Bb][Xx]$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "inputArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativeFbxPath" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

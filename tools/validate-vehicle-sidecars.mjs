@@ -114,15 +114,15 @@ export function validateJsonSchema(value, schema, rootSchema = schema, path = "$
 }
 
 const requiredControls = new Map([
-  ["Vehicle.Root", { type: "root", parent: null, tag: "Vehicle.Root" }],
-  ["Vehicle.Body", { type: "body", parent: "Vehicle.Root", tag: "Vehicle.Body" }],
-  ["DoorPivot_FL", { type: "pivot", parent: "Vehicle.Body", tag: "Vehicle.Part.Door.FrontLeft" }],
-  ["HoodPivot", { type: "pivot", parent: "Vehicle.Body", tag: "Vehicle.Part.Hood" }],
-  ["TrunkPivot", { type: "pivot", parent: "Vehicle.Body", tag: "Vehicle.Part.Trunk" }],
-  ["WheelPivot_FL", { type: "pivot", parent: "Vehicle.Body", tag: "Vehicle.Part.Wheel.FrontLeft" }],
-  ["WheelPivot_FR", { type: "pivot", parent: "Vehicle.Body", tag: "Vehicle.Part.Wheel.FrontRight" }],
-  ["WheelPivot_RL", { type: "pivot", parent: "Vehicle.Body", tag: "Vehicle.Part.Wheel.RearLeft" }],
-  ["WheelPivot_RR", { type: "pivot", parent: "Vehicle.Body", tag: "Vehicle.Part.Wheel.RearRight" }]
+  ["Vehicle_Root", { type: "root", parent: null, tag: "Vehicle.Root" }],
+  ["Vehicle_Body", { type: "body", parent: "Vehicle_Root", tag: "Vehicle.Body" }],
+  ["DoorPivot_FL", { type: "pivot", parent: "Vehicle_Body", tag: "Vehicle.Part.Door.FrontLeft" }],
+  ["HoodPivot", { type: "pivot", parent: "Vehicle_Body", tag: "Vehicle.Part.Hood" }],
+  ["TrunkPivot", { type: "pivot", parent: "Vehicle_Body", tag: "Vehicle.Part.Trunk" }],
+  ["WheelPivot_FL", { type: "pivot", parent: "Vehicle_Body", tag: "Vehicle.Part.Wheel.FrontLeft" }],
+  ["WheelPivot_FR", { type: "pivot", parent: "Vehicle_Body", tag: "Vehicle.Part.Wheel.FrontRight" }],
+  ["WheelPivot_RL", { type: "pivot", parent: "Vehicle_Body", tag: "Vehicle.Part.Wheel.RearLeft" }],
+  ["WheelPivot_RR", { type: "pivot", parent: "Vehicle_Body", tag: "Vehicle.Part.Wheel.RearRight" }]
 ]);
 const requiredPartIds = ["paint", "wheel", "interior", "frame"];
 

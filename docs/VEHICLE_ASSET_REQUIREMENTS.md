@@ -14,8 +14,8 @@
 ## 必需层级
 
 ```text
-Vehicle.Root
-└─ Vehicle.Body
+Vehicle_Root
+└─ Vehicle_Body
    ├─ DoorPivot_FL
    │  └─ DoorMesh_FL
    ├─ HoodPivot
@@ -34,10 +34,12 @@ Vehicle.Root
 
 控制标签统一添加到 Pivot，不添加到 Mesh：
 
+`Vehicle_Root`、`Vehicle_Body` 是可在 Maya/FBX 中稳定往返的节点名；表格中的点号字符串是 UE ComponentTag，不是 DCC 节点名。
+
 | Pivot | ComponentTag |
 |---|---|
-| Root | `Vehicle.Root` |
-| Body | `Vehicle.Body` |
+| `Vehicle_Root` | `Vehicle.Root` |
+| `Vehicle_Body` | `Vehicle.Body` |
 | 左前门 | `Vehicle.Part.Door.FrontLeft` |
 | 机盖 | `Vehicle.Part.Hood` |
 | 后备箱 | `Vehicle.Part.Trunk` |

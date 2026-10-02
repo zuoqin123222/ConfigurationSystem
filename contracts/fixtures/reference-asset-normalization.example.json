@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "maya-fbx-normalization",
+  "jobId": "demo-car-maya2025-normalization",
+  "assetId": "demo-car-reference",
+  "provenance": {
+    "rightsHolder": "Example Motors",
+    "licenseId": "example-evaluation-license",
+    "permittedUses": ["normalize", "unreal-import", "render"]
+  },
+  "input": {
+    "path": "input/demo-car-exported.fbx",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "bytes": 31800000
+  },
+  "output": {
+    "path": "output/demo-car-normalized.fbx",
+    "overwrite": false
+  },
+  "normalization": {
+    "mayaVersion": "2025",
+    "sceneUnit": "centimeter",
+    "upAxis": "+Z",
+    "fbxFileVersion": "FBX202000",
+    "binary": true,
+    "freezeRotationAndScale": true,
+    "removeCamerasAndLights": true,
+    "triangulate": false,
+    "rootNode": "Vehicle_Root",
+    "nodeRenames": [
+      {
+        "from": "CarRoot",
+        "to": "Vehicle_Root"
+      }
+    ]
+  }
+}

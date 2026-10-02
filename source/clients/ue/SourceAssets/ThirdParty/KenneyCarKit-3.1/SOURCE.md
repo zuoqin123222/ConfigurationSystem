@@ -39,7 +39,7 @@ Do not move these assets into a production namespace until the following work is
 complete:
 
 - Rotate/re-export to `+X` forward, `+Y` right, `+Z` up, centimeters.
-- Build the required `Vehicle.Root` and `Vehicle.Body` hierarchy.
+- Build the required `Vehicle_Root` and `Vehicle_Body` DCC hierarchy, then assign the `Vehicle.Root` and `Vehicle.Body` ComponentTags after Unreal import.
 - Separate body paint, glass, lights, interior, frame, tire, and wheel-rim slots.
 - Add door, hood, trunk, steering, and wheel-spin pivots.
 - Regenerate smoothing groups and non-degenerate tangents.

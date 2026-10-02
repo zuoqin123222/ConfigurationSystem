@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSidecarFixtures } from "./validate-vehicle-sidecars.mjs";
 import { validateContentPackManifest } from "./validate-content-pack.mjs";
+import { validateSourceAssets } from "./validate-source-assets.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const schemaDir = resolve(root, "contracts", "schemas");
@@ -46,7 +47,8 @@ const schemaNames = [
   "bake-manifest.schema.json",
   "vehicle-model-sidecar.schema.json",
   "vehicle-animation-sidecar.schema.json",
-  "content-pack-manifest.schema.json"
+  "content-pack-manifest.schema.json",
+  "reference-asset-normalization.schema.json"
 ];
 
 for (const name of schemaNames) {
@@ -363,10 +365,43 @@ try {
   failures.push(`content-pack fixture 验证失败 (${error.message})`);
 }
 
+try {
+  const referenceJob = await readJson(
+    resolve(fixtureDir, "reference-asset-normalization.example.json")
+  );
+  check(referenceJob.schemaVersion === "1.0.0", "参考资产清单仅支持 schemaVersion 1.0.0");
+  check(referenceJob.kind === "maya-fbx-normalization", "参考资产清单 kind 错误");
+  check(
+    referenceJob.normalization?.mayaVersion === "2025"
+      && referenceJob.normalization?.sceneUnit === "centimeter"
+      && referenceJob.normalization?.upAxis === "+Z"
+      && referenceJob.normalization?.fbxFileVersion === "FBX202000"
+      && referenceJob.normalization?.binary === true,
+    "参考资产清单必须冻结 Maya 2025、厘米、Z Up 与二进制 FBX 2020"
+  );
+  check(
+    referenceJob.output?.overwrite === false
+      && referenceJob.input?.path !== referenceJob.output?.path,
+    "参考资产清单必须禁止覆盖输入 FBX"
+  );
+  check(
+    referenceJob.provenance?.permittedUses?.includes("normalize")
+      && referenceJob.provenance?.permittedUses?.includes("unreal-import"),
+    "参考资产清单必须具备规范化与 Unreal 导入授权"
+  );
+} catch (error) {
+  failures.push(`参考资产规范化示例验证失败 (${error.message})`);
+}
+
+const sourceAssetsResult = await validateSourceAssets(
+  resolve(root, "source", "clients", "ue", "SourceAssets")
+);
+failures.push(...sourceAssetsResult.errors);
+
 if (failures.length > 0) {
   console.error(`契约验证失败（${failures.length} 项）：`);
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log("契约验证通过：6 个 Schema JSON、content-pack manifest 正反 fixture、P0-3 manifest 结构、2 类车辆 sidecar、2 个有效与 2 个无效 fixture、8 个选项、2 个模板、16 个唯一组合、4 个视角、64 个图片期望。");
+  console.log("契约验证通过：7 个 Schema JSON、参考资产规范化示例、content-pack manifest 正反 fixture、P0-3 manifest 结构、2 类车辆 sidecar、2 个有效与 2 个无效 fixture、8 个选项、2 个模板、16 个唯一组合、4 个视角、64 个图片期望。");
 }

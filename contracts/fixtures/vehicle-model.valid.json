@@ -27,65 +27,65 @@
   },
   "nodes": [
     {
-      "name": "Vehicle.Root",
+      "name": "Vehicle_Root",
       "type": "root",
       "parent": null,
       "tags": ["Vehicle.Root"],
       "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
-      "name": "Vehicle.Body",
+      "name": "Vehicle_Body",
       "type": "body",
-      "parent": "Vehicle.Root",
+      "parent": "Vehicle_Root",
       "tags": ["Vehicle.Body"],
       "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
       "name": "DoorPivot_FL",
       "type": "pivot",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": ["Vehicle.Part.Door.FrontLeft"],
       "transform": { "translationCm": [82, -71, 86], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
       "name": "HoodPivot",
       "type": "pivot",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": ["Vehicle.Part.Hood"],
       "transform": { "translationCm": [116, 0, 91], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
       "name": "TrunkPivot",
       "type": "pivot",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": ["Vehicle.Part.Trunk"],
       "transform": { "translationCm": [-122, 0, 88], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
       "name": "WheelPivot_FL",
       "type": "pivot",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": ["Vehicle.Part.Wheel.FrontLeft"],
       "transform": { "translationCm": [132, -78, 34], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
       "name": "WheelPivot_FR",
       "type": "pivot",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": ["Vehicle.Part.Wheel.FrontRight"],
       "transform": { "translationCm": [132, 78, 34], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
       "name": "WheelPivot_RL",
       "type": "pivot",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": ["Vehicle.Part.Wheel.RearLeft"],
       "transform": { "translationCm": [-126, -78, 34], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
       "name": "WheelPivot_RR",
       "type": "pivot",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": ["Vehicle.Part.Wheel.RearRight"],
       "transform": { "translationCm": [-126, 78, 34], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
@@ -141,21 +141,21 @@
     {
       "name": "BodyMesh",
       "type": "mesh",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": [],
       "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
       "name": "InteriorMesh",
       "type": "mesh",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": [],
       "transform": { "translationCm": [0, 0, 72], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     },
     {
       "name": "FrameMesh",
       "type": "mesh",
-      "parent": "Vehicle.Body",
+      "parent": "Vehicle_Body",
       "tags": [],
       "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
     }

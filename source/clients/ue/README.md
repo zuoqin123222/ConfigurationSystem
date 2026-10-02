@@ -15,6 +15,10 @@ Windows 桌面客户端基于 Unreal Engine 5.8，以 Runtime C++ 模块 `Config
 
 当前目录数据仍由程序化探针构造；正式材质 Data Asset 接入后，应从 Asset Manager 生成初始化数据，不得在 UMG 中复制价格或配置键规则。
 
+`SourceAssets/` 仅用于有授权和来源记录的源侧参考文件，不是 Unreal `Content/`。提交前必须运行
+`node tools/validate-source-assets.mjs`，确保其中没有 `.uasset`、`.umap` 或 `.tps`；完整规则见
+`docs/REFERENCE_ASSET_POLICY.md`。
+
 ## 验证
 
 ```powershell
