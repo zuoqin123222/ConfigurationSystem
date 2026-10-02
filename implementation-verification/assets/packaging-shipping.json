@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 2,
+	"engineVersion": "5.8.1-56057345+++UE5+Release-5.8",
+	"buildConfiguration": "Shipping",
+	"withEditor": false,
+	"success": true,
+	"failureReason": "",
+	"expectedMap": "/Game/Maps/L_ConfigProbe",
+	"loadedMap": "/Game/Maps/L_ConfigProbe",
+	"markerCount": 1,
+	"markerEqualsOne": true,
+	"cubeHardReferenceValid": true,
+	"requiresCookedData": true,
+	"mapLoadedFromCookedPackage": true,
+	"editorOnlyDataFilteredFromMap": true,
+	"editorModuleExists": false,
+	"editorModuleLoaded": false,
+	"editorBoundaryValid": true,
+	"expectedPrimaryAssetId": "PrimaryAssetProbe:DA_ProbeUnreferenced",
+	"enumeratedPrimaryAssetIds": [
+		"PrimaryAssetProbe:DA_ProbeUnreferenced"
+	],
+	"loadRequestCompleted": true,
+	"dataAssetLoaded": true,
+	"softTexturePath": "/Game/PrimaryAssetProbe/T_ProbeUnreferenced.T_ProbeUnreferenced",
+	"softTextureLoaded": true
+}
