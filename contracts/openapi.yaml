@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: Configuration System MVP API
-  version: 1.0.0
-  description: 批次 0 的 catalog、图片解析和静态渲染契约。发布图片遵循 bake manifest 的 P0-3 path-tracing 与 straight Alpha 处理约束。
+  title: Configuration System API
+  version: 2.0.0
+  description: 保留 v1 发布图片链，并提供消费根 contracts SC01 草案 fixture 的 v2 配置 API。
 servers:
   - url: /
 paths:
@@ -62,6 +62,144 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/VersionConflict"
+  /api/v2/catalog:
+    get:
+      operationId: getCatalogV2
+      summary: 获取 SC01 v2 草案目录
+      responses:
+        "200":
+          description: 根 contracts 中的 SC01 v2 catalog fixture
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas/catalog.v2.schema.json
+  /api/v2/configurations:
+    post:
+      operationId: createConfigurationV2
+      summary: 创建或幂等复用 SC01 v2 配置
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigurationWriteV2"
+      responses:
+        "201":
+          description: 配置已创建，revision 从 1 开始
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoredConfigurationV2"
+        "200":
+          description: 相同幂等键或相同稳定配置的重放结果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoredConfigurationV2"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/PriceBlocked"
+    get:
+      operationId: listOrGetConfigurationsV2
+      summary: 列出配置，或按 query 中的 configurationId 获取配置
+      parameters:
+        - name: configurationId
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ConfigurationIdV2"
+      responses:
+        "200":
+          description: 配置或配置列表
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateConfigurationV2
+      summary: 按请求体 configurationId 和 revision 更新配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigurationUpdateV2"
+      responses:
+        "200":
+          description: 更新成功，revision 加一
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoredConfigurationV2"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/RevisionConflict"
+        "422":
+          $ref: "#/components/responses/PriceBlocked"
+  /api/v2/configurations/{configurationId}:
+    parameters:
+      - $ref: "#/components/parameters/ConfigurationIdV2"
+    get:
+      operationId: getConfigurationV2
+      summary: 获取单个 SC01 v2 配置
+      responses:
+        "200":
+          description: 已保存配置
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoredConfigurationV2"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateConfigurationByIdV2
+      summary: 使用乐观 revision 更新 SC01 v2 配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigurationUpdateByIdV2"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoredConfigurationV2"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/RevisionConflict"
+        "422":
+          $ref: "#/components/responses/PriceBlocked"
+  /api/v2/renders/resolve:
+    post:
+      operationId: resolveRenderV2
+      summary: 从完整选择解析稳定 configurationId 与 renderKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveRenderRequestV2"
+      responses:
+        "200":
+          description: 渲染投影解析成功；SC01 草案不承诺已发布 imageUrl
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResolveRenderResponseV2"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/VersionConflict"
   /assets/renders/{publicationVersion}/{vehicleId}/{configurationKey}/{renderViewId}.png:
     get:
       operationId: getRender
@@ -89,6 +227,21 @@ paths:
           $ref: "#/components/responses/NotFound"
 components:
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: 同一键和同一规范配置返回原结果；同一键对应不同配置返回 409。
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    ConfigurationIdV2:
+      name: configurationId
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/ConfigurationIdV2"
     PublicationVersion:
       name: publicationVersion
       in: path
@@ -114,6 +267,138 @@ components:
       schema:
         $ref: "#/components/schemas/RenderViewId"
   schemas:
+    ConfigurationIdV2:
+      type: string
+      pattern: ^cfg-[a-f0-9]{24}$
+    SelectionsV2:
+      type: object
+      additionalProperties: false
+      required:
+        [exterior-body-cover, wheel-material, steering-wheel-skin]
+      properties:
+        exterior-body-cover:
+          $ref: "#/components/schemas/StableId"
+        wheel-material:
+          $ref: "#/components/schemas/StableId"
+        steering-wheel-skin:
+          $ref: "#/components/schemas/StableId"
+    ConfigurationWriteV2:
+      type: object
+      additionalProperties: false
+      required: [catalogVersion, vehicleId, selections]
+      properties:
+        catalogVersion:
+          $ref: "#/components/schemas/StableId"
+        vehicleId:
+          $ref: "#/components/schemas/StableId"
+        selections:
+          $ref: "#/components/schemas/SelectionsV2"
+        quoteRequested:
+          type: boolean
+          default: false
+          description: SC01 draft 为 true 时返回 422，不生成伪报价。
+    ConfigurationUpdateV2:
+      type: object
+      additionalProperties: false
+      required:
+        [configurationId, revision, catalogVersion, vehicleId, selections]
+      properties:
+        configurationId:
+          $ref: "#/components/schemas/ConfigurationIdV2"
+        revision:
+          type: integer
+          minimum: 1
+        catalogVersion:
+          $ref: "#/components/schemas/StableId"
+        vehicleId:
+          $ref: "#/components/schemas/StableId"
+        selections:
+          $ref: "#/components/schemas/SelectionsV2"
+        quoteRequested:
+          type: boolean
+          default: false
+    ConfigurationUpdateByIdV2:
+      type: object
+      additionalProperties: false
+      required: [revision, catalogVersion, vehicleId, selections]
+      properties:
+        configurationId:
+          $ref: "#/components/schemas/ConfigurationIdV2"
+        revision:
+          type: integer
+          minimum: 1
+        catalogVersion:
+          $ref: "#/components/schemas/StableId"
+        vehicleId:
+          $ref: "#/components/schemas/StableId"
+        selections:
+          $ref: "#/components/schemas/SelectionsV2"
+        quoteRequested:
+          type: boolean
+          default: false
+    StoredConfigurationV2:
+      type: object
+      additionalProperties: false
+      required:
+        [schemaVersion, catalogVersion, vehicleId, configurationId, renderKey,
+         selections, revision, priceResult, createdAt, updatedAt]
+      properties:
+        schemaVersion:
+          const: 2.0.0
+        catalogVersion:
+          $ref: "#/components/schemas/StableId"
+        vehicleId:
+          $ref: "#/components/schemas/StableId"
+        configurationId:
+          $ref: "#/components/schemas/ConfigurationIdV2"
+        renderKey:
+          type: string
+          pattern: ^[a-z0-9-]+__[a-z0-9-]+__render-[a-f0-9]{24}$
+        selections:
+          $ref: "#/components/schemas/SelectionsV2"
+        revision:
+          type: integer
+          minimum: 1
+        priceResult:
+          $ref: ./schemas/price-result.v2.schema.json
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ResolveRenderRequestV2:
+      type: object
+      additionalProperties: false
+      required: [catalogVersion, vehicleId, selections]
+      properties:
+        catalogVersion:
+          $ref: "#/components/schemas/StableId"
+        vehicleId:
+          $ref: "#/components/schemas/StableId"
+        selections:
+          $ref: "#/components/schemas/SelectionsV2"
+        renderViewId:
+          $ref: "#/components/schemas/StableId"
+    ResolveRenderResponseV2:
+      type: object
+      additionalProperties: false
+      required:
+        [schemaVersion, catalogVersion, vehicleId, configurationId, renderKey]
+      properties:
+        schemaVersion:
+          const: 2.0.0
+        catalogVersion:
+          $ref: "#/components/schemas/StableId"
+        vehicleId:
+          $ref: "#/components/schemas/StableId"
+        configurationId:
+          $ref: "#/components/schemas/ConfigurationIdV2"
+        renderKey:
+          type: string
+          pattern: ^[a-z0-9-]+__[a-z0-9-]+__render-[a-f0-9]{24}$
+        renderViewId:
+          $ref: "#/components/schemas/StableId"
     StableId:
       type: string
       pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
@@ -191,6 +476,24 @@ components:
             $ref: "#/components/schemas/Error"
     VersionConflict:
       description: 客户端版本与当前发布版本冲突
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: catalog 版本或幂等键冲突
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RevisionConflict:
+      description: 客户端 revision 不是当前 revision
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    PriceBlocked:
+      description: SC01 draft 金额未确认，quoteAllowed=false，禁止报价
       content:
         application/json:
           schema:

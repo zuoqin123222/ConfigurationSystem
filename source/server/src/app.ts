@@ -14,6 +14,17 @@ import {
   resolveConfiguration,
   type ContractData,
 } from "./data.js";
+import {
+  ConfigurationStoreV2,
+  type StoredConfigurationV2,
+} from "./configuration-store-v2.js";
+import {
+  assertSc01Version,
+  buildSc01PriceResult,
+  deriveSc01Configuration,
+  loadSc01V2,
+  type Sc01V2Data,
+} from "./sc01-v2.js";
 
 export interface BuildAppOptions {
   contractRoot?: string;
@@ -21,12 +32,50 @@ export interface BuildAppOptions {
   manifestPath?: string;
   bake?: ValidatedBakeManifest;
   data?: ContractData;
+  sc01V2?: Sc01V2Data;
+  configurationStoreV2?: ConfigurationStoreV2;
 }
 
 const STABLE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function assertFields(
+  value: unknown,
+  required: readonly string[],
+  optional: readonly string[] = [],
+): asserts value is Record<string, unknown> {
+  if (!isRecord(value)) {
+    throw new RequestError(400, "INVALID_REQUEST", "请求体必须是 JSON 对象");
+  }
+  const allowed = new Set([...required, ...optional]);
+  if (
+    !required.every((field) => Object.hasOwn(value, field)) ||
+    Object.keys(value).some((field) => !allowed.has(field))
+  ) {
+    throw new RequestError(400, "INVALID_REQUEST", "请求体字段不符合接口契约");
+  }
+}
+
+function readRevision(value: unknown): number {
+  if (!Number.isInteger(value) || (value as number) < 1) {
+    throw new RequestError(400, "INVALID_REVISION", "revision 必须是正整数");
+  }
+  return value as number;
+}
+
+function readIdempotencyKey(value: string | string[] | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  if (Array.isArray(value) || value.length < 1 || value.length > 128) {
+    throw new RequestError(
+      400,
+      "INVALID_IDEMPOTENCY_KEY",
+      "Idempotency-Key 必须是 1 到 128 个字符",
+    );
+  }
+  return value;
 }
 
 function defaultBakeRoot(publicationVersion: string): string {
@@ -98,6 +147,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     logger: false,
   });
   const data = options.data ?? loadContracts(options.contractRoot);
+  const sc01V2 = options.sc01V2 ?? loadSc01V2(options.contractRoot);
+  const configurationStoreV2 =
+    options.configurationStoreV2 ?? new ConfigurationStoreV2();
   const bakeRoot = resolve(
     options.bakeRoot ?? defaultBakeRoot(data.publication.publicationVersion),
   );
@@ -153,6 +205,186 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   }));
 
   app.get("/api/v1/catalog", async () => data.catalog);
+
+  app.get("/api/v2/catalog", async () => sc01V2.catalog);
+
+  app.post("/api/v2/configurations", async (request, reply) => {
+    const body = request.body;
+    assertFields(
+      body,
+      ["catalogVersion", "vehicleId", "selections"],
+      ["quoteRequested"],
+    );
+    assertSc01Version(body.catalogVersion, body.vehicleId, sc01V2);
+    if (
+      Object.hasOwn(body, "quoteRequested") &&
+      typeof body.quoteRequested !== "boolean"
+    ) {
+      throw new RequestError(
+        400,
+        "INVALID_REQUEST",
+        "quoteRequested 必须是 boolean",
+      );
+    }
+    const configuration = deriveSc01Configuration(body.selections, sc01V2);
+    const priceResult = buildSc01PriceResult(configuration, sc01V2);
+    if (body.quoteRequested === true) {
+      return reply.status(422).send({
+        code: "PRICE_UNCONFIRMED",
+        message: "SC01 草案价格未确认，禁止报价",
+        details: priceResult,
+      });
+    }
+
+    const idempotencyKey = readIdempotencyKey(
+      request.headers["idempotency-key"],
+    );
+    const created = configurationStoreV2.create(
+      configuration,
+      priceResult,
+      idempotencyKey,
+    );
+    return reply
+      .status(created.replayed ? 200 : 201)
+      .header(
+        "Location",
+        `/api/v2/configurations/${created.configuration.configurationId}`,
+      )
+      .header("ETag", `"${created.configuration.revision}"`)
+      .header("Idempotency-Replayed", String(created.replayed))
+      .send(created.configuration);
+  });
+
+  app.get<{
+    Querystring: { configurationId?: string };
+  }>("/api/v2/configurations", async (request) => {
+    const { configurationId } = request.query;
+    if (configurationId === undefined) {
+      return { items: configurationStoreV2.list() };
+    }
+    const configuration = configurationStoreV2.get(configurationId);
+    if (!configuration) {
+      throw new RequestError(404, "CONFIGURATION_NOT_FOUND", "配置不存在");
+    }
+    return configuration;
+  });
+
+  app.get<{ Params: { configurationId: string } }>(
+    "/api/v2/configurations/:configurationId",
+    async (request, reply) => {
+      const configuration = configurationStoreV2.get(
+        request.params.configurationId,
+      );
+      if (!configuration) {
+        throw new RequestError(404, "CONFIGURATION_NOT_FOUND", "配置不存在");
+      }
+      return reply
+        .header("ETag", `"${configuration.revision}"`)
+        .send(configuration);
+    },
+  );
+
+  async function updateV2Configuration(
+    configurationId: string,
+    body: unknown,
+  ): Promise<StoredConfigurationV2> {
+    assertFields(body, [
+      "catalogVersion",
+      "vehicleId",
+      "selections",
+      "revision",
+    ], ["configurationId", "quoteRequested"]);
+    if (
+      Object.hasOwn(body, "configurationId") &&
+      body.configurationId !== configurationId
+    ) {
+      throw new RequestError(
+        400,
+        "INVALID_REQUEST",
+        "路径与请求体 configurationId 不一致",
+      );
+    }
+    assertSc01Version(body.catalogVersion, body.vehicleId, sc01V2);
+    const revision = readRevision(body.revision);
+    const configuration = deriveSc01Configuration(body.selections, sc01V2);
+    const priceResult = buildSc01PriceResult(configuration, sc01V2);
+    if (body.quoteRequested === true) {
+      throw new RequestError(
+        422,
+        "PRICE_UNCONFIRMED",
+        "SC01 草案价格未确认，禁止报价",
+      );
+    }
+    return configurationStoreV2.update(
+      configurationId,
+      revision,
+      configuration,
+      priceResult,
+    );
+  }
+
+  app.put("/api/v2/configurations", async (request, reply) => {
+    if (!isRecord(request.body) || typeof request.body.configurationId !== "string") {
+      throw new RequestError(
+        400,
+        "INVALID_REQUEST",
+        "configurationId 必须是字符串",
+      );
+    }
+    const updated = await updateV2Configuration(
+      request.body.configurationId,
+      request.body,
+    );
+    return reply
+      .header("Location", `/api/v2/configurations/${updated.configurationId}`)
+      .header("ETag", `"${updated.revision}"`)
+      .send(updated);
+  });
+
+  app.put<{ Params: { configurationId: string } }>(
+    "/api/v2/configurations/:configurationId",
+    async (request, reply) => {
+      const updated = await updateV2Configuration(
+        request.params.configurationId,
+        request.body,
+      );
+      return reply
+        .header("Location", `/api/v2/configurations/${updated.configurationId}`)
+        .header("ETag", `"${updated.revision}"`)
+        .send(updated);
+    },
+  );
+
+  app.post("/api/v2/renders/resolve", async (request) => {
+    const body = request.body;
+    assertFields(
+      body,
+      ["catalogVersion", "vehicleId", "selections"],
+      ["renderViewId"],
+    );
+    assertSc01Version(body.catalogVersion, body.vehicleId, sc01V2);
+    if (
+      Object.hasOwn(body, "renderViewId") &&
+      typeof body.renderViewId !== "string"
+    ) {
+      throw new RequestError(
+        400,
+        "INVALID_REQUEST",
+        "renderViewId 必须是字符串",
+      );
+    }
+    const configuration = deriveSc01Configuration(body.selections, sc01V2);
+    return {
+      schemaVersion: configuration.schemaVersion,
+      catalogVersion: configuration.catalogVersion,
+      vehicleId: configuration.vehicleId,
+      configurationId: configuration.configurationId,
+      renderKey: configuration.renderKey,
+      ...(body.renderViewId === undefined
+        ? {}
+        : { renderViewId: body.renderViewId }),
+    };
+  });
 
   app.post("/api/v1/renders/resolve", async (request) => {
     const body = request.body;
