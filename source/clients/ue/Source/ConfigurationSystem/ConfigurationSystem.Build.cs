@@ -15,6 +15,10 @@ public class ConfigurationSystem : ModuleRules
 				"AssetRegistry",
 				"InputCore",
 				"EnhancedInput",
+				// 首个可运行原子阶段的纯 C++ 配置面板。
+				"UMG",
+				"Slate",
+				"SlateCore",
 				// Runtime Path Tracing 探针只依赖公开的 RHI/RenderCore 接口。
 				"RHI",
 				"RenderCore",

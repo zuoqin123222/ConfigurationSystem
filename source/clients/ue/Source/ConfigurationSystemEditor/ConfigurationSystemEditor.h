@@ -21,9 +21,11 @@ private:
 	void RunAdminImportProbe();
 	void CreatePrimaryAssetProbeAssets();
 	void CreatePackagingProbeMap();
+	void CreateConfigShowroomMap();
 
 	IConsoleObject* CreateAssetsCommand = nullptr;
 	IConsoleObject* CreateProjectMapCommand = nullptr;
+	IConsoleObject* CreateShowroomMapCommand = nullptr;
 	IConsoleObject* AdminImportProbeCommand = nullptr;
 	FTSTicker::FDelegateHandle AdminImportProbeTickerHandle;
 	bool bMenusRegistered = false;

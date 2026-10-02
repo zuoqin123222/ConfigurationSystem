@@ -2,9 +2,22 @@
 
 #include "AdminImportPreflight.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
+#include "ConfigShowroomGameMode.h"
+#include "ConfiguratorVehicleActor.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/SkyLightComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Editor.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/PointLight.h"
+#include "Engine/SkyLight.h"
+#include "Engine/StaticMeshActor.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
+#include "GameFramework/WorldSettings.h"
 #include "EngineUtils.h"
 #include "FileHelpers.h"
 #include "Framework/Docking/TabManager.h"
@@ -31,6 +44,7 @@ namespace PrimaryAssetProbeEditor
 	constexpr TCHAR DataPackageName[] = TEXT("/Game/PrimaryAssetProbe/DA_ProbeUnreferenced");
 	constexpr TCHAR DataAssetName[] = TEXT("DA_ProbeUnreferenced");
 	constexpr TCHAR ProbeMapPackageName[] = TEXT("/Game/Maps/L_ConfigProbe");
+	constexpr TCHAR ShowroomMapPackageName[] = TEXT("/Game/Maps/L_ConfigShowroom");
 
 	template <typename AssetType>
 	AssetType* LoadOrCreateAsset(const TCHAR* PackageName, const TCHAR* AssetName, bool& bWasCreated)
@@ -59,6 +73,42 @@ namespace PrimaryAssetProbeEditor
 			Package->GetName(),
 			FPackageName::GetAssetPackageExtension());
 		return UPackage::SavePackage(Package, Asset, *Filename, SaveArgs);
+	}
+
+	template <typename ActorType>
+	ActorType* FindOrSpawnActor(
+		UWorld* World,
+		const TCHAR* StableLabel,
+		const FTransform& Transform)
+	{
+		ActorType* Result = nullptr;
+		for (TActorIterator<ActorType> It(World); It; ++It)
+		{
+			if (It->GetActorLabel() == StableLabel)
+			{
+				if (Result == nullptr)
+				{
+					Result = *It;
+				}
+				else
+				{
+					World->EditorDestroyActor(*It, false);
+				}
+			}
+		}
+		if (Result == nullptr)
+		{
+			Result = World->SpawnActor<ActorType>(
+				ActorType::StaticClass(),
+				Transform.GetLocation(),
+				Transform.Rotator());
+		}
+		if (Result != nullptr)
+		{
+			Result->SetActorLabel(StableLabel);
+			Result->SetActorTransform(Transform);
+		}
+		return Result;
 	}
 }
 
@@ -97,6 +147,12 @@ void FConfigurationSystemEditorModule::StartupModule()
 		TEXT("PackagingProbe.CreateProjectMap"),
 		TEXT("幂等创建、刷新并保存 /Game/Maps/L_ConfigProbe，确保仅放置一个 Runtime marker。"),
 		FConsoleCommandDelegate::CreateRaw(this, &FConfigurationSystemEditorModule::CreatePackagingProbeMap),
+		ECVF_Default);
+
+	CreateShowroomMapCommand = IConsoleManager::Get().RegisterConsoleCommand(
+		TEXT("ConfigurationSystem.CreateShowroomMap"),
+		TEXT("幂等创建/刷新 /Game/Maps/L_ConfigShowroom，并设置占位车、地台、灯光和默认相机。"),
+		FConsoleCommandDelegate::CreateRaw(this, &FConfigurationSystemEditorModule::CreateConfigShowroomMap),
 		ECVF_Default);
 
 	AdminImportProbeCommand = IConsoleManager::Get().RegisterConsoleCommand(
@@ -138,6 +194,12 @@ void FConfigurationSystemEditorModule::ShutdownModule()
 	{
 		IConsoleManager::Get().UnregisterConsoleObject(CreateProjectMapCommand);
 		CreateProjectMapCommand = nullptr;
+	}
+
+	if (CreateShowroomMapCommand != nullptr)
+	{
+		IConsoleManager::Get().UnregisterConsoleObject(CreateShowroomMapCommand);
+		CreateShowroomMapCommand = nullptr;
 	}
 
 	if (AdminImportProbeCommand != nullptr)
@@ -370,5 +432,110 @@ void FConfigurationSystemEditorModule::CreatePackagingProbeMap()
 	else
 	{
 		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("打包探针地图保存失败。"));
+	}
+}
+
+void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
+{
+	using namespace PrimaryAssetProbeEditor;
+
+	UWorld* World = nullptr;
+	FString ExistingFilename;
+	if (FPackageName::DoesPackageExist(ShowroomMapPackageName, &ExistingFilename))
+	{
+		World = UEditorLoadingAndSavingUtils::LoadMap(ExistingFilename);
+	}
+	else
+	{
+		World = UEditorLoadingAndSavingUtils::NewBlankMap(false);
+	}
+	if (World == nullptr)
+	{
+		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("无法创建或载入展厅地图。"));
+		return;
+	}
+
+	World->GetWorldSettings()->DefaultGameMode = AConfigShowroomGameMode::StaticClass();
+
+	AConfiguratorVehicleActor* Vehicle = FindOrSpawnActor<AConfiguratorVehicleActor>(
+		World,
+		TEXT("ConfiguratorPlaceholderVehicle_TEMP"),
+		FTransform(FRotator::ZeroRotator, FVector::ZeroVector));
+
+	AStaticMeshActor* Floor = FindOrSpawnActor<AStaticMeshActor>(
+		World,
+		TEXT("ShowroomFloor_TEMP"),
+		FTransform(FRotator::ZeroRotator, FVector(0.0, 0.0, -20.0), FVector(18.0, 18.0, 0.2)));
+	if (Floor != nullptr)
+	{
+		UStaticMesh* Cube = LoadObject<UStaticMesh>(
+			nullptr,
+			TEXT("/Engine/BasicShapes/Cube.Cube"));
+		Floor->GetStaticMeshComponent()->SetStaticMesh(Cube);
+		Floor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Static);
+		Floor->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
+	}
+
+	ACameraActor* Camera = FindOrSpawnActor<ACameraActor>(
+		World,
+		TEXT("ShowroomCamera"),
+		FTransform(FRotator(-14.0, -150.0, 0.0), FVector(920.0, 520.0, 310.0)));
+	if (Camera != nullptr)
+	{
+		Camera->GetCameraComponent()->SetFieldOfView(42.0f);
+		Camera->Tags.AddUnique(TEXT("Configurator.ShowroomCamera"));
+	}
+
+	ADirectionalLight* KeyLight = FindOrSpawnActor<ADirectionalLight>(
+		World,
+		TEXT("ShowroomKeyLight_TEMP"),
+		FTransform(FRotator(-38.0, -32.0, 0.0), FVector::ZeroVector));
+	if (KeyLight != nullptr)
+	{
+		KeyLight->GetLightComponent()->SetIntensity(7.0f);
+		KeyLight->GetLightComponent()->SetLightColor(FLinearColor(1.0f, 0.92f, 0.8f));
+		KeyLight->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
+	}
+
+	APointLight* FillLight = FindOrSpawnActor<APointLight>(
+		World,
+		TEXT("ShowroomFillLight_TEMP"),
+		FTransform(FRotator::ZeroRotator, FVector(-250.0, -450.0, 380.0)));
+	if (FillLight != nullptr)
+	{
+		FillLight->PointLightComponent->SetIntensity(6500.0f);
+		FillLight->PointLightComponent->SetAttenuationRadius(1800.0f);
+		FillLight->PointLightComponent->SetLightColor(FLinearColor(0.55f, 0.68f, 1.0f));
+		FillLight->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
+	}
+
+	ASkyLight* SkyLight = FindOrSpawnActor<ASkyLight>(
+		World,
+		TEXT("ShowroomSkyLight_TEMP"),
+		FTransform::Identity);
+	if (SkyLight != nullptr)
+	{
+		SkyLight->GetLightComponent()->SetIntensity(0.8f);
+		SkyLight->GetLightComponent()->SetMobility(EComponentMobility::Movable);
+		SkyLight->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
+	}
+
+	const bool bComplete = Vehicle != nullptr
+		&& Floor != nullptr
+		&& Camera != nullptr
+		&& KeyLight != nullptr
+		&& FillLight != nullptr
+		&& SkyLight != nullptr;
+	if (bComplete && UEditorLoadingAndSavingUtils::SaveMap(World, ShowroomMapPackageName))
+	{
+		UE_LOG(
+			LogPrimaryAssetProbeEditor,
+			Display,
+			TEXT("展厅地图已幂等创建/刷新：%s（占位资源均标记为 TEMP）。"),
+			ShowroomMapPackageName);
+	}
+	else
+	{
+		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("展厅地图创建或保存失败。"));
 	}
 }
