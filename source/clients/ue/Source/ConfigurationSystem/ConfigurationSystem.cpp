@@ -19,6 +19,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "VehicleHierarchyProbe.h"
+#include "ConfigurationStateProbe.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogPrimaryAssetProbe, Log, All);
 
@@ -49,6 +50,14 @@ IMPLEMENT_PRIMARY_GAME_MODULE(
 void FConfigurationSystemModule::StartupModule()
 {
 	FDefaultGameModuleImpl::StartupModule();
+
+	if (FParse::Param(FCommandLine::Get(), TEXT("ConfigurationStateProbe")))
+	{
+		// 配置状态探针独占进程，完成纯数据检查并写出 JSON 后主动退出。
+		ConfigurationStateProbe = NewObject<UConfigurationStateProbe>();
+		ConfigurationStateProbe->Start();
+		return;
+	}
 
 	if (FParse::Param(FCommandLine::Get(), TEXT("VehicleHierarchyProbe")))
 	{
@@ -103,6 +112,13 @@ void FConfigurationSystemModule::StartupModule()
 
 void FConfigurationSystemModule::ShutdownModule()
 {
+	if (ConfigurationStateProbe != nullptr)
+	{
+		// 探针在请求退出前自行解除 Root；此时 UObject 数组可能已开始销毁，
+		// 模块关闭阶段不能再解引用该裸指针。
+		ConfigurationStateProbe = nullptr;
+	}
+
 	if (PackagingBoundaryProbe.IsValid())
 	{
 		PackagingBoundaryProbe->Shutdown();

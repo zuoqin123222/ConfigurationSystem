@@ -9,6 +9,7 @@ class FPathTracingProbe;
 class FPathTracingAlphaProbe;
 class FPackagingBoundaryProbe;
 class FVehicleHierarchyProbe;
+class UConfigurationStateProbe;
 
 /** 游戏模块，同时按命令行显式启用相互独立的 Runtime 技术探针。 */
 class FConfigurationSystemModule final : public FDefaultGameModuleImpl
@@ -33,4 +34,5 @@ private:
 	TSharedPtr<FPathTracingAlphaProbe> PathTracingAlphaProbe;
 	TSharedPtr<FPackagingBoundaryProbe> PackagingBoundaryProbe;
 	TSharedPtr<FVehicleHierarchyProbe> VehicleHierarchyProbe;
+	UConfigurationStateProbe* ConfigurationStateProbe = nullptr;
 };
