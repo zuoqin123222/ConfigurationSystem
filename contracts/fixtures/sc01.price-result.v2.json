@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "2.0.0",
+  "catalogVersion": "sc01-draft-20260121",
+  "vehicleId": "sc01",
+  "configurationId": "cfg-95c9a67d78364696f55a08dd",
+  "currency": "CNY",
+  "basePriceMinor": null,
+  "lineItems": [
+    {
+      "surfaceId": "exterior-body-cover",
+      "optionId": "body-cover-red",
+      "unitPriceMinor": null,
+      "quantity": null,
+      "subtotalMinor": null,
+      "priceStatus": "unconfirmed"
+    },
+    {
+      "surfaceId": "wheel-material",
+      "optionId": "wheel-aluminum-alloy",
+      "unitPriceMinor": null,
+      "quantity": null,
+      "subtotalMinor": null,
+      "priceStatus": "unconfirmed"
+    },
+    {
+      "surfaceId": "steering-wheel-skin",
+      "optionId": "steering-skin-ultrasuede-black",
+      "unitPriceMinor": null,
+      "quantity": null,
+      "subtotalMinor": null,
+      "priceStatus": "unconfirmed"
+    }
+  ],
+  "totalPriceMinor": null,
+  "quoteAllowed": false,
+  "blockingReasons": [
+    "BASE_PRICE_UNCONFIRMED",
+    "OPTION_PRICE_UNCONFIRMED",
+    "PRICE_UNCONFIRMED"
+  ]
+}

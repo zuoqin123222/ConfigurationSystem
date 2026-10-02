@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { validateSidecarFixtures } from "./validate-vehicle-sidecars.mjs";
 import { validateContentPackManifest } from "./validate-content-pack.mjs";
 import { validateSourceAssets } from "./validate-source-assets.mjs";
+import { validateSc01Fixtures } from "./validate-sc01-v2.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const schemaDir = resolve(root, "contracts", "schemas");
@@ -48,7 +49,10 @@ const schemaNames = [
   "vehicle-model-sidecar.schema.json",
   "vehicle-animation-sidecar.schema.json",
   "content-pack-manifest.schema.json",
-  "reference-asset-normalization.schema.json"
+  "reference-asset-normalization.schema.json",
+  "catalog.v2.schema.json",
+  "configuration.v2.schema.json",
+  "price-result.v2.schema.json"
 ];
 
 for (const name of schemaNames) {
@@ -393,6 +397,12 @@ try {
   failures.push(`参考资产规范化示例验证失败 (${error.message})`);
 }
 
+try {
+  await validateSc01Fixtures(root);
+} catch (error) {
+  failures.push(`SC01 v2 契约验证失败 (${error.message})`);
+}
+
 const sourceAssetsResult = await validateSourceAssets(
   resolve(root, "source", "clients", "ue", "SourceAssets")
 );
@@ -403,5 +413,5 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log("契约验证通过：7 个 Schema JSON、参考资产规范化示例、content-pack manifest 正反 fixture、P0-3 manifest 结构、2 类车辆 sidecar、2 个有效与 2 个无效 fixture、8 个选项、2 个模板、16 个唯一组合、4 个视角、64 个图片期望。");
+  console.log("契约验证通过：10 个 Schema JSON；v1 保持 8 个选项、2 个模板、16 个组合、4 个视角与 64 个图片期望；SC01 v2 草案通过有效/无效配置、禁止报价 price-result 与 2 个稳定身份黄金向量；参考资产、content-pack、P0-3 与车辆 sidecar 验证通过。");
 }

@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/catalog.v2.schema.json",
+  "title": "Configuration System Catalog v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "catalogVersion",
+    "lifecycle",
+    "currency",
+    "vehicle",
+    "selectionOrder",
+    "categories",
+    "components",
+    "surfaces",
+    "materialFamilies",
+    "options"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.0.0" },
+    "catalogVersion": { "$ref": "#/$defs/id" },
+    "lifecycle": { "const": "draft" },
+    "currency": { "const": "CNY" },
+    "vehicle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vehicleId", "displayName", "basePriceMinor", "priceStatus", "quotable"],
+      "properties": {
+        "vehicleId": { "$ref": "#/$defs/id" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "basePriceMinor": { "type": "null" },
+        "priceStatus": { "const": "unconfirmed" },
+        "quotable": { "const": false }
+      }
+    },
+    "selectionOrder": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/id" }
+    },
+    "categories": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/category" }
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/surface" }
+    },
+    "materialFamilies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/materialFamily" }
+    },
+    "options": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/option" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["documentId", "page", "locator"],
+      "properties": {
+        "documentId": { "$ref": "#/$defs/id" },
+        "page": { "type": "integer", "minimum": 1 },
+        "locator": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["categoryId", "displayName", "sourceRefs"],
+      "properties": {
+        "categoryId": { "$ref": "#/$defs/id" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["componentId", "categoryId", "displayName", "sourceRefs"],
+      "properties": {
+        "componentId": { "$ref": "#/$defs/id" },
+        "categoryId": { "$ref": "#/$defs/id" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        }
+      }
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surfaceId", "componentId", "displayName", "required", "sourceRefs"],
+      "properties": {
+        "surfaceId": { "$ref": "#/$defs/id" },
+        "componentId": { "$ref": "#/$defs/id" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "required": { "type": "boolean" },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        }
+      }
+    },
+    "materialFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["materialFamilyId", "displayName", "sourceRefs"],
+      "properties": {
+        "materialFamilyId": { "$ref": "#/$defs/id" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        }
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unitPriceMinor",
+        "quantity",
+        "pricingUnit",
+        "isStandard",
+        "status",
+        "quotable"
+      ],
+      "properties": {
+        "unitPriceMinor": { "type": "null" },
+        "quantity": {
+          "anyOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "null" }
+          ]
+        },
+        "pricingUnit": {
+          "enum": [
+            "per-vehicle",
+            "per-piece",
+            "per-pair",
+            "per-seat",
+            "per-set",
+            "percentage"
+          ]
+        },
+        "isStandard": { "type": "boolean" },
+        "status": { "const": "unconfirmed" },
+        "quotable": { "const": false }
+      }
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "optionId",
+        "surfaceId",
+        "materialFamilyId",
+        "displayName",
+        "colorCode",
+        "finish",
+        "renderRelevant",
+        "pricing",
+        "sourceRefs"
+      ],
+      "properties": {
+        "optionId": { "$ref": "#/$defs/id" },
+        "surfaceId": { "$ref": "#/$defs/id" },
+        "materialFamilyId": {
+          "anyOf": [
+            { "$ref": "#/$defs/id" },
+            { "type": "null" }
+          ]
+        },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "colorCode": {
+          "anyOf": [
+            { "$ref": "#/$defs/nonEmptyString" },
+            { "type": "null" }
+          ]
+        },
+        "finish": {
+          "anyOf": [
+            { "$ref": "#/$defs/nonEmptyString" },
+            { "type": "null" }
+          ]
+        },
+        "renderRelevant": { "type": "boolean" },
+        "pricing": { "$ref": "#/$defs/pricing" },
+        "sourceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceRef" }
+        }
+      }
+    }
+  }
+}

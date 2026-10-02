@@ -126,6 +126,24 @@ ueBinding
 
 这些字段确认前只进入草案 catalog，不进入正式报价或订单输出。
 
+## v2 契约原子阶段
+
+已新增独立的 SC01 v2 草案契约，不修改 v1：
+
+- `contracts/schemas/catalog.v2.schema.json`
+- `contracts/schemas/configuration.v2.schema.json`
+- `contracts/schemas/price-result.v2.schema.json`
+- `contracts/fixtures/sc01.catalog.draft.v2.json`
+- `contracts/fixtures/sc01.configuration.valid.v2.json`
+- `contracts/fixtures/sc01.configuration.invalid.v2.json`
+- `contracts/fixtures/sc01.price-result.v2.json`
+- `contracts/fixtures/sc01.identity-golden.v2.json`
+
+原子 fixture 只选取清单第 1 页可清晰复核的三个 surface，目的是冻结多层引用、
+稳定配置身份和价格阻断语义，不代表完整录入。所有金额字段为 `null`，
+`quoteAllowed=false`。逐字段来源见 [SOURCE_MAPPING_V2.md](SOURCE_MAPPING_V2.md)，
+字段与算法决策见 [FIELD_DECISIONS_V2.md](FIELD_DECISIONS_V2.md)。
+
 ## 当前界面证据
 
 Web 已切换为 `SC01` 技术预览，并在正式模型到位前强制显示代理资产声明：

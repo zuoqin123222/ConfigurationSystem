@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "2.0.0",
+  "algorithm": {
+    "canonicalEncoding": "UTF-8",
+    "canonicalLineSeparator": "LF",
+    "configurationId": "cfg- + first 24 lowercase hex characters of SHA-256(canonicalInput)",
+    "renderKey": "<vehicleId>__<catalogVersion>__render-<first 24 lowercase hex characters of SHA-256(canonicalRenderInput)>"
+  },
+  "vectors": [
+    {
+      "name": "standard-draft-selection",
+      "selections": {
+        "exterior-body-cover": "body-cover-red",
+        "wheel-material": "wheel-aluminum-alloy",
+        "steering-wheel-skin": "steering-skin-ultrasuede-black"
+      },
+      "canonicalInput": "schemaVersion=2.0.0\ncatalogVersion=sc01-draft-20260121\nvehicleId=sc01\nexterior-body-cover=body-cover-red\nwheel-material=wheel-aluminum-alloy\nsteering-wheel-skin=steering-skin-ultrasuede-black",
+      "canonicalRenderInput": "schemaVersion=2.0.0\ncatalogVersion=sc01-draft-20260121\nvehicleId=sc01\nexterior-body-cover=body-cover-red\nwheel-material=wheel-aluminum-alloy\nsteering-wheel-skin=steering-skin-ultrasuede-black",
+      "configurationId": "cfg-95c9a67d78364696f55a08dd",
+      "renderKey": "sc01__sc01-draft-20260121__render-95c9a67d78364696f55a08dd"
+    },
+    {
+      "name": "property-order-independent-selection",
+      "selections": {
+        "steering-wheel-skin": "steering-skin-alcantara",
+        "exterior-body-cover": "body-cover-yellow",
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "canonicalInput": "schemaVersion=2.0.0\ncatalogVersion=sc01-draft-20260121\nvehicleId=sc01\nexterior-body-cover=body-cover-yellow\nwheel-material=wheel-magnesium-alloy\nsteering-wheel-skin=steering-skin-alcantara",
+      "canonicalRenderInput": "schemaVersion=2.0.0\ncatalogVersion=sc01-draft-20260121\nvehicleId=sc01\nexterior-body-cover=body-cover-yellow\nwheel-material=wheel-magnesium-alloy\nsteering-wheel-skin=steering-skin-alcantara",
+      "configurationId": "cfg-54f0949d3f91542f20f35580",
+      "renderKey": "sc01__sc01-draft-20260121__render-54f0949d3f91542f20f35580"
+    }
+  ]
+}

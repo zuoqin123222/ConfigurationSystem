@@ -1,4 +1,4 @@
-# 批次 0 共享契约
+# 共享契约
 
 本目录冻结 MVP 三端共享的数据形状、稳定 ID、配置键、发布组合与 Server API。契约数据只描述产品配置；UE 环境、交互镜头、车门、灯光、轮胎等运行时状态不进入配置键。
 
@@ -11,12 +11,19 @@
 - `schemas/vehicle-animation-sidecar.schema.json`：动画 clip、目标节点、可逆性、模型引用、授权与动画 FBX 哈希。
 - `schemas/content-pack-manifest.schema.json`：Runtime 内容包版本、兼容目标、白名单挂载点、pak 大小/SHA-256 与 PrimaryAssetId。
 - `schemas/reference-asset-normalization.schema.json`：Maya 2025 对用户已导出 FBX 执行规范化的来源、输入、输出与固定参数。
+- `schemas/catalog.v2.schema.json`：SC01 的 category/component/surface/material/option 多层草案目录。
+- `schemas/configuration.v2.schema.json`：SC01 v2 完整选择及稳定 `configurationId`、`renderKey`。
+- `schemas/price-result.v2.schema.json`：未知金额保持 `null` 且禁止报价的价格结果。
 - `fixtures/catalog.mvp.json`：1 台车、4 个分区、每区 2 项、2 个模板。
 - `fixtures/published-configurations.mvp.json`：2×2×2×2 笛卡尔积和 4 个固定视角。
 - `fixtures/vehicle-*.valid.json`：可通过车辆 sidecar 契约的模型与动画样例。
 - `fixtures/vehicle-*.invalid.json`：验证器必须拒绝的负向样例。
 - `fixtures/content-pack.valid.json` / `content-pack.invalid.json`：内容包 manifest 正反样例。
 - `fixtures/reference-asset-normalization.example.json`：参考资产 FBX 规范化作业清单示例，不对应仓库内真实资产。
+- `fixtures/sc01.catalog.draft.v2.json`：只含来源可确认信息的 SC01 契约原子样本。
+- `fixtures/sc01.configuration.*.v2.json`：SC01 v2 有效与无效配置。
+- `fixtures/sc01.price-result.v2.json`：禁止报价的价格结果。
+- `fixtures/sc01.identity-golden.v2.json`：稳定配置身份与渲染键黄金向量。
 - `openapi.yaml`：health、catalog、resolve 与静态 render 接口。
 
 ## ID 与配置键
@@ -78,15 +85,34 @@ renders/<publicationVersion>/<vehicleId>/<configurationKey>/<renderViewId>.png
 - 新增可选字段属于向后兼容变更；删除字段、改名、改变含义或 ID 属于破坏性变更。
 - 已发布 ID 和版本目录不可原地复用；需要调整时发布新版本。
 
+## SC01 v2 契约原子阶段
+
+SC01 不复用 v1 的固定四分区和固定价差模型。v2 使用
+`category → component → surface → option`，并由 catalog 的
+`selectionOrder` 冻结身份计算顺序。`configurationId` 是规范输入 SHA-256
+摘要的截断标识。`renderKey` 使用独立的渲染规范输入，只包含当前
+`renderRelevant=true` 的选项，因此完整配置变化不一定要求生成新图片；
+`renderViewId` 不进入配置身份或渲染投影。
+
+当前 SC01 fixture 是 `draft`。来源清单中的金额尚未完成业务确认，因此基础价、
+单价、小计和总价均为 `null`，`quoteAllowed=false`。来源映射与字段理由见
+`docs/product-data/sc01/SOURCE_MAPPING_V2.md` 和
+`docs/product-data/sc01/FIELD_DECISIONS_V2.md`。
+
 ## 验证
 
 无需安装依赖，使用 Node.js 18 或更高版本：
 
 ```powershell
 node tools/validate-contracts.mjs
+node tools/validate-sc01-v2.mjs
+node --test tools/validate-sc01-v2.test.mjs
 ```
 
-验证器检查 7 个 Schema 文件是有效 JSON，检查参考资产规范化示例、bake manifest 的 P0-3 结构、content-pack manifest 正反样例、车辆模型与动画 sidecar 的 Schema 及跨文件语义，并检查 ID 与模板引用、UE PrimaryAssetId、预览图、价格、16 个唯一笛卡尔组合、canonical key、4 个视角和 64 个图片期望。
+聚合验证器检查 10 个 Schema 文件是有效 JSON，保留 v1 的 16 个唯一组合、
+4 个视角和 64 个图片期望，并验证 SC01 v2 的层级引用、正反配置、稳定身份
+黄金向量和禁止报价结果。它还覆盖参考资产规范化、P0-3、content-pack 与车辆
+sidecar。
 
 车辆 sidecar 也可单独验证：
 

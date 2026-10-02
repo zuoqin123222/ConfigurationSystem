@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "2.0.0",
+  "catalogVersion": "sc01-draft-20260121",
+  "vehicleId": "sc01",
+  "configurationId": "cfg-000000000000000000000000",
+  "renderKey": "sc01__sc01-draft-20260121__cfg-000000000000000000000000",
+  "selections": {
+    "exterior-body-cover": "wheel-magnesium-alloy",
+    "wheel-material": "wheel-option-not-in-catalog"
+  }
+}

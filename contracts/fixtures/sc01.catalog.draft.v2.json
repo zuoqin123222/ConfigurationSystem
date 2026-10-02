@@ -1,0 +1,383 @@
+{
+  "schemaVersion": "2.0.0",
+  "catalogVersion": "sc01-draft-20260121",
+  "lifecycle": "draft",
+  "currency": "CNY",
+  "vehicle": {
+    "vehicleId": "sc01",
+    "displayName": "SC01",
+    "basePriceMinor": null,
+    "priceStatus": "unconfirmed",
+    "quotable": false
+  },
+  "selectionOrder": [
+    "exterior-body-cover",
+    "wheel-material",
+    "steering-wheel-skin"
+  ],
+  "categories": [
+    {
+      "categoryId": "exterior",
+      "displayName": "外观",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "定制项目：外观"
+        }
+      ]
+    },
+    {
+      "categoryId": "steering-wheel",
+      "displayName": "方向盘",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "内饰部件：方向盘"
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "componentId": "body",
+      "categoryId": "exterior",
+      "displayName": "车身",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "车漆颜色 / 全车身覆盖件"
+        }
+      ]
+    },
+    {
+      "componentId": "wheel",
+      "categoryId": "exterior",
+      "displayName": "轮毂",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂 / 轮毂材质"
+        }
+      ]
+    },
+    {
+      "componentId": "steering-wheel",
+      "categoryId": "steering-wheel",
+      "displayName": "方向盘",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "方向盘"
+        }
+      ]
+    }
+  ],
+  "surfaces": [
+    {
+      "surfaceId": "exterior-body-cover",
+      "componentId": "body",
+      "displayName": "全车身覆盖件",
+      "required": true,
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "车漆颜色 / 全车身覆盖件"
+        }
+      ]
+    },
+    {
+      "surfaceId": "wheel-material",
+      "componentId": "wheel",
+      "displayName": "轮毂材质",
+      "required": true,
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂 / 轮毂材质"
+        }
+      ]
+    },
+    {
+      "surfaceId": "steering-wheel-skin",
+      "componentId": "steering-wheel",
+      "displayName": "表皮",
+      "required": true,
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "方向盘 / 表皮"
+        }
+      ]
+    }
+  ],
+  "materialFamilies": [
+    {
+      "materialFamilyId": "paint",
+      "displayName": "喷漆",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "车漆颜色"
+        }
+      ]
+    },
+    {
+      "materialFamilyId": "aluminum-alloy",
+      "displayName": "铝合金",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂材质 / 铝合金"
+        }
+      ]
+    },
+    {
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "镁合金",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂材质 / 镁合金"
+        }
+      ]
+    },
+    {
+      "materialFamilyId": "ultrasuede",
+      "displayName": "Ultrasuede",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "方向盘 / 表皮 / Ultrasuede"
+        }
+      ]
+    },
+    {
+      "materialFamilyId": "alcantara",
+      "displayName": "Alcantara",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "方向盘 / 表皮 / Alcantara"
+        }
+      ]
+    },
+    {
+      "materialFamilyId": "leather",
+      "displayName": "牛皮",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "方向盘 / 表皮 / 牛皮"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "optionId": "body-cover-red",
+      "surfaceId": "exterior-body-cover",
+      "materialFamilyId": "paint",
+      "displayName": "红色",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": null,
+        "pricingUnit": "per-vehicle",
+        "isStandard": true,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "车漆颜色 / 红色、黄色 / 标配"
+        }
+      ]
+    },
+    {
+      "optionId": "body-cover-yellow",
+      "surfaceId": "exterior-body-cover",
+      "materialFamilyId": "paint",
+      "displayName": "黄色",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": null,
+        "pricingUnit": "per-vehicle",
+        "isStandard": true,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "车漆颜色 / 红色、黄色 / 标配"
+        }
+      ]
+    },
+    {
+      "optionId": "wheel-aluminum-alloy",
+      "surfaceId": "wheel-material",
+      "materialFamilyId": "aluminum-alloy",
+      "displayName": "铝合金",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": null,
+        "pricingUnit": "per-piece",
+        "isStandard": true,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂材质 / 铝合金 / 标配"
+        }
+      ]
+    },
+    {
+      "optionId": "wheel-magnesium-alloy",
+      "surfaceId": "wheel-material",
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "镁合金",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": null,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂材质 / 镁合金"
+        }
+      ]
+    },
+    {
+      "optionId": "steering-skin-ultrasuede-black",
+      "surfaceId": "steering-wheel-skin",
+      "materialFamilyId": "ultrasuede",
+      "displayName": "Ultrasuede（黑）",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": null,
+        "pricingUnit": "per-piece",
+        "isStandard": true,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "方向盘 / 表皮 / Ultrasuede（黑） / 标配"
+        }
+      ]
+    },
+    {
+      "optionId": "steering-skin-ultrasuede-custom",
+      "surfaceId": "steering-wheel-skin",
+      "materialFamilyId": "ultrasuede",
+      "displayName": "Ultrasuede（色彩拓展）",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": null,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "方向盘 / 表皮 / Ultrasuede（色彩拓展）"
+        }
+      ]
+    },
+    {
+      "optionId": "steering-skin-alcantara",
+      "surfaceId": "steering-wheel-skin",
+      "materialFamilyId": "alcantara",
+      "displayName": "Alcantara",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": null,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "方向盘 / 表皮 / Alcantara"
+        }
+      ]
+    },
+    {
+      "optionId": "steering-skin-leather",
+      "surfaceId": "steering-wheel-skin",
+      "materialFamilyId": "leather",
+      "displayName": "牛皮",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": null,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "方向盘 / 表皮 / 牛皮"
+        }
+      ]
+    }
+  ]
+}

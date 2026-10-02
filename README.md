@@ -19,6 +19,7 @@
 - [DCC 车辆模型制作与导出指南](docs/DCC_VEHICLE_MODELING_EXPORT_GUIDE.md)
 - [参考资产政策](docs/REFERENCE_ASSET_POLICY.md)
 - [外部参考资产与 Maya 规范化验证](docs/technical-probes/REFERENCE_ASSET_PIPELINE.md)
+- [SC01 v2 契约验证](docs/technical-probes/SC01_V2_CONTRACT.md)
 - [Runtime 内容包契约与安全挂载](docs/CONTENT_PACK_RUNTIME.md)
 - [三端数据与 API 契约](contracts/README.md)
 - [MVP 可视化评审版](automotive-configurator-mvp-plan/automotive-configurator-mvp-plan.html)
@@ -59,7 +60,9 @@ ConfigurationSystem/
 node tools/validate-contracts.mjs
 ```
 
-验证器检查 Schema、车辆模型/动画 sidecar 的 UE 坐标、FBX 2020.2、节点与标签、Pivot、材质槽、LOD、动画、授权和 SHA-256 约束，以及产品 ID 与引用、canonical key、16 个唯一配置、4 个视角和 64 个图片期望。
+验证器检查 10 个 Schema、车辆模型/动画 sidecar，以及 v1 产品 ID、16 个唯一
+配置、4 个视角和 64 个图片期望；同时检查 SC01 v2 草案的多层引用、正反配置、
+稳定 `configurationId`/`renderKey` 黄金向量和禁止报价结果。
 
 车辆 sidecar 的独立验证和测试命令：
 
@@ -68,6 +71,7 @@ node tools/validate-vehicle-sidecars.mjs
 node --test tools/validate-vehicle-sidecars.test.mjs
 node --test tools/validate-content-pack.test.mjs
 node --test tools/validate-source-assets.test.mjs
+node --test tools/validate-sc01-v2.test.mjs
 node tools/validate-source-assets.mjs
 ```
 

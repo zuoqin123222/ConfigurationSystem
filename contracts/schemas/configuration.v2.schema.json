@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/configuration.v2.schema.json",
+  "title": "Configuration System Configuration v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "catalogVersion",
+    "vehicleId",
+    "configurationId",
+    "renderKey",
+    "selections"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.0.0" },
+    "catalogVersion": { "$ref": "#/$defs/id" },
+    "vehicleId": { "$ref": "#/$defs/id" },
+    "configurationId": {
+      "type": "string",
+      "pattern": "^cfg-[a-f0-9]{24}$"
+    },
+    "renderKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+__[a-z0-9-]+__render-[a-f0-9]{24}$"
+    },
+    "selections": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/id" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    }
+  }
+}

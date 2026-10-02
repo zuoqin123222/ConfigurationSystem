@@ -289,3 +289,46 @@ paint-red__wheel-sport__interior-dark__frame-black
 - Maya 工具只接受清单目录内、哈希匹配、用户明确提供的 FBX，不扫描外部样例工程。
 - 正式接入仍必须经过车辆 sidecar、管理员暂存导入、UE GUI 和 Shipping 内容包验证。
 - 平台功能继续使用自建或 CC0 代理资源开发，不以 Epic 样例为阻塞项。
+
+## ADR-009 SC01 使用 v2 多层契约与不可报价草案
+
+- 状态：已接受
+- 文档化日期：2026-10-03
+- 相关证据：`contracts/schemas/*.v2.schema.json`、`contracts/fixtures/sc01.*.v2.json`、`docs/product-data/sc01/FIELD_DECISIONS_V2.md`
+
+### 背景
+
+SC01 选配清单包含分类、部件、表面、材料、颜色、工艺、数量和计价单位，不能
+无损映射到 v1 的固定四分区与单一价差。来源表虽然显示部分金额，但基础车型价、
+税费、工时、有效期和审批状态尚未确认。直接改写 v1 会破坏现有三端自动化；
+把表内数字当报价则会制造未经确认的商业输出。
+
+### 决策
+
+保留 v1 文件、ID、16 个组合和 64 张图片约定。SC01 另用
+`schemaVersion=2.0.0`，目录关系为
+`category → component → surface → option`，option 可引用 material family。
+catalog 的 `selectionOrder` 是配置身份的唯一顺序来源。
+
+配置规范输入使用 UTF-8 与 LF，按固定头字段和 `selectionOrder` 逐行编码。
+`configurationId` 取 SHA-256 前 24 个十六进制字符并加 `cfg-`；
+`renderKey` 从独立的 `canonicalRenderInput` 计算，该输入只保留当前
+`renderRelevant=true` 的所选项。完整配置变化但渲染投影不变时复用图片；
+黄金向量冻结算法，JSON 属性顺序不得影响结果。
+
+SC01 处于 draft 时，所有基础价、单价、小计和总价必须为 `null`，
+`quoteAllowed` 必须为 `false`，阻断原因必须包含 `PRICE_UNCONFIRMED`。清单金额
+只有在业务确认口径和有效性后，才能通过新的 catalogVersion 进入报价。
+
+### 取舍
+
+并行主版本增加了消费者分派和迁移成本，但避免把 SC01 的层级压扁或破坏 v1。
+截断哈希便于跨端缓存和路径使用，但不承担签名或防篡改职责。草案不计算金额会
+限制当前演示范围，却能明确区分资料摘录与正式报价。
+
+### 后果
+
+- v1 和 v2 必须由聚合验证器同时校验，任何一侧失败都阻断变更。
+- SC01 字段必须带页级来源；无法确认的颜色适用关系、约束和价格不得推断。
+- UE、Web 与 Server 后续实现必须复用黄金向量验证身份算法。
+- 正式报价前需新增业务确认记录、发布新的 catalogVersion，并更新价格策略测试。

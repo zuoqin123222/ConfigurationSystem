@@ -3,6 +3,7 @@
   "vehicleId": "sc01",
   "documents": [
     {
+      "documentId": "sc01-configuration-list",
       "file": "source/SC01-定制选配清单.pdf",
       "sha256": "3e8cf34193b884aadd3dcfa07d80a6808ca1998be022b8adab833aef508f4496",
       "pages": 4,
@@ -11,6 +12,7 @@
       "status": "visual-review-required"
     },
     {
+      "documentId": "sc01-color-card",
       "file": "source/SC01-选配色卡.pdf",
       "sha256": "bd9d36032e5f25f8d61b7fd2f93c9219c0faf20537162db8dab00f03075f9e2a",
       "pages": 34,

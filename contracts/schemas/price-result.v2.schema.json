@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/price-result.v2.schema.json",
+  "title": "Configuration System Price Result v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "catalogVersion",
+    "vehicleId",
+    "configurationId",
+    "currency",
+    "basePriceMinor",
+    "lineItems",
+    "totalPriceMinor",
+    "quoteAllowed",
+    "blockingReasons"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.0.0" },
+    "catalogVersion": { "$ref": "#/$defs/id" },
+    "vehicleId": { "$ref": "#/$defs/id" },
+    "configurationId": {
+      "type": "string",
+      "pattern": "^cfg-[a-f0-9]{24}$"
+    },
+    "currency": { "const": "CNY" },
+    "basePriceMinor": { "type": "null" },
+    "lineItems": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/lineItem" }
+    },
+    "totalPriceMinor": { "type": "null" },
+    "quoteAllowed": { "const": false },
+    "blockingReasons": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "contains": { "const": "PRICE_UNCONFIRMED" },
+      "items": {
+        "enum": [
+          "BASE_PRICE_UNCONFIRMED",
+          "OPTION_PRICE_UNCONFIRMED",
+          "PRICE_UNCONFIRMED"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "lineItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surfaceId",
+        "optionId",
+        "unitPriceMinor",
+        "quantity",
+        "subtotalMinor",
+        "priceStatus"
+      ],
+      "properties": {
+        "surfaceId": { "$ref": "#/$defs/id" },
+        "optionId": { "$ref": "#/$defs/id" },
+        "unitPriceMinor": { "type": "null" },
+        "quantity": {
+          "anyOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "null" }
+          ]
+        },
+        "subtotalMinor": { "type": "null" },
+        "priceStatus": { "const": "unconfirmed" }
+      }
+    }
+  }
+}

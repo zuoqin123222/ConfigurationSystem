@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "2.0.0",
+  "catalogVersion": "sc01-draft-20260121",
+  "vehicleId": "sc01",
+  "configurationId": "cfg-95c9a67d78364696f55a08dd",
+  "renderKey": "sc01__sc01-draft-20260121__render-95c9a67d78364696f55a08dd",
+  "selections": {
+    "exterior-body-cover": "body-cover-red",
+    "wheel-material": "wheel-aluminum-alloy",
+    "steering-wheel-skin": "steering-skin-ultrasuede-black"
+  }
+}

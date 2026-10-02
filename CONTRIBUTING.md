@@ -81,21 +81,23 @@ git status --short
 - [ ] option、template、PrimaryAssetId 和预览图引用有效。
 - [ ] 16 个配置键唯一且符合固定顺序。
 - [ ] 4 个视角和 64 个图片期望完整。
+- [ ] SC01 v2 未确认金额均为 `null`，且 `quoteAllowed=false`。
+- [ ] SC01 v2 `configurationId` 与 `renderKey` 匹配黄金向量。
 - [ ] 破坏性变化已升级版本并记录 ADR。
 
 执行：
 
 ```powershell
 node tools/validate-contracts.mjs
+node --test tools/validate-sc01-v2.test.mjs
 node tools/validate-source-assets.mjs
 ```
 
 当前成功摘要应包含：
 
 ```text
-5 个 Schema JSON、P0-3 manifest 结构、2 类车辆 sidecar、
-2 个有效与 2 个无效 fixture、8 个选项、2 个模板、16 个唯一组合、
-4 个视角、64 个图片期望
+10 个 Schema JSON；v1 的 8 个选项、2 个模板、16 个唯一组合、4 个视角、
+64 个图片期望；SC01 v2 的正反配置、禁止报价结果与稳定身份黄金向量
 ```
 
 ### UE C++、Build.cs 或配置

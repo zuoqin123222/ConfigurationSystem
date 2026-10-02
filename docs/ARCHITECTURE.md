@@ -76,16 +76,17 @@ P0-5 已在 Development 与 Shipping 包中验证 `ConfigurationSystemEditor` �
 
 ## 数据模型边界
 
-产品配置只包含能够改变可销售组合的选择：
+共享契约并行保留两个主版本。v1 服务 `demo-car` 自动化与已发布图片链，固定为
+`paint`、`wheel`、`interior`、`frame` 四分区。SC01 使用 v2 的多层目录：
 
 ```text
-vehicleId
-paint optionId
-wheel optionId
-interior optionId
-frame optionId
-catalogVersion
+vehicle → category → component → surface → option
+                                      └── materialFamily
 ```
+
+v2 配置只保存 `vehicleId`、`catalogVersion` 和由 `selectionOrder` 要求的完整
+`surfaceId → optionId` 选择。层级展示顺序、中文名、价格结果和来源信息不进入
+配置身份。SC01 当前是 draft 原子样本，不替换 v1，也不进入发布图片和订单链。
 
 下列状态不进入产品配置键：
 
@@ -96,6 +97,29 @@ catalogVersion
 - `renderViewId`；它选择同一产品配置的图片视角。
 
 `interactionCameraId` 与 `renderViewId` 是两个不同概念。前者控制 UE 交互镜头，后者选择 Web 烘焙图。两者必须使用不同的 Schema 字段和 C++ 类型。
+
+SC01 v2 的 `configurationId` 从固定 LF 分隔的 UTF-8 规范输入计算：
+
+```text
+schemaVersion、catalogVersion、vehicleId
+→ 按 selectionOrder 逐行追加 surfaceId=optionId
+→ SHA-256
+→ cfg- + 前 24 个十六进制字符
+```
+
+渲染投影按同一顺序只保留所选 option 中 `renderRelevant=true` 的条目，
+单独计算：
+
+```text
+renderKey=<vehicleId>__<catalogVersion>__render-<SHA-256(canonicalRenderInput) 前 24 位>
+```
+
+它不包含 `renderViewId`。完整配置改变但渲染投影不变时复用同一组图片；
+黄金向量用于约束各端实现，禁止依赖 JSON 属性顺序。
+
+SC01 来源金额在税费、工时、有效期和审批状态确认前全部表达为 `null`。
+price-result 必须返回 `quoteAllowed=false` 与 `PRICE_UNCONFIRMED`；Server、Web 和
+UE 都不得用零值替代未知金额，也不得展示可下单报价。
 
 ## canonical key
 
@@ -114,7 +138,9 @@ paint-red__wheel-sport__interior-dark__frame-black
 renders/<publicationVersion>/<vehicleId>/<configurationKey>/<renderViewId>.png
 ```
 
-`node tools/validate-contracts.mjs` 会验证 16 个唯一配置、canonical key、4 个视角和 64 个图片期望。
+`node tools/validate-contracts.mjs` 会同时验证 v1 的 16 个唯一配置、canonical
+key、4 个视角和 64 个图片期望，以及 SC01 v2 的正反配置、稳定身份和禁止报价
+结果。
 
 ## 配置与图片数据流
 
