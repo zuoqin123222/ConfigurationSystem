@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "vehicleId": "sc01",
+  "documents": [
+    {
+      "file": "source/SC01-定制选配清单.pdf",
+      "sha256": "3e8cf34193b884aadd3dcfa07d80a6808ca1998be022b8adab833aef508f4496",
+      "pages": 4,
+      "sourceTitle": "All版本SC01选配清单20260121.2.xlsx",
+      "role": "configuration-and-price-source",
+      "status": "visual-review-required"
+    },
+    {
+      "file": "source/SC01-选配色卡.pdf",
+      "sha256": "bd9d36032e5f25f8d61b7fd2f93c9219c0faf20537162db8dab00f03075f9e2a",
+      "pages": 34,
+      "role": "material-and-color-reference",
+      "status": "visual-review-required"
+    }
+  ],
+  "rules": {
+    "preserveOriginal": true,
+    "doNotInferDisplayColorFromNameOnly": true,
+    "doNotPublishPriceWithoutBusinessConfirmation": true,
+    "doNotOverwriteMvpV1": true
+  }
+}

@@ -14,6 +14,8 @@ MVP 采用“一台演示车、一套共享配置、三端完整闭环”的范�
 
 所有核心需求保留，但缩小内容量：只做 1 台车、4 个选配分区、每区固定 2 个选项、2 套配色模板、4 个固定 Web 视角、2 套 UE 环境。4 个分区共产生 16 个合法配置和 64 张 Web 图片，全部烘焙，避免 Web 出现合法但缺图的状态。
 
+目标车型现已确认为 `SC01`，消费者界面和对外传播以 `SC01` 为主名称；“江铃 羿驰”作为生产资质厂家和子品牌信息保留。现有 `demo-car`、`mvp-v1` 和 64 张占位图只承担技术 fixture 与流水线验收职责。正式车辆模型预计在团队复工后重新取得，届时通过新 catalog 和不可变 publication 迁移到 `vehicleId=sc01`，不得覆盖既有发布。完整背景与资产边界见 `docs/PRODUCT_CONTEXT_SC01.md`。
+
 ## MVP 边界
 
 ### 包含
@@ -72,7 +74,7 @@ ConfigurationSystem/
 三端使用同一套稳定 ID，不允许按中文名或资产路径互相推断。
 
 ```text
-vehicleId: demo-car
+vehicleId: demo-car  # 当前技术 fixture；正式 SC01 catalog 计划迁移为 sc01
 partId: paint | wheel | interior | frame
 optionId: paint-red | wheel-sport | interior-dark | frame-black
 templateId: sport | luxury

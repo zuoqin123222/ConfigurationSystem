@@ -36,6 +36,12 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .vehicle-title { position: absolute; z-index: 2; top: 15%; left: 7%; }
 .vehicle-title p { margin: 0 0 5px; color: var(--lime); font-size: 12px; letter-spacing: .3em; }
 .vehicle-title h1 { margin: 0; font-size: clamp(32px, 4vw, 62px); font-weight: 500; letter-spacing: .08em; }
+.proxy-asset-notice {
+  display: inline-block; margin-top: 12px; padding: 6px 9px;
+  border: 1px solid rgba(255,255,255,.2); border-radius: 3px;
+  color: rgba(255,255,255,.72); background: rgba(16,18,15,.62);
+  font-size: 10px; letter-spacing: .08em; backdrop-filter: blur(8px);
+}
 .vehicle-frame {
   position: absolute; z-index: 1; inset: 18% 4% 18% 2%;
   display: grid; place-items: center;

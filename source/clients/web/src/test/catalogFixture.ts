@@ -4,7 +4,7 @@ export const catalogFixture: Catalog = {
   schemaVersion: '1.0.0',
   catalogVersion: 'mvp-v1',
   currency: 'CNY',
-  vehicle: { vehicleId: 'demo-car', zhName: '演示车型', basePriceMinor: 30_000_000 },
+  vehicle: { vehicleId: 'demo-car', zhName: 'SC01', basePriceMinor: 30_000_000 },
   parts: [
     {
       partId: 'paint', zhName: '车漆', displayOrder: 0,

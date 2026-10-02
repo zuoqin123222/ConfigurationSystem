@@ -203,12 +203,13 @@ function Configurator({
       <section className="stage" aria-label="车辆展示区">
         <Showroom />
         <header className="brand">
-          <span className="brand-mark">Y</span>
-          <span>曜影汽车</span>
+          <span className="brand-mark">S</span>
+          <span>SC01</span>
         </header>
         <div className="vehicle-title">
-          <p>全新纯电旗舰</p>
+          <p>高定制纯电跑车 · 技术预览</p>
           <h1>{catalog.vehicle.zhName}</h1>
+          <span className="proxy-asset-notice">代理车辆资产 · 非最终造型</span>
         </div>
         <div className="vehicle-frame">
           {renderLoading && <div className="render-status" role="status">正在解析车辆图片…</div>}

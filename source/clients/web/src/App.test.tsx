@@ -54,13 +54,14 @@ describe('App', () => {
     render(<App />)
 
     expect(screen.getByText('正在加载车型与选配目录…')).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: '演示车型' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'SC01' })).toBeInTheDocument()
+    expect(screen.getByText('代理车辆资产 · 非最终造型')).toBeInTheDocument()
     expect(fetchMock.mock.calls.slice(0, 2).map(([url]) => url)).toEqual([
       '/health',
       '/api/v1/catalog',
     ])
     await loadPendingRender()
-    expect(await screen.findByAltText('演示车型 front-left')).toHaveAttribute(
+    expect(await screen.findByAltText('SC01 front-left')).toHaveAttribute(
       'src',
       '/assets/renders/from-server/front-left.png',
     )
@@ -74,7 +75,7 @@ describe('App', () => {
     const user = userEvent.setup()
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '演示车型' })
+    await screen.findByRole('heading', { name: 'SC01' })
     await loadPendingRender()
 
     await user.click(screen.getByRole('button', { name: /星辉银/ }))
@@ -122,7 +123,7 @@ describe('App', () => {
 
     expect(await screen.findByText('目录服务返回 503')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '重新加载' }))
-    expect(await screen.findByRole('heading', { name: '演示车型' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'SC01' })).toBeInTheDocument()
     expect(catalogAttempts).toBe(2)
   })
 
@@ -130,12 +131,12 @@ describe('App', () => {
     mockApi()
     render(<App />)
     await loadPendingRender()
-    const image = await screen.findByAltText('演示车型 front-left')
+    const image = await screen.findByAltText('SC01 front-left')
 
     fireEvent.error(image)
 
     await waitFor(() => {
-      expect(screen.getByRole('img', { name: '演示车型 front-left图片暂缺' })).toBeInTheDocument()
+      expect(screen.getByRole('img', { name: 'SC01 front-left图片暂缺' })).toBeInTheDocument()
     })
   })
 
@@ -183,7 +184,7 @@ describe('App', () => {
       return Promise.resolve(jsonResponse(resolvedRender(request.renderViewId)))
     }))
     render(<App />)
-    await screen.findByRole('heading', { name: '演示车型' })
+    await screen.findByRole('heading', { name: 'SC01' })
     expect(screen.getByRole('status')).toHaveTextContent('正在解析车辆图片…')
 
     await user.click(screen.getByRole('button', { name: '侧面' }))
@@ -201,9 +202,9 @@ describe('App', () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '演示车型' })
+    await screen.findByRole('heading', { name: 'SC01' })
     await loadPendingRender()
-    expect(screen.getByAltText('演示车型 front-left')).toBeInTheDocument()
+    expect(screen.getByAltText('SC01 front-left')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '侧面' }))
     const pending = await waitFor(() => {
@@ -211,11 +212,11 @@ describe('App', () => {
       expect(image).toHaveAttribute('src', '/assets/renders/from-server/side.png')
       return image!
     })
-    expect(screen.getByAltText('演示车型 front-left')).toBeInTheDocument()
+    expect(screen.getByAltText('SC01 front-left')).toBeInTheDocument()
 
     fireEvent.load(pending)
-    const current = await screen.findByAltText('演示车型 side')
+    const current = await screen.findByAltText('SC01 side')
     expect(current).toHaveClass('vehicle-image-visible')
-    expect(screen.queryByAltText('演示车型 front-left')).not.toBeInTheDocument()
+    expect(screen.queryByAltText('SC01 front-left')).not.toBeInTheDocument()
   })
 })

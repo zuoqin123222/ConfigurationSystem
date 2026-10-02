@@ -4,7 +4,7 @@
   "currency": "CNY",
   "vehicle": {
     "vehicleId": "demo-car",
-    "zhName": "演示车型",
+    "zhName": "SC01",
     "basePriceMinor": 30000000
   },
   "parts": [
