@@ -37,6 +37,15 @@ function mockApi() {
   return fetchMock
 }
 
+async function loadPendingRender() {
+  const image = await waitFor(() => {
+    const pending = document.querySelector<HTMLImageElement>('.vehicle-image-preload')
+    expect(pending).not.toBeNull()
+    return pending!
+  })
+  fireEvent.load(image)
+}
+
 describe('App', () => {
   afterEach(() => vi.unstubAllGlobals())
 
@@ -50,6 +59,7 @@ describe('App', () => {
       '/health',
       '/api/v1/catalog',
     ])
+    await loadPendingRender()
     expect(await screen.findByAltText('演示车型 front-left')).toHaveAttribute(
       'src',
       '/assets/renders/from-server/front-left.png',
@@ -65,6 +75,7 @@ describe('App', () => {
     const fetchMock = mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: '演示车型' })
+    await loadPendingRender()
 
     await user.click(screen.getByRole('button', { name: /星辉银/ }))
     expect(screen.getByText('¥308,800')).toBeInTheDocument()
@@ -75,6 +86,7 @@ describe('App', () => {
     expect(screen.getByText('paint-silver__wheel-forged__interior-ivory__frame-black')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '侧面' }))
+    await loadPendingRender()
     expect(await screen.findByText('/assets/renders/from-server/side.png')).toBeInTheDocument()
     const resolveCalls = fetchMock.mock.calls.filter(([url]) => url === '/api/v1/renders/resolve')
     expect(JSON.parse(String(resolveCalls.at(-1)?.[1]?.body))).toEqual({
@@ -117,6 +129,7 @@ describe('App', () => {
   it('图片加载失败时展示中文占位', async () => {
     mockApi()
     render(<App />)
+    await loadPendingRender()
     const image = await screen.findByAltText('演示车型 front-left')
 
     fireEvent.error(image)
@@ -174,6 +187,7 @@ describe('App', () => {
     expect(screen.getByRole('status')).toHaveTextContent('正在解析车辆图片…')
 
     await user.click(screen.getByRole('button', { name: '侧面' }))
+    await loadPendingRender()
     expect(await screen.findByText('/assets/renders/from-server/side.png')).toBeInTheDocument()
     expect(firstResolveSignal?.aborted).toBe(true)
 
@@ -181,5 +195,27 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.queryByText('/assets/renders/from-server/front-left.png')).not.toBeInTheDocument()
     })
+  })
+
+  it('新图预加载完成前保留旧图，完成后淡化切换', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: '演示车型' })
+    await loadPendingRender()
+    expect(screen.getByAltText('演示车型 front-left')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '侧面' }))
+    const pending = await waitFor(() => {
+      const image = document.querySelector<HTMLImageElement>('.vehicle-image-preload')
+      expect(image).toHaveAttribute('src', '/assets/renders/from-server/side.png')
+      return image!
+    })
+    expect(screen.getByAltText('演示车型 front-left')).toBeInTheDocument()
+
+    fireEvent.load(pending)
+    const current = await screen.findByAltText('演示车型 side')
+    expect(current).toHaveClass('vehicle-image-visible')
+    expect(screen.queryByAltText('演示车型 front-left')).not.toBeInTheDocument()
   })
 })

@@ -9,6 +9,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
+    "validate:bake": "npm run build && node dist/src/validate-bake.js",
+    "publish:bake": "npm run build && node dist/src/publish.js",
     "test": "npm run build && node --test \"dist/test/*.test.js\""
   },
   "dependencies": {

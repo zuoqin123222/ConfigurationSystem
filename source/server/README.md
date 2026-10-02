@@ -17,10 +17,17 @@ npm start
 环境变量：
 
 - `HOST`：监听地址，默认 `0.0.0.0`。
-- `PORT`：监听端口，默认 `3000`。
-- `RENDER_ROOT`：图片根目录。其下应为
-  `<publicationVersion>/<vehicleId>/<configurationKey>/<renderViewId>.png`；
-  默认指向仓库根目录的 `package/renders`。
+- `PORT`：监听端口，默认 `8080`，与 Web 开发代理一致。
+- `BAKE_ROOT`：发布根目录。服务启动时从
+  `renders/<publicationVersion>/bake-manifest.json` 加载并校验 manifest；
+  默认指向仓库根目录的 `package`。
+
+校验与原子发布：
+
+```powershell
+npm run validate:bake -- <bake-manifest.json> <资产根目录>
+npm run publish:bake -- <包含 bake-manifest.json 的源目录> <发布根目录>
+```
 
 ## API
 
@@ -29,7 +36,7 @@ npm start
 - `POST /api/v1/renders/resolve`：校验 catalog/publication 版本、车型、四分区
   selections 和渲染视角，返回 canonical key、视角及图片 URL。
 - `GET /assets/renders/:publicationVersion/:vehicleId/:configurationKey/:renderViewId.png`：
-  安全读取 `RENDER_ROOT` 内的 PNG。
+  只读取启动时已通过 manifest 校验的 ready PNG。
 
 resolve 请求示例：
 

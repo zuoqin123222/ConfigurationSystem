@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { buildApp } from "../src/app.js";
+import { validateBakeManifest } from "../src/bake.js";
 import {
   loadContracts,
   type ContractData,
@@ -18,6 +19,8 @@ const validSelections = {
 };
 const validKey =
   "paint-silver__wheel-forged__interior-ivory__frame-red";
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../../..");
+const validBakeRoot = resolve(repositoryRoot, "contracts/fixtures/bake.valid");
 const validResolveRequest = {
   catalogVersion: "mvp-v1",
   publicationVersion: "mvp-v1",
@@ -239,35 +242,28 @@ test("resolve 检出发布价格或 canonical key 不一致", async (t) => {
   }
 });
 
-test("render 返回 RENDER_ROOT 内 PNG，并为缺图返回 404", async (t) => {
-  const renderRoot = await mkdtemp(join(tmpdir(), "configuration-renders-"));
-  const imageDirectory = join(renderRoot, "mvp-v1", "demo-car", validKey);
-  await mkdir(imageDirectory, { recursive: true });
-  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
-  await writeFile(join(imageDirectory, "front.png"), png);
-  t.after(() => rm(renderRoot, { recursive: true, force: true }));
-
-  const app = buildApp({ renderRoot });
+test("render 只返回 manifest 已校验的 PNG", async (t) => {
+  const pngPath = resolve(
+    validBakeRoot,
+    "renders/mvp-v1/demo-car",
+    validKey,
+    "front.png",
+  );
+  const png = await readFile(pngPath);
+  const app = buildApp({ bakeRoot: validBakeRoot });
   t.after(() => app.close());
   const found = await app.inject({
     method: "GET",
     url: `/assets/renders/mvp-v1/demo-car/${validKey}/front.png`,
   });
-  const missing = await app.inject({
-    method: "GET",
-    url: `/assets/renders/mvp-v1/demo-car/${validKey}/side.png`,
-  });
 
   assert.equal(found.statusCode, 200);
   assert.equal(found.headers["content-type"], "image/png");
   assert.deepEqual(found.rawPayload, png);
-  assert.equal(missing.statusCode, 404);
 });
 
 test("render 拒绝未知配置、未知视角和路径穿越", async (t) => {
-  const renderRoot = await mkdtemp(join(tmpdir(), "configuration-renders-"));
-  t.after(() => rm(renderRoot, { recursive: true, force: true }));
-  const app = buildApp({ renderRoot });
+  const app = buildApp({ bakeRoot: validBakeRoot });
   t.after(() => app.close());
 
   const urls = [
@@ -282,4 +278,24 @@ test("render 拒绝未知配置、未知视角和路径穿越", async (t) => {
     const response = await app.inject({ method: "GET", url });
     assert.notEqual(response.statusCode, 200);
   }
+});
+
+test("resolve 只返回 manifest 中存在的 ready 组合", async (t) => {
+  const bake = validateBakeManifest(
+    resolve(validBakeRoot, "bake-manifest.json"),
+    validBakeRoot,
+  );
+  const renders = new Map(bake.renders);
+  renders.delete(`${validKey}\0front`);
+  const app = buildApp({ bake: { ...bake, renders } });
+  t.after(() => app.close());
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v1/renders/resolve",
+    payload: validResolveRequest,
+  });
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(response.json().code, "RENDER_NOT_FOUND");
 });

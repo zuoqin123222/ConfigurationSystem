@@ -135,6 +135,7 @@ function Configurator({
   reloadCatalog,
 }: ConfiguratorProps) {
   const [resolvedRender, setResolvedRender] = useState<ResolveRenderResponse | null>(null)
+  const [pendingRender, setPendingRender] = useState<ResolveRenderResponse | null>(null)
   const [renderLoading, setRenderLoading] = useState(true)
   const [renderError, setRenderError] = useState<{ message: string; status?: number } | null>(null)
   const orderedParts = useMemo(
@@ -147,7 +148,7 @@ function Configurator({
 
   useEffect(() => {
     const controller = new AbortController()
-    setResolvedRender(null)
+    setPendingRender(null)
     setRenderLoading(true)
     setRenderError(null)
     resolveRender(
@@ -161,7 +162,7 @@ function Configurator({
       controller.signal,
     )
       .then((result) => {
-        if (!controller.signal.aborted) setResolvedRender(result)
+        if (!controller.signal.aborted) setPendingRender(result)
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return
@@ -175,12 +176,23 @@ function Configurator({
             message: reason instanceof Error ? reason.message : '车辆图片解析失败',
           })
         }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setRenderLoading(false)
+        setRenderLoading(false)
       })
     return () => controller.abort()
   }, [activeView, catalog.catalogVersion, catalog.vehicle.vehicleId, publicationVersion, selections])
+
+  const showPendingRender = () => {
+    if (!pendingRender) return
+    setResolvedRender(pendingRender)
+    setPendingRender(null)
+    setRenderLoading(false)
+  }
+
+  const rejectPendingRender = () => {
+    setPendingRender(null)
+    setRenderLoading(false)
+    setRenderError({ message: '新车辆图片加载失败，已保留上一张图片' })
+  }
 
   const selectOption = (option: CatalogOption) => {
     setSelections({ ...selections, [currentPart.partId]: option.optionId })
@@ -208,9 +220,19 @@ function Configurator({
           )}
           {resolvedRender && (
             <PreviewImage
-              className="vehicle-image"
+              className="vehicle-image vehicle-image-visible"
               src={resolvedRender.imageUrl}
-              alt={`${catalog.vehicle.zhName} ${activeView}`}
+              alt={`${catalog.vehicle.zhName} ${resolvedRender.renderViewId}`}
+            />
+          )}
+          {pendingRender && (
+            <img
+              className="vehicle-image vehicle-image-preload"
+              src={pendingRender.imageUrl}
+              alt=""
+              aria-hidden="true"
+              onLoad={showPendingRender}
+              onError={rejectPendingRender}
             />
           )}
         </div>

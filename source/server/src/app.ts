@@ -1,8 +1,13 @@
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync, statSync } from "node:fs";
 import { realpath, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Fastify, { type FastifyInstance } from "fastify";
+import {
+  findReadyRender,
+  validateBakeManifest,
+  type ValidatedBakeManifest,
+} from "./bake.js";
 import {
   loadContracts,
   RequestError,
@@ -12,7 +17,9 @@ import {
 
 export interface BuildAppOptions {
   contractRoot?: string;
-  renderRoot?: string;
+  bakeRoot?: string;
+  manifestPath?: string;
+  bake?: ValidatedBakeManifest;
   data?: ContractData;
 }
 
@@ -22,9 +29,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function defaultRenderRoot(): string {
-  if (process.env.RENDER_ROOT) {
-    return resolve(process.env.RENDER_ROOT);
+function defaultBakeRoot(publicationVersion: string): string {
+  if (process.env.BAKE_ROOT) {
+    return resolve(process.env.BAKE_ROOT);
   }
 
   const moduleDirectory = dirname(fileURLToPath(import.meta.url));
@@ -32,7 +39,22 @@ function defaultRenderRoot(): string {
     basename(dirname(moduleDirectory)) === "dist"
       ? resolve(moduleDirectory, "../..")
       : resolve(moduleDirectory, "..");
-  return resolve(serverRoot, "../../package/renders");
+  const candidates = [
+    resolve(serverRoot, "../../package"),
+    resolve(serverRoot, "../../contracts/fixtures/bake.valid"),
+  ];
+  for (const candidate of candidates) {
+    try {
+      const rootManifest = resolve(candidate, "bake-manifest.json");
+      const manifest = existsSync(rootManifest)
+        ? rootManifest
+        : resolve(candidate, `renders/${publicationVersion}/bake-manifest.json`);
+      if (statSync(manifest).isFile()) return candidate;
+    } catch {
+      // 本地开发可使用实际正向 fixture，部署环境优先使用 package。
+    }
+  }
+  return candidates[0]!;
 }
 
 async function safeRenderPath(
@@ -76,7 +98,29 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     logger: false,
   });
   const data = options.data ?? loadContracts(options.contractRoot);
-  const renderRoot = resolve(options.renderRoot ?? defaultRenderRoot());
+  const bakeRoot = resolve(
+    options.bakeRoot ?? defaultBakeRoot(data.publication.publicationVersion),
+  );
+  const manifestPath = resolve(
+    options.manifestPath ??
+      (existsSync(resolve(bakeRoot, "bake-manifest.json"))
+        ? resolve(bakeRoot, "bake-manifest.json")
+        : resolve(
+            bakeRoot,
+            "renders",
+            data.publication.publicationVersion,
+            "bake-manifest.json",
+          )),
+  );
+  const bake = options.bake ?? validateBakeManifest(manifestPath, bakeRoot);
+  if (
+    bake.manifest.catalogVersion !== data.catalog.catalogVersion ||
+    bake.manifest.publicationVersion !== data.publication.publicationVersion ||
+    bake.manifest.vehicleId !== data.publication.vehicleId
+  ) {
+    throw new Error("bake manifest 与 catalog/publication 版本不一致");
+  }
+  const renderRoot = resolve(bake.assetRoot, "renders");
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof RequestError) {
@@ -171,10 +215,18 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     }
 
     const configuration = resolveConfiguration(selections, data);
+    const render = findReadyRender(
+      bake,
+      configuration.configurationKey,
+      renderViewId,
+    );
+    if (!render) {
+      throw new RequestError(404, "RENDER_NOT_FOUND", "渲染图片不存在");
+    }
     return {
       configurationKey: configuration.configurationKey,
       renderViewId,
-      imageUrl: `/assets/renders/${publicationVersion}/${vehicleId}/${configuration.configurationKey}/${renderViewId}.png`,
+      imageUrl: `/assets/${render.path}`,
     };
   });
 
@@ -200,6 +252,10 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         !data.configurations.has(configurationKey) ||
         !data.publication.renderViewIds.includes(renderViewId)
       ) {
+        throw new RequestError(404, "RENDER_NOT_FOUND", "渲染图片不存在");
+      }
+      const render = findReadyRender(bake, configurationKey, renderViewId);
+      if (!render) {
         throw new RequestError(404, "RENDER_NOT_FOUND", "渲染图片不存在");
       }
 
