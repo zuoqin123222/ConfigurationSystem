@@ -1,36 +1,77 @@
-import { PART_ORDER, type Catalog, type Selections } from './types'
+import type {
+  CatalogComponent,
+  CatalogOption,
+  CatalogSurface,
+  CatalogV2,
+  Selections,
+} from './types'
 
-export function createInitialSelections(catalog: Catalog): Selections {
+export function createInitialSelections(catalog: CatalogV2): Selections {
   return Object.fromEntries(
-    PART_ORDER.map((partId) => {
-      const part = catalog.parts.find((item) => item.partId === partId)
-      if (!part?.options[0]) {
-        throw new Error(`分区 ${partId} 没有可用选项`)
+    catalog.selectionOrder.map((surfaceId) => {
+      const option = catalog.options.find((item) => item.surfaceId === surfaceId)
+      if (!option) {
+        throw new Error(`表面 ${surfaceId} 没有可用选项`)
       }
-      return [partId, part.options[0].optionId]
+      return [surfaceId, option.optionId]
     }),
-  ) as Selections
+  )
 }
 
-export function createCanonicalKey(selections: Selections): string {
-  return PART_ORDER.map((partId) => selections[partId]).join('__')
+export function normalizeSelections(
+  catalog: CatalogV2,
+  selections: Selections,
+): Selections {
+  return Object.fromEntries(
+    catalog.selectionOrder.map((surfaceId) => {
+      const selected = catalog.options.find(
+        (option) => option.surfaceId === surfaceId && option.optionId === selections[surfaceId],
+      )
+      const fallback = catalog.options.find((option) => option.surfaceId === surfaceId)
+      if (!selected && !fallback) throw new Error(`表面 ${surfaceId} 没有可用选项`)
+      return [surfaceId, (selected ?? fallback)!.optionId]
+    }),
+  )
 }
 
-export function calculateTotalPrice(catalog: Catalog, selections: Selections): number {
-  return catalog.parts.reduce((total, part) => {
-    const selected = part.options.find(
-      (option) => option.optionId === selections[part.partId],
-    )
-    return total + (selected?.priceDeltaMinor ?? 0)
-  }, catalog.vehicle.basePriceMinor)
+export function createCanonicalKey(catalog: CatalogV2, selections: Selections): string {
+  return catalog.selectionOrder.map((surfaceId) => `${surfaceId}=${selections[surfaceId]}`).join('__')
 }
 
-export function formatPrice(minor: number, showSign = false): string {
-  if (showSign && minor === 0) return '已包含'
-  const amount = new Intl.NumberFormat('zh-CN', {
-    style: 'currency',
-    currency: 'CNY',
-    maximumFractionDigits: 0,
-  }).format(minor / 100)
-  return showSign ? `+${amount}` : amount
+export function componentsForCategory(
+  catalog: CatalogV2,
+  categoryId: string,
+): CatalogComponent[] {
+  return catalog.components.filter((component) => component.categoryId === categoryId)
+}
+
+export function surfacesForComponent(
+  catalog: CatalogV2,
+  componentId: string,
+): CatalogSurface[] {
+  return catalog.surfaces.filter((surface) => componentId === 'all' || surface.componentId === componentId)
+}
+
+export function optionsForFilters(
+  catalog: CatalogV2,
+  surfaceId: string,
+  materialFamilyId: string,
+): CatalogOption[] {
+  return catalog.options.filter(
+    (option) =>
+      option.surfaceId === surfaceId &&
+      (materialFamilyId === 'all' || option.materialFamilyId === materialFamilyId),
+  )
+}
+
+export function renderRelevantSelections(
+  catalog: CatalogV2,
+  selections: Selections,
+): Selections {
+  return Object.fromEntries(
+    catalog.selectionOrder.flatMap((surfaceId) => {
+      const option = catalog.options.find((item) => item.optionId === selections[surfaceId])
+      return option?.renderRelevant ? [[surfaceId, option.optionId]] : []
+    }),
+  )
 }

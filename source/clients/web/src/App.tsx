@@ -1,19 +1,37 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ApiError, fetchInitialData, resolveRender } from './api'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  calculateTotalPrice,
+  ApiError,
+  fetchConfiguration,
+  fetchInitialData,
+  resolveLegacyProxy,
+  resolveRender,
+  saveConfiguration,
+} from './api'
+import {
+  componentsForCategory,
   createCanonicalKey,
   createInitialSelections,
-  formatPrice,
+  normalizeSelections,
+  optionsForFilters,
+  renderRelevantSelections,
+  surfacesForComponent,
 } from './configurator'
 import type {
-  Catalog,
-  CatalogOption,
-  PartId,
+  CatalogV2,
+  ConfigurationV2,
+  LegacyCatalog,
+  LegacyRender,
   RenderViewId,
-  ResolveRenderResponse,
   Selections,
 } from './types'
+
+const CACHE_KEY = 'sc01-v2-configurator'
+const DEFAULT_VIEWS: Array<{ renderViewId: RenderViewId; zhName: string }> = [
+  { renderViewId: 'front', zhName: '正前' },
+  { renderViewId: 'front-left', zhName: '左前' },
+  { renderViewId: 'side', zhName: '侧面' },
+  { renderViewId: 'rear-right', zhName: '右后' },
+]
 
 function Showroom() {
   return (
@@ -32,56 +50,82 @@ function Showroom() {
       <path d="M0 0h1200v70L0 250z" fill="#30332c" />
       <path d="M0 760V455L1200 70v690z" fill="#151713" />
       <ellipse cx="575" cy="605" rx="530" ry="145" fill="url(#floor)" />
-      <g stroke="#d8dfc9" strokeOpacity=".2" strokeWidth="3">
-        <path d="M150 0v225M350 0v165M850 0v92M1060 0v62" />
-        <path d="M95 226l970-173" />
-      </g>
     </svg>
   )
 }
 
-interface PreviewImageProps {
-  src: string
-  alt: string
-  className: string
+interface CachedDraft {
+  catalog: CatalogV2
+  selections: Selections
 }
 
-function PreviewImage({ src, alt, className }: PreviewImageProps) {
-  const [failed, setFailed] = useState(false)
-  useEffect(() => setFailed(false), [src])
-
-  if (failed) {
-    return <div className={`${className} image-placeholder`} role="img" aria-label={`${alt}图片暂缺`}>暂无图片</div>
+function readCachedDraft(): CachedDraft | null {
+  try {
+    const value = localStorage.getItem(CACHE_KEY)
+    return value ? JSON.parse(value) as CachedDraft : null
+  } catch {
+    return null
   }
-  return <img className={className} src={src} alt={alt} onError={() => setFailed(true)} />
 }
 
 export default function App() {
-  const [catalog, setCatalog] = useState<Catalog | null>(null)
-  const [publicationVersion, setPublicationVersion] = useState('')
+  const [catalog, setCatalog] = useState<CatalogV2 | null>(null)
+  const [legacyCatalog, setLegacyCatalog] = useState<LegacyCatalog | null>(null)
   const [selections, setSelections] = useState<Selections | null>(null)
-  const [activePart, setActivePart] = useState<PartId>('paint')
-  const [activeView, setActiveView] = useState<RenderViewId>('front-left')
+  const [savedConfiguration, setSavedConfiguration] = useState<ConfigurationV2 | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [offlineDraft, setOfflineDraft] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+  const [online, setOnline] = useState(() => navigator.onLine)
 
-  const loadCatalog = useCallback(() => setReloadKey((value) => value + 1), [])
+  const reload = useCallback(() => setReloadKey((value) => value + 1), [])
+
+  useEffect(() => {
+    const handleOnline = () => setOnline(true)
+    const handleOffline = () => setOnline(false)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
     setLoading(true)
     setError('')
+    setOfflineDraft(false)
     fetchInitialData(controller.signal)
-      .then(({ catalog: nextCatalog, publicationVersion: nextPublicationVersion }) => {
+      .then(async ({ catalog: nextCatalog, legacyCatalog: nextLegacyCatalog }) => {
+        if (controller.signal.aborted) return
+        const configurationId = new URLSearchParams(window.location.search).get('configuration')
+        let initialSelections = createInitialSelections(nextCatalog)
+        let loadedConfiguration: ConfigurationV2 | null = null
+        if (configurationId) {
+          loadedConfiguration = await fetchConfiguration(configurationId, controller.signal)
+          initialSelections = normalizeSelections(nextCatalog, loadedConfiguration.selections)
+        } else {
+          const cached = readCachedDraft()
+          if (cached?.catalog.catalogVersion === nextCatalog.catalogVersion) {
+            initialSelections = normalizeSelections(nextCatalog, cached.selections)
+          }
+        }
         if (controller.signal.aborted) return
         setCatalog(nextCatalog)
-        setPublicationVersion(nextPublicationVersion)
-        setSelections(createInitialSelections(nextCatalog))
-        setActiveView(nextCatalog.renderViews[1]?.renderViewId ?? nextCatalog.renderViews[0].renderViewId)
+        setLegacyCatalog(nextLegacyCatalog)
+        setSelections(initialSelections)
+        setSavedConfiguration(loadedConfiguration)
       })
       .catch((reason: unknown) => {
-        if (!controller.signal.aborted) {
+        if (controller.signal.aborted) return
+        const cached = readCachedDraft()
+        if (!navigator.onLine && cached) {
+          setCatalog(cached.catalog)
+          setSelections(normalizeSelections(cached.catalog, cached.selections))
+          setOfflineDraft(true)
+        } else {
           setError(reason instanceof Error ? reason.message : '目录加载失败')
         }
       })
@@ -91,111 +135,207 @@ export default function App() {
     return () => controller.abort()
   }, [reloadKey])
 
-  if (loading) return <StatusScreen title="正在准备您的专属座驾" detail="正在加载车型与选配目录…" />
+  useEffect(() => {
+    if (catalog && selections) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ catalog, selections }))
+    }
+  }, [catalog, selections])
+
+  if (loading) return <StatusScreen title="正在准备您的专属座驾" detail="正在加载 SC01 草案目录…" />
   if (error || !catalog || !selections) {
-    return <StatusScreen title="暂时无法进入展厅" detail={error || '目录数据不可用'} action={loadCatalog} />
+    return <StatusScreen title="暂时无法进入展厅" detail={error || '目录数据不可用'} action={reload} />
   }
 
   return (
     <Configurator
       catalog={catalog}
-      publicationVersion={publicationVersion}
+      legacyCatalog={legacyCatalog}
       selections={selections}
       setSelections={setSelections}
-      activePart={activePart}
-      setActivePart={setActivePart}
-      activeView={activeView}
-      setActiveView={setActiveView}
-      reloadCatalog={loadCatalog}
+      savedConfiguration={savedConfiguration}
+      setSavedConfiguration={setSavedConfiguration}
+      online={online}
+      offlineDraft={offlineDraft}
     />
   )
 }
 
 interface ConfiguratorProps {
-  catalog: Catalog
-  publicationVersion: string
+  catalog: CatalogV2
+  legacyCatalog: LegacyCatalog | null
   selections: Selections
   setSelections: (value: Selections) => void
-  activePart: PartId
-  setActivePart: (value: PartId) => void
-  activeView: RenderViewId
-  setActiveView: (value: RenderViewId) => void
-  reloadCatalog: () => void
+  savedConfiguration: ConfigurationV2 | null
+  setSavedConfiguration: (value: ConfigurationV2 | null) => void
+  online: boolean
+  offlineDraft: boolean
 }
 
 function Configurator({
   catalog,
-  publicationVersion,
+  legacyCatalog,
   selections,
   setSelections,
-  activePart,
-  setActivePart,
-  activeView,
-  setActiveView,
-  reloadCatalog,
+  savedConfiguration,
+  setSavedConfiguration,
+  online,
+  offlineDraft,
 }: ConfiguratorProps) {
-  const [resolvedRender, setResolvedRender] = useState<ResolveRenderResponse | null>(null)
-  const [pendingRender, setPendingRender] = useState<ResolveRenderResponse | null>(null)
+  const [categoryId, setCategoryId] = useState(catalog.categories[0]?.categoryId ?? '')
+  const [componentId, setComponentId] = useState('all')
+  const [surfaceId, setSurfaceId] = useState(catalog.selectionOrder[0] ?? '')
+  const [materialFamilyId, setMaterialFamilyId] = useState('all')
+  const [activeView, setActiveView] = useState<RenderViewId>('front-left')
+  const [render, setRender] = useState<LegacyRender | null>(null)
+  const [pendingRender, setPendingRender] = useState<LegacyRender | null>(null)
+  const [renderKey, setRenderKey] = useState('')
+  const renderRequestRef = useRef('')
   const [renderLoading, setRenderLoading] = useState(true)
-  const [renderError, setRenderError] = useState<{ message: string; status?: number } | null>(null)
-  const orderedParts = useMemo(
-    () => [...catalog.parts].sort((a, b) => a.displayOrder - b.displayOrder),
-    [catalog.parts],
+  const [renderMessage, setRenderMessage] = useState('')
+  const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
+    savedConfiguration ? 'saved' : 'idle',
   )
-  const currentPart = orderedParts.find((part) => part.partId === activePart) ?? orderedParts[0]
-  const canonicalKey = createCanonicalKey(selections)
-  const totalPrice = calculateTotalPrice(catalog, selections)
+  const [syncMessage, setSyncMessage] = useState('')
+
+  const components = useMemo(
+    () => componentsForCategory(catalog, categoryId),
+    [catalog, categoryId],
+  )
+  const surfaces = useMemo(
+    () => surfacesForComponent(catalog, componentId)
+      .filter((surface) => components.some((component) => component.componentId === surface.componentId)),
+    [catalog, componentId, components],
+  )
+  const currentSurface = catalog.surfaces.find((surface) => surface.surfaceId === surfaceId)
+    ?? surfaces[0]
+    ?? catalog.surfaces[0]
+  const materialFamilies = useMemo(() => {
+    const ids = new Set(
+      catalog.options
+        .filter((option) => option.surfaceId === currentSurface.surfaceId)
+        .map((option) => option.materialFamilyId),
+    )
+    return catalog.materialFamilies.filter((family) => ids.has(family.materialFamilyId))
+  }, [catalog, currentSurface.surfaceId])
+  const options = optionsForFilters(catalog, currentSurface.surfaceId, materialFamilyId)
+  const canonicalKey = createCanonicalKey(catalog, selections)
+  const savedKey = savedConfiguration
+    ? createCanonicalKey(catalog, normalizeSelections(catalog, savedConfiguration.selections))
+    : ''
+  const dirty = canonicalKey !== savedKey
+  const views = legacyCatalog?.renderViews.length ? legacyCatalog.renderViews : DEFAULT_VIEWS
+  const renderSelectionKey = JSON.stringify(renderRelevantSelections(catalog, selections))
+
+  useEffect(() => {
+    const firstComponent = components[0]?.componentId
+    setComponentId(firstComponent ?? 'all')
+  }, [categoryId, components])
+
+  useEffect(() => {
+    if (!surfaces.some((surface) => surface.surfaceId === surfaceId)) {
+      setSurfaceId(surfaces[0]?.surfaceId ?? catalog.selectionOrder[0])
+    }
+  }, [catalog.selectionOrder, surfaceId, surfaces])
+
+  useEffect(() => setMaterialFamilyId('all'), [surfaceId])
 
   useEffect(() => {
     const controller = new AbortController()
-    setPendingRender(null)
     setRenderLoading(true)
-    setRenderError(null)
-    resolveRender(
-      {
-        catalogVersion: catalog.catalogVersion,
-        publicationVersion,
-        vehicleId: catalog.vehicle.vehicleId,
-        selections,
-        renderViewId: activeView,
-      },
-      controller.signal,
-    )
-      .then((result) => {
-        if (!controller.signal.aborted) setPendingRender(result)
+    resolveRender({
+      catalogVersion: catalog.catalogVersion,
+      vehicleId: catalog.vehicle.vehicleId,
+      selections,
+      renderViewId: activeView,
+    }, controller.signal)
+      .then(async (result) => {
+        if (controller.signal.aborted) return
+        setRenderKey(result.renderKey)
+        const requestKey = `${result.renderKey}::${activeView}`
+        if (requestKey === renderRequestRef.current) {
+          setRenderLoading(false)
+          return
+        }
+        renderRequestRef.current = requestKey
+        if (result.imageUrl) {
+          setPendingRender({
+            configurationKey: result.configurationId,
+            renderViewId: activeView,
+            imageUrl: result.imageUrl,
+          })
+          setRenderMessage('')
+          return
+        }
+        const proxy = legacyCatalog
+          ? await resolveLegacyProxy(legacyCatalog, activeView, controller.signal)
+          : null
+        if (controller.signal.aborted) return
+        if (proxy) setPendingRender(proxy)
+        setRenderMessage(
+          proxy || render
+            ? 'v2 暂无渲染图，当前保留 v1 代理图'
+            : 'v2 暂无渲染图，且 v1 代理图不可用',
+        )
+        if (!proxy) setRenderLoading(false)
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return
-        if (reason instanceof ApiError && reason.status === 409) {
-          setRenderError({ status: 409, message: '发布版本已更新，请重新加载目录' })
-        } else if (reason instanceof ApiError && reason.status === 404) {
-          setRenderError({ status: 404, message: '该配置在当前视角暂无可用图片' })
-        } else {
-          setRenderError({
-            status: reason instanceof ApiError ? reason.status : undefined,
-            message: reason instanceof Error ? reason.message : '车辆图片解析失败',
-          })
-        }
+        setRenderMessage(reason instanceof ApiError ? reason.message : '渲染状态同步失败，已保留当前图片')
         setRenderLoading(false)
       })
     return () => controller.abort()
-  }, [activeView, catalog.catalogVersion, catalog.vehicle.vehicleId, publicationVersion, selections])
+  // activeView 会触发解析，但只有 renderKey 变化时才替换图片。
+  }, [activeView, catalog.catalogVersion, catalog.vehicle.vehicleId, legacyCatalog, renderSelectionKey])
 
-  const showPendingRender = () => {
-    if (!pendingRender) return
-    setResolvedRender(pendingRender)
-    setPendingRender(null)
-    setRenderLoading(false)
+  const selectOption = (optionId: string) => {
+    setSelections({ ...selections, [currentSurface.surfaceId]: optionId })
+    setSyncState('idle')
+    setSyncMessage('')
   }
 
-  const rejectPendingRender = () => {
-    setPendingRender(null)
-    setRenderLoading(false)
-    setRenderError({ message: '新车辆图片加载失败，已保留上一张图片' })
+  const persist = async (): Promise<ConfigurationV2 | null> => {
+    if (!online) {
+      setSyncState('error')
+      setSyncMessage('当前离线，草稿已保存在本机，联网后可同步')
+      return null
+    }
+    setSyncState('saving')
+    setSyncMessage('')
+    try {
+      const stored = await saveConfiguration({
+        catalogVersion: catalog.catalogVersion,
+        vehicleId: catalog.vehicle.vehicleId,
+        selections,
+        ...(savedConfiguration && dirty
+          ? {
+              configurationId: savedConfiguration.configurationId,
+              revision: savedConfiguration.revision,
+            }
+          : {}),
+      })
+      setSavedConfiguration(stored)
+      setSyncState('saved')
+      setSyncMessage(`已同步 · revision ${stored.revision}`)
+      return stored
+    } catch (reason) {
+      setSyncState('error')
+      setSyncMessage(reason instanceof Error ? reason.message : '保存失败')
+      return null
+    }
   }
 
-  const selectOption = (option: CatalogOption) => {
-    setSelections({ ...selections, [currentPart.partId]: option.optionId })
+  const share = async () => {
+    const stored = dirty || !savedConfiguration ? await persist() : savedConfiguration
+    if (!stored) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('configuration', stored.configurationId)
+    window.history.replaceState(null, '', url)
+    try {
+      await navigator.clipboard.writeText(url.toString())
+      setSyncMessage('分享链接已复制')
+    } catch {
+      setSyncMessage(`分享链接：${url.toString()}`)
+    }
   }
 
   return (
@@ -206,24 +346,22 @@ function Configurator({
           <span className="brand-mark">S</span>
           <span>SC01</span>
         </header>
+        <div className="connection" role="status">
+          <span className={online ? 'online-dot' : 'offline-dot'} />
+          {online ? (offlineDraft ? '已联网 · 本地草稿' : '在线') : '离线 · 本地草稿'}
+        </div>
         <div className="vehicle-title">
           <p>高定制纯电跑车 · 技术预览</p>
-          <h1>{catalog.vehicle.zhName}</h1>
-          <span className="proxy-asset-notice">代理车辆资产 · 非最终造型</span>
+          <h1>{catalog.vehicle.displayName}</h1>
+          <span className="draft-badge">DRAFT · 不可报价</span>
         </div>
         <div className="vehicle-frame">
-          {renderLoading && <div className="render-status" role="status">正在解析车辆图片…</div>}
-          {renderError && (
-            <div className="render-status render-error" role="alert">
-              <span>{renderError.message}</span>
-              {renderError.status === 409 && <button onClick={reloadCatalog}>重新加载目录</button>}
-            </div>
-          )}
-          {resolvedRender && (
-            <PreviewImage
+          {renderLoading && <div className="render-status" role="status">正在同步渲染标识…</div>}
+          {render && (
+            <img
               className="vehicle-image vehicle-image-visible"
-              src={resolvedRender.imageUrl}
-              alt={`${catalog.vehicle.zhName} ${resolvedRender.renderViewId}`}
+              src={render.imageUrl}
+              alt={`${catalog.vehicle.displayName} 代理车辆`}
             />
           )}
           {pendingRender && (
@@ -232,13 +370,21 @@ function Configurator({
               src={pendingRender.imageUrl}
               alt=""
               aria-hidden="true"
-              onLoad={showPendingRender}
-              onError={rejectPendingRender}
+              onLoad={() => {
+                setRender(pendingRender)
+                setPendingRender(null)
+                setRenderLoading(false)
+              }}
+              onError={() => {
+                setPendingRender(null)
+                setRenderLoading(false)
+                setRenderMessage('v2 暂无渲染图，v1 代理图加载失败，已保留上一张图片')
+              }}
             />
           )}
         </div>
         <div className="view-switcher" aria-label="车辆视角">
-          {catalog.renderViews.map((view) => (
+          {views.map((view) => (
             <button
               key={view.renderViewId}
               className={activeView === view.renderViewId ? 'active' : ''}
@@ -250,70 +396,69 @@ function Configurator({
           ))}
         </div>
         <div className="image-meta">
-          <span>图片地址</span>
-          <code title={resolvedRender?.imageUrl}>
-            {resolvedRender?.imageUrl ?? (renderLoading ? '解析中' : '暂无可用图片')}
-          </code>
+          <strong>{renderMessage || 'v2 渲染图已就绪'}</strong>
+          <code title={renderKey}>renderKey · {renderKey || '解析中'}</code>
         </div>
       </section>
 
       <aside className="config-panel" aria-label="车辆选配">
         <div className="panel-head">
           <div>
-            <span className="eyebrow">个性化定制</span>
+            <span className="eyebrow">SC01 动态配置</span>
             <h2>打造你的座驾</h2>
           </div>
-          <span className="step">04 项配置</span>
+          <span className="step">{catalog.selectionOrder.length} 项必选</span>
         </div>
 
-        <section className="templates" aria-labelledby="template-title">
-          <div className="section-title">
-            <h3 id="template-title">推荐方案</h3>
-            <span>一键应用</span>
-          </div>
-          <div className="template-grid">
-            {catalog.templates.map((template, index) => (
-              <button key={template.templateId} onClick={() => setSelections({ ...template.selections })}>
-                <span className={`template-icon template-${index}`} aria-hidden="true" />
-                <span><strong>{template.zhName}</strong><small>{index === 0 ? '动感与操控' : '舒适与质感'}</small></span>
-                <span aria-hidden="true">→</span>
-              </button>
-            ))}
-          </div>
-        </section>
+        <div className="save-bar">
+          <span className={`sync-state ${syncState}`}>{syncMessage || (dirty ? '未同步更改' : '已同步')}</span>
+          <button onClick={() => void persist()} disabled={syncState === 'saving' || !dirty}>
+            {syncState === 'saving' ? '保存中…' : '保存配置'}
+          </button>
+          <button onClick={() => void share()} disabled={syncState === 'saving'}>分享配置</button>
+        </div>
 
-        <nav className="part-tabs" aria-label="选配分区">
-          {orderedParts.map((part, index) => (
-            <button
-              key={part.partId}
-              className={activePart === part.partId ? 'active' : ''}
-              onClick={() => setActivePart(part.partId)}
-              aria-current={activePart === part.partId ? 'page' : undefined}
-            >
-              <span>0{index + 1}</span>{part.zhName}
-            </button>
-          ))}
-        </nav>
+        <FilterGroup label="类别" items={catalog.categories.map((item) => ({
+          id: item.categoryId,
+          name: item.displayName,
+        }))} value={categoryId} onChange={setCategoryId} />
+        <FilterGroup label="组件" items={components.map((item) => ({
+          id: item.componentId,
+          name: item.displayName,
+        }))} value={componentId} onChange={setComponentId} />
+        <FilterGroup label="表面" items={surfaces.map((item) => ({
+          id: item.surfaceId,
+          name: item.displayName,
+        }))} value={currentSurface.surfaceId} onChange={setSurfaceId} />
+        <FilterGroup label="材质系列" items={[
+          { id: 'all', name: '全部' },
+          ...materialFamilies.map((item) => ({ id: item.materialFamilyId, name: item.displayName })),
+        ]} value={materialFamilyId} onChange={setMaterialFamilyId} />
 
         <section className="options" aria-live="polite">
           <div className="section-title">
-            <h3>选择{currentPart.zhName}</h3>
-            <span>{currentPart.options.length} 款可选</span>
+            <h3>选择{currentSurface.displayName}</h3>
+            <span>{options.length} 款可选</span>
           </div>
           <div className="option-grid">
-            {currentPart.options.map((option) => {
-              const selected = selections[currentPart.partId] === option.optionId
+            {options.map((option) => {
+              const selected = selections[currentSurface.surfaceId] === option.optionId
+              const family = catalog.materialFamilies.find(
+                (item) => item.materialFamilyId === option.materialFamilyId,
+              )
               return (
                 <button
                   key={option.optionId}
                   className={`option-card ${selected ? 'selected' : ''}`}
-                  onClick={() => selectOption(option)}
+                  onClick={() => selectOption(option.optionId)}
                   aria-pressed={selected}
                 >
-                  <PreviewImage className="option-preview" src={option.previewImageUrl} alt={option.zhName} />
+                  <span className={`option-swatch swatch-${option.optionId}`} aria-hidden="true">
+                    {option.displayName.slice(0, 1)}
+                  </span>
                   <span className="option-info">
-                    <strong>{option.zhName}</strong>
-                    <small>{formatPrice(option.priceDeltaMinor, true)}</small>
+                    <strong>{option.displayName}</strong>
+                    <small>{family?.displayName} · {option.pricing.isStandard ? '标配' : '价格待确认'}</small>
                   </span>
                   <span className="check" aria-hidden="true">{selected ? '✓' : ''}</span>
                 </button>
@@ -324,16 +469,46 @@ function Configurator({
 
         <footer className="summary">
           <div className="canonical">
-            <span>配置标识 · CANONICAL KEY</span>
+            <span>配置标识 · {savedConfiguration?.configurationId ?? '尚未保存'}</span>
             <code>{canonicalKey}</code>
           </div>
           <div className="total">
-            <span>车辆总价<small>含基础配置与已选项目</small></span>
-            <strong>{formatPrice(totalPrice)}</strong>
+            <span>车辆总价<small>草案目录暂不支持报价</small></span>
+            <strong>价格待确认</strong>
           </div>
         </footer>
       </aside>
     </main>
+  )
+}
+
+function FilterGroup({
+  label,
+  items,
+  value,
+  onChange,
+}: {
+  label: string
+  items: Array<{ id: string; name: string }>
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <section className="filter-group" aria-label={`${label}筛选`}>
+      <span>{label}</span>
+      <div>
+        {items.map((item) => (
+          <button
+            key={item.id}
+            className={value === item.id ? 'active' : ''}
+            onClick={() => onChange(item.id)}
+            aria-pressed={value === item.id}
+          >
+            {item.name}
+          </button>
+        ))}
+      </div>
+    </section>
   )
 }
 

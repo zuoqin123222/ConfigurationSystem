@@ -1,16 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   fetchCatalog,
+  fetchConfiguration,
   fetchInitialData,
   resolveRender,
+  saveConfiguration,
 } from './api'
-import { catalogFixture } from './test/catalogFixture'
-
-const healthFixture = {
-  status: 'ok' as const,
-  catalogVersion: catalogFixture.catalogVersion,
-  publicationVersion: 'publication-v1',
-}
+import { catalogFixture, legacyCatalogFixture } from './test/catalogFixture'
 
 function jsonResponse(body: object, status = 200) {
   return {
@@ -20,134 +16,123 @@ function jsonResponse(body: object, status = 200) {
   }
 }
 
-describe('fetchCatalog', () => {
+const selections = {
+  'exterior-body-cover': 'body-cover-red',
+  'wheel-material': 'wheel-aluminum-alloy',
+  'steering-wheel-skin': 'steering-skin-ultrasuede-black',
+}
+
+const storedConfiguration = {
+  schemaVersion: '2.0.0',
+  catalogVersion: catalogFixture.catalogVersion,
+  vehicleId: 'sc01',
+  configurationId: 'cfg-123456789012345678901234',
+  renderKey: 'sc01__draft__render-123456789012345678901234',
+  selections,
+  revision: 1,
+  priceResult: { totalPriceMinor: null, quoteAllowed: false, blockingReasons: ['PRICE_UNCONFIRMED'] },
+  createdAt: '2026-10-03T00:00:00.000Z',
+  updatedAt: '2026-10-03T00:00:00.000Z',
+} as const
+
+describe('v2 API', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('从契约路径加载并返回合法目录', async () => {
+  it('从 /api/v2/catalog 加载动态草案目录', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(catalogFixture))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(fetchCatalog()).resolves.toEqual(catalogFixture)
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/catalog', {
+    expect(fetchMock).toHaveBeenCalledWith('/api/v2/catalog', {
       headers: { Accept: 'application/json' },
       signal: undefined,
     })
   })
 
-  it('服务错误时提供可读错误', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 503)))
+  it('主目录成功时允许 v1 代理目录不可用', async () => {
+    vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve(
+      url === '/api/v2/catalog'
+        ? jsonResponse(catalogFixture)
+        : jsonResponse({}, 404),
+    )))
 
-    await expect(fetchCatalog()).rejects.toThrow('目录服务返回 503')
+    await expect(fetchInitialData()).resolves.toEqual({
+      catalog: catalogFixture,
+      legacyCatalog: null,
+    })
   })
 
-  it('拒绝不满足四分区契约的数据', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ ...catalogFixture, parts: [] }),
-    }))
+  it('拒绝缺少必选表面选项的目录', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
+      ...catalogFixture,
+      options: catalogFixture.options.filter((option) => option.surfaceId !== 'wheel-material'),
+    })))
 
     await expect(fetchCatalog()).rejects.toThrow('目录数据格式不受支持')
   })
-})
 
-describe('fetchInitialData', () => {
-  afterEach(() => vi.unstubAllGlobals())
-
-  it('并行请求健康状态和目录并返回 publicationVersion', async () => {
-    let releaseHealth!: () => void
-    let releaseCatalog!: () => void
-    const healthPending = new Promise<void>((resolve) => { releaseHealth = resolve })
-    const catalogPending = new Promise<void>((resolve) => { releaseCatalog = resolve })
-    const fetchMock = vi.fn((url: string) => {
-      if (url === '/health') {
-        return healthPending.then(() => jsonResponse(healthFixture))
-      }
-      return catalogPending.then(() => jsonResponse(catalogFixture))
-    })
-    vi.stubGlobal('fetch', fetchMock)
-
-    const resultPromise = fetchInitialData()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/health', '/api/v1/catalog'])
-
-    releaseCatalog()
-    releaseHealth()
-    await expect(resultPromise).resolves.toEqual({
-      catalog: catalogFixture,
-      publicationVersion: 'publication-v1',
-    })
-  })
-
-  it('健康状态与目录版本不一致时拒绝继续', async () => {
-    vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve(
-      jsonResponse(url === '/health' ? { ...healthFixture, catalogVersion: 'older-v1' } : catalogFixture),
-    )))
-
-    await expect(fetchInitialData()).rejects.toMatchObject({
-      status: 409,
-      code: 'VERSION_CONFLICT',
-    })
-  })
-})
-
-describe('resolveRender', () => {
-  afterEach(() => vi.unstubAllGlobals())
-
-  it('按契约提交完整版本、配置和视角，并使用服务端 imageUrl', async () => {
+  it('解析 v2 renderKey 且允许响应不含图片', async () => {
     const response = {
-      configurationKey: 'paint-red__wheel-sport__interior-dark__frame-black',
-      renderViewId: 'front-left' as const,
-      imageUrl: '/assets/renders/publication-v1/demo-car/paint-red__wheel-sport__interior-dark__frame-black/front-left.png',
+      schemaVersion: '2.0.0',
+      catalogVersion: catalogFixture.catalogVersion,
+      vehicleId: 'sc01',
+      configurationId: storedConfiguration.configurationId,
+      renderKey: storedConfiguration.renderKey,
+      renderViewId: 'front-left',
     }
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(response))
     vi.stubGlobal('fetch', fetchMock)
-    const request = {
-      catalogVersion: 'mvp-v1',
-      publicationVersion: 'publication-v1',
-      vehicleId: 'demo-car',
-      selections: {
-        paint: 'paint-red',
-        wheel: 'wheel-sport',
-        interior: 'interior-dark',
-        frame: 'frame-black',
-      },
-      renderViewId: 'front-left' as const,
-    }
 
-    await expect(resolveRender(request)).resolves.toEqual(response)
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/renders/resolve', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-      signal: undefined,
-    })
+    await expect(resolveRender({
+      catalogVersion: catalogFixture.catalogVersion,
+      vehicleId: 'sc01',
+      selections,
+      renderViewId: 'front-left',
+    })).resolves.toEqual(response)
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v2/renders/resolve')
   })
 
-  it('保留 409 状态和服务端错误信息', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
-      code: 'VERSION_CONFLICT',
-      message: 'publication version changed',
-    }, 409)))
+  it('创建配置使用幂等键，更新配置携带 revision', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(storedConfiguration, 201))
+      .mockResolvedValueOnce(jsonResponse({ ...storedConfiguration, revision: 2 }))
+    vi.stubGlobal('fetch', fetchMock)
 
-    const promise = resolveRender({
-      catalogVersion: 'mvp-v1',
-      publicationVersion: 'publication-v1',
-      vehicleId: 'demo-car',
-      selections: {
-        paint: 'paint-red',
-        wheel: 'wheel-sport',
-        interior: 'interior-dark',
-        frame: 'frame-black',
-      },
-      renderViewId: 'front',
+    await saveConfiguration({
+      catalogVersion: catalogFixture.catalogVersion,
+      vehicleId: 'sc01',
+      selections,
     })
-    await expect(promise).rejects.toMatchObject({
-      message: 'publication version changed',
-      status: 409,
-      code: 'VERSION_CONFLICT',
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v2/configurations')
+    expect(fetchMock.mock.calls[0][1].headers['Idempotency-Key']).toMatch(/^web-/)
+
+    await saveConfiguration({
+      catalogVersion: catalogFixture.catalogVersion,
+      vehicleId: 'sc01',
+      selections,
+      configurationId: storedConfiguration.configurationId,
+      revision: 1,
     })
+    expect(fetchMock.mock.calls[1][0]).toContain(storedConfiguration.configurationId)
+    expect(fetchMock.mock.calls[1][1].method).toBe('PUT')
+  })
+
+  it('读取分享配置并保留服务端错误', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(jsonResponse(storedConfiguration))
+      .mockResolvedValueOnce(jsonResponse({ code: 'CONFIGURATION_NOT_FOUND', message: '配置不存在' }, 404)))
+
+    await expect(fetchConfiguration(storedConfiguration.configurationId)).resolves.toEqual(storedConfiguration)
+    await expect(fetchConfiguration('missing')).rejects.toMatchObject({
+      status: 404,
+      code: 'CONFIGURATION_NOT_FOUND',
+      message: '配置不存在',
+    })
+  })
+})
+
+describe('fixture', () => {
+  it('保留可用的 v1 代理目录测试数据', () => {
+    expect(legacyCatalogFixture.parts).toHaveLength(4)
   })
 })

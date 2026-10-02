@@ -21,6 +21,7 @@
 - [外部参考资产与 Maya 规范化验证](docs/technical-probes/REFERENCE_ASSET_PIPELINE.md)
 - [SC01 v2 契约验证](docs/technical-probes/SC01_V2_CONTRACT.md)
 - [SC01 Server v2 验证](docs/technical-probes/SERVER_V2_STAGE.md)
+- [SC01 Web v2 验证](docs/technical-probes/WEB_V2_STAGE.md)
 - [Runtime 内容包契约与安全挂载](docs/CONTENT_PACK_RUNTIME.md)
 - [三端数据与 API 契约](contracts/README.md)
 - [MVP 可视化评审版](automotive-configurator-mvp-plan/automotive-configurator-mvp-plan.html)

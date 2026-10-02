@@ -42,6 +42,20 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   color: rgba(255,255,255,.72); background: rgba(16,18,15,.62);
   font-size: 10px; letter-spacing: .08em; backdrop-filter: blur(8px);
 }
+.draft-badge {
+  display: inline-block; margin-top: 12px; padding: 6px 9px;
+  border: 1px solid rgba(212,244,92,.45); border-radius: 3px;
+  color: var(--lime); background: rgba(16,18,15,.62);
+  font-size: 10px; letter-spacing: .08em; backdrop-filter: blur(8px);
+}
+.connection {
+  position: absolute; z-index: 4; top: 38px; right: 34px;
+  display: flex; align-items: center; gap: 7px; padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.15); border-radius: 99px;
+  color: #d9ddd3; background: rgba(16,18,15,.58); font-size: 10px;
+}
+.online-dot, .offline-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); }
+.offline-dot { background: #e0a759; }
 .vehicle-frame {
   position: absolute; z-index: 1; inset: 18% 4% 18% 2%;
   display: grid; place-items: center;
@@ -91,7 +105,9 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   position: absolute; z-index: 3; left: 36px; bottom: 25px; width: min(520px, 55%);
   color: #858a80; font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
 }
-.image-meta code { display: block; overflow: hidden; margin-top: 4px; color: #bec3b8; text-overflow: ellipsis; white-space: nowrap; }
+.image-meta strong, .image-meta code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.image-meta strong { color: #d2b77e; font-weight: 500; text-transform: none; }
+.image-meta code { margin-top: 4px; color: #bec3b8; }
 
 .config-panel { color: var(--ink); background: var(--panel); }
 .panel-head { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -101,6 +117,29 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .section-title { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 12px; }
 .section-title h3 { margin: 0; font-size: 13px; }
 .section-title > span { color: #96998f; font-size: 10px; }
+
+.save-bar {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 7px; align-items: center;
+  margin-top: 20px; padding-bottom: 15px; border-bottom: 1px solid #dfddd5;
+}
+.sync-state { min-width: 0; color: #777b72; font-size: 10px; }
+.sync-state.error { color: #a84c3c; }
+.sync-state.saved { color: #58702b; }
+.save-bar button {
+  border: 1px solid #c7c6bc; border-radius: 4px; padding: 7px 9px;
+  color: var(--ink); background: #fff; cursor: pointer; font-size: 10px;
+}
+.save-bar button:first-of-type { border-color: #252820; background: #252820; color: #fff; }
+.save-bar button:disabled { cursor: default; opacity: .45; }
+
+.filter-group { display: grid; grid-template-columns: 58px 1fr; gap: 8px; align-items: start; margin-top: 13px; }
+.filter-group > span { padding-top: 7px; color: #8a8d84; font-size: 10px; }
+.filter-group > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-group button {
+  border: 1px solid #d8d6ce; border-radius: 99px; padding: 6px 10px;
+  color: #6f736a; background: transparent; cursor: pointer; font-size: 10px;
+}
+.filter-group button.active { border-color: #282b26; color: #fff; background: #282b26; }
 
 .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .template-grid button {
@@ -141,6 +180,18 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .option-card.selected { border: 2px solid #292c27; background: #fff; }
 .option-preview { display: block; width: 100%; height: 86px; object-fit: cover; background: #deddd6; }
+.option-swatch {
+  display: grid; place-items: center; width: 100%; height: 72px;
+  color: rgba(255,255,255,.8); background: linear-gradient(135deg, #6d2520, #ba5143);
+  font-size: 22px; font-weight: 600;
+}
+.swatch-body-cover-yellow { color: #464114; background: linear-gradient(135deg, #ccb63a, #f4df69); }
+.swatch-wheel-aluminum-alloy { background: linear-gradient(135deg, #8d918e, #d8dbd8); }
+.swatch-wheel-magnesium-alloy { background: linear-gradient(135deg, #464b49, #9ba19d); }
+.swatch-steering-skin-ultrasuede-black { background: linear-gradient(135deg, #191a18, #4a4d48); }
+.swatch-steering-skin-ultrasuede-custom { background: linear-gradient(135deg, #334f68, #8d6f82); }
+.swatch-steering-skin-alcantara { background: linear-gradient(135deg, #39342e, #827569); }
+.swatch-steering-skin-leather { background: linear-gradient(135deg, #663b27, #b77954); }
 .option-card .image-placeholder { height: 86px; color: #8a8d85; background: #e3e1da; }
 .option-info { display: block; padding: 10px 11px; }
 .option-info strong, .option-info small { display: block; }
@@ -207,6 +258,10 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   }
   .panel-head h2 { font-size: 23px; }
   .templates { display: none; }
+  .connection { top: 18px; right: 16px; }
+  .save-bar { grid-template-columns: 1fr auto; }
+  .save-bar .sync-state { grid-column: 1 / -1; }
+  .filter-group { grid-template-columns: 48px 1fr; }
   .part-tabs { position: sticky; z-index: 4; top: -22px; margin-top: 17px; background: var(--panel); }
   .section-title { margin-top: 18px; }
   .option-preview, .option-card .image-placeholder { height: 70px; }

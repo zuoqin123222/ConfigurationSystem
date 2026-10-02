@@ -1,45 +1,85 @@
-import type { Catalog } from '../types'
+import type { CatalogOption, CatalogV2, LegacyCatalog } from '../types'
 
-export const catalogFixture: Catalog = {
-  schemaVersion: '1.0.0',
-  catalogVersion: 'mvp-v1',
+const pricing = {
+  unitPriceMinor: null,
+  quantity: null,
+  pricingUnit: 'per-vehicle',
+  isStandard: true,
+  status: 'unconfirmed',
+  quotable: false,
+} as const
+
+const option = (
+  optionId: string,
+  surfaceId: string,
+  materialFamilyId: string,
+  displayName: string,
+  isStandard = true,
+  renderRelevant = true,
+): CatalogOption => ({
+  optionId,
+  surfaceId,
+  materialFamilyId,
+  displayName,
+  colorCode: null,
+  finish: null,
+  renderRelevant,
+  pricing: { ...pricing, isStandard },
+})
+
+export const catalogFixture: CatalogV2 = {
+  schemaVersion: '2.0.0',
+  catalogVersion: 'sc01-draft-20260121',
+  lifecycle: 'draft',
   currency: 'CNY',
-  vehicle: { vehicleId: 'demo-car', zhName: 'SC01', basePriceMinor: 30_000_000 },
+  vehicle: {
+    vehicleId: 'sc01',
+    displayName: 'SC01',
+    basePriceMinor: null,
+    priceStatus: 'unconfirmed',
+    quotable: false,
+  },
+  selectionOrder: ['exterior-body-cover', 'wheel-material', 'steering-wheel-skin'],
+  categories: [
+    { categoryId: 'exterior', displayName: '外观' },
+    { categoryId: 'steering-wheel', displayName: '方向盘' },
+  ],
+  components: [
+    { componentId: 'body', categoryId: 'exterior', displayName: '车身' },
+    { componentId: 'wheel', categoryId: 'exterior', displayName: '轮毂' },
+    { componentId: 'steering-wheel', categoryId: 'steering-wheel', displayName: '方向盘' },
+  ],
+  surfaces: [
+    { surfaceId: 'exterior-body-cover', componentId: 'body', displayName: '全车身覆盖件', required: true },
+    { surfaceId: 'wheel-material', componentId: 'wheel', displayName: '轮毂材质', required: true },
+    { surfaceId: 'steering-wheel-skin', componentId: 'steering-wheel', displayName: '表皮', required: true },
+  ],
+  materialFamilies: [
+    { materialFamilyId: 'paint', displayName: '喷漆' },
+    { materialFamilyId: 'aluminum-alloy', displayName: '铝合金' },
+    { materialFamilyId: 'magnesium-alloy', displayName: '镁合金' },
+    { materialFamilyId: 'ultrasuede', displayName: 'Ultrasuede' },
+    { materialFamilyId: 'alcantara', displayName: 'Alcantara' },
+  ],
+  options: [
+    option('body-cover-red', 'exterior-body-cover', 'paint', '红色'),
+    option('body-cover-yellow', 'exterior-body-cover', 'paint', '黄色'),
+    option('wheel-aluminum-alloy', 'wheel-material', 'aluminum-alloy', '铝合金'),
+    option('wheel-magnesium-alloy', 'wheel-material', 'magnesium-alloy', '镁合金', false),
+    option('steering-skin-ultrasuede-black', 'steering-wheel-skin', 'ultrasuede', 'Ultrasuede（黑）'),
+    option('steering-skin-alcantara', 'steering-wheel-skin', 'alcantara', 'Alcantara', false),
+  ],
+}
+
+export const legacyCatalogFixture: LegacyCatalog = {
+  catalogVersion: 'mvp-v1',
+  vehicle: { vehicleId: 'demo-car' },
   parts: [
-    {
-      partId: 'paint', zhName: '车漆', displayOrder: 0,
-      options: [
-        { optionId: 'paint-red', zhName: '竞速红', priceDeltaMinor: 0, previewImageUrl: '/red.png', uePrimaryAssetId: 'CarMaterialOption:paint-red' },
-        { optionId: 'paint-silver', zhName: '星辉银', priceDeltaMinor: 880_000, previewImageUrl: '/silver.png', uePrimaryAssetId: 'CarMaterialOption:paint-silver' },
-      ],
-    },
-    {
-      partId: 'wheel', zhName: '轮毂', displayOrder: 1,
-      options: [
-        { optionId: 'wheel-sport', zhName: '运动轮毂', priceDeltaMinor: 0, previewImageUrl: '/sport.png', uePrimaryAssetId: 'CarMaterialOption:wheel-sport' },
-        { optionId: 'wheel-forged', zhName: '锻造轮毂', priceDeltaMinor: 1_200_000, previewImageUrl: '/forged.png', uePrimaryAssetId: 'CarMaterialOption:wheel-forged' },
-      ],
-    },
-    {
-      partId: 'interior', zhName: '内饰', displayOrder: 2,
-      options: [
-        { optionId: 'interior-dark', zhName: '曜石黑', priceDeltaMinor: 0, previewImageUrl: '/dark.png', uePrimaryAssetId: 'CarMaterialOption:interior-dark' },
-        { optionId: 'interior-ivory', zhName: '象牙白', priceDeltaMinor: 680_000, previewImageUrl: '/ivory.png', uePrimaryAssetId: 'CarMaterialOption:interior-ivory' },
-      ],
-    },
-    {
-      partId: 'frame', zhName: '内部车架', displayOrder: 3,
-      options: [
-        { optionId: 'frame-black', zhName: '哑光黑', priceDeltaMinor: 0, previewImageUrl: '/black.png', uePrimaryAssetId: 'CarMaterialOption:frame-black' },
-        { optionId: 'frame-red', zhName: '性能红', priceDeltaMinor: 360_000, previewImageUrl: '/frame-red.png', uePrimaryAssetId: 'CarMaterialOption:frame-red' },
-      ],
-    },
+    { partId: 'paint', options: [{ optionId: 'paint-red' }] },
+    { partId: 'wheel', options: [{ optionId: 'wheel-sport' }] },
+    { partId: 'interior', options: [{ optionId: 'interior-dark' }] },
+    { partId: 'frame', options: [{ optionId: 'frame-black' }] },
   ],
-  templates: [
-    { templateId: 'sport', zhName: '运动', selections: { paint: 'paint-red', wheel: 'wheel-sport', interior: 'interior-dark', frame: 'frame-red' } },
-    { templateId: 'luxury', zhName: '豪华', selections: { paint: 'paint-silver', wheel: 'wheel-forged', interior: 'interior-ivory', frame: 'frame-black' } },
-  ],
-  interactionCameras: ['default', 'paint', 'wheel', 'interior', 'frame'],
   renderViews: [
     { renderViewId: 'front', zhName: '正前' },
     { renderViewId: 'front-left', zhName: '左前' },

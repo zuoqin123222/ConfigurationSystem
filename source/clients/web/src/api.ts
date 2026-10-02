@@ -1,14 +1,14 @@
 import {
   RENDER_VIEW_IDS,
-  type Catalog,
-  type Health,
-  type ResolveRenderRequest,
-  type ResolveRenderResponse,
+  type CatalogV2,
+  type ConfigurationV2,
+  type LegacyCatalog,
+  type LegacyRender,
+  type RenderViewId,
+  type ResolveRenderV2Response,
+  type SaveConfigurationRequest,
+  type Selections,
 } from './types'
-
-const STABLE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const CONFIGURATION_KEY_PATTERN =
-  /^paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+$/
 
 export class ApiError extends Error {
   constructor(
@@ -21,25 +21,33 @@ export class ApiError extends Error {
   }
 }
 
-function isCatalog(value: unknown): value is Catalog {
+function isCatalogV2(value: unknown): value is CatalogV2 {
   if (!value || typeof value !== 'object') return false
-  const data = value as Partial<Catalog>
+  const data = value as Partial<CatalogV2>
   return (
-    data.schemaVersion === '1.0.0' &&
+    data.schemaVersion === '2.0.0' &&
+    data.lifecycle === 'draft' &&
     data.currency === 'CNY' &&
     typeof data.catalogVersion === 'string' &&
     !!data.vehicle &&
-    Array.isArray(data.parts) &&
-    data.parts.length === 4 &&
-    data.parts.every((part) => Array.isArray(part.options) && part.options.length > 0) &&
-    Array.isArray(data.templates) &&
-    Array.isArray(data.renderViews) &&
-    data.renderViews.length === 4
+    data.vehicle.basePriceMinor === null &&
+    data.vehicle.quotable === false &&
+    Array.isArray(data.selectionOrder) &&
+    data.selectionOrder.length > 0 &&
+    Array.isArray(data.categories) &&
+    Array.isArray(data.components) &&
+    Array.isArray(data.surfaces) &&
+    Array.isArray(data.materialFamilies) &&
+    Array.isArray(data.options) &&
+    data.selectionOrder.every((surfaceId) =>
+      data.surfaces?.some((surface) => surface.surfaceId === surfaceId) &&
+      data.options?.some((option) => option.surfaceId === surfaceId),
+    )
   )
 }
 
-export async function fetchCatalog(signal?: AbortSignal): Promise<Catalog> {
-  const response = await fetch('/api/v1/catalog', {
+export async function fetchCatalog(signal?: AbortSignal): Promise<CatalogV2> {
+  const response = await fetch('/api/v2/catalog', {
     headers: { Accept: 'application/json' },
     signal,
   })
@@ -47,69 +55,54 @@ export async function fetchCatalog(signal?: AbortSignal): Promise<Catalog> {
     throw await createApiError(response, `目录服务返回 ${response.status}`)
   }
   const data: unknown = await response.json()
-  if (!isCatalog(data)) {
+  if (!isCatalogV2(data)) {
     throw new Error('目录数据格式不受支持')
   }
   return data
 }
 
-function isHealth(value: unknown): value is Health {
-  if (!value || typeof value !== 'object') return false
-  const data = value as Partial<Health>
-  return (
-    data.status === 'ok' &&
-    typeof data.catalogVersion === 'string' &&
-    STABLE_ID_PATTERN.test(data.catalogVersion) &&
-    typeof data.publicationVersion === 'string' &&
-    STABLE_ID_PATTERN.test(data.publicationVersion)
-  )
-}
-
-export async function fetchHealth(signal?: AbortSignal): Promise<Health> {
-  const response = await fetch('/health', {
+export async function fetchLegacyCatalog(signal?: AbortSignal): Promise<LegacyCatalog | null> {
+  const response = await fetch('/api/v1/catalog', {
     headers: { Accept: 'application/json' },
     signal,
   })
-  if (!response.ok) {
-    throw await createApiError(response, `健康检查返回 ${response.status}`)
-  }
+  if (!response.ok) return null
   const data: unknown = await response.json()
-  if (!isHealth(data)) {
-    throw new Error('健康检查数据格式不受支持')
-  }
-  return data
+  if (!data || typeof data !== 'object') return null
+  const catalog = data as Partial<LegacyCatalog>
+  return Array.isArray(catalog.parts) && Array.isArray(catalog.renderViews)
+    ? catalog as LegacyCatalog
+    : null
 }
 
 export async function fetchInitialData(
   signal?: AbortSignal,
-): Promise<{ catalog: Catalog; publicationVersion: string }> {
-  const healthRequest = fetchHealth(signal)
-  const catalogRequest = fetchCatalog(signal)
-  const [health, catalog] = await Promise.all([healthRequest, catalogRequest])
-  if (health.catalogVersion !== catalog.catalogVersion) {
-    throw new ApiError('目录版本与当前发布版本不一致，请重新加载', 409, 'VERSION_CONFLICT')
-  }
-  return { catalog, publicationVersion: health.publicationVersion }
+): Promise<{ catalog: CatalogV2; legacyCatalog: LegacyCatalog | null }> {
+  const [catalog, legacyCatalog] = await Promise.all([
+    fetchCatalog(signal),
+    fetchLegacyCatalog(signal).catch(() => null),
+  ])
+  return { catalog, legacyCatalog }
 }
 
-function isResolveRenderResponse(value: unknown): value is ResolveRenderResponse {
+function isResolveRenderV2Response(value: unknown): value is ResolveRenderV2Response {
   if (!value || typeof value !== 'object') return false
-  const data = value as Partial<ResolveRenderResponse>
+  const data = value as Partial<ResolveRenderV2Response>
   return (
-    typeof data.configurationKey === 'string' &&
-    CONFIGURATION_KEY_PATTERN.test(data.configurationKey) &&
-    typeof data.renderViewId === 'string' &&
-    RENDER_VIEW_IDS.includes(data.renderViewId as ResolveRenderResponse['renderViewId']) &&
-    typeof data.imageUrl === 'string' &&
-    data.imageUrl.startsWith('/assets/renders/')
+    data.schemaVersion === '2.0.0' &&
+    typeof data.configurationId === 'string' &&
+    typeof data.renderKey === 'string' &&
+    (data.renderViewId === undefined ||
+      RENDER_VIEW_IDS.includes(data.renderViewId as RenderViewId)) &&
+    (data.imageUrl === undefined || typeof data.imageUrl === 'string')
   )
 }
 
 export async function resolveRender(
-  request: ResolveRenderRequest,
+  request: { catalogVersion: string; vehicleId: string; selections: Selections; renderViewId?: string },
   signal?: AbortSignal,
-): Promise<ResolveRenderResponse> {
-  const response = await fetch('/api/v1/renders/resolve', {
+): Promise<ResolveRenderV2Response> {
+  const response = await fetch('/api/v2/renders/resolve', {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -122,10 +115,109 @@ export async function resolveRender(
     throw await createApiError(response, `图片解析服务返回 ${response.status}`)
   }
   const data: unknown = await response.json()
-  if (!isResolveRenderResponse(data)) {
+  if (!isResolveRenderV2Response(data)) {
     throw new Error('图片解析数据格式不受支持')
   }
   return data
+}
+
+function isConfiguration(value: unknown): value is ConfigurationV2 {
+  if (!value || typeof value !== 'object') return false
+  const data = value as Partial<ConfigurationV2>
+  return (
+    data.schemaVersion === '2.0.0' &&
+    typeof data.configurationId === 'string' &&
+    typeof data.renderKey === 'string' &&
+    typeof data.revision === 'number' &&
+    !!data.selections &&
+    !!data.priceResult &&
+    data.priceResult.totalPriceMinor === null &&
+    data.priceResult.quoteAllowed === false
+  )
+}
+
+export async function fetchConfiguration(
+  configurationId: string,
+  signal?: AbortSignal,
+): Promise<ConfigurationV2> {
+  const response = await fetch(`/api/v2/configurations/${encodeURIComponent(configurationId)}`, {
+    headers: { Accept: 'application/json' },
+    signal,
+  })
+  if (!response.ok) {
+    throw await createApiError(response, `配置读取返回 ${response.status}`)
+  }
+  const data: unknown = await response.json()
+  if (!isConfiguration(data)) throw new Error('配置数据格式不受支持')
+  return data
+}
+
+export async function saveConfiguration(
+  request: SaveConfigurationRequest,
+  signal?: AbortSignal,
+): Promise<ConfigurationV2> {
+  const updating = !!request.configurationId && request.revision !== undefined
+  const response = await fetch(
+    updating
+      ? `/api/v2/configurations/${encodeURIComponent(request.configurationId!)}`
+      : '/api/v2/configurations',
+    {
+      method: updating ? 'PUT' : 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(updating ? {} : { 'Idempotency-Key': createIdempotencyKey(request) }),
+      },
+      body: JSON.stringify(request),
+      signal,
+    },
+  )
+  if (!response.ok) {
+    throw await createApiError(response, `配置保存返回 ${response.status}`)
+  }
+  const data: unknown = await response.json()
+  if (!isConfiguration(data)) throw new Error('配置数据格式不受支持')
+  return data
+}
+
+function createIdempotencyKey(request: SaveConfigurationRequest): string {
+  const input = `${request.catalogVersion}:${request.vehicleId}:${JSON.stringify(request.selections)}`
+  let hash = 2166136261
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return `web-${(hash >>> 0).toString(16)}`
+}
+
+export async function resolveLegacyProxy(
+  catalog: LegacyCatalog,
+  renderViewId: RenderViewId,
+  signal?: AbortSignal,
+): Promise<LegacyRender | null> {
+  const selections = Object.fromEntries(
+    catalog.parts.map((part) => [part.partId, part.options[0]?.optionId]),
+  )
+  if (Object.values(selections).some((optionId) => !optionId)) return null
+  const healthResponse = await fetch('/health', { headers: { Accept: 'application/json' }, signal })
+  if (!healthResponse.ok) return null
+  const health = await healthResponse.json() as { publicationVersion?: unknown }
+  if (typeof health.publicationVersion !== 'string') return null
+  const response = await fetch('/api/v1/renders/resolve', {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      catalogVersion: catalog.catalogVersion,
+      publicationVersion: health.publicationVersion,
+      vehicleId: catalog.vehicle.vehicleId,
+      selections,
+      renderViewId,
+    }),
+    signal,
+  })
+  if (!response.ok) return null
+  const data = await response.json() as Partial<LegacyRender>
+  return typeof data.imageUrl === 'string' ? data as LegacyRender : null
 }
 
 async function createApiError(response: Response, fallback: string): Promise<ApiError> {
