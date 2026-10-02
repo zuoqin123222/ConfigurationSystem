@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "TimerManager.h"
 #include "ConfigShowroomPlayerController.generated.h"
 
 class UConfiguratorPanel;
@@ -22,8 +23,19 @@ protected:
 	virtual void SetupInputComponent() override;
 
 public:
+	AConfigShowroomPlayerController();
+
+	virtual void Tick(float DeltaSeconds) override;
+
 	UFUNCTION(BlueprintCallable, Category="Configurator|Camera")
 	bool SwitchCamera(int32 CameraIndex);
+
+	/** 外部机位围绕 Pivot 按最短方位角弧线插值，供运行时和自动化测试共用。 */
+	static FVector InterpolateOrbitLocation(
+		const FVector& Start,
+		const FVector& End,
+		const FVector& Pivot,
+		float Alpha);
 
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	void ToggleEnvironment();
@@ -63,6 +75,9 @@ private:
 	void LoadInput();
 	void ToggleLeftDoor(); void ToggleRightDoor(); void ToggleHood(); void ToggleTrunk();
 	void ToggleWheelsInput();
+	void FinishInteriorExteriorCameraSwitch();
+	bool IsInteriorCamera(int32 CameraIndex) const;
+	FVector GetVehicleCameraPivot() const;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UConfiguratorPanel> ConfiguratorPanel;
@@ -76,6 +91,17 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<AConfiguratorVehicleActor> Vehicle;
 
+	UPROPERTY(Transient)
+	TObjectPtr<ACameraActor> TransitionCamera;
+
 	int32 CurrentCameraIndex = 0;
+	int32 PendingCameraIndex = INDEX_NONE;
+	FVector CameraTransitionStart = FVector::ZeroVector;
+	FVector CameraTransitionEnd = FVector::ZeroVector;
+	FVector CameraTransitionPivot = FVector::ZeroVector;
+	float CameraTransitionElapsed = 0.0f;
+	float CameraTransitionDuration = 0.85f;
+	FTimerHandle CameraZoneTransitionTimer;
+	bool bOrbitTransitionActive = false;
 	bool bApplyingLoadedSnapshot = false;
 };

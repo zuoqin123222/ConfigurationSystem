@@ -1,6 +1,7 @@
 #include "ConfigShowroomPlayerController.h"
 
 #include "Camera/CameraActor.h"
+#include "Camera/PlayerCameraManager.h"
 #include "CarConfiguratorSubsystem.h"
 #include "ConfiguratorExperienceSaveGame.h"
 #include "ConfiguratorPanel.h"
@@ -11,6 +12,62 @@
 #include "InputCoreTypes.h"
 #include "PathTracingExperienceSubsystem.h"
 #include "ShowroomEnvironmentActor.h"
+#include "TimerManager.h"
+
+AConfigShowroomPlayerController::AConfigShowroomPlayerController()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
+
+FVector AConfigShowroomPlayerController::InterpolateOrbitLocation(
+	const FVector& Start,
+	const FVector& End,
+	const FVector& Pivot,
+	const float Alpha)
+{
+	const float Eased = FMath::SmoothStep(0.0f, 1.0f, FMath::Clamp(Alpha, 0.0f, 1.0f));
+	const FVector StartRelative = Start - Pivot;
+	const FVector EndRelative = End - Pivot;
+	const float StartRadius = FVector2D(StartRelative.X, StartRelative.Y).Size();
+	const float EndRadius = FVector2D(EndRelative.X, EndRelative.Y).Size();
+	const float StartYaw = FMath::RadiansToDegrees(FMath::Atan2(StartRelative.Y, StartRelative.X));
+	const float EndYaw = FMath::RadiansToDegrees(FMath::Atan2(EndRelative.Y, EndRelative.X));
+	const float Yaw = StartYaw + FMath::FindDeltaAngleDegrees(StartYaw, EndYaw) * Eased;
+	const float Radius = FMath::Lerp(StartRadius, EndRadius, Eased);
+	const float Height = FMath::Lerp(StartRelative.Z, EndRelative.Z, Eased);
+	return Pivot + FVector(
+		FMath::Cos(FMath::DegreesToRadians(Yaw)) * Radius,
+		FMath::Sin(FMath::DegreesToRadians(Yaw)) * Radius,
+		Height);
+}
+
+void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (!bOrbitTransitionActive || !IsValid(TransitionCamera))
+	{
+		return;
+	}
+
+	CameraTransitionElapsed += DeltaSeconds;
+	const float Alpha = FMath::Clamp(
+		CameraTransitionElapsed / FMath::Max(CameraTransitionDuration, KINDA_SMALL_NUMBER),
+		0.0f,
+		1.0f);
+	const FVector Location = InterpolateOrbitLocation(
+		CameraTransitionStart,
+		CameraTransitionEnd,
+		CameraTransitionPivot,
+		Alpha);
+	TransitionCamera->SetActorLocation(Location);
+	TransitionCamera->SetActorRotation((CameraTransitionPivot - Location).Rotation());
+
+	if (Alpha >= 1.0f)
+	{
+		bOrbitTransitionActive = false;
+		SetViewTarget(ShowroomCameras[CurrentCameraIndex]);
+	}
+}
 
 void AConfigShowroomPlayerController::BeginPlay()
 {
@@ -116,9 +173,89 @@ bool AConfigShowroomPlayerController::SwitchCamera(const int32 CameraIndex)
 	{
 		return false;
 	}
+	if (CameraIndex == CurrentCameraIndex && GetViewTarget() == ShowroomCameras[CameraIndex])
+	{
+		return true;
+	}
+
+	const bool bCrossesInteriorBoundary =
+		IsInteriorCamera(CurrentCameraIndex) != IsInteriorCamera(CameraIndex);
+	bOrbitTransitionActive = false;
+	GetWorldTimerManager().ClearTimer(CameraZoneTransitionTimer);
+
+	if (bCrossesInteriorBoundary)
+	{
+		PendingCameraIndex = CameraIndex;
+		if (PlayerCameraManager != nullptr)
+		{
+			PlayerCameraManager->StartCameraFade(
+				0.0f, 1.0f, 0.18f, FLinearColor::Black, false, true);
+		}
+		GetWorldTimerManager().SetTimer(
+			CameraZoneTransitionTimer,
+			this,
+			&AConfigShowroomPlayerController::FinishInteriorExteriorCameraSwitch,
+			0.18f,
+			false);
+		return true;
+	}
+
+	if (IsInteriorCamera(CameraIndex))
+	{
+		CurrentCameraIndex = CameraIndex;
+		SetViewTargetWithBlend(ShowroomCameras[CameraIndex], 0.3f, VTBlend_EaseInOut, 2.0f);
+		return true;
+	}
+
+	if (!IsValid(TransitionCamera))
+	{
+		TransitionCamera = GetWorld()->SpawnActor<ACameraActor>();
+	}
+	if (!IsValid(TransitionCamera) || PlayerCameraManager == nullptr)
+	{
+		return false;
+	}
+	CameraTransitionStart = PlayerCameraManager->GetCameraLocation();
+	CameraTransitionEnd = ShowroomCameras[CameraIndex]->GetActorLocation();
+	CameraTransitionPivot = GetVehicleCameraPivot();
+	CameraTransitionElapsed = 0.0f;
 	CurrentCameraIndex = CameraIndex;
-	SetViewTargetWithBlend(ShowroomCameras[CameraIndex], 0.65f, VTBlend_Cubic, 0.0f, false);
+	TransitionCamera->SetActorLocation(CameraTransitionStart);
+	TransitionCamera->SetActorRotation(
+		(CameraTransitionPivot - CameraTransitionStart).Rotation());
+	SetViewTarget(TransitionCamera);
+	bOrbitTransitionActive = true;
 	return true;
+}
+
+void AConfigShowroomPlayerController::FinishInteriorExteriorCameraSwitch()
+{
+	if (!ShowroomCameras.IsValidIndex(PendingCameraIndex)
+		|| !IsValid(ShowroomCameras[PendingCameraIndex]))
+	{
+		PendingCameraIndex = INDEX_NONE;
+		return;
+	}
+	CurrentCameraIndex = PendingCameraIndex;
+	PendingCameraIndex = INDEX_NONE;
+	SetViewTarget(ShowroomCameras[CurrentCameraIndex]);
+	if (PlayerCameraManager != nullptr)
+	{
+		PlayerCameraManager->StartCameraFade(
+			1.0f, 0.0f, 0.22f, FLinearColor::Black, false, false);
+	}
+}
+
+bool AConfigShowroomPlayerController::IsInteriorCamera(const int32 CameraIndex) const
+{
+	return CameraIndex == 4;
+}
+
+FVector AConfigShowroomPlayerController::GetVehicleCameraPivot() const
+{
+	return IsValid(Vehicle)
+		? Vehicle->GetActorLocation() + FVector(0.0, 0.0, 110.0)
+		: FVector(0.0, 0.0, 110.0);
 }
 
 void AConfigShowroomPlayerController::ToggleEnvironment()

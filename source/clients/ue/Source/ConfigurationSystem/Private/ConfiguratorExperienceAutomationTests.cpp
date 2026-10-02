@@ -1,6 +1,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "ConfiguratorExperienceSaveGame.h"
+#include "ConfigShowroomPlayerController.h"
 #include "ReversiblePartActuatorComponent.h"
 #include "SmoothWheelControllerComponent.h"
 
@@ -10,6 +11,35 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "UObject/UnrealType.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FConfiguratorCameraOrbitAutomationTest,
+	"ConfigurationSystem.Runtime.Experience.CameraOrbit",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	const FVector Pivot(0.0, 0.0, 100.0);
+	const FVector Start(1000.0, 0.0, 200.0);
+	const FVector End(0.0, 1000.0, 300.0);
+	const FVector Mid = AConfigShowroomPlayerController::InterpolateOrbitLocation(
+		Start, End, Pivot, 0.5f);
+
+	TestTrue(TEXT("外部镜头中点保持绕车半径而非直线切角"),
+		FMath::IsNearlyEqual(FVector2D(Mid.X, Mid.Y).Size(), 1000.0, 0.1));
+	TestTrue(TEXT("外部镜头沿最短 90 度圆弧经过 45 度"),
+		FMath::IsNearlyEqual(Mid.X, Mid.Y, 0.1));
+	TestTrue(TEXT("外部镜头高度平滑插值"),
+		FMath::IsNearlyEqual(Mid.Z, 250.0, 0.1));
+	TestTrue(TEXT("轨迹起点稳定"),
+		AConfigShowroomPlayerController::InterpolateOrbitLocation(
+			Start, End, Pivot, 0.0f).Equals(Start, 0.1));
+	TestTrue(TEXT("轨迹终点稳定"),
+		AConfigShowroomPlayerController::InterpolateOrbitLocation(
+			Start, End, Pivot, 1.0f).Equals(End, 0.1));
+	return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FReversiblePartActuatorAutomationTest,
