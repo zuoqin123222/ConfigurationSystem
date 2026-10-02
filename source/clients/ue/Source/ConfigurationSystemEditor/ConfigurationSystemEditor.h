@@ -24,11 +24,13 @@ private:
 	void RequestCreateConfigShowroomMap();
 	bool TickCreateConfigShowroomMap(float DeltaTime);
 	void CreateConfigShowroomMap();
+	void StartConfigurationBatchBake();
 
 	IConsoleObject* CreateAssetsCommand = nullptr;
 	IConsoleObject* CreateProjectMapCommand = nullptr;
 	IConsoleObject* CreateShowroomMapCommand = nullptr;
 	IConsoleObject* AdminImportProbeCommand = nullptr;
+	IConsoleObject* ConfigurationBatchBakeCommand = nullptr;
 	FTSTicker::FDelegateHandle AdminImportProbeTickerHandle;
 	FTSTicker::FDelegateHandle CreateShowroomMapTickerHandle;
 	bool bMenusRegistered = false;

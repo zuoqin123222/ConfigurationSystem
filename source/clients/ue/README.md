@@ -110,3 +110,54 @@ Editor 的 `Tools > Configuration System 管理员导入` 同时提供材质包 
 ```
 
 该探针使用固定的 `mvp-v1 / 5.8 / Win64` 策略和真实 `FPakFile` 索引读取，只预检、不挂载、不修改资产；通过返回 `0`，失败返回 `8`。
+
+## Path Tracing 批量 Bake
+
+批量入口读取仓库 `contracts/fixtures/published-configurations.mvp.json`，按配置顺序和
+`front`、`front-left`、`side`、`rear-right` 顺序生成 16 × 4 个任务。当前渲染对象是
+`AConfiguratorVehicleActor` 占位车辆；每项任务先应用四分区配置，再切换到带独立
+`RenderView.<id>` 标签的相机，确认 Path Tracing 累积已重置并达到目标样本数后回读。
+输出会自动检测 coverage 方向、清空全透明像素 RGB，并对无几何 coverage 的发光像素
+构造 Alpha，最终写出规范 straight-alpha sRGB PNG。
+
+Runtime/命令行入口：
+
+```powershell
+& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe' `
+  'D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject' `
+  /Game/Maps/L_ConfigShowroom -game -windowed -ResX=1280 -ResY=720 `
+  -dx12 -raytracing -ConfigurationBatchBake -log
+```
+
+Editor 入口：先启动 PIE（保证存在 Game Viewport），再在控制台执行：
+
+```text
+ConfigurationSystem.BakePublishedConfigurations
+```
+
+可选参数：
+
+```text
+-ConfigurationBakeInput=<published-configurations.json>
+-ConfigurationBakeStaging=<输出 staging 目录>
+-ConfigurationBakeSamples=<每项 Path Tracing 样本数，默认 16>
+-ConfigurationBakeTaskTimeout=<单项超时秒数，默认 120>
+```
+
+默认输出为仓库 `staging/bake-manifest.json` 以及清单中 64 个
+`renders/<publication>/<vehicle>/<configuration>/<view>.png`。即使单项失败，清单仍保留
+完整 64 项并将对应项标记为 `failed`；命令行全量成功返回 `0`，否则返回 `10`。
+
+不依赖 GPU 的计划与相机自动化：
+
+```powershell
+& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' `
+  'D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject' `
+  -Unattended -NullRHI -NoSplash -NoSound `
+  '-ExecCmds=Automation RunTests ConfigurationSystem.Runtime.BatchBake;Quit' `
+  '-TestExit=Automation Test Queue Empty' -log
+```
+
+测试固定检查 16 个配置各自包含四视角、64 个任务/路径无重复，以及四个 RenderView
+分别拥有唯一标签和唯一相机 Transform。正式车辆接入时只需替换车辆生成/配置映射，
+不得改变任务键、RenderView ID、输出路径和 straight-alpha 清单契约。

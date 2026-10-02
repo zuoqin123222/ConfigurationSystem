@@ -5,6 +5,7 @@
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "ConfigShowroomGameMode.h"
+#include "ConfigurationBatchBake.h"
 #include "ConfiguratorVehicleActor.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
@@ -164,6 +165,13 @@ void FConfigurationSystemEditorModule::StartupModule()
 		FConsoleCommandDelegate::CreateRaw(this, &FConfigurationSystemEditorModule::RunAdminImportProbe),
 		ECVF_Default);
 
+	ConfigurationBatchBakeCommand = IConsoleManager::Get().RegisterConsoleCommand(
+		TEXT("ConfigurationSystem.BakePublishedConfigurations"),
+		TEXT("在 PIE/Game Viewport 中批量 Bake published-configurations，输出到 staging。"),
+		FConsoleCommandDelegate::CreateRaw(
+			this, &FConfigurationSystemEditorModule::StartConfigurationBatchBake),
+		ECVF_Default);
+
 	if (FParse::Param(FCommandLine::Get(), TEXT("AdminImportPreflightProbe")))
 	{
 		// Defer exit until the engine loop is live; requesting it from module startup
@@ -215,6 +223,16 @@ void FConfigurationSystemEditorModule::ShutdownModule()
 		IConsoleManager::Get().UnregisterConsoleObject(AdminImportProbeCommand);
 		AdminImportProbeCommand = nullptr;
 	}
+	if (ConfigurationBatchBakeCommand != nullptr)
+	{
+		IConsoleManager::Get().UnregisterConsoleObject(ConfigurationBatchBakeCommand);
+		ConfigurationBatchBakeCommand = nullptr;
+	}
+}
+
+void FConfigurationSystemEditorModule::StartConfigurationBatchBake()
+{
+	StartConfigurationBatchBakeFromEditor();
 }
 
 void FConfigurationSystemEditorModule::RegisterMenus()

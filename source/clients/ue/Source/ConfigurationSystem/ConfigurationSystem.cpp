@@ -1,6 +1,7 @@
 #include "ConfigurationSystem.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "ConfigurationBatchBake.h"
 #include "ContentPackMountService.h"
 #include "Dom/JsonObject.h"
 #include "Engine/AssetManager.h"
@@ -84,6 +85,12 @@ void FConfigurationSystemModule::StartupModule()
 		return;
 	}
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("ConfigurationBatchBake")))
+	{
+		StartConfigurationBatchBake(true);
+		return;
+	}
+
 	if (FParse::Param(FCommandLine::Get(), TEXT("PathTracingProbe")))
 	{
 		// Path Tracing 探针拥有独立生命周期，不与资产探针共享状态或回调。
@@ -147,6 +154,12 @@ void FConfigurationSystemModule::ShutdownModule()
 		PathTracingAlphaProbe.Reset();
 	}
 
+	if (ConfigurationBatchBake.IsValid())
+	{
+		ConfigurationBatchBake->Shutdown();
+		ConfigurationBatchBake.Reset();
+	}
+
 	if (PathTracingProbe.IsValid())
 	{
 		PathTracingProbe->Shutdown();
@@ -173,6 +186,17 @@ void FConfigurationSystemModule::ShutdownModule()
 
 	ProbeLoadHandle.Reset();
 	FDefaultGameModuleImpl::ShutdownModule();
+}
+
+void FConfigurationSystemModule::StartConfigurationBatchBake(const bool bExitOnComplete)
+{
+	if (ConfigurationBatchBake.IsValid() && ConfigurationBatchBake->IsRunning())
+	{
+		UE_LOG(LogPrimaryAssetProbe, Warning, TEXT("批量 Bake 已在运行，忽略重复启动。"));
+		return;
+	}
+	ConfigurationBatchBake = MakeShared<FConfigurationBatchBake>();
+	ConfigurationBatchBake->Start(bExitOnComplete);
 }
 
 bool FConfigurationSystemModule::TickContentPackProbe(const float DeltaTime)

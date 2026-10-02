@@ -201,7 +201,11 @@ export function validateBakeManifest(
     const expectedPath = `renders/${manifest.publicationVersion}/${manifest.vehicleId}/${render.configurationKey}/${render.renderViewId}.png`;
     assert(render.path === expectedPath, `路径不符合 canonical 规则：${render.path}`);
     assert(render.format === "png" && render.colorSpace === "sRGB" && render.alphaMode === "straight", `renders[${index}] 图片元数据非法`);
-    assert(render.coverageInverted === false && render.normalizationRequired === false, `renders[${index}] Alpha 尚未规范化`);
+    assert(
+      typeof render.coverageInverted === "boolean" &&
+        typeof render.normalizationRequired === "boolean",
+      `renders[${index}] Alpha 处理元数据非法`,
+    );
     assert(Number.isInteger(render.width) && render.width > 0 && Number.isInteger(render.height) && render.height > 0, `renders[${index}] 尺寸非法`);
     assert(typeof render.sha256 === "string" && /^[a-f0-9]{64}$/.test(render.sha256), `renders[${index}] SHA256 非法`);
 
