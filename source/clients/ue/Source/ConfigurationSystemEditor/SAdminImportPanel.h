@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AdminImportPreflight.h"
+#include "ContentPackMountService.h"
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
 
@@ -23,6 +24,10 @@ private:
 	FReply BrowseAnimationSidecar();
 	FReply RunPreflight();
 	FReply ImportApproved();
+	FReply BrowseContentPackManifest();
+	FReply BrowseContentPackPak();
+	FReply RunContentPackPreflight();
+	FReply MountContentPack();
 
 	FReply BrowseInto(
 		const TSharedPtr<SEditableTextBox>& Target,
@@ -31,6 +36,9 @@ private:
 	void InvalidatePreflight();
 	void RefreshStatus();
 	bool CanImport() const;
+	void InvalidateContentPackPreflight();
+	void RefreshContentPackStatus();
+	bool CanMountContentPack() const;
 
 	TSharedPtr<SEditableTextBox> ModelFbxTextBox;
 	TSharedPtr<SEditableTextBox> ModelSidecarTextBox;
@@ -38,4 +46,9 @@ private:
 	TSharedPtr<SEditableTextBox> AnimationSidecarTextBox;
 	TSharedPtr<SMultiLineEditableTextBox> StatusTextBox;
 	TOptional<FAdminImportPreflightResult> LastResult;
+	TSharedPtr<SEditableTextBox> ContentPackManifestTextBox;
+	TSharedPtr<SEditableTextBox> ContentPackPakTextBox;
+	TSharedPtr<SMultiLineEditableTextBox> ContentPackStatusTextBox;
+	TUniquePtr<FContentPackMountService> ContentPackMountService;
+	TOptional<FContentPackMountResult> LastContentPackResult;
 };

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSidecarFixtures } from "./validate-vehicle-sidecars.mjs";
+import { validateContentPackManifest } from "./validate-content-pack.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const schemaDir = resolve(root, "contracts", "schemas");
@@ -44,7 +45,8 @@ const schemaNames = [
   "published-configurations.schema.json",
   "bake-manifest.schema.json",
   "vehicle-model-sidecar.schema.json",
-  "vehicle-animation-sidecar.schema.json"
+  "vehicle-animation-sidecar.schema.json",
+  "content-pack-manifest.schema.json"
 ];
 
 for (const name of schemaNames) {
@@ -341,10 +343,30 @@ try {
   failures.push(`车辆 sidecar 验证器执行失败 (${error.message})`);
 }
 
+try {
+  const validContentPack = await readJson(resolve(fixtureDir, "content-pack.valid.json"));
+  const invalidContentPack = await readJson(resolve(fixtureDir, "content-pack.invalid.json"));
+  const validResult = validateContentPackManifest(validContentPack, {
+    catalogVersion: "catalog-1",
+    engineVersion: "5.8",
+    platform: "Win64"
+  });
+  const invalidResult = validateContentPackManifest(invalidContentPack);
+  check(validResult.valid, `有效 content-pack fixture 被拒绝 (${validResult.errors.join("; ")})`);
+  check(
+    !invalidResult.valid
+      && invalidResult.errors.some((error) => error.includes("PrimaryAssetId 重复"))
+      && invalidResult.errors.some((error) => error.includes("mountPoint")),
+    "无效 content-pack fixture 必须因挂载点与重复 PrimaryAssetId 被拒绝"
+  );
+} catch (error) {
+  failures.push(`content-pack fixture 验证失败 (${error.message})`);
+}
+
 if (failures.length > 0) {
   console.error(`契约验证失败（${failures.length} 项）：`);
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log("契约验证通过：5 个 Schema JSON、P0-3 manifest 结构、2 类车辆 sidecar、2 个有效与 2 个无效 fixture、8 个选项、2 个模板、16 个唯一组合、4 个视角、64 个图片期望。");
+  console.log("契约验证通过：6 个 Schema JSON、content-pack manifest 正反 fixture、P0-3 manifest 结构、2 类车辆 sidecar、2 个有效与 2 个无效 fixture、8 个选项、2 个模板、16 个唯一组合、4 个视角、64 个图片期望。");
 }

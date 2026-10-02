@@ -1,6 +1,7 @@
 #include "ConfigurationSystem.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "ContentPackMountService.h"
 #include "Dom/JsonObject.h"
 #include "Engine/AssetManager.h"
 #include "HAL/PlatformMisc.h"
@@ -91,6 +92,15 @@ void FConfigurationSystemModule::StartupModule()
 		return;
 	}
 
+	if (FParse::Param(FCommandLine::Get(), TEXT("ContentPackProbe"))
+		|| FParse::Param(FCommandLine::Get(), TEXT("ContentPackMountProbe")))
+	{
+		// 预检模式只读取真实 FPakFile 索引；挂载模式用于 Cooked 包集成验证。
+		ContentPackProbeTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
+			FTickerDelegate::CreateRaw(this, &FConfigurationSystemModule::TickContentPackProbe));
+		return;
+	}
+
 	if (!FParse::Param(FCommandLine::Get(), TEXT("PrimaryAssetProbe")))
 	{
 		return;
@@ -154,9 +164,73 @@ void FConfigurationSystemModule::ShutdownModule()
 		FTSTicker::GetCoreTicker().RemoveTicker(ProbeTickerHandle);
 		ProbeTickerHandle.Reset();
 	}
+	if (ContentPackProbeTickerHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(ContentPackProbeTickerHandle);
+		ContentPackProbeTickerHandle.Reset();
+	}
+	ContentPackProbeService.Reset();
 
 	ProbeLoadHandle.Reset();
 	FDefaultGameModuleImpl::ShutdownModule();
+}
+
+bool FConfigurationSystemModule::TickContentPackProbe(const float DeltaTime)
+{
+	(void)DeltaTime;
+	ContentPackProbeTickerHandle.Reset();
+	RunContentPackProbe();
+	return false;
+}
+
+void FConfigurationSystemModule::RunContentPackProbe()
+{
+	FString ManifestPath;
+	FString PakPath;
+	FParse::Value(FCommandLine::Get(), TEXT("ContentPackManifest="), ManifestPath);
+	FParse::Value(FCommandLine::Get(), TEXT("ContentPackPak="), PakPath);
+
+	FContentPackMountPolicy Policy;
+	Policy.CatalogVersion = TEXT("mvp-v1");
+	Policy.EngineVersion = TEXT("5.8");
+	Policy.Platform = TEXT("Win64");
+	ContentPackProbeService = MakeUnique<FContentPackMountService>(MoveTemp(Policy));
+
+	const bool bMountRequested =
+		FParse::Param(FCommandLine::Get(), TEXT("ContentPackMountProbe"));
+	const FContentPackMountResult Result = bMountRequested
+		? ContentPackProbeService->PreflightAndMount(ManifestPath, PakPath)
+		: ContentPackProbeService->Preflight(ManifestPath, PakPath);
+	const bool bSucceeded =
+		Result.bPreflightPassed && (!bMountRequested || Result.bMounted);
+	if (bSucceeded)
+	{
+		UE_LOG(
+			LogPrimaryAssetProbe,
+			Display,
+			TEXT("内容包真实 pak %s通过：%s@%s；mountPoint=%s；PrimaryAssetId=%d。"),
+			bMountRequested ? TEXT("挂载") : TEXT("预检"),
+			*Result.Manifest.PackId,
+			*Result.Manifest.Version,
+			*Result.Manifest.MountPoint,
+			Result.Manifest.PrimaryAssetIds.Num());
+	}
+	else
+	{
+		UE_LOG(
+			LogPrimaryAssetProbe,
+			Error,
+			TEXT("内容包真实 pak %s失败（manifest=%s，pak=%s）。"),
+			bMountRequested ? TEXT("挂载") : TEXT("预检"),
+			*ManifestPath,
+			*PakPath);
+		for (const FString& Error : Result.Errors)
+		{
+			UE_LOG(LogPrimaryAssetProbe, Error, TEXT("  %s"), *Error);
+		}
+	}
+
+	FPlatformMisc::RequestExitWithStatus(false, bSucceeded ? 0 : 8);
 }
 
 void FConfigurationSystemModule::SchedulePrimaryAssetProbe()

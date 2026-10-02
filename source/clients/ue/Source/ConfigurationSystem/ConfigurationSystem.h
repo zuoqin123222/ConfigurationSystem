@@ -10,6 +10,7 @@ class FPathTracingAlphaProbe;
 class FPackagingBoundaryProbe;
 class FVehicleHierarchyProbe;
 class UConfigurationStateProbe;
+class FContentPackMountService;
 
 /** 游戏模块，同时按命令行显式启用相互独立的 Runtime 技术探针。 */
 class FConfigurationSystemModule final : public FDefaultGameModuleImpl
@@ -24,6 +25,8 @@ private:
 	void RunPrimaryAssetProbe();
 	void FinishPrimaryAssetProbe();
 	void WriteProbeReportAndExit(bool bLoadRequestCompleted);
+	bool TickContentPackProbe(float DeltaTime);
+	void RunContentPackProbe();
 
 	FDelegateHandle EngineInitCompleteHandle;
 	FTSTicker::FDelegateHandle ProbeTickerHandle;
@@ -35,4 +38,6 @@ private:
 	TSharedPtr<FPackagingBoundaryProbe> PackagingBoundaryProbe;
 	TSharedPtr<FVehicleHierarchyProbe> VehicleHierarchyProbe;
 	UConfigurationStateProbe* ConfigurationStateProbe = nullptr;
+	TUniquePtr<FContentPackMountService> ContentPackProbeService;
+	FTSTicker::FDelegateHandle ContentPackProbeTickerHandle;
 };

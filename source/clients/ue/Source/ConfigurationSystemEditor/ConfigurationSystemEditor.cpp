@@ -76,7 +76,7 @@ void FConfigurationSystemEditorModule::StartupModule()
 		.SetTooltipText(NSLOCTEXT(
 			"ConfigurationSystemEditor",
 			"AdminImportTabTooltip",
-			"预检模型/动画 FBX 与 sidecar，并在批准后导入隔离暂存目录。"))
+			"预检模型/动画导入，或预检并挂载外部材质内容包。"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
 	UToolMenus::RegisterStartupCallback(
 		FSimpleMulticastDelegate::FDelegate::CreateRaw(
@@ -167,7 +167,7 @@ void FConfigurationSystemEditorModule::RegisterMenus()
 		NSLOCTEXT(
 			"ConfigurationSystemEditor",
 			"AdminImportMenuTooltip",
-			"打开 Editor-only FBX 与 sidecar 预检/暂存导入工具。"),
+			"打开 Editor-only FBX 暂存导入与材质内容包安全挂载工具。"),
 		FSlateIcon(),
 		FUIAction(FExecuteAction::CreateLambda([]
 		{

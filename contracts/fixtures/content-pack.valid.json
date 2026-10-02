@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "packId": "demo-car-materials",
+  "version": "pack-1",
+  "catalogVersion": "catalog-1",
+  "engineVersion": "5.8",
+  "platform": "Win64",
+  "mountPoint": "/Game/ContentPacks/demo-car-materials/",
+  "pak": {
+    "fileName": "demo-car-materials.pak",
+    "bytes": 28,
+    "sha256": "ebc662efb964bb82e43dc33618b609642e7a36f6da28a9d66081aa3c77d5a79e"
+  },
+  "primaryAssetIds": [
+    "CarMaterialOption:paint-red",
+    "CarMaterialOption:wheel-sport"
+  ]
+}

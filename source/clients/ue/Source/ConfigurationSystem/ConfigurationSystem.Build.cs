@@ -21,7 +21,9 @@ public class ConfigurationSystem : ModuleRules
 				// Alpha 探针用 FImage/FImageView 保留 BGRA8 与 RGBA16F 的 Alpha 精度。
 				"ImageCore",
 				// 探针在 Runtime 中生成稳定的 JSON 报告。
-				"Json"
+				"Json",
+				// 内容包只使用 UE 原生 pak 容器检查与挂载接口，不依赖 HotPatcher API。
+				"PakFile"
 			}
 		);
 	}

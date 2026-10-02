@@ -56,10 +56,21 @@ namespace
 
 void SAdminImportPanel::Construct(const FArguments& InArgs)
 {
+	FContentPackMountPolicy ContentPackPolicy;
+	ContentPackPolicy.CatalogVersion = TEXT("mvp-v1");
+	ContentPackPolicy.EngineVersion = TEXT("5.8");
+	ContentPackPolicy.Platform = TEXT("Win64");
+	ContentPackMountService = MakeUnique<FContentPackMountService>(MoveTemp(ContentPackPolicy));
+
 	const FOnTextChanged InvalidateDelegate = FOnTextChanged::CreateLambda(
 		[this](const FText&)
 		{
 			InvalidatePreflight();
+		});
+	const FOnTextChanged InvalidateContentPackDelegate = FOnTextChanged::CreateLambda(
+		[this](const FText&)
+		{
+			InvalidateContentPackPreflight();
 		});
 
 	ChildSlot
@@ -164,12 +175,101 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 					SNew(STextBlock).Text(LOCTEXT("Result", "结果"))
 				]
 				+ SVerticalBox::Slot()
-				.FillHeight(1.0f)
+				.AutoHeight()
 				[
-					SAssignNew(StatusTextBox, SMultiLineEditableTextBox)
-						.IsReadOnly(true)
+					SNew(SBox)
+					.MinDesiredHeight(120.0f)
+					[
+						SAssignNew(StatusTextBox, SMultiLineEditableTextBox)
+							.IsReadOnly(true)
+							.AutoWrapText(true)
+							.Text(LOCTEXT("InitialStatus", "尚未运行预检。"))
+					]
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 18.0f, 0.0f, 14.0f)
+				[
+					SNew(SSeparator)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("ContentPackTitle", "材质内容包挂载"))
+						.Font(FAppStyle::GetFontStyle("HeadingExtraSmall"))
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 6.0f, 0.0f, 10.0f)
+				[
+					SNew(STextBlock)
 						.AutoWrapText(true)
-						.Text(LOCTEXT("InitialStatus", "尚未运行预检。"))
+						.Text(LOCTEXT(
+							"ContentPackExplanation",
+							"固定策略：catalog=mvp-v1、engine=5.8、platform=Win64。"
+							"只有所选 manifest 与 .pak 通过真实容器预检后才能挂载；"
+							"选择变化会立即使结果失效，不会创建、修改或保存正式资产。"))
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 3.0f)
+				[
+					MakeFileRow(
+						LOCTEXT("ContentPackManifest", "内容包 manifest"),
+						ContentPackManifestTextBox,
+						FOnClicked::CreateSP(this, &SAdminImportPanel::BrowseContentPackManifest),
+						InvalidateContentPackDelegate)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 3.0f)
+				[
+					MakeFileRow(
+						LOCTEXT("ContentPackPak", "内容包 .pak"),
+						ContentPackPakTextBox,
+						FOnClicked::CreateSP(this, &SAdminImportPanel::BrowseContentPackPak),
+						InvalidateContentPackDelegate)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 10.0f)
+				[
+					SNew(SUniformGridPanel)
+						.SlotPadding(FMargin(0.0f, 0.0f, 8.0f, 0.0f))
+						+ SUniformGridPanel::Slot(0, 0)
+						[
+							SNew(SButton)
+								.Text(LOCTEXT("ContentPackPreflight", "预检材质包"))
+								.HAlign(HAlign_Center)
+								.OnClicked(this, &SAdminImportPanel::RunContentPackPreflight)
+						]
+						+ SUniformGridPanel::Slot(1, 0)
+						[
+							SNew(SButton)
+								.Text(LOCTEXT("MountContentPack", "挂载材质包"))
+								.HAlign(HAlign_Center)
+								.IsEnabled(this, &SAdminImportPanel::CanMountContentPack)
+								.OnClicked(this, &SAdminImportPanel::MountContentPack)
+						]
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 6.0f, 0.0f, 4.0f)
+				[
+					SNew(STextBlock).Text(LOCTEXT("ContentPackResult", "材质包结果"))
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					SNew(SBox)
+					.MinDesiredHeight(120.0f)
+					[
+						SAssignNew(ContentPackStatusTextBox, SMultiLineEditableTextBox)
+							.IsReadOnly(true)
+							.AutoWrapText(true)
+							.Text(LOCTEXT("ContentPackInitialStatus", "尚未预检材质包。"))
+					]
 				]
 			]
 		]
@@ -194,6 +294,22 @@ FReply SAdminImportPanel::BrowseAnimationFbx()
 FReply SAdminImportPanel::BrowseAnimationSidecar()
 {
 	return BrowseInto(AnimationSidecarTextBox, TEXT("选择动画 sidecar"), TEXT("JSON (*.json)|*.json"));
+}
+
+FReply SAdminImportPanel::BrowseContentPackManifest()
+{
+	return BrowseInto(
+		ContentPackManifestTextBox,
+		TEXT("选择材质包 manifest"),
+		TEXT("JSON (*.json)|*.json"));
+}
+
+FReply SAdminImportPanel::BrowseContentPackPak()
+{
+	return BrowseInto(
+		ContentPackPakTextBox,
+		TEXT("选择材质内容包"),
+		TEXT("Unreal Pak (*.pak)|*.pak"));
 }
 
 FReply SAdminImportPanel::BrowseInto(
@@ -223,7 +339,6 @@ FReply SAdminImportPanel::BrowseInto(
 		&& !Filenames.IsEmpty())
 	{
 		Target->SetText(FText::FromString(Filenames[0]));
-		InvalidatePreflight();
 	}
 	return FReply::Handled();
 }
@@ -322,6 +437,78 @@ bool SAdminImportPanel::CanImport() const
 	return LastResult.IsSet()
 		&& LastResult->bPassed
 		&& !LastResult->bImportAttempted;
+}
+
+FReply SAdminImportPanel::RunContentPackPreflight()
+{
+	if (ContentPackMountService.IsValid())
+	{
+		LastContentPackResult = ContentPackMountService->Preflight(
+			ContentPackManifestTextBox->GetText().ToString().TrimStartAndEnd(),
+			ContentPackPakTextBox->GetText().ToString().TrimStartAndEnd());
+		RefreshContentPackStatus();
+	}
+	return FReply::Handled();
+}
+
+FReply SAdminImportPanel::MountContentPack()
+{
+	if (CanMountContentPack())
+	{
+		LastContentPackResult = ContentPackMountService->PreflightAndMount(
+			ContentPackManifestTextBox->GetText().ToString().TrimStartAndEnd(),
+			ContentPackPakTextBox->GetText().ToString().TrimStartAndEnd());
+		RefreshContentPackStatus();
+	}
+	return FReply::Handled();
+}
+
+void SAdminImportPanel::InvalidateContentPackPreflight()
+{
+	LastContentPackResult.Reset();
+	if (ContentPackStatusTextBox.IsValid())
+	{
+		ContentPackStatusTextBox->SetText(
+			LOCTEXT("ContentPackInvalidated", "材质包选择已改变，请重新运行预检。"));
+	}
+}
+
+void SAdminImportPanel::RefreshContentPackStatus()
+{
+	if (!ContentPackStatusTextBox.IsValid() || !LastContentPackResult.IsSet())
+	{
+		return;
+	}
+
+	const FContentPackMountResult& Result = LastContentPackResult.GetValue();
+	FString Status = FString::Printf(
+		TEXT("策略：catalog=mvp-v1；engine=5.8；platform=Win64\n"
+			"预检：%s\n挂载：%s\n"
+			"包：%s@%s\n挂载点：%s\nPrimaryAssetId：%d\n"
+			"实际 SHA-256：%s\n"),
+		Result.bPreflightPassed ? TEXT("通过") : TEXT("失败"),
+		Result.bMounted ? TEXT("成功") : TEXT("未挂载"),
+		*Result.Manifest.PackId,
+		*Result.Manifest.Version,
+		*Result.Manifest.MountPoint,
+		Result.Manifest.PrimaryAssetIds.Num(),
+		*Result.ActualPakSha256);
+	for (const FString& Error : Result.Errors)
+	{
+		Status += TEXT("错误：") + Error + TEXT("\n");
+	}
+	if (Result.bPreflightPassed && !Result.bMounted)
+	{
+		Status += TEXT("预检已通过，可以挂载。输入变化后必须重新预检。\n");
+	}
+	ContentPackStatusTextBox->SetText(FText::FromString(Status));
+}
+
+bool SAdminImportPanel::CanMountContentPack() const
+{
+	return LastContentPackResult.IsSet()
+		&& LastContentPackResult->bPreflightPassed
+		&& !LastContentPackResult->bMounted;
 }
 
 #undef LOCTEXT_NAMESPACE

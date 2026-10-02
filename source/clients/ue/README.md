@@ -71,6 +71,22 @@ Saved/ConfigurationSystem/AdminImportReports/<session>.json
 
 测试覆盖标准 SHA-256 向量、有效模型/动画 sidecar、固定暂存路径、报告写出和哈希不匹配拒绝。
 
+## Runtime 内容包
+
+`FContentPackMountService` 接收任意工具生成的标准 `.pak` 与共享 manifest，不依赖 HotPatcher 插件 API。服务在挂载前严格校验 schema、pack/version、catalog/engine/platform、白名单 mount point、包内 mount point、文件大小、SHA-256，以及包内和已挂载内容包之间的 PrimaryAssetId 唯一性。任何预检失败都不会调用底层挂载。
+
+Editor 的 `Tools > Configuration System 管理员导入` 同时提供材质包 manifest/.pak 选择、预检、挂载与结果区。策略固定为 `catalog=mvp-v1`、`engine=5.8`、`platform=Win64`；输入变化会使预检失效，只有预检通过才可挂载，且不会创建或修改正式资产。
+
+契约、边界和调用示例见 `docs/CONTENT_PACK_RUNTIME.md`。自动化测试：
+
+```powershell
+& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' `
+  'D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject' `
+  -Unattended -NullRHI -NoSplash -NoSound `
+  '-ExecCmds=Automation RunTests ConfigurationSystem.Runtime.ContentPack;Quit' `
+  '-TestExit=Automation Test Queue Empty' -log
+```
+
 ### 命令行预检探针
 
 不打开导入界面即可验证真实交付包：
@@ -84,3 +100,13 @@ Saved/ConfigurationSystem/AdminImportReports/<session>.json
 ```
 
 动画参数为 `-AdminAnimationFbx` 与 `-AdminAnimationSidecar`，可和模型参数同时使用。探针通过返回 `0`，失败返回 `7`，并始终尝试写出 JSON 报告。
+
+真实 pak 内容包预检参数：
+
+```text
+-ContentPackProbe
+-ContentPackManifest=<manifest.json>
+-ContentPackPak=<内容包.pak>
+```
+
+该探针使用固定的 `mvp-v1 / 5.8 / Win64` 策略和真实 `FPakFile` 索引读取，只预检、不挂载、不修改资产；通过返回 `0`，失败返回 `8`。
