@@ -12,9 +12,10 @@ const pakName = /^[a-z0-9]+(?:-[a-z0-9]+)*\.pak$/;
 const allowedRoot = "/Game/ContentPacks/";
 const rootFields = new Set([
   "schemaVersion", "packId", "version", "catalogVersion", "engineVersion",
-  "platform", "mountPoint", "pak", "primaryAssetIds"
+  "platform", "mountPoint", "pak", "primaryAssetIds", "providerType"
 ]);
 const pakFields = new Set(["fileName", "bytes", "sha256"]);
+const providerTypes = new Set(["material", "environment", "vehicle"]);
 
 function isObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -32,7 +33,13 @@ export function validateContentPackManifest(manifest, expected = {}) {
   if (!isObject(manifest)) return { valid: false, errors: ["manifest: 必须是 object"] };
 
   rejectExtraFields(manifest, rootFields, "manifest", errors);
-  if (manifest.schemaVersion !== "1.0.0") errors.push("schemaVersion: 仅支持 1.0.0");
+  if (manifest.schemaVersion !== "1.0.0" && manifest.schemaVersion !== "2.0.0") {
+    errors.push("schemaVersion: 仅支持 1.0.0 或 2.0.0");
+  } else if (manifest.schemaVersion === "2.0.0" && !providerTypes.has(manifest.providerType)) {
+    errors.push("schemaVersion 2.0.0: providerType 必须是 material、environment 或 vehicle");
+  } else if (manifest.schemaVersion === "1.0.0" && manifest.providerType !== undefined) {
+    errors.push("schemaVersion 1.0.0: 不允许 providerType");
+  }
   for (const field of ["packId", "version", "catalogVersion"]) {
     if (typeof manifest[field] !== "string" || !stableId.test(manifest[field])) {
       errors.push(`${field}: 必须是小写 kebab-case`);
@@ -90,7 +97,8 @@ function validateExpectations(manifest, expected, errors) {
   const checks = [
     ["catalogVersion", expected.catalogVersion],
     ["engineVersion", expected.engineVersion],
-    ["platform", expected.platform]
+    ["platform", expected.platform],
+    ["providerType", expected.providerType]
   ];
   for (const [field, value] of checks) {
     if (value !== undefined && manifest[field] !== value) {

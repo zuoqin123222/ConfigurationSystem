@@ -27,6 +27,41 @@ test("有效 fixture 通过结构与运行时期望", async () => {
   assert.deepEqual(result, { valid: true, errors: [] });
 });
 
+test("SC01 Provider v2 支持三类并固定 catalogVersion", async () => {
+  const base = await fixture("content-pack.sc01-provider.valid.json");
+  for (const providerType of ["material", "environment", "vehicle"]) {
+    const manifest = structuredClone(base);
+    manifest.providerType = providerType;
+    const result = validateContentPackManifest(manifest, {
+      catalogVersion: "sc01-draft-20260121",
+      providerType
+    });
+    assert.deepEqual(result, { valid: true, errors: [] });
+  }
+});
+
+test("v1 保持兼容但不能携带 v2 providerType", async () => {
+  const manifest = await fixture("content-pack.valid.json");
+  assert.equal(validateContentPackManifest(manifest).valid, true);
+  manifest.providerType = "material";
+  const result = validateContentPackManifest(manifest);
+  assert.equal(result.valid, false);
+  assert.match(result.errors.join("\n"), /1\.0\.0.*providerType/);
+});
+
+test("v2 拒绝缺失或未知 providerType", async () => {
+  const manifest = await fixture("content-pack.sc01-provider.valid.json");
+  delete manifest.providerType;
+  const missing = validateContentPackManifest(manifest);
+  assert.equal(missing.valid, false);
+  assert.match(missing.errors.join("\n"), /providerType/);
+
+  manifest.providerType = "audio";
+  const unknown = validateContentPackManifest(manifest);
+  assert.equal(unknown.valid, false);
+  assert.match(unknown.errors.join("\n"), /providerType/);
+});
+
 test("无效 fixture 拒绝版本、平台、挂载点、pak 和重复资产", async () => {
   const result = validateContentPackManifest(
     await fixture("content-pack.invalid.json")

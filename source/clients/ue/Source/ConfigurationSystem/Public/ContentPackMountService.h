@@ -9,6 +9,7 @@ struct FContentPackManifest
 	FString PackId;
 	FString Version;
 	FString CatalogVersion;
+	FString ProviderType;
 	FString EngineVersion;
 	FString Platform;
 	FString MountPoint;

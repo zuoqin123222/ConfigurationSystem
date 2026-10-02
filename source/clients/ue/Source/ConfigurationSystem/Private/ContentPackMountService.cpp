@@ -390,7 +390,7 @@ FContentPackMountResult FContentPackMountService::Preflight(
 	const TSet<FString> RootFields{
 		TEXT("schemaVersion"), TEXT("packId"), TEXT("version"), TEXT("catalogVersion"),
 		TEXT("engineVersion"), TEXT("platform"), TEXT("mountPoint"), TEXT("pak"),
-		TEXT("primaryAssetIds")
+		TEXT("primaryAssetIds"), TEXT("providerType")
 	};
 	ContentPack::RejectUnknownFields(Root, RootFields, TEXT("manifest"), Result.Errors);
 	ContentPack::ReadRequiredString(Root, TEXT("schemaVersion"), Result.Manifest.SchemaVersion, Result.Errors);
@@ -401,9 +401,25 @@ FContentPackMountResult FContentPackMountService::Preflight(
 	ContentPack::ReadRequiredString(Root, TEXT("platform"), Result.Manifest.Platform, Result.Errors);
 	ContentPack::ReadRequiredString(Root, TEXT("mountPoint"), Result.Manifest.MountPoint, Result.Errors);
 
-	if (Result.Manifest.SchemaVersion != TEXT("1.0.0"))
+	if (Result.Manifest.SchemaVersion != TEXT("1.0.0")
+		&& Result.Manifest.SchemaVersion != TEXT("2.0.0"))
 	{
-		Result.Errors.Add(TEXT("schemaVersion 仅支持 1.0.0。"));
+		Result.Errors.Add(TEXT("schemaVersion 仅支持 1.0.0 或 2.0.0。"));
+	}
+	if (Result.Manifest.SchemaVersion == TEXT("2.0.0"))
+	{
+		ContentPack::ReadRequiredString(
+			Root, TEXT("providerType"), Result.Manifest.ProviderType, Result.Errors);
+		if (Result.Manifest.ProviderType != TEXT("material")
+			&& Result.Manifest.ProviderType != TEXT("environment")
+			&& Result.Manifest.ProviderType != TEXT("vehicle"))
+		{
+			Result.Errors.Add(TEXT("providerType 必须是 material、environment 或 vehicle。"));
+		}
+	}
+	else if (Root->HasField(TEXT("providerType")))
+	{
+		Result.Errors.Add(TEXT("schemaVersion 1.0.0 不允许 providerType。"));
 	}
 	if (!ContentPack::IsStableId(Result.Manifest.PackId)
 		|| !ContentPack::IsStableId(Result.Manifest.Version)

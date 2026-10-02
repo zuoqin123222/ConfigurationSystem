@@ -121,7 +121,7 @@ bool FContentPackMountAutomationTest::RunTest(const FString& Parameters)
 	};
 	const TArray<FInvalidCase> InvalidCases{
 		{TEXT("未知 schemaVersion"), MakeManifest(
-			TEXT("2.0.0"), TEXT("catalog-1"), TEXT("5.8"), TEXT("Win64"),
+			TEXT("3.0.0"), TEXT("catalog-1"), TEXT("5.8"), TEXT("Win64"),
 			TEXT("/Game/ContentPacks/automation-pack/"), Sha256, ValidIds)},
 		{TEXT("catalog 不匹配"), MakeManifest(
 			TEXT("1.0.0"), TEXT("catalog-2"), TEXT("5.8"), TEXT("Win64"),

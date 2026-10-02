@@ -2,7 +2,9 @@
 
 #include "DesktopPlatformModule.h"
 #include "Framework/Application/SlateApplication.h"
+#include "HAL/FileManager.h"
 #include "IDesktopPlatform.h"
+#include "Misc/Paths.h"
 #include "Styling/AppStyle.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
@@ -56,11 +58,28 @@ namespace
 
 void SAdminImportPanel::Construct(const FArguments& InArgs)
 {
-	FContentPackMountPolicy ContentPackPolicy;
-	ContentPackPolicy.CatalogVersion = TEXT("mvp-v1");
+	ProviderTypeOptions = {
+		MakeShared<FString>(TEXT("material")),
+		MakeShared<FString>(TEXT("environment")),
+		MakeShared<FString>(TEXT("vehicle"))
+	};
+	SelectedProviderTypeOption = ProviderTypeOptions[0];
+
+	FContentPackProviderManagerPolicy ContentPackPolicy;
+	ContentPackPolicy.CatalogVersion = TEXT("sc01-draft-20260121");
 	ContentPackPolicy.EngineVersion = TEXT("5.8");
 	ContentPackPolicy.Platform = TEXT("Win64");
-	ContentPackMountService = MakeUnique<FContentPackMountService>(MoveTemp(ContentPackPolicy));
+	ContentPackPolicy.RegistryPath = FPaths::Combine(
+		FPaths::ProjectSavedDir(),
+		TEXT("ContentPackProviders"),
+		TEXT("active-registry.json"));
+	const FString RegistryPath = ContentPackPolicy.RegistryPath;
+	ContentPackProviderManager =
+		MakeUnique<FContentPackProviderManager>(MoveTemp(ContentPackPolicy));
+	if (IFileManager::Get().FileExists(*RegistryPath))
+	{
+		ContentPackProviderManager->RestoreActiveProviders(LastContentPackErrors);
+	}
 
 	const FOnTextChanged InvalidateDelegate = FOnTextChanged::CreateLambda(
 		[this](const FText&)
@@ -196,7 +215,7 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 				.AutoHeight()
 				[
 					SNew(STextBlock)
-						.Text(LOCTEXT("ContentPackTitle", "材质内容包挂载"))
+						.Text(LOCTEXT("ContentPackTitle", "SC01 Provider 管理"))
 						.Font(FAppStyle::GetFontStyle("HeadingExtraSmall"))
 				]
 				+ SVerticalBox::Slot()
@@ -207,9 +226,41 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 						.AutoWrapText(true)
 						.Text(LOCTEXT(
 							"ContentPackExplanation",
-							"固定策略：catalog=mvp-v1、engine=5.8、platform=Win64。"
-							"只有所选 manifest 与 .pak 通过真实容器预检后才能挂载；"
-							"选择变化会立即使结果失效，不会创建、修改或保存正式资产。"))
+							"固定策略：catalog=sc01-draft-20260121、engine=5.8、platform=Win64。"
+							"SC01 Provider 通过预检后才可激活并写入持久 registry；"
+							"旧 mvp-v1 manifest 仅保留预检兼容，不能激活。"))
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 3.0f)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					.Padding(0.0f, 0.0f, 8.0f, 0.0f)
+					[
+						SNew(SBox)
+						.WidthOverride(112.0f)
+						[
+							SNew(STextBlock).Text(LOCTEXT("ProviderType", "Provider 类型"))
+						]
+					]
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.0f)
+					[
+						SNew(SComboBox<TSharedPtr<FString>>)
+							.OptionsSource(&ProviderTypeOptions)
+							.InitiallySelectedItem(SelectedProviderTypeOption)
+							.OnGenerateWidget(
+								this, &SAdminImportPanel::MakeProviderTypeOption)
+							.OnSelectionChanged(
+								this, &SAdminImportPanel::HandleProviderTypeChanged)
+							[
+								SNew(STextBlock)
+									.Text(this, &SAdminImportPanel::GetSelectedProviderTypeText)
+							]
+					]
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
@@ -240,17 +291,29 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 						+ SUniformGridPanel::Slot(0, 0)
 						[
 							SNew(SButton)
-								.Text(LOCTEXT("ContentPackPreflight", "预检材质包"))
+								.Text(LOCTEXT("ContentPackPreflight", "预检 Provider"))
 								.HAlign(HAlign_Center)
 								.OnClicked(this, &SAdminImportPanel::RunContentPackPreflight)
 						]
 						+ SUniformGridPanel::Slot(1, 0)
 						[
 							SNew(SButton)
-								.Text(LOCTEXT("MountContentPack", "挂载材质包"))
+								.Text(LOCTEXT("ActivateContentPack", "激活 Provider"))
 								.HAlign(HAlign_Center)
-								.IsEnabled(this, &SAdminImportPanel::CanMountContentPack)
-								.OnClicked(this, &SAdminImportPanel::MountContentPack)
+								.IsEnabled(
+									this, &SAdminImportPanel::CanActivateContentPackProvider)
+								.OnClicked(
+									this, &SAdminImportPanel::ActivateContentPackProvider)
+						]
+						+ SUniformGridPanel::Slot(2, 0)
+						[
+							SNew(SButton)
+								.Text(LOCTEXT("RollbackContentPack", "回滚"))
+								.HAlign(HAlign_Center)
+								.IsEnabled(
+									this, &SAdminImportPanel::CanRollbackContentPackProvider)
+								.OnClicked(
+									this, &SAdminImportPanel::RollbackContentPackProvider)
 						]
 				]
 				+ SVerticalBox::Slot()
@@ -268,12 +331,15 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 						SAssignNew(ContentPackStatusTextBox, SMultiLineEditableTextBox)
 							.IsReadOnly(true)
 							.AutoWrapText(true)
-							.Text(LOCTEXT("ContentPackInitialStatus", "尚未预检材质包。"))
+							.Text(LOCTEXT(
+								"ContentPackInitialStatus",
+								"尚未预检 Provider。current / previous 状态将在此显示。"))
 					]
 				]
 			]
 		]
 	];
+	RefreshContentPackStatus();
 }
 
 FReply SAdminImportPanel::BrowseModelFbx()
@@ -441,74 +507,181 @@ bool SAdminImportPanel::CanImport() const
 
 FReply SAdminImportPanel::RunContentPackPreflight()
 {
-	if (ContentPackMountService.IsValid())
+	if (ContentPackProviderManager.IsValid())
 	{
-		LastContentPackResult = ContentPackMountService->Preflight(
+		LastContentPackErrors.Reset();
+		LastContentPackResult = ContentPackProviderManager->Preflight(
+			GetSelectedProviderType(),
 			ContentPackManifestTextBox->GetText().ToString().TrimStartAndEnd(),
-			ContentPackPakTextBox->GetText().ToString().TrimStartAndEnd());
+			ContentPackPakTextBox->GetText().ToString().TrimStartAndEnd(),
+			&bLastPreflightWasLegacyV1);
 		RefreshContentPackStatus();
 	}
 	return FReply::Handled();
 }
 
-FReply SAdminImportPanel::MountContentPack()
+FReply SAdminImportPanel::ActivateContentPackProvider()
 {
-	if (CanMountContentPack())
+	if (CanActivateContentPackProvider())
 	{
-		LastContentPackResult = ContentPackMountService->PreflightAndMount(
-			ContentPackManifestTextBox->GetText().ToString().TrimStartAndEnd(),
-			ContentPackPakTextBox->GetText().ToString().TrimStartAndEnd());
+		const FContentPackProviderActivationResult Result =
+			ContentPackProviderManager->Activate(
+				GetSelectedProviderType(),
+				ContentPackManifestTextBox->GetText().ToString().TrimStartAndEnd(),
+				ContentPackPakTextBox->GetText().ToString().TrimStartAndEnd());
+		LastContentPackResult = Result.MountResult;
+		LastContentPackErrors = Result.Errors;
+		bLastPreflightWasLegacyV1 = false;
 		RefreshContentPackStatus();
 	}
 	return FReply::Handled();
+}
+
+FReply SAdminImportPanel::RollbackContentPackProvider()
+{
+	if (CanRollbackContentPackProvider())
+	{
+		LastContentPackErrors.Reset();
+		ContentPackProviderManager->Rollback(
+			GetSelectedProviderType(), LastContentPackErrors);
+		LastContentPackResult.Reset();
+		bLastPreflightWasLegacyV1 = false;
+		RefreshContentPackStatus();
+	}
+	return FReply::Handled();
+}
+
+void SAdminImportPanel::HandleProviderTypeChanged(
+	TSharedPtr<FString> NewSelection,
+	const ESelectInfo::Type SelectInfo)
+{
+	(void)SelectInfo;
+	if (NewSelection.IsValid())
+	{
+		SelectedProviderTypeOption = MoveTemp(NewSelection);
+		InvalidateContentPackPreflight();
+		RefreshContentPackStatus();
+	}
+}
+
+TSharedRef<SWidget> SAdminImportPanel::MakeProviderTypeOption(
+	TSharedPtr<FString> Option) const
+{
+	return SNew(STextBlock).Text(FText::FromString(
+		Option.IsValid() ? *Option : FString()));
+}
+
+FText SAdminImportPanel::GetSelectedProviderTypeText() const
+{
+	return FText::FromString(
+		SelectedProviderTypeOption.IsValid()
+			? *SelectedProviderTypeOption
+			: FString(TEXT("material")));
+}
+
+EContentPackProviderType SAdminImportPanel::GetSelectedProviderType() const
+{
+	EContentPackProviderType Type = EContentPackProviderType::Material;
+	if (SelectedProviderTypeOption.IsValid())
+	{
+		FContentPackProviderManager::TryParseProviderType(
+			*SelectedProviderTypeOption, Type);
+	}
+	return Type;
+}
+
+bool SAdminImportPanel::CanActivateContentPackProvider() const
+{
+	return ContentPackProviderManager.IsValid()
+		&& LastContentPackResult.IsSet()
+		&& LastContentPackResult->bPreflightPassed
+		&& !LastContentPackResult->bMounted
+		&& !bLastPreflightWasLegacyV1;
+}
+
+bool SAdminImportPanel::CanRollbackContentPackProvider() const
+{
+	if (!ContentPackProviderManager.IsValid())
+	{
+		return false;
+	}
+	const FContentPackProviderSlot* Slot =
+		ContentPackProviderManager->FindActive(GetSelectedProviderType());
+	return Slot != nullptr && Slot->Previous.IsSet();
 }
 
 void SAdminImportPanel::InvalidateContentPackPreflight()
 {
 	LastContentPackResult.Reset();
+	LastContentPackErrors.Reset();
+	bLastPreflightWasLegacyV1 = false;
 	if (ContentPackStatusTextBox.IsValid())
 	{
 		ContentPackStatusTextBox->SetText(
-			LOCTEXT("ContentPackInvalidated", "材质包选择已改变，请重新运行预检。"));
+			LOCTEXT("ContentPackInvalidated", "Provider 选择已改变，请重新运行预检。"));
 	}
 }
 
 void SAdminImportPanel::RefreshContentPackStatus()
 {
-	if (!ContentPackStatusTextBox.IsValid() || !LastContentPackResult.IsSet())
+	if (!ContentPackStatusTextBox.IsValid())
 	{
 		return;
 	}
 
-	const FContentPackMountResult& Result = LastContentPackResult.GetValue();
+	const EContentPackProviderType Type = GetSelectedProviderType();
 	FString Status = FString::Printf(
-		TEXT("策略：catalog=mvp-v1；engine=5.8；platform=Win64\n"
-			"预检：%s\n挂载：%s\n"
-			"包：%s@%s\n挂载点：%s\nPrimaryAssetId：%d\n"
-			"实际 SHA-256：%s\n"),
-		Result.bPreflightPassed ? TEXT("通过") : TEXT("失败"),
-		Result.bMounted ? TEXT("成功") : TEXT("未挂载"),
-		*Result.Manifest.PackId,
-		*Result.Manifest.Version,
-		*Result.Manifest.MountPoint,
-		Result.Manifest.PrimaryAssetIds.Num(),
-		*Result.ActualPakSha256);
-	for (const FString& Error : Result.Errors)
+		TEXT("策略：catalog=sc01-draft-20260121；engine=5.8；platform=Win64\n"
+			"类型：%s\n"),
+		*FContentPackProviderManager::LexToString(Type));
+
+	if (LastContentPackResult.IsSet())
+	{
+		const FContentPackMountResult& Result = LastContentPackResult.GetValue();
+		Status += FString::Printf(
+			TEXT("预检：%s%s\n激活挂载：%s\n"
+				"包：%s@%s\n挂载点：%s\nPrimaryAssetId：%d\n"
+				"实际 SHA-256：%s\n"),
+			Result.bPreflightPassed ? TEXT("通过") : TEXT("失败"),
+			bLastPreflightWasLegacyV1 ? TEXT("（旧 mvp-v1，仅兼容预检）") : TEXT(""),
+			Result.bMounted ? TEXT("成功") : TEXT("未激活"),
+			*Result.Manifest.PackId,
+			*Result.Manifest.Version,
+			*Result.Manifest.MountPoint,
+			Result.Manifest.PrimaryAssetIds.Num(),
+			*Result.ActualPakSha256);
+		for (const FString& Error : Result.Errors)
+		{
+			Status += TEXT("错误：") + Error + TEXT("\n");
+		}
+	}
+
+	for (const FString& Error : LastContentPackErrors)
 	{
 		Status += TEXT("错误：") + Error + TEXT("\n");
 	}
-	if (Result.bPreflightPassed && !Result.bMounted)
+
+	const FContentPackProviderSlot* Slot = ContentPackProviderManager.IsValid()
+		? ContentPackProviderManager->FindActive(Type)
+		: nullptr;
+	if (Slot == nullptr)
 	{
-		Status += TEXT("预检已通过，可以挂载。输入变化后必须重新预检。\n");
+		Status += TEXT("current：无\nprevious：无\n");
+	}
+	else
+	{
+		Status += FString::Printf(
+			TEXT("current：%s@%s\n"),
+			*Slot->Current.PackId,
+			*Slot->Current.Version);
+		Status += Slot->Previous.IsSet()
+			? FString::Printf(
+				TEXT("previous：%s@%s\n"),
+				*Slot->Previous->PackId,
+				*Slot->Previous->Version)
+			: FString(TEXT("previous：无\n"));
 	}
 	ContentPackStatusTextBox->SetText(FText::FromString(Status));
-}
-
-bool SAdminImportPanel::CanMountContentPack() const
-{
-	return LastContentPackResult.IsSet()
-		&& LastContentPackResult->bPreflightPassed
-		&& !LastContentPackResult->bMounted;
 }
 
 #undef LOCTEXT_NAMESPACE

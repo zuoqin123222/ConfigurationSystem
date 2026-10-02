@@ -1,8 +1,9 @@
 #pragma once
 
 #include "AdminImportPreflight.h"
-#include "ContentPackMountService.h"
+#include "ContentPackProviderManager.h"
 #include "CoreMinimal.h"
+#include "Widgets/Input/SComboBox.h"
 #include "Widgets/SCompoundWidget.h"
 
 class SEditableTextBox;
@@ -27,7 +28,8 @@ private:
 	FReply BrowseContentPackManifest();
 	FReply BrowseContentPackPak();
 	FReply RunContentPackPreflight();
-	FReply MountContentPack();
+	FReply ActivateContentPackProvider();
+	FReply RollbackContentPackProvider();
 
 	FReply BrowseInto(
 		const TSharedPtr<SEditableTextBox>& Target,
@@ -38,7 +40,14 @@ private:
 	bool CanImport() const;
 	void InvalidateContentPackPreflight();
 	void RefreshContentPackStatus();
-	bool CanMountContentPack() const;
+	void HandleProviderTypeChanged(
+		TSharedPtr<FString> NewSelection,
+		ESelectInfo::Type SelectInfo);
+	TSharedRef<SWidget> MakeProviderTypeOption(TSharedPtr<FString> Option) const;
+	FText GetSelectedProviderTypeText() const;
+	bool CanActivateContentPackProvider() const;
+	bool CanRollbackContentPackProvider() const;
+	EContentPackProviderType GetSelectedProviderType() const;
 
 	TSharedPtr<SEditableTextBox> ModelFbxTextBox;
 	TSharedPtr<SEditableTextBox> ModelSidecarTextBox;
@@ -49,6 +58,10 @@ private:
 	TSharedPtr<SEditableTextBox> ContentPackManifestTextBox;
 	TSharedPtr<SEditableTextBox> ContentPackPakTextBox;
 	TSharedPtr<SMultiLineEditableTextBox> ContentPackStatusTextBox;
-	TUniquePtr<FContentPackMountService> ContentPackMountService;
+	TArray<TSharedPtr<FString>> ProviderTypeOptions;
+	TSharedPtr<FString> SelectedProviderTypeOption;
+	TUniquePtr<FContentPackProviderManager> ContentPackProviderManager;
 	TOptional<FContentPackMountResult> LastContentPackResult;
+	TArray<FString> LastContentPackErrors;
+	bool bLastPreflightWasLegacyV1 = false;
 };
