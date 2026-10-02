@@ -13,6 +13,12 @@ public class ConfigurationSystemEditor : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"AssetRegistry",
+				"AssetTools",
+				"DesktopPlatform",
+				"Json",
+				"Slate",
+				"SlateCore",
+				"ToolMenus",
 				// 仅 Editor 模块依赖保存资产和编辑器通知能力。
 				"UnrealEd",
 				"ConfigurationSystem"

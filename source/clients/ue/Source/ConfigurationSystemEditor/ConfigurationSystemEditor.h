@@ -4,8 +4,10 @@
 #include "Modules/ModuleManager.h"
 
 class IConsoleObject;
+class SDockTab;
+class FSpawnTabArgs;
 
-/** 注册可重复执行的测试资产创建命令。 */
+/** 注册 Editor-only 探针与管理员资产接入界面。 */
 class FConfigurationSystemEditorModule final : public IModuleInterface
 {
 public:
@@ -13,9 +15,16 @@ public:
 	virtual void ShutdownModule() override;
 
 private:
+	void RegisterMenus();
+	TSharedRef<SDockTab> SpawnAdminImportTab(const FSpawnTabArgs& Args);
+	bool TickAdminImportProbe(float DeltaTime);
+	void RunAdminImportProbe();
 	void CreatePrimaryAssetProbeAssets();
 	void CreatePackagingProbeMap();
 
 	IConsoleObject* CreateAssetsCommand = nullptr;
 	IConsoleObject* CreateProjectMapCommand = nullptr;
+	IConsoleObject* AdminImportProbeCommand = nullptr;
+	FTSTicker::FDelegateHandle AdminImportProbeTickerHandle;
+	bool bMenusRegistered = false;
 };

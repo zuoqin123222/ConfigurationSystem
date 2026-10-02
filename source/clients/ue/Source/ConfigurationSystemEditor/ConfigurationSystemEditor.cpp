@@ -1,22 +1,31 @@
 #include "ConfigurationSystemEditor.h"
 
+#include "AdminImportPreflight.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Editor.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "FileHelpers.h"
+#include "Framework/Docking/TabManager.h"
 #include "HAL/IConsoleManager.h"
+#include "HAL/PlatformMisc.h"
+#include "Misc/CommandLine.h"
 #include "Misc/PackageName.h"
+#include "Misc/Parse.h"
 #include "PackagingProbeMarkerActor.h"
 #include "PrimaryAssetProbeData.h"
+#include "SAdminImportPanel.h"
+#include "ToolMenus.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
+#include "Widgets/Docking/SDockTab.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogPrimaryAssetProbeEditor, Log, All);
 
 namespace PrimaryAssetProbeEditor
 {
+	const FName AdminImportTabName(TEXT("ConfigurationSystem.AdminImport"));
 	constexpr TCHAR TexturePackageName[] = TEXT("/Game/PrimaryAssetProbe/T_ProbeUnreferenced");
 	constexpr TCHAR TextureAssetName[] = TEXT("T_ProbeUnreferenced");
 	constexpr TCHAR DataPackageName[] = TEXT("/Game/PrimaryAssetProbe/DA_ProbeUnreferenced");
@@ -57,6 +66,27 @@ IMPLEMENT_MODULE(FConfigurationSystemEditorModule, ConfigurationSystemEditor);
 
 void FConfigurationSystemEditorModule::StartupModule()
 {
+	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
+		PrimaryAssetProbeEditor::AdminImportTabName,
+		FOnSpawnTab::CreateRaw(this, &FConfigurationSystemEditorModule::SpawnAdminImportTab))
+		.SetDisplayName(NSLOCTEXT(
+			"ConfigurationSystemEditor",
+			"AdminImportTab",
+			"Configuration System 管理员导入"))
+		.SetTooltipText(NSLOCTEXT(
+			"ConfigurationSystemEditor",
+			"AdminImportTabTooltip",
+			"预检模型/动画 FBX 与 sidecar，并在批准后导入隔离暂存目录。"))
+		.SetMenuType(ETabSpawnerMenuType::Hidden);
+	UToolMenus::RegisterStartupCallback(
+		FSimpleMulticastDelegate::FDelegate::CreateRaw(
+			this,
+			&FConfigurationSystemEditorModule::RegisterMenus));
+	if (UToolMenus::IsToolMenuUIEnabled())
+	{
+		RegisterMenus();
+	}
+
 	CreateAssetsCommand = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("PrimaryAssetProbe.CreateTestAssets"),
 		TEXT("创建或刷新未被地图硬引用的测试纹理和 Primary Data Asset。"),
@@ -68,10 +98,36 @@ void FConfigurationSystemEditorModule::StartupModule()
 		TEXT("幂等创建、刷新并保存 /Game/Maps/L_ConfigProbe，确保仅放置一个 Runtime marker。"),
 		FConsoleCommandDelegate::CreateRaw(this, &FConfigurationSystemEditorModule::CreatePackagingProbeMap),
 		ECVF_Default);
+
+	AdminImportProbeCommand = IConsoleManager::Get().RegisterConsoleCommand(
+		TEXT("ConfigurationSystem.AdminImport.Preflight"),
+		TEXT("按 -AdminModelFbx/-AdminModelSidecar/-AdminAnimationFbx/-AdminAnimationSidecar 运行预检并写 JSON。"),
+		FConsoleCommandDelegate::CreateRaw(this, &FConfigurationSystemEditorModule::RunAdminImportProbe),
+		ECVF_Default);
+
+	if (FParse::Param(FCommandLine::Get(), TEXT("AdminImportPreflightProbe")))
+	{
+		// Defer exit until the engine loop is live; requesting it from module startup
+		// is not honored consistently by the desktop editor bootstrap.
+		AdminImportProbeTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
+			FTickerDelegate::CreateRaw(
+				this,
+				&FConfigurationSystemEditorModule::TickAdminImportProbe));
+	}
 }
 
 void FConfigurationSystemEditorModule::ShutdownModule()
 {
+	UToolMenus::UnRegisterStartupCallback(this);
+	UToolMenus::UnregisterOwner(this);
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(
+		PrimaryAssetProbeEditor::AdminImportTabName);
+	if (AdminImportProbeTickerHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(AdminImportProbeTickerHandle);
+		AdminImportProbeTickerHandle.Reset();
+	}
+
 	if (CreateAssetsCommand != nullptr)
 	{
 		IConsoleManager::Get().UnregisterConsoleObject(CreateAssetsCommand);
@@ -82,6 +138,115 @@ void FConfigurationSystemEditorModule::ShutdownModule()
 	{
 		IConsoleManager::Get().UnregisterConsoleObject(CreateProjectMapCommand);
 		CreateProjectMapCommand = nullptr;
+	}
+
+	if (AdminImportProbeCommand != nullptr)
+	{
+		IConsoleManager::Get().UnregisterConsoleObject(AdminImportProbeCommand);
+		AdminImportProbeCommand = nullptr;
+	}
+}
+
+void FConfigurationSystemEditorModule::RegisterMenus()
+{
+	if (bMenusRegistered)
+	{
+		return;
+	}
+	bMenusRegistered = true;
+
+	FToolMenuOwnerScoped OwnerScoped(this);
+	UToolMenu* ToolsMenu = UToolMenus::Get()->ExtendMenu(TEXT("LevelEditor.MainMenu.Tools"));
+	FToolMenuSection& Section = ToolsMenu->AddSection(
+		TEXT("ConfigurationSystem"),
+		NSLOCTEXT("ConfigurationSystemEditor", "AdminImportSection", "Configuration System"),
+		FToolMenuInsert(NAME_None, EToolMenuInsertType::First));
+	Section.AddMenuEntry(
+		TEXT("ConfigurationSystemAdminImport"),
+		NSLOCTEXT("ConfigurationSystemEditor", "AdminImportMenu", "Configuration System 管理员导入"),
+		NSLOCTEXT(
+			"ConfigurationSystemEditor",
+			"AdminImportMenuTooltip",
+			"打开 Editor-only FBX 与 sidecar 预检/暂存导入工具。"),
+		FSlateIcon(),
+		FUIAction(FExecuteAction::CreateLambda([]
+		{
+			FGlobalTabmanager::Get()->TryInvokeTab(
+				PrimaryAssetProbeEditor::AdminImportTabName);
+		})));
+	UToolMenus::Get()->RefreshMenuWidget(TEXT("LevelEditor.MainMenu.Tools"));
+}
+
+TSharedRef<SDockTab> FConfigurationSystemEditorModule::SpawnAdminImportTab(
+	const FSpawnTabArgs& Args)
+{
+	(void)Args;
+	return SNew(SDockTab)
+		.TabRole(ETabRole::NomadTab)
+		[
+			SNew(SAdminImportPanel)
+		];
+}
+
+bool FConfigurationSystemEditorModule::TickAdminImportProbe(const float DeltaTime)
+{
+	(void)DeltaTime;
+	AdminImportProbeTickerHandle.Reset();
+	RunAdminImportProbe();
+	return false;
+}
+
+void FConfigurationSystemEditorModule::RunAdminImportProbe()
+{
+	TArray<FAdminImportSelection> Selections;
+	FString Fbx;
+	FString Sidecar;
+	const bool bHasModelFbx =
+		FParse::Value(FCommandLine::Get(), TEXT("AdminModelFbx="), Fbx);
+	const bool bHasModelSidecar =
+		FParse::Value(FCommandLine::Get(), TEXT("AdminModelSidecar="), Sidecar);
+	if (bHasModelFbx || bHasModelSidecar)
+	{
+		FAdminImportSelection& Selection = Selections.AddDefaulted_GetRef();
+		Selection.Kind = EAdminImportAssetKind::Model;
+		Selection.FbxFile = Fbx;
+		Selection.SidecarFile = Sidecar;
+	}
+
+	Fbx.Reset();
+	Sidecar.Reset();
+	const bool bHasAnimationFbx =
+		FParse::Value(FCommandLine::Get(), TEXT("AdminAnimationFbx="), Fbx);
+	const bool bHasAnimationSidecar =
+		FParse::Value(FCommandLine::Get(), TEXT("AdminAnimationSidecar="), Sidecar);
+	if (bHasAnimationFbx || bHasAnimationSidecar)
+	{
+		FAdminImportSelection& Selection = Selections.AddDefaulted_GetRef();
+		Selection.Kind = EAdminImportAssetKind::Animation;
+		Selection.FbxFile = Fbx;
+		Selection.SidecarFile = Sidecar;
+	}
+
+	FAdminImportPreflightResult Result = FAdminImportPreflight::Run(Selections);
+	if (Result.bPassed)
+	{
+		UE_LOG(
+			LogPrimaryAssetProbeEditor,
+			Display,
+			TEXT("管理员导入预检通过：%s"),
+			*Result.ReportPath);
+	}
+	else
+	{
+		UE_LOG(
+			LogPrimaryAssetProbeEditor,
+			Error,
+			TEXT("管理员导入预检失败：%s"),
+			*Result.ReportPath);
+	}
+	if (FParse::Param(FCommandLine::Get(), TEXT("AdminImportPreflightProbe")))
+	{
+		FPlatformMisc::RequestExitWithStatus(false, Result.bPassed ? 0 : 7);
 	}
 }
 
