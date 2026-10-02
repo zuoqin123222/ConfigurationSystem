@@ -91,8 +91,9 @@ node tools/validate-contracts.mjs
 当前成功摘要应包含：
 
 ```text
-3 个 Schema JSON、P0-3 manifest 结构、8 个选项、2 个模板、
-16 个唯一组合、4 个视角、64 个图片期望
+5 个 Schema JSON、P0-3 manifest 结构、2 类车辆 sidecar、
+2 个有效与 2 个无效 fixture、8 个选项、2 个模板、16 个唯一组合、
+4 个视角、64 个图片期望
 ```
 
 ### UE C++、Build.cs 或配置
@@ -147,6 +148,7 @@ Editor 编译命令：
 - [ ] 父子关系通过 `UVehicleHierarchyAuditor::AuditActor`。
 - [ ] 动作支持中途反向和三轮重复，不累积终态误差。
 - [ ] 真实车辆完成 Pivot、穿模和 Path Tracing 重置检查。
+- [ ] 模型与动画 sidecar 通过 `node --test tools/validate-vehicle-sidecars.test.mjs`。
 
 程序化探针通过不能替代真实车辆验收。完整门槛见 [车辆层级探针](docs/technical-probes/VEHICLE_HIERARCHY_PROBE.md) 和 [车辆资产接入规范](docs/VEHICLE_ASSET_REQUIREMENTS.md)。
 

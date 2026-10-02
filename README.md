@@ -16,6 +16,7 @@
 - [P0-4 车辆层级与可逆动作探针](docs/technical-probes/VEHICLE_HIERARCHY_PROBE.md)
 - [P0-5 Development/Shipping 打包边界探针](docs/technical-probes/PACKAGING_BOUNDARY_PROBE.md)
 - [车辆资产接入规范](docs/VEHICLE_ASSET_REQUIREMENTS.md)
+- [DCC 车辆模型制作与导出指南](docs/DCC_VEHICLE_MODELING_EXPORT_GUIDE.md)
 - [三端数据与 API 契约](contracts/README.md)
 - [MVP 可视化评审版](automotive-configurator-mvp-plan/automotive-configurator-mvp-plan.html)
 
@@ -55,7 +56,16 @@ ConfigurationSystem/
 node tools/validate-contracts.mjs
 ```
 
-验证器检查 Schema、ID 与引用、canonical key、16 个唯一配置、4 个视角和 64 个图片期望。UE 编译、Cook、Development/Shipping 探针命令见 [贡献与验证指南](CONTRIBUTING.md)。
+验证器检查 Schema、车辆模型/动画 sidecar 的 UE 坐标、FBX 2020.2、节点与标签、Pivot、材质槽、LOD、动画、授权和 SHA-256 约束，以及产品 ID 与引用、canonical key、16 个唯一配置、4 个视角和 64 个图片期望。
+
+车辆 sidecar 的独立验证和测试命令：
+
+```powershell
+node tools/validate-vehicle-sidecars.mjs
+node --test tools/validate-vehicle-sidecars.test.mjs
+```
+
+UE 编译、Cook、Development/Shipping 探针命令见 [贡献与验证指南](CONTRIBUTING.md)。
 
 ## UE 桌面端
 

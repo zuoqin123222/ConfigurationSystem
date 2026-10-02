@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/vehicle-model-sidecar.schema.json",
+  "title": "Vehicle Model Sidecar",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "vehicleId",
+    "modelVersion",
+    "coordinateSystem",
+    "source",
+    "export",
+    "nodes",
+    "materialSlots",
+    "partBindings",
+    "lods",
+    "authorization",
+    "artifacts"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "kind": { "const": "vehicle-model" },
+    "vehicleId": { "$ref": "#/$defs/id" },
+    "modelVersion": { "$ref": "#/$defs/id" },
+    "coordinateSystem": { "$ref": "#/$defs/coordinateSystem" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dcc", "dccVersion", "file"],
+      "properties": {
+        "dcc": { "enum": ["blender", "maya", "3ds-max"] },
+        "dccVersion": { "type": "string", "minLength": 1 },
+        "file": { "$ref": "#/$defs/artifact" }
+      }
+    },
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "fbxVersion", "binary", "bakeTransforms"],
+      "properties": {
+        "format": { "const": "FBX" },
+        "fbxVersion": { "const": "2020.2" },
+        "binary": { "const": true },
+        "bakeTransforms": { "const": true }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 16,
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "materialSlots": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/materialSlot" }
+    },
+    "partBindings": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "$ref": "#/$defs/partBinding" }
+    },
+    "lods": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/lod" }
+    },
+    "authorization": { "$ref": "#/$defs/authorization" },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fbx"],
+      "properties": {
+        "fbx": { "$ref": "#/$defs/artifact" }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "coordinateSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "forward", "right", "up", "handedness"],
+      "properties": {
+        "unit": { "const": "centimeter" },
+        "forward": { "const": "+X" },
+        "right": { "const": "+Y" },
+        "up": { "const": "+Z" },
+        "handedness": { "const": "left" }
+      }
+    },
+    "vector3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "number" }
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["translationCm", "rotationDeg", "scale"],
+      "properties": {
+        "translationCm": { "$ref": "#/$defs/vector3" },
+        "rotationDeg": { "$ref": "#/$defs/vector3" },
+        "scale": { "$ref": "#/$defs/vector3" }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "parent", "tags", "transform"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "type": { "enum": ["root", "body", "pivot", "mesh"] },
+        "parent": {
+          "type": ["string", "null"],
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^Vehicle\\.(Root|Body|Part\\.[A-Za-z.]+)$" },
+          "uniqueItems": true
+        },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "materialSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slotId", "purpose"],
+      "properties": {
+        "slotId": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$" },
+        "purpose": { "type": "string", "minLength": 1 }
+      }
+    },
+    "partBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["partId", "targetNodes", "materialSlotIds"],
+      "properties": {
+        "partId": { "enum": ["paint", "wheel", "interior", "frame"] },
+        "targetNodes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" }
+        },
+        "materialSlotIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$" }
+        }
+      }
+    },
+    "lod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "screenSize", "triangleCount", "materialSlotIds"],
+      "properties": {
+        "level": { "type": "integer", "minimum": 0 },
+        "screenSize": { "type": "number", "minimum": 0, "maximum": 1 },
+        "triangleCount": { "type": "integer", "minimum": 1 },
+        "materialSlotIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$" }
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rightsHolder", "licenseId", "permittedUses", "territory", "expiresOn", "redistribution"],
+      "properties": {
+        "rightsHolder": { "type": "string", "minLength": 1 },
+        "licenseId": { "type": "string", "minLength": 1 },
+        "permittedUses": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["modify", "unreal-import", "render", "distribute-render"] }
+        },
+        "territory": { "type": "string", "minLength": 1 },
+        "expiresOn": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "redistribution": { "enum": ["none", "render-only", "source-and-render"] }
+      }
+    }
+  }
+}

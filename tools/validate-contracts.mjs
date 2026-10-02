@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateSidecarFixtures } from "./validate-vehicle-sidecars.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const schemaDir = resolve(root, "contracts", "schemas");
@@ -41,7 +42,9 @@ function cartesian(optionIdsByPart, order, index = 0, current = {}, result = [])
 const schemaNames = [
   "catalog.schema.json",
   "published-configurations.schema.json",
-  "bake-manifest.schema.json"
+  "bake-manifest.schema.json",
+  "vehicle-model-sidecar.schema.json",
+  "vehicle-animation-sidecar.schema.json"
 ];
 
 for (const name of schemaNames) {
@@ -331,10 +334,17 @@ if (catalog && published) {
   );
 }
 
+try {
+  const sidecarResult = await validateSidecarFixtures();
+  failures.push(...sidecarResult.failures);
+} catch (error) {
+  failures.push(`车辆 sidecar 验证器执行失败 (${error.message})`);
+}
+
 if (failures.length > 0) {
   console.error(`契约验证失败（${failures.length} 项）：`);
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log("契约验证通过：3 个 Schema JSON、P0-3 manifest 结构、8 个选项、2 个模板、16 个唯一组合、4 个视角、64 个图片期望。");
+  console.log("契约验证通过：5 个 Schema JSON、P0-3 manifest 结构、2 类车辆 sidecar、2 个有效与 2 个无效 fixture、8 个选项、2 个模板、16 个唯一组合、4 个视角、64 个图片期望。");
 }

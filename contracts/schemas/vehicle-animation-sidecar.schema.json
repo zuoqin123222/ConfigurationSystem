@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/vehicle-animation-sidecar.schema.json",
+  "title": "Vehicle Animation Sidecar",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "animationVersion",
+    "modelRef",
+    "coordinateSystem",
+    "export",
+    "clips",
+    "authorization",
+    "artifacts"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "kind": { "const": "vehicle-animation" },
+    "animationVersion": { "$ref": "#/$defs/id" },
+    "modelRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vehicleId", "modelVersion", "fbxSha256"],
+      "properties": {
+        "vehicleId": { "$ref": "#/$defs/id" },
+        "modelVersion": { "$ref": "#/$defs/id" },
+        "fbxSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "coordinateSystem": { "$ref": "#/$defs/coordinateSystem" },
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "fbxVersion", "binary", "bakeAnimation", "resampleAll"],
+      "properties": {
+        "format": { "const": "FBX" },
+        "fbxVersion": { "const": "2020.2" },
+        "binary": { "const": true },
+        "bakeAnimation": { "const": true },
+        "resampleAll": { "const": true }
+      }
+    },
+    "clips": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/clip" }
+    },
+    "authorization": { "$ref": "#/$defs/authorization" },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/animationArtifact" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "coordinateSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "forward", "right", "up", "handedness"],
+      "properties": {
+        "unit": { "const": "centimeter" },
+        "forward": { "const": "+X" },
+        "right": { "const": "+Y" },
+        "up": { "const": "+Z" },
+        "handedness": { "const": "left" }
+      }
+    },
+    "clip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clipId",
+        "targetNode",
+        "targetTag",
+        "action",
+        "frameRate",
+        "startFrame",
+        "endFrame",
+        "localAxis",
+        "closedDegrees",
+        "openDegrees",
+        "reversible",
+        "loop",
+        "rootMotion"
+      ],
+      "properties": {
+        "clipId": { "$ref": "#/$defs/id" },
+        "targetNode": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "targetTag": { "type": "string", "pattern": "^Vehicle\\.Part\\.[A-Za-z.]+$" },
+        "action": { "enum": ["open", "rotate"] },
+        "frameRate": { "type": "number", "minimum": 1 },
+        "startFrame": { "type": "integer", "minimum": 0 },
+        "endFrame": { "type": "integer", "minimum": 1 },
+        "localAxis": { "enum": ["+X", "-X", "+Y", "-Y", "+Z", "-Z"] },
+        "closedDegrees": { "type": "number" },
+        "openDegrees": { "type": "number" },
+        "reversible": { "const": true },
+        "loop": { "const": false },
+        "rootMotion": { "const": false }
+      }
+    },
+    "animationArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clipId", "path", "sha256", "bytes"],
+      "properties": {
+        "clipId": { "$ref": "#/$defs/id" },
+        "path": { "type": "string", "pattern": "\\.fbx$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rightsHolder", "licenseId", "permittedUses", "territory", "expiresOn", "redistribution"],
+      "properties": {
+        "rightsHolder": { "type": "string", "minLength": 1 },
+        "licenseId": { "type": "string", "minLength": 1 },
+        "permittedUses": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["modify", "unreal-import", "render", "distribute-render"] }
+        },
+        "territory": { "type": "string", "minLength": 1 },
+        "expiresOn": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "redistribution": { "enum": ["none", "render-only", "source-and-render"] }
+      }
+    }
+  }
+}

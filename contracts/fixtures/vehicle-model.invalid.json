@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "vehicle-model",
+  "vehicleId": "Demo_Car",
+  "modelVersion": "model-2026-01",
+  "coordinateSystem": {
+    "unit": "meter",
+    "forward": "+Y",
+    "right": "+X",
+    "up": "+Z",
+    "handedness": "right"
+  },
+  "source": {
+    "dcc": "blender",
+    "dccVersion": "4.5.3",
+    "file": {
+      "path": "source/demo-car.blend",
+      "sha256": "not-a-sha256",
+      "bytes": 42000000
+    }
+  },
+  "export": {
+    "format": "FBX",
+    "fbxVersion": "2018",
+    "binary": true,
+    "bakeTransforms": true
+  },
+  "nodes": [],
+  "materialSlots": [
+    { "slotId": "MaterialSlot_0", "purpose": "无语义槽位" }
+  ],
+  "lods": [
+    {
+      "level": 1,
+      "screenSize": 1,
+      "triangleCount": 100,
+      "materialSlotIds": ["missing_slot"]
+    }
+  ],
+  "authorization": {
+    "rightsHolder": "",
+    "licenseId": "",
+    "permittedUses": ["render"],
+    "territory": "",
+    "expiresOn": null,
+    "redistribution": "none"
+  },
+  "artifacts": {
+    "fbx": {
+      "path": "export/demo-car_model.fbx",
+      "sha256": "xyz",
+      "bytes": 0
+    }
+  }
+}

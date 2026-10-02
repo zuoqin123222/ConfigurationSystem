@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "vehicle-animation",
+  "animationVersion": "animation-2026-01",
+  "modelRef": {
+    "vehicleId": "demo-car",
+    "modelVersion": "model-2026-01",
+    "fbxSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "coordinateSystem": {
+    "unit": "centimeter",
+    "forward": "+X",
+    "right": "+Y",
+    "up": "+Z",
+    "handedness": "left"
+  },
+  "export": {
+    "format": "FBX",
+    "fbxVersion": "2019",
+    "binary": true,
+    "bakeAnimation": true,
+    "resampleAll": true
+  },
+  "clips": [
+    {
+      "clipId": "unknown-part-open",
+      "targetNode": "UnknownPivot",
+      "targetTag": "Vehicle.Part.Door.FrontLeft",
+      "action": "open",
+      "frameRate": 30,
+      "startFrame": 30,
+      "endFrame": 10,
+      "localAxis": "+Z",
+      "closedDegrees": 0,
+      "openDegrees": 0,
+      "reversible": false,
+      "loop": true,
+      "rootMotion": true
+    }
+  ],
+  "authorization": {
+    "rightsHolder": "Example Motors",
+    "licenseId": "demo-evaluation-2026",
+    "permittedUses": ["unreal-import", "render"],
+    "territory": "worldwide",
+    "expiresOn": null,
+    "redistribution": "render-only"
+  },
+  "artifacts": [
+    {
+      "clipId": "missing-clip",
+      "path": "export/unknown-part-open.fbx",
+      "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "bytes": 100
+    }
+  ]
+}

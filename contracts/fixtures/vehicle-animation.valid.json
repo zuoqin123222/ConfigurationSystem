@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "vehicle-animation",
+  "animationVersion": "animation-2026-01",
+  "modelRef": {
+    "vehicleId": "demo-car",
+    "modelVersion": "model-2026-01",
+    "fbxSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "coordinateSystem": {
+    "unit": "centimeter",
+    "forward": "+X",
+    "right": "+Y",
+    "up": "+Z",
+    "handedness": "left"
+  },
+  "export": {
+    "format": "FBX",
+    "fbxVersion": "2020.2",
+    "binary": true,
+    "bakeAnimation": true,
+    "resampleAll": true
+  },
+  "clips": [
+    {
+      "clipId": "door-front-left-open",
+      "targetNode": "DoorPivot_FL",
+      "targetTag": "Vehicle.Part.Door.FrontLeft",
+      "action": "open",
+      "frameRate": 30,
+      "startFrame": 0,
+      "endFrame": 30,
+      "localAxis": "+Z",
+      "closedDegrees": 0,
+      "openDegrees": 68,
+      "reversible": true,
+      "loop": false,
+      "rootMotion": false
+    },
+    {
+      "clipId": "wheel-front-left-rotate",
+      "targetNode": "WheelPivot_FL",
+      "targetTag": "Vehicle.Part.Wheel.FrontLeft",
+      "action": "rotate",
+      "frameRate": 30,
+      "startFrame": 0,
+      "endFrame": 30,
+      "localAxis": "+Y",
+      "closedDegrees": 0,
+      "openDegrees": 360,
+      "reversible": true,
+      "loop": false,
+      "rootMotion": false
+    }
+  ],
+  "authorization": {
+    "rightsHolder": "Example Motors",
+    "licenseId": "demo-evaluation-2026",
+    "permittedUses": ["modify", "unreal-import", "render", "distribute-render"],
+    "territory": "worldwide",
+    "expiresOn": null,
+    "redistribution": "render-only"
+  },
+  "artifacts": [
+    {
+      "clipId": "door-front-left-open",
+      "path": "export/door-front-left-open.fbx",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "bytes": 240000
+    },
+    {
+      "clipId": "wheel-front-left-rotate",
+      "path": "export/wheel-front-left-rotate.fbx",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "bytes": 190000
+    }
+  ]
+}

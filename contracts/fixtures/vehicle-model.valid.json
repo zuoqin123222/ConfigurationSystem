@@ -1,0 +1,221 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "vehicle-model",
+  "vehicleId": "demo-car",
+  "modelVersion": "model-2026-01",
+  "coordinateSystem": {
+    "unit": "centimeter",
+    "forward": "+X",
+    "right": "+Y",
+    "up": "+Z",
+    "handedness": "left"
+  },
+  "source": {
+    "dcc": "blender",
+    "dccVersion": "4.5.3",
+    "file": {
+      "path": "source/demo-car.blend",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "bytes": 42000000
+    }
+  },
+  "export": {
+    "format": "FBX",
+    "fbxVersion": "2020.2",
+    "binary": true,
+    "bakeTransforms": true
+  },
+  "nodes": [
+    {
+      "name": "Vehicle.Root",
+      "type": "root",
+      "parent": null,
+      "tags": ["Vehicle.Root"],
+      "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "Vehicle.Body",
+      "type": "body",
+      "parent": "Vehicle.Root",
+      "tags": ["Vehicle.Body"],
+      "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "DoorPivot_FL",
+      "type": "pivot",
+      "parent": "Vehicle.Body",
+      "tags": ["Vehicle.Part.Door.FrontLeft"],
+      "transform": { "translationCm": [82, -71, 86], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "HoodPivot",
+      "type": "pivot",
+      "parent": "Vehicle.Body",
+      "tags": ["Vehicle.Part.Hood"],
+      "transform": { "translationCm": [116, 0, 91], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "TrunkPivot",
+      "type": "pivot",
+      "parent": "Vehicle.Body",
+      "tags": ["Vehicle.Part.Trunk"],
+      "transform": { "translationCm": [-122, 0, 88], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "WheelPivot_FL",
+      "type": "pivot",
+      "parent": "Vehicle.Body",
+      "tags": ["Vehicle.Part.Wheel.FrontLeft"],
+      "transform": { "translationCm": [132, -78, 34], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "WheelPivot_FR",
+      "type": "pivot",
+      "parent": "Vehicle.Body",
+      "tags": ["Vehicle.Part.Wheel.FrontRight"],
+      "transform": { "translationCm": [132, 78, 34], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "WheelPivot_RL",
+      "type": "pivot",
+      "parent": "Vehicle.Body",
+      "tags": ["Vehicle.Part.Wheel.RearLeft"],
+      "transform": { "translationCm": [-126, -78, 34], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "WheelPivot_RR",
+      "type": "pivot",
+      "parent": "Vehicle.Body",
+      "tags": ["Vehicle.Part.Wheel.RearRight"],
+      "transform": { "translationCm": [-126, 78, 34], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "DoorMesh_FL",
+      "type": "mesh",
+      "parent": "DoorPivot_FL",
+      "tags": [],
+      "transform": { "translationCm": [0, -42, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "HoodMesh",
+      "type": "mesh",
+      "parent": "HoodPivot",
+      "tags": [],
+      "transform": { "translationCm": [58, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "TrunkMesh",
+      "type": "mesh",
+      "parent": "TrunkPivot",
+      "tags": [],
+      "transform": { "translationCm": [-42, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "WheelMesh_FL",
+      "type": "mesh",
+      "parent": "WheelPivot_FL",
+      "tags": [],
+      "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "WheelMesh_FR",
+      "type": "mesh",
+      "parent": "WheelPivot_FR",
+      "tags": [],
+      "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "WheelMesh_RL",
+      "type": "mesh",
+      "parent": "WheelPivot_RL",
+      "tags": [],
+      "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "WheelMesh_RR",
+      "type": "mesh",
+      "parent": "WheelPivot_RR",
+      "tags": [],
+      "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "BodyMesh",
+      "type": "mesh",
+      "parent": "Vehicle.Body",
+      "tags": [],
+      "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "InteriorMesh",
+      "type": "mesh",
+      "parent": "Vehicle.Body",
+      "tags": [],
+      "transform": { "translationCm": [0, 0, 72], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    },
+    {
+      "name": "FrameMesh",
+      "type": "mesh",
+      "parent": "Vehicle.Body",
+      "tags": [],
+      "transform": { "translationCm": [0, 0, 0], "rotationDeg": [0, 0, 0], "scale": [1, 1, 1] }
+    }
+  ],
+  "materialSlots": [
+    { "slotId": "paint_body", "purpose": "可配置车身漆" },
+    { "slotId": "wheel_rim", "purpose": "可配置轮毂" },
+    { "slotId": "interior_seat", "purpose": "可配置内饰" },
+    { "slotId": "paint_frame", "purpose": "可配置外观框架" },
+    { "slotId": "glass", "purpose": "车窗玻璃" }
+  ],
+  "partBindings": [
+    {
+      "partId": "paint",
+      "targetNodes": ["BodyMesh"],
+      "materialSlotIds": ["paint_body"]
+    },
+    {
+      "partId": "wheel",
+      "targetNodes": ["WheelMesh_FL", "WheelMesh_FR", "WheelMesh_RL", "WheelMesh_RR"],
+      "materialSlotIds": ["wheel_rim"]
+    },
+    {
+      "partId": "interior",
+      "targetNodes": ["InteriorMesh"],
+      "materialSlotIds": ["interior_seat"]
+    },
+    {
+      "partId": "frame",
+      "targetNodes": ["FrameMesh"],
+      "materialSlotIds": ["paint_frame"]
+    }
+  ],
+  "lods": [
+    {
+      "level": 0,
+      "screenSize": 1,
+      "triangleCount": 820000,
+      "materialSlotIds": ["paint_body", "wheel_rim", "interior_seat", "paint_frame", "glass"]
+    },
+    {
+      "level": 1,
+      "screenSize": 0.35,
+      "triangleCount": 410000,
+      "materialSlotIds": ["paint_body", "wheel_rim", "interior_seat", "paint_frame", "glass"]
+    }
+  ],
+  "authorization": {
+    "rightsHolder": "Example Motors",
+    "licenseId": "demo-evaluation-2026",
+    "permittedUses": ["modify", "unreal-import", "render", "distribute-render"],
+    "territory": "worldwide",
+    "expiresOn": null,
+    "redistribution": "render-only"
+  },
+  "artifacts": {
+    "fbx": {
+      "path": "export/demo-car_model.fbx",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bytes": 31800000
+    }
+  }
+}

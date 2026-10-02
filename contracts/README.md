@@ -7,8 +7,12 @@
 - `schemas/catalog.schema.json`：车型、分区、选项、模板、交互镜头与渲染视角。
 - `schemas/published-configurations.schema.json`：Web 可达的 16 个完整配置。
 - `schemas/bake-manifest.schema.json`：烘焙器、Alpha 处理策略，以及图片归一化结果、尺寸、哈希与状态。
+- `schemas/vehicle-model-sidecar.schema.json`：DCC 模型交付的坐标、FBX、层级、Pivot、材质槽、LOD、授权与哈希。
+- `schemas/vehicle-animation-sidecar.schema.json`：动画 clip、目标节点、可逆性、模型引用、授权与动画 FBX 哈希。
 - `fixtures/catalog.mvp.json`：1 台车、4 个分区、每区 2 项、2 个模板。
 - `fixtures/published-configurations.mvp.json`：2×2×2×2 笛卡尔积和 4 个固定视角。
+- `fixtures/vehicle-*.valid.json`：可通过车辆 sidecar 契约的模型与动画样例。
+- `fixtures/vehicle-*.invalid.json`：验证器必须拒绝的负向样例。
 - `openapi.yaml`：health、catalog、resolve 与静态 render 接口。
 
 ## ID 与配置键
@@ -78,4 +82,11 @@ renders/<publicationVersion>/<vehicleId>/<configurationKey>/<renderViewId>.png
 node tools/validate-contracts.mjs
 ```
 
-验证器检查 3 个 Schema 文件是有效 JSON，检查 bake manifest 的 P0-3 渲染器、Alpha 处理及 ready render 必需字段结构，并检查 ID 与模板引用、UE PrimaryAssetId、预览图、价格、16 个唯一笛卡尔组合、canonical key、4 个视角和 64 个图片期望。
+验证器检查 5 个 Schema 文件是有效 JSON，检查 bake manifest 的 P0-3 结构，检查车辆模型与动画 sidecar 的 Schema 及跨文件语义，并检查 ID 与模板引用、UE PrimaryAssetId、预览图、价格、16 个唯一笛卡尔组合、canonical key、4 个视角和 64 个图片期望。
+
+车辆 sidecar 也可单独验证：
+
+```powershell
+node tools/validate-vehicle-sidecars.mjs
+node --test tools/validate-vehicle-sidecars.test.mjs
+```
