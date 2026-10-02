@@ -6,6 +6,8 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "ReversiblePartActuatorComponent.h"
+#include "SmoothWheelControllerComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 const FName AConfiguratorVehicleActor::PaintPartTag(TEXT("Configurator.Part.paint"));
@@ -97,23 +99,114 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	};
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(WheelLocations); ++Index)
 	{
+		USceneComponent* SteeringPivot = CreateDefaultSubobject<USceneComponent>(
+			*FString::Printf(TEXT("%sSteeringPivot"), WheelNames[Index]));
+		SteeringPivot->SetupAttachment(WheelGroup);
+		SteeringPivot->SetRelativeLocation(WheelLocations[Index]);
+		WheelSteeringPivots.Add(SteeringPivot);
+
+		USceneComponent* SpinPivot = CreateDefaultSubobject<USceneComponent>(
+			*FString::Printf(TEXT("%sSpinPivot"), WheelNames[Index]));
+		SpinPivot->SetupAttachment(SteeringPivot);
+		// Engine Cylinder 的轴为本地 Z；Roll 90° 将轮轴对齐车辆横向 Y。
+		SpinPivot->SetRelativeRotation(FRotator(0.0, 0.0, 90.0));
+		WheelSpinPivots.Add(SpinPivot);
+
 		UStaticMeshComponent* Wheel =
 			CreateDefaultSubobject<UStaticMeshComponent>(WheelNames[Index]);
-		Wheel->SetupAttachment(WheelGroup);
+		Wheel->SetupAttachment(SpinPivot);
 		Wheel->SetStaticMesh(CylinderMesh.Object);
 		Wheel->SetMaterial(0, BasicMaterial.Object);
-		Wheel->SetRelativeLocation(WheelLocations[Index]);
-		Wheel->SetRelativeRotation(FRotator(90.0, 0.0, 0.0));
 		Wheel->SetRelativeScale3D(FVector(0.72, 0.72, 0.38));
 		ConfiguratorVehicle::MarkPartition(Wheel, WheelPartTag, WheelSlotTag);
 		Wheel->ComponentTags.Add(WheelControlTags[Index]);
 		Wheels.Add(Wheel);
 	}
+
+	const auto CreateTemporaryPanel = [this](
+		const FName PivotName,
+		const FName Name,
+		const FVector& PivotLocation,
+		const FVector& PanelOffset,
+		const FVector& Scale)
+	{
+		USceneComponent* Pivot = CreateDefaultSubobject<USceneComponent>(PivotName);
+		Pivot->SetupAttachment(VehicleRoot);
+		Pivot->SetRelativeLocation(PivotLocation);
+		UStaticMeshComponent* Panel = CreateDefaultSubobject<UStaticMeshComponent>(Name);
+		Panel->SetupAttachment(Pivot);
+		Panel->SetStaticMesh(CubeMesh.Object);
+		Panel->SetMaterial(0, BasicMaterial.Object);
+		Panel->SetRelativeLocation(PanelOffset);
+		Panel->SetRelativeScale3D(Scale);
+		Panel->ComponentTags.Add(TemporaryResourceTag);
+		Panel->ComponentTags.Add(TEXT("Configurator.Part.Actuated"));
+		return TPair<USceneComponent*, UStaticMeshComponent*>(Pivot, Panel);
+	};
+
+	const auto LeftDoorParts = CreateTemporaryPanel(
+		TEXT("LeftDoorHingePivot"), TEXT("DoorLeft_TEMP"),
+		FVector(-200.0, -196.0, 120.0), FVector(175.0, 0.0, 0.0),
+		FVector(1.75, 0.08, 0.52));
+	LeftDoorPivot = LeftDoorParts.Key;
+	LeftDoor = LeftDoorParts.Value;
+	const auto RightDoorParts = CreateTemporaryPanel(
+		TEXT("RightDoorHingePivot"), TEXT("DoorRight_TEMP"),
+		FVector(-200.0, 196.0, 120.0), FVector(175.0, 0.0, 0.0),
+		FVector(1.75, 0.08, 0.52));
+	RightDoorPivot = RightDoorParts.Key;
+	RightDoor = RightDoorParts.Value;
+	const auto HoodParts = CreateTemporaryPanel(
+		TEXT("HoodHingePivot"), TEXT("Hood_TEMP"),
+		FVector(125.0, 0.0, 130.0), FVector(135.0, 0.0, 0.0),
+		FVector(1.35, 1.72, 0.08));
+	HoodPivot = HoodParts.Key;
+	Hood = HoodParts.Value;
+	const auto TrunkParts = CreateTemporaryPanel(
+		TEXT("TrunkHingePivot"), TEXT("Trunk_TEMP"),
+		FVector(-165.0, 0.0, 125.0), FVector(-105.0, 0.0, 0.0),
+		FVector(1.05, 1.72, 0.08));
+	TrunkPivot = TrunkParts.Key;
+	Trunk = TrunkParts.Value;
+
+	LeftDoorActuator = CreateDefaultSubobject<UReversiblePartActuatorComponent>(
+		TEXT("LeftDoorActuator"));
+	RightDoorActuator = CreateDefaultSubobject<UReversiblePartActuatorComponent>(
+		TEXT("RightDoorActuator"));
+	HoodActuator = CreateDefaultSubobject<UReversiblePartActuatorComponent>(
+		TEXT("HoodActuator"));
+	TrunkActuator = CreateDefaultSubobject<UReversiblePartActuatorComponent>(
+		TEXT("TrunkActuator"));
+	WheelController = CreateDefaultSubobject<USmoothWheelControllerComponent>(
+		TEXT("SmoothWheelController"));
 }
 
 void AConfiguratorVehicleActor::BeginPlay()
 {
 	Super::BeginPlay();
+	LeftDoorActuator->BindPart(
+		LeftDoorPivot,
+		LeftDoorPivot->GetRelativeTransform(),
+		FTransform(FRotator(0.0, 58.0, 0.0), LeftDoorPivot->GetRelativeLocation()));
+	RightDoorActuator->BindPart(
+		RightDoorPivot,
+		RightDoorPivot->GetRelativeTransform(),
+		FTransform(FRotator(0.0, -58.0, 0.0), RightDoorPivot->GetRelativeLocation()));
+	HoodActuator->BindPart(
+		HoodPivot,
+		HoodPivot->GetRelativeTransform(),
+		FTransform(FRotator(-32.0, 0.0, 0.0), HoodPivot->GetRelativeLocation()));
+	TrunkActuator->BindPart(
+		TrunkPivot,
+		TrunkPivot->GetRelativeTransform(),
+		FTransform(FRotator(35.0, 0.0, 0.0), TrunkPivot->GetRelativeLocation()));
+	TArray<USceneComponent*> SteeringPivots;
+	TArray<USceneComponent*> SpinPivots;
+	for (USceneComponent* Pivot : WheelSteeringPivots) { SteeringPivots.Add(Pivot); }
+	for (USceneComponent* Pivot : WheelSpinPivots) { SpinPivots.Add(Pivot); }
+	WheelController->BindWheels(SteeringPivots, SpinPivots);
+	WheelController->SetWheelTargets(0.0f, 0.0f);
+
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		if (UCarConfiguratorSubsystem* Configurator =
@@ -122,6 +215,66 @@ void AConfiguratorVehicleActor::BeginPlay()
 			Configurator->RegisterVehicle(this);
 		}
 	}
+}
+
+void AConfiguratorVehicleActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UCarConfiguratorSubsystem* Configurator =
+			GameInstance->GetSubsystem<UCarConfiguratorSubsystem>())
+		{
+			Configurator->UnregisterVehicle(this);
+		}
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+bool AConfiguratorVehicleActor::TogglePart(const FName PartId)
+{
+	UReversiblePartActuatorComponent* Actuator = nullptr;
+	if (PartId == TEXT("door-left")) { Actuator = LeftDoorActuator; }
+	else if (PartId == TEXT("door-right")) { Actuator = RightDoorActuator; }
+	else if (PartId == TEXT("hood")) { Actuator = HoodActuator; }
+	else if (PartId == TEXT("trunk")) { Actuator = TrunkActuator; }
+	if (!IsValid(Actuator))
+	{
+		return false;
+	}
+	Actuator->Toggle();
+	return true;
+}
+
+bool AConfiguratorVehicleActor::SetPartOpen(const FName PartId, const bool bOpen)
+{
+	UReversiblePartActuatorComponent* Actuator = nullptr;
+	if (PartId == TEXT("door-left")) { Actuator = LeftDoorActuator; }
+	else if (PartId == TEXT("door-right")) { Actuator = RightDoorActuator; }
+	else if (PartId == TEXT("hood")) { Actuator = HoodActuator; }
+	else if (PartId == TEXT("trunk")) { Actuator = TrunkActuator; }
+	if (!IsValid(Actuator))
+	{
+		return false;
+	}
+	Actuator->SetOpen(bOpen);
+	return true;
+}
+
+void AConfiguratorVehicleActor::SetWheelMotion(
+	const float SteeringDegrees,
+	const float SpinDegreesPerSecond)
+{
+	if (WheelController != nullptr)
+	{
+		bWheelsSpinning = !FMath::IsNearlyZero(SpinDegreesPerSecond);
+		WheelController->SetWheelTargets(SteeringDegrees, SpinDegreesPerSecond);
+	}
+}
+
+bool AConfiguratorVehicleActor::ToggleWheelSpin()
+{
+	SetWheelMotion(0.0f, bWheelsSpinning ? 0.0f : 180.0f);
+	return bWheelsSpinning;
 }
 
 void AConfiguratorVehicleActor::ApplyConfiguration(
@@ -205,13 +358,53 @@ bool AConfiguratorVehicleActor::HasStablePlaceholderBindings(
 	Validate(InteriorCabin, InteriorPartTag, InteriorSlotTag, TEXT("interior"));
 	Validate(Frame, FramePartTag, FrameSlotTag, TEXT("frame"));
 	Validate(WheelGroup, WheelPartTag, WheelSlotTag, TEXT("wheel"));
+	for (const UStaticMeshComponent* Panel : { LeftDoor, RightDoor, Hood, Trunk })
+	{
+		if (Panel == nullptr || !Panel->ComponentHasTag(TemporaryResourceTag)
+			|| !Panel->ComponentHasTag(TEXT("Configurator.Part.Actuated")))
+		{
+			OutErrors.Add(TEXT("可逆车身部件缺少临时资源或执行器绑定标签。"));
+		}
+	}
+	if (LeftDoorPivot == nullptr || RightDoorPivot == nullptr
+		|| HoodPivot == nullptr || TrunkPivot == nullptr
+		|| LeftDoor == nullptr || LeftDoor->GetAttachParent() != LeftDoorPivot
+		|| RightDoor == nullptr || RightDoor->GetAttachParent() != RightDoorPivot
+		|| Hood == nullptr || Hood->GetAttachParent() != HoodPivot
+		|| Trunk == nullptr || Trunk->GetAttachParent() != TrunkPivot)
+	{
+		OutErrors.Add(TEXT("活动件必须挂载到各自真实铰链 Pivot。"));
+	}
+	if (LeftDoorActuator == nullptr || RightDoorActuator == nullptr
+		|| HoodActuator == nullptr || TrunkActuator == nullptr || WheelController == nullptr)
+	{
+		OutErrors.Add(TEXT("车身可逆执行器或平滑车轮控制器不完整。"));
+	}
 	if (Wheels.Num() != 4)
 	{
 		OutErrors.Add(TEXT("wheel 分区必须固定包含四个占位轮。"));
 	}
-	for (const UStaticMeshComponent* Wheel : Wheels)
+	if (WheelSteeringPivots.Num() != 4 || WheelSpinPivots.Num() != 4)
 	{
+		OutErrors.Add(TEXT("车轮必须固定包含四组独立转向/滚动层级。"));
+	}
+	for (int32 Index = 0; Index < Wheels.Num(); ++Index)
+	{
+		const UStaticMeshComponent* Wheel = Wheels[Index];
 		Validate(Wheel, WheelPartTag, WheelSlotTag, TEXT("wheel mesh"));
+		if (!WheelSpinPivots.IsValidIndex(Index)
+			|| !WheelSteeringPivots.IsValidIndex(Index)
+			|| !IsValid(WheelSpinPivots[Index])
+			|| !IsValid(WheelSteeringPivots[Index])
+			|| Wheel == nullptr
+			|| Wheel->GetAttachParent() != WheelSpinPivots[Index]
+			|| WheelSpinPivots[Index]->GetAttachParent() != WheelSteeringPivots[Index]
+			|| !FMath::IsNearlyEqual(
+				FMath::Abs(WheelSpinPivots[Index]->GetRelativeRotation().Roll),
+				90.0f))
+		{
+			OutErrors.Add(TEXT("车轮轴向或 Steering/Spin/Mesh 层级不正确。"));
+		}
 	}
 	return OutErrors.IsEmpty() && Tags.Contains(TemporaryResourceTag);
 }

@@ -62,6 +62,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "车辆配置")
 	bool ApplyTemplate(const FString& TemplateId);
 
+	UFUNCTION(BlueprintCallable, Category = "车辆配置")
+	bool ApplySelection(const FCarConfigurationSelection& Selection);
+
+	UFUNCTION(BlueprintPure, Category = "车辆配置")
+	bool CanApplySelection(const FCarConfigurationSelection& Selection) const;
+
 	UFUNCTION(BlueprintPure, Category = "车辆配置")
 	FString GetCanonicalKey() const;
 
@@ -87,6 +93,7 @@ public:
 	UCarConfigurationState* GetState() const { return State; }
 
 	void RegisterVehicle(AConfiguratorVehicleActor* Vehicle);
+	void UnregisterVehicle(const AConfiguratorVehicleActor* Vehicle);
 
 	/** 单一 MVP fixture 构造入口，供运行时和自动化探针共同使用。 */
 	static void BuildMvpCatalog(

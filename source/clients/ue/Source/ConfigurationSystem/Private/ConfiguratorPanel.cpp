@@ -2,18 +2,22 @@
 
 #include "Blueprint/WidgetTree.h"
 #include "CarConfiguratorSubsystem.h"
+#include "ConfigShowroomPlayerController.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/ProgressBar.h"
+#include "Components/ScrollBox.h"
 #include "Components/SizeBox.h"
 #include "Components/Spacer.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/GameInstance.h"
+#include "PathTracingExperienceSubsystem.h"
 #include "Styling/CoreStyle.h"
 
 TSharedRef<SWidget> UConfiguratorPanel::RebuildWidget()
@@ -38,6 +42,14 @@ void UConfiguratorPanel::NativeConstruct()
 			this,
 			&UConfiguratorPanel::HandleConfigurationChanged);
 	}
+	PathTracing = GetGameInstance()->GetSubsystem<UPathTracingExperienceSubsystem>();
+	if (PathTracing != nullptr)
+	{
+		PathTracing->OnProgressChanged.AddDynamic(
+			this, &UConfiguratorPanel::HandlePathTracingProgress);
+		HandlePathTracingProgress(
+			PathTracing->GetCurrentSample(), PathTracing->GetTargetSamples());
+	}
 	RefreshSummary();
 }
 
@@ -49,7 +61,13 @@ void UConfiguratorPanel::NativeDestruct()
 			this,
 			&UConfiguratorPanel::HandleConfigurationChanged);
 	}
+	if (PathTracing != nullptr)
+	{
+		PathTracing->OnProgressChanged.RemoveDynamic(
+			this, &UConfiguratorPanel::HandlePathTracingProgress);
+	}
 	Configurator = nullptr;
+	PathTracing = nullptr;
 	Super::NativeDestruct();
 }
 
@@ -75,7 +93,10 @@ void UConfiguratorPanel::BuildWidgetTree()
 
 	UVerticalBox* Content = WidgetTree->ConstructWidget<UVerticalBox>(
 		UVerticalBox::StaticClass(), TEXT("Content"));
-	PanelBackground->SetContent(Content);
+	UScrollBox* Scroll = WidgetTree->ConstructWidget<UScrollBox>(
+		UScrollBox::StaticClass(), TEXT("Scroll"));
+	PanelBackground->SetContent(Scroll);
+	Scroll->AddChild(Content);
 
 	UTextBlock* Title = WidgetTree->ConstructWidget<UTextBlock>(
 		UTextBlock::StaticClass(), TEXT("Title"));
@@ -95,6 +116,73 @@ void UConfiguratorPanel::BuildWidgetTree()
 		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, ApplyLuxuryTemplate));
 	Templates->AddChildToHorizontalBox(Sport)->SetPadding(FMargin(0, 0, 6, 0));
 	Templates->AddChildToHorizontalBox(Luxury)->SetPadding(FMargin(6, 0, 0, 0));
+
+	AddHeading(Content, NSLOCTEXT("Configurator", "ExperienceControls", "体验控制（纯 C++）"));
+	UHorizontalBox* Parts = WidgetTree->ConstructWidget<UHorizontalBox>();
+	Content->AddChildToVerticalBox(Parts)->SetPadding(FMargin(0, 0, 0, 5));
+	Parts->AddChildToHorizontalBox(MakeButton(
+		NSLOCTEXT("Configurator", "LeftDoor", "左门"),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, ToggleLeftDoor)));
+	Parts->AddChildToHorizontalBox(MakeButton(
+		NSLOCTEXT("Configurator", "RightDoor", "右门"),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, ToggleRightDoor)));
+	Parts->AddChildToHorizontalBox(MakeButton(
+		NSLOCTEXT("Configurator", "Hood", "机盖"),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, ToggleHood)));
+	Parts->AddChildToHorizontalBox(MakeButton(
+		NSLOCTEXT("Configurator", "Trunk", "后备箱"),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, ToggleTrunk)));
+	Parts->AddChildToHorizontalBox(MakeButton(
+		NSLOCTEXT("Configurator", "Wheels", "车轮"),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, ToggleWheels)));
+
+	UHorizontalBox* Cameras = WidgetTree->ConstructWidget<UHorizontalBox>();
+	Content->AddChildToVerticalBox(Cameras)->SetPadding(FMargin(0, 0, 0, 5));
+	const FText CameraLabels[] = {
+		NSLOCTEXT("Configurator", "CameraFront", "前"),
+		NSLOCTEXT("Configurator", "CameraRear", "后"),
+		NSLOCTEXT("Configurator", "CameraLeft", "左"),
+		NSLOCTEXT("Configurator", "CameraRight", "右"),
+		NSLOCTEXT("Configurator", "CameraInterior", "内")
+	};
+	const FName CameraHandlers[] = {
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraFront),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraRear),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraLeft),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraRight),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraInterior)
+	};
+	for (int32 Index = 0; Index < 5; ++Index)
+	{
+		Cameras->AddChildToHorizontalBox(MakeButton(CameraLabels[Index], CameraHandlers[Index]));
+	}
+
+	UHorizontalBox* Runtime = WidgetTree->ConstructWidget<UHorizontalBox>();
+	Content->AddChildToVerticalBox(Runtime)->SetPadding(FMargin(0, 0, 0, 5));
+	Runtime->AddChildToHorizontalBox(MakeButton(
+		NSLOCTEXT("Configurator", "Environment", "切换环境"),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, ToggleEnvironment)));
+	Runtime->AddChildToHorizontalBox(MakeButton(
+		NSLOCTEXT("Configurator", "PathTracing", "Path Tracing"),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, TogglePathTracing)));
+	Runtime->AddChildToHorizontalBox(MakeButton(
+		NSLOCTEXT("Configurator", "Save", "保存"),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, SaveExperience)));
+	Runtime->AddChildToHorizontalBox(MakeButton(
+		NSLOCTEXT("Configurator", "Load", "载入"),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, LoadExperience)));
+
+	PathTracingProgress = WidgetTree->ConstructWidget<UProgressBar>(
+		UProgressBar::StaticClass(), TEXT("PathTracingProgress"));
+	PathTracingProgress->SetPercent(0.0f);
+	PathTracingProgress->SetFillColorAndOpacity(FLinearColor(0.72f, 0.86f, 0.62f));
+	Content->AddChildToVerticalBox(PathTracingProgress)->SetPadding(FMargin(0, 2, 0, 2));
+	ExperienceStatusText = WidgetTree->ConstructWidget<UTextBlock>(
+		UTextBlock::StaticClass(), TEXT("ExperienceStatus"));
+	ExperienceStatusText->SetText(NSLOCTEXT(
+		"Configurator", "ExperienceReady", "实时模式 · 环境 A · 机位 1"));
+	ExperienceStatusText->SetAutoWrapText(true);
+	Content->AddChildToVerticalBox(ExperienceStatusText)->SetPadding(FMargin(0, 0, 0, 8));
 
 	AddOptionRow(
 		Content,
@@ -235,6 +323,25 @@ void UConfiguratorPanel::Select(const TCHAR* PartId, const TCHAR* OptionId)
 }
 
 void UConfiguratorPanel::HandleConfigurationChanged() { RefreshSummary(); }
+void UConfiguratorPanel::HandlePathTracingProgress(
+	const int32 CurrentSample,
+	const int32 TargetSamples)
+{
+	if (PathTracingProgress != nullptr)
+	{
+		PathTracingProgress->SetPercent(
+			TargetSamples > 0
+				? FMath::Clamp(static_cast<float>(CurrentSample) / TargetSamples, 0.0f, 1.0f)
+				: 0.0f);
+	}
+	if (ExperienceStatusText != nullptr && PathTracing != nullptr)
+	{
+		ExperienceStatusText->SetText(FText::FromString(
+			PathTracing->IsPathTracingEnabled()
+				? FString::Printf(TEXT("Path Tracing · %d / %d 样本"), CurrentSample, TargetSamples)
+				: TEXT("实时模式")));
+	}
+}
 void UConfiguratorPanel::SelectPaintRed() { Select(TEXT("paint"), TEXT("paint-red")); }
 void UConfiguratorPanel::SelectPaintSilver() { Select(TEXT("paint"), TEXT("paint-silver")); }
 void UConfiguratorPanel::SelectWheelSport() { Select(TEXT("wheel"), TEXT("wheel-sport")); }
@@ -259,5 +366,110 @@ void UConfiguratorPanel::ApplyLuxuryTemplate()
 	{
 		Configurator->ApplyTemplate(TEXT("luxury"));
 		RefreshSummary();
+	}
+}
+
+void UConfiguratorPanel::ToggleLeftDoor()
+{
+	if (AConfigShowroomPlayerController* PC =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+	{
+		PC->ToggleVehiclePart(TEXT("door-left"));
+	}
+}
+void UConfiguratorPanel::ToggleRightDoor()
+{
+	if (AConfigShowroomPlayerController* PC =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+	{
+		PC->ToggleVehiclePart(TEXT("door-right"));
+	}
+}
+void UConfiguratorPanel::ToggleHood()
+{
+	if (AConfigShowroomPlayerController* PC =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+	{
+		PC->ToggleVehiclePart(TEXT("hood"));
+	}
+}
+void UConfiguratorPanel::ToggleTrunk()
+{
+	if (AConfigShowroomPlayerController* PC =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+	{
+		PC->ToggleVehiclePart(TEXT("trunk"));
+	}
+}
+void UConfiguratorPanel::ToggleWheels()
+{
+	if (AConfigShowroomPlayerController* PC =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+	{
+		PC->ToggleWheelSpin();
+	}
+}
+void UConfiguratorPanel::CameraFront()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer())) { PC->SwitchCamera(0); }
+}
+void UConfiguratorPanel::CameraRear()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer())) { PC->SwitchCamera(1); }
+}
+void UConfiguratorPanel::CameraLeft()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer())) { PC->SwitchCamera(2); }
+}
+void UConfiguratorPanel::CameraRight()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer())) { PC->SwitchCamera(3); }
+}
+void UConfiguratorPanel::CameraInterior()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer())) { PC->SwitchCamera(4); }
+}
+void UConfiguratorPanel::ToggleEnvironment()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+	{
+		PC->ToggleEnvironment();
+	}
+}
+void UConfiguratorPanel::TogglePathTracing()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+	{
+		FString Error;
+		if (!PC->TogglePathTracing(Error) && ExperienceStatusText != nullptr)
+		{
+			ExperienceStatusText->SetText(FText::FromString(Error));
+		}
+	}
+}
+void UConfiguratorPanel::SaveExperience()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+	{
+		FString Error;
+		const bool bSaved = PC->SaveExperience(Error);
+		if (ExperienceStatusText != nullptr)
+		{
+			ExperienceStatusText->SetText(FText::FromString(
+				bSaved ? TEXT("配置、环境和 UI 已原子保存") : Error));
+		}
+	}
+}
+void UConfiguratorPanel::LoadExperience()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+	{
+		FString Error;
+		const bool bLoaded = PC->LoadExperience(Error);
+		if (ExperienceStatusText != nullptr)
+		{
+			ExperienceStatusText->SetText(FText::FromString(
+				bLoaded ? TEXT("配置、环境和 UI 已恢复") : Error));
+		}
 	}
 }

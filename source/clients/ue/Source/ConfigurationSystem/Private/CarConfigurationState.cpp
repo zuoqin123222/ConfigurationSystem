@@ -118,6 +118,29 @@ bool UCarConfigurationState::ApplyTemplate(const FString& TemplateId)
 	return true;
 }
 
+bool UCarConfigurationState::ApplySelection(
+	const FCarConfigurationSelection& InSelection)
+{
+	if (!CanApplySelection(InSelection))
+	{
+		return false;
+	}
+	if (Selection == InSelection)
+	{
+		return true;
+	}
+
+	Selection = InSelection;
+	OnChanged.Broadcast();
+	return true;
+}
+
+bool UCarConfigurationState::CanApplySelection(
+	const FCarConfigurationSelection& InSelection) const
+{
+	return bInitialized && IsSelectionValid(InSelection, OptionsById);
+}
+
 FString UCarConfigurationState::GetCanonicalKey() const
 {
 	if (!bInitialized)

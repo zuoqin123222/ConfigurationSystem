@@ -3,7 +3,6 @@
 #include "Camera/CameraActor.h"
 #include "ConfigShowroomGameMode.h"
 #include "ConfiguratorVehicleActor.h"
-#include "Engine/DirectionalLight.h"
 #include "Engine/PointLight.h"
 #include "Engine/SkyLight.h"
 #include "Engine/StaticMeshActor.h"
@@ -13,6 +12,7 @@
 #include "GameFramework/WorldSettings.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/PackageName.h"
+#include "ShowroomEnvironmentActor.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FConfigShowroomMapAutomationTest,
@@ -28,6 +28,21 @@ namespace ConfigShowroomAutomation
 		for (TActorIterator<ActorType> It(World); It; ++It)
 		{
 			Count += It->GetActorLabel() == Label ? 1 : 0;
+		}
+		return Count;
+	}
+
+	template <typename ActorType>
+	int32 CountByTag(UWorld* World, const FName Tag, TSet<const AActor*>& OutActors)
+	{
+		int32 Count = 0;
+		for (TActorIterator<ActorType> It(World); It; ++It)
+		{
+			if (It->ActorHasTag(Tag))
+			{
+				++Count;
+				OutActors.Add(*It);
+			}
 		}
 		return Count;
 	}
@@ -62,19 +77,34 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 			World, TEXT("ConfiguratorPlaceholderVehicle_TEMP")),
 		1);
 	TestEqual(
-		TEXT("默认相机唯一"),
-		ConfigShowroomAutomation::CountByLabel<ACameraActor>(
-			World, TEXT("ShowroomCamera")),
+		TEXT("五个产品机位完整"),
+		ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCamera"))
+			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraRear"))
+			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraLeft"))
+			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraRight"))
+			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraInterior")),
+		5);
+	TSet<const AActor*> TaggedCameras;
+	for (int32 CameraIndex = 0; CameraIndex < 5; ++CameraIndex)
+	{
+		const FName CameraTag(*FString::Printf(
+			TEXT("Configurator.Camera.%d"), CameraIndex));
+		TestEqual(
+			*FString::Printf(TEXT("机位 %d 标签唯一"), CameraIndex),
+			ConfigShowroomAutomation::CountByTag<ACameraActor>(
+				World, CameraTag, TaggedCameras),
+			1);
+	}
+	TestEqual(TEXT("五个机位标签分别指向不同相机"), TaggedCameras.Num(), 5);
+	TestEqual(
+		TEXT("双环境控制器唯一"),
+		ConfigShowroomAutomation::CountByLabel<AShowroomEnvironmentActor>(
+			World, TEXT("ShowroomDualEnvironment_TEMP")),
 		1);
 	TestEqual(
 		TEXT("临时地台唯一"),
 		ConfigShowroomAutomation::CountByLabel<AStaticMeshActor>(
 			World, TEXT("ShowroomFloor_TEMP")),
-		1);
-	TestEqual(
-		TEXT("主光唯一"),
-		ConfigShowroomAutomation::CountByLabel<ADirectionalLight>(
-			World, TEXT("ShowroomKeyLight_TEMP")),
 		1);
 	TestEqual(
 		TEXT("补光唯一"),

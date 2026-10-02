@@ -21,6 +21,8 @@ private:
 	void RunAdminImportProbe();
 	void CreatePrimaryAssetProbeAssets();
 	void CreatePackagingProbeMap();
+	void RequestCreateConfigShowroomMap();
+	bool TickCreateConfigShowroomMap(float DeltaTime);
 	void CreateConfigShowroomMap();
 
 	IConsoleObject* CreateAssetsCommand = nullptr;
@@ -28,5 +30,6 @@ private:
 	IConsoleObject* CreateShowroomMapCommand = nullptr;
 	IConsoleObject* AdminImportProbeCommand = nullptr;
 	FTSTicker::FDelegateHandle AdminImportProbeTickerHandle;
+	FTSTicker::FDelegateHandle CreateShowroomMapTickerHandle;
 	bool bMenusRegistered = false;
 };

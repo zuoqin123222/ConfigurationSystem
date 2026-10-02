@@ -5,6 +5,8 @@
 #include "ConfiguratorPanel.generated.h"
 
 class UCarConfiguratorSubsystem;
+class UPathTracingExperienceSubsystem;
+class UProgressBar;
 class UTextBlock;
 
 /** 无 Blueprint 依赖的最小 UMG 面板：四分区各两个选项、两个模板、键与价格。 */
@@ -39,6 +41,8 @@ private:
 
 	UFUNCTION()
 	void HandleConfigurationChanged();
+	UFUNCTION()
+	void HandlePathTracingProgress(int32 CurrentSample, int32 TargetSamples);
 	UFUNCTION() void SelectPaintRed();
 	UFUNCTION() void SelectPaintSilver();
 	UFUNCTION() void SelectWheelSport();
@@ -49,6 +53,20 @@ private:
 	UFUNCTION() void SelectFrameRed();
 	UFUNCTION() void ApplySportTemplate();
 	UFUNCTION() void ApplyLuxuryTemplate();
+	UFUNCTION() void ToggleLeftDoor();
+	UFUNCTION() void ToggleRightDoor();
+	UFUNCTION() void ToggleHood();
+	UFUNCTION() void ToggleTrunk();
+	UFUNCTION() void ToggleWheels();
+	UFUNCTION() void CameraFront();
+	UFUNCTION() void CameraRear();
+	UFUNCTION() void CameraLeft();
+	UFUNCTION() void CameraRight();
+	UFUNCTION() void CameraInterior();
+	UFUNCTION() void ToggleEnvironment();
+	UFUNCTION() void TogglePathTracing();
+	UFUNCTION() void SaveExperience();
+	UFUNCTION() void LoadExperience();
 
 	UPROPERTY(Transient)
 	TObjectPtr<UCarConfiguratorSubsystem> Configurator;
@@ -58,4 +76,13 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> PriceText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> ExperienceStatusText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UProgressBar> PathTracingProgress;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UPathTracingExperienceSubsystem> PathTracing;
 };

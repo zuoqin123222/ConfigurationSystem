@@ -6,7 +6,9 @@
 #include "ConfiguratorVehicleActor.generated.h"
 
 class UMaterialInstanceDynamic;
+class UReversiblePartActuatorComponent;
 class USceneComponent;
+class USmoothWheelControllerComponent;
 class UStaticMeshComponent;
 
 /**
@@ -24,10 +26,24 @@ public:
 	AConfiguratorVehicleActor();
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	/** 把领域状态映射到占位几何颜色，不参与 canonical key 或价格计算。 */
 	UFUNCTION(BlueprintCallable, Category = "车辆配置")
 	void ApplyConfiguration(const FCarConfigurationSelection& Selection);
+
+	/** PartId: door-left、door-right、hood、trunk。运动中再次调用可连续反向。 */
+	UFUNCTION(BlueprintCallable, Category = "车辆体验")
+	bool TogglePart(FName PartId);
+
+	UFUNCTION(BlueprintCallable, Category = "车辆体验")
+	bool SetPartOpen(FName PartId, bool bOpen);
+
+	UFUNCTION(BlueprintCallable, Category = "车辆体验")
+	void SetWheelMotion(float SteeringDegrees, float SpinDegreesPerSecond);
+
+	UFUNCTION(BlueprintCallable, Category = "车辆体验")
+	bool ToggleWheelSpin();
 
 	/** 自动化探针使用：验证四分区标签、逻辑槽和临时资源声明未漂移。 */
 	bool HasStablePlaceholderBindings(TArray<FString>& OutErrors) const;
@@ -69,6 +85,51 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TArray<TObjectPtr<UStaticMeshComponent>> Wheels;
 
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
+	TArray<TObjectPtr<USceneComponent>> WheelSteeringPivots;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
+	TArray<TObjectPtr<USceneComponent>> WheelSpinPivots;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆|临时")
+	TObjectPtr<USceneComponent> LeftDoorPivot;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆|临时")
+	TObjectPtr<USceneComponent> RightDoorPivot;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆|临时")
+	TObjectPtr<USceneComponent> HoodPivot;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆|临时")
+	TObjectPtr<USceneComponent> TrunkPivot;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆|临时")
+	TObjectPtr<UStaticMeshComponent> LeftDoor;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆|临时")
+	TObjectPtr<UStaticMeshComponent> RightDoor;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆|临时")
+	TObjectPtr<UStaticMeshComponent> Hood;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆|临时")
+	TObjectPtr<UStaticMeshComponent> Trunk;
+
+	UPROPERTY(VisibleAnywhere, Category = "车辆体验")
+	TObjectPtr<UReversiblePartActuatorComponent> LeftDoorActuator;
+
+	UPROPERTY(VisibleAnywhere, Category = "车辆体验")
+	TObjectPtr<UReversiblePartActuatorComponent> RightDoorActuator;
+
+	UPROPERTY(VisibleAnywhere, Category = "车辆体验")
+	TObjectPtr<UReversiblePartActuatorComponent> HoodActuator;
+
+	UPROPERTY(VisibleAnywhere, Category = "车辆体验")
+	TObjectPtr<UReversiblePartActuatorComponent> TrunkActuator;
+
+	UPROPERTY(VisibleAnywhere, Category = "车辆体验")
+	TObjectPtr<USmoothWheelControllerComponent> WheelController;
+
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> PaintMaterial;
 
@@ -80,4 +141,6 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> FrameMaterial;
+
+	bool bWheelsSpinning = false;
 };

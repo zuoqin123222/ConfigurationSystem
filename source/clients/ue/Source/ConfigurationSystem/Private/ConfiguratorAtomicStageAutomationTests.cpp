@@ -44,6 +44,17 @@ bool FConfiguratorAtomicStageAutomationTest::RunTest(const FString& Parameters)
 		State->GetCanonicalKey(),
 		FString(TEXT("paint-silver__wheel-forged__interior-ivory__frame-black")));
 	TestEqual(TEXT("豪华模板总价"), State->GetTotalPrice(), int64(32760000));
+	FCarConfigurationSelection InvalidRestore = State->GetSelection();
+	InvalidRestore.Wheel = TEXT("unknown-wheel");
+	const FString KeyBeforeInvalidRestore = State->GetCanonicalKey();
+	TestFalse(TEXT("Load 可先只校验无效完整选择"), State->CanApplySelection(InvalidRestore));
+	TestEqual(TEXT("只校验阶段不修改状态"), State->GetCanonicalKey(), KeyBeforeInvalidRestore);
+	TestFalse(TEXT("持久化恢复拒绝无效完整选择"), State->ApplySelection(InvalidRestore));
+	TestEqual(
+		TEXT("无效完整选择不会产生部分更新"),
+		State->GetCanonicalKey(),
+		KeyBeforeInvalidRestore);
+	TestTrue(TEXT("有效完整选择可一次恢复"), State->ApplySelection(Defaults));
 
 	const AConfiguratorVehicleActor* Vehicle =
 		GetDefault<AConfiguratorVehicleActor>();

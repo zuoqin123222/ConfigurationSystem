@@ -98,6 +98,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "车辆配置")
 	bool ApplyTemplate(const FString& TemplateId);
 
+	/** 完整校验后一次性应用四分区选择；用于持久化恢复且只广播一次。 */
+	UFUNCTION(BlueprintCallable, Category = "车辆配置")
+	bool ApplySelection(const FCarConfigurationSelection& InSelection);
+
+	/** 只校验四分区选择，不修改状态。 */
+	UFUNCTION(BlueprintPure, Category = "车辆配置")
+	bool CanApplySelection(const FCarConfigurationSelection& InSelection) const;
+
 	/** 按 paint__wheel__interior__frame 的固定顺序生成规范键。 */
 	UFUNCTION(BlueprintPure, Category = "车辆配置")
 	FString GetCanonicalKey() const;

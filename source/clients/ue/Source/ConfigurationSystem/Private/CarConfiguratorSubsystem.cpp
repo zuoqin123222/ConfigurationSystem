@@ -111,6 +111,18 @@ bool UCarConfiguratorSubsystem::ApplyTemplate(const FString& TemplateId)
 	return State != nullptr && State->ApplyTemplate(TemplateId);
 }
 
+bool UCarConfiguratorSubsystem::ApplySelection(
+	const FCarConfigurationSelection& Selection)
+{
+	return IsValid(State) && State->ApplySelection(Selection);
+}
+
+bool UCarConfiguratorSubsystem::CanApplySelection(
+	const FCarConfigurationSelection& Selection) const
+{
+	return IsValid(State) && State->CanApplySelection(Selection);
+}
+
 FString UCarConfiguratorSubsystem::GetCanonicalKey() const
 {
 	return State != nullptr ? State->GetCanonicalKey() : FString();
@@ -130,15 +142,24 @@ void UCarConfiguratorSubsystem::RegisterVehicle(
 	AConfiguratorVehicleActor* Vehicle)
 {
 	RegisteredVehicle = Vehicle;
-	if (RegisteredVehicle != nullptr && State != nullptr)
+	if (IsValid(RegisteredVehicle) && IsValid(State))
 	{
 		RegisteredVehicle->ApplyConfiguration(State->GetSelection());
 	}
 }
 
+void UCarConfiguratorSubsystem::UnregisterVehicle(
+	const AConfiguratorVehicleActor* Vehicle)
+{
+	if (RegisteredVehicle == Vehicle)
+	{
+		RegisteredVehicle = nullptr;
+	}
+}
+
 void UCarConfiguratorSubsystem::HandleStateChanged()
 {
-	if (RegisteredVehicle != nullptr && State != nullptr)
+	if (IsValid(RegisteredVehicle) && IsValid(State))
 	{
 		RegisteredVehicle->ApplyConfiguration(State->GetSelection());
 	}

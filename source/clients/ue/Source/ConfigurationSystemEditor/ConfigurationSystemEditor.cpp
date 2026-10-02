@@ -24,11 +24,13 @@
 #include "HAL/IConsoleManager.h"
 #include "HAL/PlatformMisc.h"
 #include "Misc/CommandLine.h"
+#include "Misc/App.h"
 #include "Misc/PackageName.h"
 #include "Misc/Parse.h"
 #include "PackagingProbeMarkerActor.h"
 #include "PrimaryAssetProbeData.h"
 #include "SAdminImportPanel.h"
+#include "ShowroomEnvironmentActor.h"
 #include "ToolMenus.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
@@ -152,7 +154,8 @@ void FConfigurationSystemEditorModule::StartupModule()
 	CreateShowroomMapCommand = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("ConfigurationSystem.CreateShowroomMap"),
 		TEXT("幂等创建/刷新 /Game/Maps/L_ConfigShowroom，并设置占位车、地台、灯光和默认相机。"),
-		FConsoleCommandDelegate::CreateRaw(this, &FConfigurationSystemEditorModule::CreateConfigShowroomMap),
+		FConsoleCommandDelegate::CreateRaw(
+			this, &FConfigurationSystemEditorModule::RequestCreateConfigShowroomMap),
 		ECVF_Default);
 
 	AdminImportProbeCommand = IConsoleManager::Get().RegisterConsoleCommand(
@@ -182,6 +185,11 @@ void FConfigurationSystemEditorModule::ShutdownModule()
 	{
 		FTSTicker::GetCoreTicker().RemoveTicker(AdminImportProbeTickerHandle);
 		AdminImportProbeTickerHandle.Reset();
+	}
+	if (CreateShowroomMapTickerHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(CreateShowroomMapTickerHandle);
+		CreateShowroomMapTickerHandle.Reset();
 	}
 
 	if (CreateAssetsCommand != nullptr)
@@ -435,20 +443,31 @@ void FConfigurationSystemEditorModule::CreatePackagingProbeMap()
 	}
 }
 
+void FConfigurationSystemEditorModule::RequestCreateConfigShowroomMap()
+{
+	if (!CreateShowroomMapTickerHandle.IsValid())
+	{
+		CreateShowroomMapTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
+			FTickerDelegate::CreateRaw(
+				this, &FConfigurationSystemEditorModule::TickCreateConfigShowroomMap));
+	}
+}
+
+bool FConfigurationSystemEditorModule::TickCreateConfigShowroomMap(const float DeltaTime)
+{
+	(void)DeltaTime;
+	CreateShowroomMapTickerHandle.Reset();
+	CreateConfigShowroomMap();
+	return false;
+}
+
 void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 {
 	using namespace PrimaryAssetProbeEditor;
 
-	UWorld* World = nullptr;
-	FString ExistingFilename;
-	if (FPackageName::DoesPackageExist(ShowroomMapPackageName, &ExistingFilename))
-	{
-		World = UEditorLoadingAndSavingUtils::LoadMap(ExistingFilename);
-	}
-	else
-	{
-		World = UEditorLoadingAndSavingUtils::NewBlankMap(false);
-	}
+	// 该地图完全由代码拥有；从空世界重建比在当前默认地图上原地保存更稳定，
+	// 且避免命令行启动时递归加载正在打开的同名地图。
+	UWorld* World = UEditorLoadingAndSavingUtils::NewBlankMap(false);
 	if (World == nullptr)
 	{
 		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("无法创建或载入展厅地图。"));
@@ -476,26 +495,37 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		Floor->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
 	}
 
-	ACameraActor* Camera = FindOrSpawnActor<ACameraActor>(
-		World,
-		TEXT("ShowroomCamera"),
-		FTransform(FRotator(-14.0, -150.0, 0.0), FVector(920.0, 520.0, 310.0)));
-	if (Camera != nullptr)
+	const TCHAR* CameraLabels[] = {
+		TEXT("ShowroomCamera"), TEXT("ShowroomCameraRear"), TEXT("ShowroomCameraLeft"),
+		TEXT("ShowroomCameraRight"), TEXT("ShowroomCameraInterior")
+	};
+	const FTransform CameraTransforms[] = {
+		FTransform(FRotator(-14.0, -150.0, 0.0), FVector(920.0, 520.0, 310.0)),
+		FTransform(FRotator(-12.0, 28.0, 0.0), FVector(-900.0, -470.0, 285.0)),
+		FTransform(FRotator(-10.0, -90.0, 0.0), FVector(0.0, 880.0, 250.0)),
+		FTransform(FRotator(-10.0, 90.0, 0.0), FVector(0.0, -880.0, 250.0)),
+		// 占位车没有真实中空座舱，临时内饰机位从右侧观察 Cabin，
+		// 避免把相机放进实体 Cube 导致近裁剪面被车身完全遮挡。
+		FTransform(FRotator(-7.0, 90.0, 0.0), FVector(-75.0, -360.0, 225.0))
+	};
+	bool bAllCamerasCreated = true;
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(CameraLabels); ++Index)
 	{
-		Camera->GetCameraComponent()->SetFieldOfView(42.0f);
-		Camera->Tags.AddUnique(TEXT("Configurator.ShowroomCamera"));
+		ACameraActor* Camera = FindOrSpawnActor<ACameraActor>(
+			World, CameraLabels[Index], CameraTransforms[Index]);
+		bAllCamerasCreated &= Camera != nullptr;
+		if (Camera != nullptr)
+		{
+			Camera->GetCameraComponent()->SetFieldOfView(Index == 4 ? 64.0f : 42.0f);
+			Camera->Tags.AddUnique(FName(
+				*FString::Printf(TEXT("Configurator.Camera.%d"), Index)));
+			Camera->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
+		}
 	}
 
-	ADirectionalLight* KeyLight = FindOrSpawnActor<ADirectionalLight>(
-		World,
-		TEXT("ShowroomKeyLight_TEMP"),
-		FTransform(FRotator(-38.0, -32.0, 0.0), FVector::ZeroVector));
-	if (KeyLight != nullptr)
-	{
-		KeyLight->GetLightComponent()->SetIntensity(7.0f);
-		KeyLight->GetLightComponent()->SetLightColor(FLinearColor(1.0f, 0.92f, 0.8f));
-		KeyLight->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
-	}
+	AShowroomEnvironmentActor* Environment =
+		FindOrSpawnActor<AShowroomEnvironmentActor>(
+			World, TEXT("ShowroomDualEnvironment_TEMP"), FTransform::Identity);
 
 	APointLight* FillLight = FindOrSpawnActor<APointLight>(
 		World,
@@ -522,11 +552,13 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 
 	const bool bComplete = Vehicle != nullptr
 		&& Floor != nullptr
-		&& Camera != nullptr
-		&& KeyLight != nullptr
+		&& bAllCamerasCreated
+		&& Environment != nullptr
 		&& FillLight != nullptr
 		&& SkyLight != nullptr;
-	if (bComplete && UEditorLoadingAndSavingUtils::SaveMap(World, ShowroomMapPackageName))
+	const bool bSaved =
+		bComplete && UEditorLoadingAndSavingUtils::SaveMap(World, ShowroomMapPackageName);
+	if (bSaved)
 	{
 		UE_LOG(
 			LogPrimaryAssetProbeEditor,
@@ -537,5 +569,9 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 	else
 	{
 		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("展厅地图创建或保存失败。"));
+	}
+	if (FApp::IsUnattended())
+	{
+		FPlatformMisc::RequestExitWithStatus(false, bSaved ? 0 : 9);
 	}
 }
