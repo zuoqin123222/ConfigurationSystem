@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "1.0.0",
+  "asset": "Kenney Car Kit 3.1 / sedan-sports",
+  "sourceUrl": "https://kenney.nl/assets/car-kit",
+  "license": "CC0-1.0",
+  "status": "quarantined",
+  "unrealDestination": "/Game/Configurator/_ImportStaging/KenneyCarKit31",
+  "importedAssets": [
+    {
+      "name": "body",
+      "originCm": [0.0, -2.5, 62.5],
+      "extentCm": [65.0, 127.5, 47.5],
+      "materialSlots": ["colormap"]
+    },
+    {
+      "name": "spoiler",
+      "originCm": [0.0, -106.8686, 75.0],
+      "extentCm": [55.0, 11.8686, 15.0],
+      "materialSlots": ["colormap"]
+    },
+    {
+      "name": "wheel-front-left",
+      "originCm": [42.5, 66.0, 30.0],
+      "extentCm": [17.5, 30.0, 30.0],
+      "materialSlots": ["colormap"]
+    },
+    {
+      "name": "wheel-front-right",
+      "originCm": [-42.5, 66.0, 30.0],
+      "extentCm": [17.5, 30.0, 30.0],
+      "materialSlots": ["colormap"]
+    },
+    {
+      "name": "wheel-back-left",
+      "originCm": [42.5, -66.0, 30.0],
+      "extentCm": [17.5, 30.0, 30.0],
+      "materialSlots": ["colormap"]
+    },
+    {
+      "name": "wheel-back-right",
+      "originCm": [-42.5, -66.0, 30.0],
+      "extentCm": [17.5, 30.0, 30.0],
+      "materialSlots": ["colormap"]
+    }
+  ],
+  "blockingIssues": [
+    "Source forward axis is not the project +X convention.",
+    "All imported meshes expose only the non-semantic colormap material slot.",
+    "Required root, body, door, hood, trunk, steering, and spin pivot hierarchy is absent.",
+    "FBX omits smoothing groups.",
+    "Wheel meshes report near-zero binormals or degenerate tangent bases.",
+    "No contract-compliant LOD or reversible animation clips are present."
+  ],
+  "promotionAllowed": false
+}
