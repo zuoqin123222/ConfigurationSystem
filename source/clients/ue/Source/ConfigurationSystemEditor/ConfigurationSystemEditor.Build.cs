@@ -16,6 +16,7 @@ public class ConfigurationSystemEditor : ModuleRules
 				"AssetTools",
 				"DesktopPlatform",
 				"Json",
+				"MaterialEditor",
 				"Slate",
 				"SlateCore",
 				"ToolMenus",

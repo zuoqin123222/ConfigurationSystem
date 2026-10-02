@@ -2,6 +2,8 @@
 
 #include "Engine/AssetManager.h"
 #include "ConfiguratorVehicleActor.h"
+#include "Sc01MaterialBinder.h"
+#include "Sc01MaterialLibrary.h"
 #include "Sc01V2CatalogData.h"
 #include "Sc01V2ConfigurationState.h"
 
@@ -74,6 +76,16 @@ void UCarConfiguratorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 			TEXT("DA_SC01Catalog 必须能够初始化独立 SC01 v2 状态。"));
 	}
 
+	const FPrimaryAssetId MaterialLibraryId(
+		USc01MaterialLibrary::PrimaryAssetType,
+		USc01MaterialLibrary::DefaultAssetName);
+	Sc01MaterialLibrary = Cast<USc01MaterialLibrary>(
+		UAssetManager::Get().GetPrimaryAssetPath(MaterialLibraryId).TryLoad());
+	if (IsValid(Sc01V2State) && IsValid(Sc01MaterialLibrary))
+	{
+		Sc01MaterialBinder = NewObject<USc01MaterialBinder>(this);
+	}
+
 	const FText OptionNames[] = {
 		NSLOCTEXT("Configurator", "PaintRed", "竞速红"),
 		NSLOCTEXT("Configurator", "PaintSilver", "星辉银"),
@@ -110,6 +122,12 @@ void UCarConfiguratorSubsystem::Deinitialize()
 		State->OnChanged.RemoveDynamic(this, &UCarConfiguratorSubsystem::HandleStateChanged);
 	}
 	RegisteredVehicle = nullptr;
+	if (IsValid(Sc01MaterialBinder))
+	{
+		Sc01MaterialBinder->Unbind();
+	}
+	Sc01MaterialBinder = nullptr;
+	Sc01MaterialLibrary = nullptr;
 	Sc01V2State = nullptr;
 	Sc01V2Catalog = nullptr;
 	State = nullptr;
@@ -165,6 +183,16 @@ void UCarConfiguratorSubsystem::RegisterVehicle(
 	{
 		RegisteredVehicle->ApplyConfiguration(State->GetSelection());
 	}
+	if (IsValid(RegisteredVehicle) && IsValid(Sc01MaterialBinder)
+		&& IsValid(Sc01V2State) && IsValid(Sc01MaterialLibrary))
+	{
+		ensureAlwaysMsgf(
+			Sc01MaterialBinder->Bind(
+				Sc01V2State,
+				Sc01MaterialLibrary,
+				RegisteredVehicle),
+			TEXT("SC01 v2 材质 Binder 必须能够绑定占位车的明确代理槽。"));
+	}
 }
 
 void UCarConfiguratorSubsystem::UnregisterVehicle(
@@ -172,6 +200,10 @@ void UCarConfiguratorSubsystem::UnregisterVehicle(
 {
 	if (RegisteredVehicle == Vehicle)
 	{
+		if (IsValid(Sc01MaterialBinder))
+		{
+			Sc01MaterialBinder->Unbind();
+		}
 		RegisteredVehicle = nullptr;
 	}
 }

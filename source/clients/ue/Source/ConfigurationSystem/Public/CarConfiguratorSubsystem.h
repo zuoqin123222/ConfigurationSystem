@@ -6,6 +6,8 @@
 #include "CarConfiguratorSubsystem.generated.h"
 
 class AConfiguratorVehicleActor;
+class USc01MaterialBinder;
+class USc01MaterialLibrary;
 class USc01V2CatalogData;
 class USc01V2ConfigurationState;
 
@@ -102,6 +104,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SC01 v2")
 	USc01V2ConfigurationState* GetSc01V2State() const { return Sc01V2State; }
 
+	UFUNCTION(BlueprintPure, Category = "SC01 v2")
+	USc01MaterialLibrary* GetSc01MaterialLibrary() const { return Sc01MaterialLibrary; }
+
+	UFUNCTION(BlueprintPure, Category = "SC01 v2")
+	USc01MaterialBinder* GetSc01MaterialBinder() const { return Sc01MaterialBinder; }
+
 	void RegisterVehicle(AConfiguratorVehicleActor* Vehicle);
 	void UnregisterVehicle(const AConfiguratorVehicleActor* Vehicle);
 
@@ -124,6 +132,12 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<USc01V2ConfigurationState> Sc01V2State;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USc01MaterialLibrary> Sc01MaterialLibrary;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USc01MaterialBinder> Sc01MaterialBinder;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AConfiguratorVehicleActor> RegisteredVehicle;
