@@ -126,6 +126,21 @@ bool FConfiguratorPersistenceAutomationTest::RunTest(const FString& Parameters)
 	Source->Configuration.Frame = TEXT("frame-black");
 	Source->EnvironmentIndex = 1;
 	Source->bPanelVisible = false;
+	Source->bHasSc01V2State = true;
+	Source->Sc01V2Selections.Add(
+		TEXT("exterior-body-cover"),
+		TEXT("body-cover-custom"));
+	FSc01V2Customization PaintCustomization;
+	PaintCustomization.Kind = ESc01V2CustomizationKind::Paint;
+	PaintCustomization.Paint.ColorHex = TEXT("#336699");
+	PaintCustomization.Paint.Metallic = 0.45;
+	PaintCustomization.Paint.Roughness = 0.25;
+	PaintCustomization.Paint.ClearCoat = 0.9;
+	PaintCustomization.Paint.OrangePeel = 0.12;
+	PaintCustomization.Paint.FlakeIntensity = 0.3;
+	Source->Sc01V2Customizations.Add(
+		TEXT("exterior-body-cover"),
+		PaintCustomization);
 
 	FString Error;
 	TestTrue(TEXT("快照经临时文件原子替换写入"), Persistence->SaveAtomic(Slot, Source, Error));
@@ -138,6 +153,16 @@ bool FConfiguratorPersistenceAutomationTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("恢复配置"), Loaded->Configuration.Paint, FString(TEXT("paint-silver")));
 		TestEqual(TEXT("恢复环境"), Loaded->EnvironmentIndex, 1);
 		TestFalse(TEXT("恢复 UI 显隐"), Loaded->bPanelVisible);
+		TestTrue(TEXT("恢复 SC01 v2 状态标记"), Loaded->bHasSc01V2State);
+		TestEqual(
+			TEXT("恢复 SC01 v2 selection"),
+			Loaded->Sc01V2Selections.FindRef(TEXT("exterior-body-cover")),
+			FString(TEXT("body-cover-custom")));
+		TestEqual(
+			TEXT("恢复 SC01 v2 custom paint"),
+			Loaded->Sc01V2Customizations.FindRef(
+				TEXT("exterior-body-cover")).Paint.ColorHex,
+			FString(TEXT("#336699")));
 	}
 	TestNull(TEXT("SaveGame 不包含瞬态镜头"), FindFProperty<FProperty>(
 		UConfiguratorExperienceSaveGame::StaticClass(), TEXT("CameraIndex")));

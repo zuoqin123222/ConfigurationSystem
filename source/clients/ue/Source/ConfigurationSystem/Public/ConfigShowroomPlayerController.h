@@ -67,6 +67,8 @@ public:
 private:
 	UFUNCTION()
 	void HandlePersistentConfigurationChanged();
+	UFUNCTION()
+	void FlushPersistentConfiguration();
 
 	void Camera0(); void Camera1(); void Camera2(); void Camera3(); void Camera4();
 	void ToggleEnvironmentInput();
@@ -102,6 +104,7 @@ private:
 	float CameraTransitionElapsed = 0.0f;
 	float CameraTransitionDuration = 0.85f;
 	FTimerHandle CameraZoneTransitionTimer;
+	FTimerHandle PersistenceDebounceTimer;
 	bool bOrbitTransitionActive = false;
 	bool bApplyingLoadedSnapshot = false;
 };

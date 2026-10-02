@@ -3,6 +3,7 @@
 #include "CarConfigurationState.h"
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
+#include "Sc01V2ConfigurationState.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "ConfiguratorExperienceSaveGame.generated.h"
 
@@ -13,7 +14,7 @@ class CONFIGURATIONSYSTEM_API UConfiguratorExperienceSaveGame final : public USa
 
 public:
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 1;
+	int32 SchemaVersion = 2;
 
 	UPROPERTY(SaveGame)
 	FCarConfigurationSelection Configuration;
@@ -23,6 +24,16 @@ public:
 
 	UPROPERTY(SaveGame)
 	bool bPanelVisible = true;
+
+	/** v2 状态可选存在；旧版 schema=1 存档仍按原路径读取。 */
+	UPROPERTY(SaveGame)
+	bool bHasSc01V2State = false;
+
+	UPROPERTY(SaveGame)
+	TMap<FString, FString> Sc01V2Selections;
+
+	UPROPERTY(SaveGame)
+	TMap<FString, FSc01V2Customization> Sc01V2Customizations;
 };
 
 /** 仅将配置、环境与 UI 快照序列化，并通过 final/backup/temp 可靠替换。 */

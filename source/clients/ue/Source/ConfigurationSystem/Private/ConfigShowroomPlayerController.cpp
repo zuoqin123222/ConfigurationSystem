@@ -11,6 +11,7 @@
 #include "EngineUtils.h"
 #include "InputCoreTypes.h"
 #include "PathTracingExperienceSubsystem.h"
+#include "Sc01V2ConfigurationState.h"
 #include "ShowroomEnvironmentActor.h"
 #include "TimerManager.h"
 
@@ -129,6 +130,11 @@ void AConfigShowroomPlayerController::BeginPlay()
 		{
 			Configurator->OnConfigurationChanged.AddDynamic(
 				this, &AConfigShowroomPlayerController::HandlePersistentConfigurationChanged);
+			if (USc01V2ConfigurationState* V2State = Configurator->GetSc01V2State())
+			{
+				V2State->OnChanged.AddDynamic(
+					this, &AConfigShowroomPlayerController::HandlePersistentConfigurationChanged);
+			}
 		}
 	}
 }
@@ -143,7 +149,16 @@ void AConfigShowroomPlayerController::EndPlay(
 		{
 			Configurator->OnConfigurationChanged.RemoveDynamic(
 				this, &AConfigShowroomPlayerController::HandlePersistentConfigurationChanged);
+			if (USc01V2ConfigurationState* V2State = Configurator->GetSc01V2State())
+			{
+				V2State->OnChanged.RemoveDynamic(
+					this, &AConfigShowroomPlayerController::HandlePersistentConfigurationChanged);
+			}
 		}
+	}
+	if (GetWorldTimerManager().IsTimerActive(PersistenceDebounceTimer))
+	{
+		FlushPersistentConfiguration();
 	}
 	Super::EndPlay(EndPlayReason);
 }
@@ -309,6 +324,12 @@ bool AConfigShowroomPlayerController::SaveExperience(FString& OutError)
 	UConfiguratorExperienceSaveGame* Snapshot =
 		NewObject<UConfiguratorExperienceSaveGame>(this);
 	Snapshot->Configuration = Configurator->GetSelection();
+	if (USc01V2ConfigurationState* V2State = Configurator->GetSc01V2State())
+	{
+		Snapshot->bHasSc01V2State = V2State->IsInitialized();
+		Snapshot->Sc01V2Selections = V2State->GetSelections();
+		Snapshot->Sc01V2Customizations = V2State->GetCustomizations();
+	}
 	Snapshot->EnvironmentIndex = GetCurrentEnvironmentIndex();
 	Snapshot->bPanelVisible = IsConfiguratorPanelVisible();
 	return Persistence->SaveAtomic(TEXT("Experience"), Snapshot, OutError);
@@ -328,10 +349,17 @@ bool AConfigShowroomPlayerController::LoadExperience(FString& OutError)
 		GameInstance->GetSubsystem<UConfiguratorPersistenceSubsystem>();
 	UConfiguratorExperienceSaveGame* Snapshot =
 		IsValid(Persistence) ? Persistence->Load(TEXT("Experience"), OutError) : nullptr;
+	USc01V2ConfigurationState* V2State =
+		IsValid(Configurator) ? Configurator->GetSc01V2State() : nullptr;
 	if (!IsValid(Snapshot) || !IsValid(Configurator)
 		|| !IsValid(Environment) || !IsValid(ConfiguratorPanel)
 		|| Snapshot->EnvironmentIndex < 0 || Snapshot->EnvironmentIndex > 1
-		|| !Configurator->CanApplySelection(Snapshot->Configuration))
+		|| !Configurator->CanApplySelection(Snapshot->Configuration)
+		|| (Snapshot->bHasSc01V2State
+			&& (!IsValid(V2State)
+				|| !V2State->CanApplyTransaction(
+					Snapshot->Sc01V2Selections,
+					Snapshot->Sc01V2Customizations))))
 	{
 		if (OutError.IsEmpty())
 		{
@@ -348,6 +376,15 @@ bool AConfigShowroomPlayerController::LoadExperience(FString& OutError)
 		OutError = TEXT("存档配置应用失败。");
 		return false;
 	}
+	if (Snapshot->bHasSc01V2State
+		&& !V2State->ApplyTransaction(
+			Snapshot->Sc01V2Selections,
+			Snapshot->Sc01V2Customizations))
+	{
+		bApplyingLoadedSnapshot = false;
+		OutError = TEXT("SC01 v2 存档配置应用失败。");
+		return false;
+	}
 	Environment->SetEnvironmentIndex(Snapshot->EnvironmentIndex);
 	ConfiguratorPanel->SetVisibility(
 		Snapshot->bPanelVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -359,9 +396,20 @@ void AConfigShowroomPlayerController::HandlePersistentConfigurationChanged()
 {
 	if (!bApplyingLoadedSnapshot)
 	{
-		FString IgnoredSaveError;
-		SaveExperience(IgnoredSaveError);
+		// 高频参数拖动只重置一次短延时存档，避免每个 slider 采样都写盘。
+		GetWorldTimerManager().SetTimer(
+			PersistenceDebounceTimer,
+			this,
+			&AConfigShowroomPlayerController::FlushPersistentConfiguration,
+			0.35f,
+			false);
 	}
+}
+
+void AConfigShowroomPlayerController::FlushPersistentConfiguration()
+{
+	FString IgnoredSaveError;
+	SaveExperience(IgnoredSaveError);
 }
 
 void AConfigShowroomPlayerController::ToggleVehiclePart(const FName PartId)

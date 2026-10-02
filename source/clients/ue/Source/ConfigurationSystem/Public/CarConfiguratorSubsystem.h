@@ -6,6 +6,8 @@
 #include "CarConfiguratorSubsystem.generated.h"
 
 class AConfiguratorVehicleActor;
+class USc01V2CatalogData;
+class USc01V2ConfigurationState;
 
 USTRUCT(BlueprintType)
 struct CONFIGURATIONSYSTEM_API FConfiguratorDisplayOption
@@ -92,6 +94,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "车辆配置")
 	UCarConfigurationState* GetState() const { return State; }
 
+	/** SC01 v2 的内嵌 JSON Primary Data Asset；v1 接口保持不变。 */
+	UFUNCTION(BlueprintPure, Category = "SC01 v2")
+	USc01V2CatalogData* GetSc01V2Catalog() const { return Sc01V2Catalog; }
+
+	/** 独立于四分区 v1 状态的 38 surface 动态状态。 */
+	UFUNCTION(BlueprintPure, Category = "SC01 v2")
+	USc01V2ConfigurationState* GetSc01V2State() const { return Sc01V2State; }
+
 	void RegisterVehicle(AConfiguratorVehicleActor* Vehicle);
 	void UnregisterVehicle(const AConfiguratorVehicleActor* Vehicle);
 
@@ -108,6 +118,12 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UCarConfigurationState> State;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USc01V2CatalogData> Sc01V2Catalog;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USc01V2ConfigurationState> Sc01V2State;
 
 	UPROPERTY(Transient)
 	TObjectPtr<AConfiguratorVehicleActor> RegisteredVehicle;

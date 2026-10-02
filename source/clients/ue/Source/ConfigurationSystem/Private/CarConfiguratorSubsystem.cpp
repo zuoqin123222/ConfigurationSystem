@@ -1,6 +1,9 @@
 #include "CarConfiguratorSubsystem.h"
 
+#include "Engine/AssetManager.h"
 #include "ConfiguratorVehicleActor.h"
+#include "Sc01V2CatalogData.h"
+#include "Sc01V2ConfigurationState.h"
 
 namespace CarConfiguratorCatalog
 {
@@ -57,6 +60,20 @@ void UCarConfiguratorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		State->Initialize(BasePriceMinor, Options, Templates, Defaults),
 		TEXT("内置 MVP catalog 必须能够初始化 UCarConfigurationState。"));
 
+	const FPrimaryAssetId Sc01CatalogId(
+		USc01V2CatalogData::PrimaryAssetType,
+		USc01V2CatalogData::DefaultAssetName);
+	const FSoftObjectPath Sc01CatalogPath =
+		UAssetManager::Get().GetPrimaryAssetPath(Sc01CatalogId);
+	Sc01V2Catalog = Cast<USc01V2CatalogData>(Sc01CatalogPath.TryLoad());
+	if (IsValid(Sc01V2Catalog))
+	{
+		Sc01V2State = NewObject<USc01V2ConfigurationState>(this);
+		ensureAlwaysMsgf(
+			Sc01V2State->Initialize(Sc01V2Catalog),
+			TEXT("DA_SC01Catalog 必须能够初始化独立 SC01 v2 状态。"));
+	}
+
 	const FText OptionNames[] = {
 		NSLOCTEXT("Configurator", "PaintRed", "竞速红"),
 		NSLOCTEXT("Configurator", "PaintSilver", "星辉银"),
@@ -93,6 +110,8 @@ void UCarConfiguratorSubsystem::Deinitialize()
 		State->OnChanged.RemoveDynamic(this, &UCarConfiguratorSubsystem::HandleStateChanged);
 	}
 	RegisteredVehicle = nullptr;
+	Sc01V2State = nullptr;
+	Sc01V2Catalog = nullptr;
 	State = nullptr;
 	DisplayOptions.Reset();
 	DisplayTemplates.Reset();

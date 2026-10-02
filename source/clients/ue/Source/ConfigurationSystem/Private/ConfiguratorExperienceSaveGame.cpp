@@ -106,7 +106,9 @@ UConfiguratorExperienceSaveGame* UConfiguratorPersistenceSubsystem::Load(
 
 	UConfiguratorExperienceSaveGame* Snapshot = Cast<UConfiguratorExperienceSaveGame>(
 		UGameplayStatics::LoadGameFromMemory(Bytes));
-	if (Snapshot == nullptr || Snapshot->SchemaVersion != 1)
+	if (Snapshot == nullptr
+		|| Snapshot->SchemaVersion < 1
+		|| Snapshot->SchemaVersion > 2)
 	{
 		OutError = TEXT("存档类型或版本无效。");
 		return nullptr;
