@@ -66,15 +66,25 @@
       "properties": {
         "surfaceId": { "$ref": "#/$defs/id" },
         "optionId": { "$ref": "#/$defs/id" },
-        "unitPriceMinor": { "type": "null" },
+        "unitPriceMinor": {
+          "anyOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
         "quantity": {
           "anyOf": [
             { "type": "integer", "minimum": 1 },
             { "type": "null" }
           ]
         },
-        "subtotalMinor": { "type": "null" },
-        "priceStatus": { "const": "unconfirmed" }
+        "subtotalMinor": {
+          "anyOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "priceStatus": { "enum": ["confirmed", "unconfirmed"] }
       }
     }
   }

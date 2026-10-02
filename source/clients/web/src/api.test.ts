@@ -29,6 +29,7 @@ const storedConfiguration = {
   configurationId: 'cfg-123456789012345678901234',
   renderKey: 'sc01__draft__render-123456789012345678901234',
   selections,
+  customizations: {},
   revision: 1,
   priceResult: { totalPriceMinor: null, quoteAllowed: false, blockingReasons: ['PRICE_UNCONFIRMED'] },
   createdAt: '2026-10-03T00:00:00.000Z',
@@ -87,6 +88,7 @@ describe('v2 API', () => {
       catalogVersion: catalogFixture.catalogVersion,
       vehicleId: 'sc01',
       selections,
+      customizations: {},
       renderViewId: 'front-left',
     })).resolves.toEqual(response)
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v2/renders/resolve')
@@ -102,6 +104,7 @@ describe('v2 API', () => {
       catalogVersion: catalogFixture.catalogVersion,
       vehicleId: 'sc01',
       selections,
+      customizations: {},
     })
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v2/configurations')
     expect(fetchMock.mock.calls[0][1].headers['Idempotency-Key']).toMatch(/^web-/)
@@ -110,6 +113,7 @@ describe('v2 API', () => {
       catalogVersion: catalogFixture.catalogVersion,
       vehicleId: 'sc01',
       selections,
+      customizations: {},
       configurationId: storedConfiguration.configurationId,
       revision: 1,
     })

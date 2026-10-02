@@ -282,6 +282,33 @@ components:
           $ref: "#/components/schemas/StableId"
         steering-wheel-skin:
           $ref: "#/components/schemas/StableId"
+    CustomizationsV2:
+      type: object
+      additionalProperties:
+        oneOf:
+          - type: object
+            additionalProperties: false
+            required: [materialVariantId]
+            properties:
+              materialVariantId:
+                $ref: "#/components/schemas/StableId"
+          - type: object
+            additionalProperties: false
+            required: [colorHex, metallic, roughness, clearCoat, orangePeel, flakeIntensity]
+            properties:
+              colorHex:
+                type: string
+                pattern: ^#[0-9A-F]{6}$
+              metallic:
+                $ref: "#/components/schemas/UnitInterval"
+              roughness:
+                $ref: "#/components/schemas/UnitInterval"
+              clearCoat:
+                $ref: "#/components/schemas/UnitInterval"
+              orangePeel:
+                $ref: "#/components/schemas/UnitInterval"
+              flakeIntensity:
+                $ref: "#/components/schemas/UnitInterval"
     ConfigurationWriteV2:
       type: object
       additionalProperties: false
@@ -293,6 +320,8 @@ components:
           $ref: "#/components/schemas/StableId"
         selections:
           $ref: "#/components/schemas/SelectionsV2"
+        customizations:
+          $ref: "#/components/schemas/CustomizationsV2"
         quoteRequested:
           type: boolean
           default: false
@@ -314,6 +343,8 @@ components:
           $ref: "#/components/schemas/StableId"
         selections:
           $ref: "#/components/schemas/SelectionsV2"
+        customizations:
+          $ref: "#/components/schemas/CustomizationsV2"
         quoteRequested:
           type: boolean
           default: false
@@ -333,6 +364,8 @@ components:
           $ref: "#/components/schemas/StableId"
         selections:
           $ref: "#/components/schemas/SelectionsV2"
+        customizations:
+          $ref: "#/components/schemas/CustomizationsV2"
         quoteRequested:
           type: boolean
           default: false
@@ -341,7 +374,7 @@ components:
       additionalProperties: false
       required:
         [schemaVersion, catalogVersion, vehicleId, configurationId, renderKey,
-         selections, revision, priceResult, createdAt, updatedAt]
+         selections, customizations, revision, priceResult, createdAt, updatedAt]
       properties:
         schemaVersion:
           const: 2.0.0
@@ -356,6 +389,8 @@ components:
           pattern: ^[a-z0-9-]+__[a-z0-9-]+__render-[a-f0-9]{24}$
         selections:
           $ref: "#/components/schemas/SelectionsV2"
+        customizations:
+          $ref: "#/components/schemas/CustomizationsV2"
         revision:
           type: integer
           minimum: 1
@@ -378,6 +413,8 @@ components:
           $ref: "#/components/schemas/StableId"
         selections:
           $ref: "#/components/schemas/SelectionsV2"
+        customizations:
+          $ref: "#/components/schemas/CustomizationsV2"
         renderViewId:
           $ref: "#/components/schemas/StableId"
     ResolveRenderResponseV2:
@@ -402,6 +439,10 @@ components:
     StableId:
       type: string
       pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+    UnitInterval:
+      type: number
+      minimum: 0
+      maximum: 1
     ConfigurationKey:
       type: string
       pattern: ^paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+$

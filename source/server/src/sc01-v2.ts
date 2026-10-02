@@ -7,19 +7,26 @@ import { RequestError } from "./data.js";
 export const SC01_SCHEMA_VERSION = "2.0.0";
 
 export interface Sc01Pricing {
-  unitPriceMinor: null;
+  unitPriceMinor: number | null;
   quantity: number | null;
   pricingUnit: string;
   isStandard: boolean;
-  status: "unconfirmed";
+  status: "confirmed" | "unconfirmed";
   quotable: false;
 }
 
 export interface Sc01Option {
   optionId: string;
   surfaceId: string;
+  materialFamilyId: string | null;
   renderRelevant: boolean;
   pricing: Sc01Pricing;
+  [key: string]: unknown;
+}
+
+export interface Sc01MaterialVariant {
+  variantId: string;
+  materialFamilyId: string;
   [key: string]: unknown;
 }
 
@@ -37,11 +44,25 @@ export interface Sc01Catalog {
   };
   selectionOrder: string[];
   surfaces: Array<{ surfaceId: string; required: boolean; [key: string]: unknown }>;
+  materialVariants: Sc01MaterialVariant[];
   options: Sc01Option[];
   [key: string]: unknown;
 }
 
 export type Sc01Selections = Record<string, string>;
+export interface Sc01MaterialCustomization {
+  materialVariantId: string;
+}
+export interface Sc01PaintCustomization {
+  colorHex: string;
+  metallic: number;
+  roughness: number;
+  clearCoat: number;
+  orangePeel: number;
+  flakeIntensity: number;
+}
+export type Sc01Customization = Sc01MaterialCustomization | Sc01PaintCustomization;
+export type Sc01Customizations = Record<string, Sc01Customization>;
 
 export interface Sc01Configuration {
   schemaVersion: "2.0.0";
@@ -50,6 +71,7 @@ export interface Sc01Configuration {
   configurationId: string;
   renderKey: string;
   selections: Sc01Selections;
+  customizations: Sc01Customizations;
 }
 
 export interface Sc01PriceResult {
@@ -62,16 +84,15 @@ export interface Sc01PriceResult {
   lineItems: Array<{
     surfaceId: string;
     optionId: string;
-    unitPriceMinor: null;
+    unitPriceMinor: number | null;
     quantity: number | null;
-    subtotalMinor: null;
-    priceStatus: "unconfirmed";
+    subtotalMinor: number | null;
+    priceStatus: "confirmed" | "unconfirmed";
   }>;
   totalPriceMinor: null;
   quoteAllowed: false;
   blockingReasons: [
     "BASE_PRICE_UNCONFIRMED",
-    "OPTION_PRICE_UNCONFIRMED",
     "PRICE_UNCONFIRMED",
   ];
 }
@@ -79,6 +100,7 @@ export interface Sc01PriceResult {
 export interface Sc01V2Data {
   catalog: Sc01Catalog;
   options: ReadonlyMap<string, Sc01Option>;
+  materialVariants: ReadonlyMap<string, Sc01MaterialVariant>;
   optionIdsBySurface: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
@@ -147,11 +169,144 @@ export function validateSc01Selections(
   return selections;
 }
 
+const PAINT_KEYS = [
+  "colorHex",
+  "metallic",
+  "roughness",
+  "clearCoat",
+  "orangePeel",
+  "flakeIntensity",
+] as const;
+
+function isUnitInterval(value: unknown): value is number {
+  return typeof value === "number"
+    && Number.isFinite(value)
+    && value >= 0
+    && value <= 1;
+}
+
+export function validateSc01Customizations(
+  value: unknown,
+  selections: Sc01Selections,
+  data: Sc01V2Data,
+): Sc01Customizations {
+  if (value === undefined) return {};
+  if (!isRecord(value)) {
+    throw new RequestError(400, "INVALID_CUSTOMIZATIONS", "customizations 必须是对象");
+  }
+
+  const result: Sc01Customizations = {};
+  for (const surfaceId of data.catalog.selectionOrder) {
+    if (!Object.hasOwn(value, surfaceId)) continue;
+    const customization = value[surfaceId];
+    if (!isRecord(customization)) {
+      throw new RequestError(
+        400,
+        "INVALID_CUSTOMIZATION",
+        `${surfaceId} customization 必须是对象`,
+      );
+    }
+    const option = data.options.get(selections[surfaceId]!);
+    if (!option) {
+      throw new RequestError(500, "CONTRACT_INCONSISTENT", `catalog 缺少选项 ${selections[surfaceId]}`);
+    }
+
+    if (Object.hasOwn(customization, "materialVariantId")) {
+      if (
+        Object.keys(customization).length !== 1
+        || typeof customization.materialVariantId !== "string"
+      ) {
+        throw new RequestError(
+          400,
+          "INVALID_MATERIAL_VARIANT",
+          `${surfaceId} 材料定制仅允许 materialVariantId`,
+        );
+      }
+      const variant = data.materialVariants.get(customization.materialVariantId);
+      if (!variant) {
+        throw new RequestError(
+          400,
+          "INVALID_MATERIAL_VARIANT",
+          `${surfaceId} 引用了未知 materialVariantId`,
+        );
+      }
+      if (
+        option.materialFamilyId === null
+        || variant.materialFamilyId !== option.materialFamilyId
+      ) {
+        throw new RequestError(
+          400,
+          "MATERIAL_VARIANT_FAMILY_MISMATCH",
+          `${surfaceId} 的材料色卡与所选选项材料族不匹配`,
+        );
+      }
+      result[surfaceId] = { materialVariantId: variant.variantId };
+      continue;
+    }
+
+    if (
+      option.optionId !== "body-cover-custom"
+      || Object.keys(customization).length !== PAINT_KEYS.length
+      || !PAINT_KEYS.every((key) => Object.hasOwn(customization, key))
+      || typeof customization.colorHex !== "string"
+      || !/^#[0-9a-fA-F]{6}$/.test(customization.colorHex)
+      || !PAINT_KEYS.slice(1).every((key) => isUnitInterval(customization[key]))
+    ) {
+      throw new RequestError(
+        400,
+        "INVALID_PAINT_CUSTOMIZATION",
+        `${surfaceId} 自定义车漆必须包含合法色值和 0 到 1 的完整参数`,
+      );
+    }
+    result[surfaceId] = {
+      colorHex: customization.colorHex.toUpperCase(),
+      metallic: customization.metallic as number,
+      roughness: customization.roughness as number,
+      clearCoat: customization.clearCoat as number,
+      orangePeel: customization.orangePeel as number,
+      flakeIntensity: customization.flakeIntensity as number,
+    };
+  }
+
+  if (Object.keys(value).some((surfaceId) => !data.catalog.selectionOrder.includes(surfaceId))) {
+    throw new RequestError(
+      400,
+      "INVALID_CUSTOMIZATIONS",
+      "customizations 包含未知 surfaceId",
+    );
+  }
+  return result;
+}
+
+function customizationLines(
+  catalog: Sc01Catalog,
+  customizations: Sc01Customizations,
+  renderRelevant?: ReadonlySet<string>,
+): string[] {
+  return catalog.selectionOrder.flatMap((surfaceId) => {
+    if (renderRelevant && !renderRelevant.has(surfaceId)) return [];
+    const customization = customizations[surfaceId];
+    if (!customization) return [];
+    if ("materialVariantId" in customization) {
+      return [`customizations.${surfaceId}.materialVariantId=${customization.materialVariantId}`];
+    }
+    return PAINT_KEYS.map(
+      (key) => `customizations.${surfaceId}.${key}=${customization[key]}`,
+    );
+  });
+}
+
 export function deriveSc01Configuration(
   value: unknown,
   data: Sc01V2Data,
+  customizationValue?: unknown,
 ): Sc01Configuration {
   const selections = validateSc01Selections(value, data);
+  const customizations = validateSc01Customizations(
+    customizationValue,
+    selections,
+    data,
+  );
   const catalog = data.catalog;
   const header = [
     `schemaVersion=${SC01_SCHEMA_VERSION}`,
@@ -163,15 +318,18 @@ export function deriveSc01Configuration(
     ...catalog.selectionOrder.map(
       (surfaceId) => `${surfaceId}=${selections[surfaceId]}`,
     ),
+    ...customizationLines(catalog, customizations),
   ].join("\n");
+  const renderRelevant = new Set<string>();
   const canonicalRenderInput = [
     ...header,
     ...catalog.selectionOrder.flatMap((surfaceId) => {
       const optionId = selections[surfaceId]!;
-      return data.options.get(optionId)?.renderRelevant === true
-        ? [`${surfaceId}=${optionId}`]
-        : [];
+      if (data.options.get(optionId)?.renderRelevant !== true) return [];
+      renderRelevant.add(surfaceId);
+      return [`${surfaceId}=${optionId}`];
     }),
+    ...customizationLines(catalog, customizations, renderRelevant),
   ].join("\n");
 
   return {
@@ -182,6 +340,7 @@ export function deriveSc01Configuration(
     renderKey:
       `${catalog.vehicle.vehicleId}__${catalog.catalogVersion}__render-${digest24(canonicalRenderInput)}`,
     selections,
+    customizations,
   };
 }
 
@@ -209,17 +368,19 @@ export function buildSc01PriceResult(
       return {
         surfaceId,
         optionId,
-        unitPriceMinor: null,
+        unitPriceMinor: option.pricing.unitPriceMinor,
         quantity: option.pricing.quantity,
-        subtotalMinor: null,
-        priceStatus: "unconfirmed",
+        subtotalMinor:
+          option.pricing.unitPriceMinor === null
+            ? null
+            : option.pricing.unitPriceMinor * (option.pricing.quantity ?? 1),
+        priceStatus: option.pricing.status,
       };
     }),
     totalPriceMinor: null,
     quoteAllowed: false,
     blockingReasons: [
       "BASE_PRICE_UNCONFIRMED",
-      "OPTION_PRICE_UNCONFIRMED",
       "PRICE_UNCONFIRMED",
     ],
   };
@@ -258,12 +419,20 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
     catalog.schemaVersion !== SC01_SCHEMA_VERSION ||
     catalog.lifecycle !== "draft" ||
     catalog.vehicle.basePriceMinor !== null ||
-    catalog.vehicle.quotable !== false
+    catalog.vehicle.quotable !== false ||
+    catalog.selectionOrder.length !== catalog.surfaces.length ||
+    catalog.selectionOrder.some(
+      (surfaceId, index) => surfaceId !== catalog.surfaces[index]?.surfaceId,
+    ) ||
+    catalog.surfaces.some((surface) => surface.required !== true)
   ) {
-    throw new Error("SC01 v2 catalog 必须是禁止报价的 2.0.0 draft");
+    throw new Error(
+      "SC01 v2 catalog 必须是禁止报价、全表面必选且顺序完整的 2.0.0 draft",
+    );
   }
 
   const options = new Map<string, Sc01Option>();
+  const materialVariants = new Map<string, Sc01MaterialVariant>();
   const optionIdsBySurface = new Map<string, Set<string>>();
   for (const surfaceId of catalog.selectionOrder) {
     optionIdsBySurface.set(surfaceId, new Set());
@@ -273,8 +442,13 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
       throw new Error(`SC01 v2 optionId 重复：${option.optionId}`);
     }
     if (
-      option.pricing.unitPriceMinor !== null ||
-      option.pricing.status !== "unconfirmed" ||
+      (
+        option.pricing.unitPriceMinor === null
+          ? option.pricing.status !== "unconfirmed"
+          : !Number.isInteger(option.pricing.unitPriceMinor)
+            || option.pricing.unitPriceMinor < 0
+            || option.pricing.status !== "confirmed"
+      ) ||
       option.pricing.quotable !== false
     ) {
       throw new Error(`SC01 v2 选项 ${option.optionId} 价格状态非法`);
@@ -282,10 +456,16 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
     options.set(option.optionId, option);
     optionIdsBySurface.get(option.surfaceId)?.add(option.optionId);
   }
+  for (const variant of catalog.materialVariants) {
+    if (materialVariants.has(variant.variantId)) {
+      throw new Error(`SC01 v2 variantId 重复：${variant.variantId}`);
+    }
+    materialVariants.set(variant.variantId, variant);
+  }
   for (const surfaceId of catalog.selectionOrder) {
     if (optionIdsBySurface.get(surfaceId)?.size === 0) {
       throw new Error(`SC01 v2 必选表面 ${surfaceId} 没有选项`);
     }
   }
-  return { catalog, options, optionIdsBySurface };
+  return { catalog, options, materialVariants, optionIdsBySurface };
 }

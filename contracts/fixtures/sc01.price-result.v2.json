@@ -2,40 +2,319 @@
   "schemaVersion": "2.0.0",
   "catalogVersion": "sc01-draft-20260121",
   "vehicleId": "sc01",
-  "configurationId": "cfg-95c9a67d78364696f55a08dd",
+  "configurationId": "cfg-ad25824327ecb6e53be912c0",
   "currency": "CNY",
   "basePriceMinor": null,
   "lineItems": [
     {
       "surfaceId": "exterior-body-cover",
       "optionId": "body-cover-red",
-      "unitPriceMinor": null,
-      "quantity": null,
-      "subtotalMinor": null,
-      "priceStatus": "unconfirmed"
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
     },
     {
       "surfaceId": "wheel-material",
       "optionId": "wheel-aluminum-alloy",
-      "unitPriceMinor": null,
-      "quantity": null,
-      "subtotalMinor": null,
-      "priceStatus": "unconfirmed"
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "wheel-style",
+      "optionId": "wheel-style-multispoke",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "wheel-color",
+      "optionId": "wheel-color-bright-silver",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "lower-skirt",
+      "optionId": "lower-skirt-aluminum",
+      "unitPriceMinor": 300000,
+      "quantity": 1,
+      "subtotalMinor": 300000,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "front-caliper-color",
+      "optionId": "front-caliper-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "rear-caliper-color",
+      "optionId": "rear-caliper-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "engine-bay-cover",
+      "optionId": "engine-cover-ppg",
+      "unitPriceMinor": 480000,
+      "quantity": 1,
+      "subtotalMinor": 480000,
+      "priceStatus": "confirmed"
     },
     {
       "surfaceId": "steering-wheel-skin",
       "optionId": "steering-skin-ultrasuede-black",
-      "unitPriceMinor": null,
-      "quantity": null,
-      "subtotalMinor": null,
-      "priceStatus": "unconfirmed"
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "steering-wheel-addon",
+      "optionId": "steering-addon-eva",
+      "unitPriceMinor": 118000,
+      "quantity": 1,
+      "subtotalMinor": 118000,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "steering-center-mark",
+      "optionId": "steering-center-standard",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "seat-backrest",
+      "optionId": "seat-back-ultrasuede-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "seat-bolster",
+      "optionId": "seat-bolster-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "seat-shell-back",
+      "optionId": "seat-shell-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "seat-headrest-mark",
+      "optionId": "seat-headrest-standard",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "door-upper",
+      "optionId": "door-upper-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "door-middle",
+      "optionId": "door-middle-ultrasuede-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "door-armrest",
+      "optionId": "door-armrest-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "door-armrest-skin",
+      "optionId": "door-armrest-skin-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "ip-wings",
+      "optionId": "ip-wings-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "ip-middle",
+      "optionId": "ip-middle-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "ip-instrument-cover",
+      "optionId": "ip-instrument-cover-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "ip-upper-trim",
+      "optionId": "ip-upper-trim-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "ip-lower-trim",
+      "optionId": "ip-lower-trim-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "ip-center-mark",
+      "optionId": "ip-center-mark-black-paint",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "storage-soft-bag",
+      "optionId": "storage-soft-bag-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "console-armrest-cover",
+      "optionId": "console-armrest-cover-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "console-armrest-side",
+      "optionId": "console-armrest-side-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "handbrake",
+      "optionId": "handbrake-microfiber-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "roof-surface",
+      "optionId": "roof-woven-standard",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "a-pillar-surface",
+      "optionId": "a-pillar-woven",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "interior-painted-parts",
+      "optionId": "interior-painted-spray",
+      "unitPriceMinor": 168000,
+      "quantity": 1,
+      "subtotalMinor": 168000,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "door-sill",
+      "optionId": "door-sill-leather",
+      "unitPriceMinor": 88000,
+      "quantity": 2,
+      "subtotalMinor": 176000,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "embroidered-logo",
+      "optionId": "embroidered-logo-standard",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "center-panel-trim",
+      "optionId": "center-panel-trim-custom",
+      "unitPriceMinor": 30000,
+      "quantity": 2,
+      "subtotalMinor": 60000,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "shift-knob",
+      "optionId": "shift-knob-stainless",
+      "unitPriceMinor": 86000,
+      "quantity": 1,
+      "subtotalMinor": 86000,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "brake-handle",
+      "optionId": "brake-handle-flamed-blue",
+      "unitPriceMinor": 128800,
+      "quantity": 1,
+      "subtotalMinor": 128800,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "pedal",
+      "optionId": "pedal-racing",
+      "unitPriceMinor": 56000,
+      "quantity": 1,
+      "subtotalMinor": 56000,
+      "priceStatus": "confirmed"
     }
   ],
   "totalPriceMinor": null,
   "quoteAllowed": false,
   "blockingReasons": [
     "BASE_PRICE_UNCONFIRMED",
-    "OPTION_PRICE_UNCONFIRMED",
     "PRICE_UNCONFIRMED"
   ]
 }

@@ -10,7 +10,8 @@
     "vehicleId",
     "configurationId",
     "renderKey",
-    "selections"
+    "selections",
+    "customizations"
   ],
   "properties": {
     "schemaVersion": { "const": "2.0.0" },
@@ -29,12 +30,57 @@
       "minProperties": 1,
       "propertyNames": { "$ref": "#/$defs/id" },
       "additionalProperties": { "$ref": "#/$defs/id" }
+    },
+    "customizations": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/customization" }
     }
   },
   "$defs": {
     "id": {
       "type": "string",
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "unitInterval": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "customization": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["materialVariantId"],
+          "properties": {
+            "materialVariantId": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "colorHex",
+            "metallic",
+            "roughness",
+            "clearCoat",
+            "orangePeel",
+            "flakeIntensity"
+          ],
+          "properties": {
+            "colorHex": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
+            },
+            "metallic": { "$ref": "#/$defs/unitInterval" },
+            "roughness": { "$ref": "#/$defs/unitInterval" },
+            "clearCoat": { "$ref": "#/$defs/unitInterval" },
+            "orangePeel": { "$ref": "#/$defs/unitInterval" },
+            "flakeIntensity": { "$ref": "#/$defs/unitInterval" }
+          }
+        }
+      ]
     }
   }
 }

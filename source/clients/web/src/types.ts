@@ -2,6 +2,19 @@ export const RENDER_VIEW_IDS = ['front', 'front-left', 'side', 'rear-right'] as 
 
 export type RenderViewId = (typeof RENDER_VIEW_IDS)[number]
 export type Selections = Record<string, string>
+export interface MaterialCustomization {
+  materialVariantId: string
+}
+export interface PaintCustomization {
+  colorHex: string
+  metallic: number
+  roughness: number
+  clearCoat: number
+  orangePeel: number
+  flakeIntensity: number
+}
+export type Customization = MaterialCustomization | PaintCustomization
+export type Customizations = Record<string, Customization>
 
 export interface CatalogNode {
   displayName: string
@@ -9,6 +22,7 @@ export interface CatalogNode {
 
 export interface CatalogCategory extends CatalogNode {
   categoryId: string
+  regionId: string
 }
 
 export interface CatalogComponent extends CatalogNode {
@@ -20,6 +34,7 @@ export interface CatalogSurface extends CatalogNode {
   surfaceId: string
   componentId: string
   required: boolean
+  reviewRequired: boolean
 }
 
 export interface CatalogMaterialFamily extends CatalogNode {
@@ -27,11 +42,11 @@ export interface CatalogMaterialFamily extends CatalogNode {
 }
 
 export interface CatalogPricing {
-  unitPriceMinor: null
+  unitPriceMinor: number | null
   quantity: number | null
   pricingUnit: string
   isStandard: boolean
-  status: 'unconfirmed'
+  status: 'confirmed' | 'unconfirmed'
   quotable: false
 }
 
@@ -43,6 +58,16 @@ export interface CatalogOption extends CatalogNode {
   colorCode: string | null
   finish: string | null
   pricing: CatalogPricing
+  reviewRequired: boolean
+  thumbnailUrl: string | null
+}
+
+export interface CatalogMaterialVariant extends CatalogNode {
+  variantId: string
+  materialFamilyId: string
+  colorCode: string | null
+  thumbnailUrl: string
+  reviewRequired: boolean
 }
 
 export interface CatalogV2 {
@@ -58,10 +83,13 @@ export interface CatalogV2 {
     quotable: false
   }
   selectionOrder: string[]
+  regions: Array<CatalogNode & { regionId: string }>
   categories: CatalogCategory[]
   components: CatalogComponent[]
   surfaces: CatalogSurface[]
   materialFamilies: CatalogMaterialFamily[]
+  materialVariants: CatalogMaterialVariant[]
+  assetManifest: string
   options: CatalogOption[]
 }
 
@@ -78,6 +106,7 @@ export interface ConfigurationV2 {
   configurationId: string
   renderKey: string
   selections: Selections
+  customizations: Customizations
   revision: number
   priceResult: PriceResultV2
   createdAt: string
@@ -88,6 +117,7 @@ export interface SaveConfigurationRequest {
   catalogVersion: string
   vehicleId: string
   selections: Selections
+  customizations: Customizations
   configurationId?: string
   revision?: number
 }

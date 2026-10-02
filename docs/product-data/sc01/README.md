@@ -115,6 +115,29 @@ ueBinding
 `vehicleId=sc01` 应使用新的 catalog/schema/publication 版本，不能在
 `mvp-v1` 上原位扩展。
 
+## 色卡缩略图重建
+
+Web 色卡位于 `source/clients/web/public/sc01/thumbnails/`，统一为
+`512×512` WebP。`crop-manifest.json` 同时作为已验证的显式裁剪规格和输出
+清单；每项记录源页哈希、裁剪框、输出哈希和替换状态。
+
+```powershell
+pdftoppm -png -r 144 `
+  'docs\product-data\sc01\source\SC01-选配色卡.pdf' `
+  '<临时目录>\sc01-color-page'
+
+python tools\generate-sc01-thumbnails.py `
+  --pages-dir '<临时目录>' `
+  --crop-spec 'source\clients\web\public\sc01\crop-manifest.json' `
+  --output-dir 'source\clients\web\public\sc01\thumbnails' `
+  --manifest 'source\clients\web\public\sc01\crop-manifest.json' `
+  --catalog 'contracts\fixtures\sc01.catalog.draft.v2.json'
+```
+
+生成器会先读取完整旧 manifest，再在全部图片成功后覆盖 manifest，因此输入和
+输出可使用同一路径。源 PDF 或渲染结果变化会触发 SHA-256 失败，必须人工复核并
+显式更新裁剪框，不能静默沿用旧位置。
+
 ## 待业务确认
 
 - 清单价格是否含税、含工时，以及价格有效期。

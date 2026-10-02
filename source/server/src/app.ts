@@ -213,7 +213,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     assertFields(
       body,
       ["catalogVersion", "vehicleId", "selections"],
-      ["quoteRequested"],
+      ["customizations", "quoteRequested"],
     );
     assertSc01Version(body.catalogVersion, body.vehicleId, sc01V2);
     if (
@@ -226,7 +226,11 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         "quoteRequested 必须是 boolean",
       );
     }
-    const configuration = deriveSc01Configuration(body.selections, sc01V2);
+    const configuration = deriveSc01Configuration(
+      body.selections,
+      sc01V2,
+      body.customizations,
+    );
     const priceResult = buildSc01PriceResult(configuration, sc01V2);
     if (body.quoteRequested === true) {
       return reply.status(422).send({
@@ -293,7 +297,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       "vehicleId",
       "selections",
       "revision",
-    ], ["configurationId", "quoteRequested"]);
+    ], ["configurationId", "customizations", "quoteRequested"]);
     if (
       Object.hasOwn(body, "configurationId") &&
       body.configurationId !== configurationId
@@ -306,7 +310,11 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     }
     assertSc01Version(body.catalogVersion, body.vehicleId, sc01V2);
     const revision = readRevision(body.revision);
-    const configuration = deriveSc01Configuration(body.selections, sc01V2);
+    const configuration = deriveSc01Configuration(
+      body.selections,
+      sc01V2,
+      body.customizations,
+    );
     const priceResult = buildSc01PriceResult(configuration, sc01V2);
     if (body.quoteRequested === true) {
       throw new RequestError(
@@ -360,7 +368,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     assertFields(
       body,
       ["catalogVersion", "vehicleId", "selections"],
-      ["renderViewId"],
+      ["customizations", "renderViewId"],
     );
     assertSc01Version(body.catalogVersion, body.vehicleId, sc01V2);
     if (
@@ -373,7 +381,11 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         "renderViewId 必须是字符串",
       );
     }
-    const configuration = deriveSc01Configuration(body.selections, sc01V2);
+    const configuration = deriveSc01Configuration(
+      body.selections,
+      sc01V2,
+      body.customizations,
+    );
     return {
       schemaVersion: configuration.schemaVersion,
       catalogVersion: configuration.catalogVersion,

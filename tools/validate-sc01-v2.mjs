@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -43,37 +43,98 @@ function uniqueIndex(items, key, label) {
   return result;
 }
 
-export function canonicalConfigurationInput(catalog, selections) {
+function readWebpSize(image, label) {
+  check(
+    image.length >= 30
+      && image.toString("ascii", 0, 4) === "RIFF"
+      && image.toString("ascii", 8, 12) === "WEBP",
+    `${label} 必须是 WebP`
+  );
+  const chunk = image.toString("ascii", 12, 16);
+  if (chunk === "VP8X") {
+    return {
+      width: 1 + image.readUIntLE(24, 3),
+      height: 1 + image.readUIntLE(27, 3)
+    };
+  }
+  if (chunk === "VP8L") {
+    check(image[20] === 0x2f, `${label} VP8L 头非法`);
+    const bits = image.readUInt32LE(21);
+    return {
+      width: 1 + (bits & 0x3fff),
+      height: 1 + ((bits >> 14) & 0x3fff)
+    };
+  }
+  check(
+    chunk === "VP8 "
+      && image[23] === 0x9d
+      && image[24] === 0x01
+      && image[25] === 0x2a,
+    `${label} VP8 头非法`
+  );
+  return {
+    width: image.readUInt16LE(26) & 0x3fff,
+    height: image.readUInt16LE(28) & 0x3fff
+  };
+}
+
+const PAINT_KEYS = [
+  "colorHex",
+  "metallic",
+  "roughness",
+  "clearCoat",
+  "orangePeel",
+  "flakeIntensity"
+];
+
+function canonicalCustomizationLines(catalog, customizations = {}, renderSurfaces) {
+  return catalog.selectionOrder.flatMap((surfaceId) => {
+    if (renderSurfaces && !renderSurfaces.has(surfaceId)) return [];
+    const customization = customizations[surfaceId];
+    if (!customization) return [];
+    if (typeof customization.materialVariantId === "string") {
+      return [`customizations.${surfaceId}.materialVariantId=${customization.materialVariantId}`];
+    }
+    return PAINT_KEYS.map(
+      (key) => `customizations.${surfaceId}.${key}=${customization[key]}`
+    );
+  });
+}
+
+export function canonicalConfigurationInput(catalog, selections, customizations = {}) {
   return [
     "schemaVersion=2.0.0",
     `catalogVersion=${catalog.catalogVersion}`,
     `vehicleId=${catalog.vehicle.vehicleId}`,
     ...catalog.selectionOrder.map(
       (surfaceId) => `${surfaceId}=${selections[surfaceId]}`
-    )
+    ),
+    ...canonicalCustomizationLines(catalog, customizations)
   ].join("\n");
 }
 
-export function canonicalRenderInput(catalog, selections) {
+export function canonicalRenderInput(catalog, selections, customizations = {}) {
   const options = new Map(catalog.options.map((option) => [option.optionId, option]));
+  const renderSurfaces = new Set();
   return [
     "schemaVersion=2.0.0",
     `catalogVersion=${catalog.catalogVersion}`,
     `vehicleId=${catalog.vehicle.vehicleId}`,
     ...catalog.selectionOrder.flatMap((surfaceId) => {
       const optionId = selections[surfaceId];
-      return options.get(optionId)?.renderRelevant === true
-        ? [`${surfaceId}=${optionId}`]
-        : [];
-    })
+      if (options.get(optionId)?.renderRelevant !== true) return [];
+      renderSurfaces.add(surfaceId);
+      return [`${surfaceId}=${optionId}`];
+    }),
+    ...canonicalCustomizationLines(catalog, customizations, renderSurfaces)
   ].join("\n");
 }
 
-export function deriveConfigurationIdentity(catalog, selections) {
-  const canonicalInput = canonicalConfigurationInput(catalog, selections);
+export function deriveConfigurationIdentity(catalog, selections, customizations = {}) {
+  const canonicalInput = canonicalConfigurationInput(catalog, selections, customizations);
   const digest = createHash("sha256").update(canonicalInput, "utf8").digest("hex");
   const configurationId = `cfg-${digest.slice(0, 24)}`;
-  const canonicalRender = canonicalRenderInput(catalog, selections);
+  const canonicalRender = canonicalRenderInput(catalog, selections, customizations);
   const renderDigest = createHash("sha256").update(canonicalRender, "utf8").digest("hex");
   return {
     canonicalInput,
@@ -93,10 +154,13 @@ export function validateCatalog(catalog) {
     "currency",
     "vehicle",
     "selectionOrder",
+    "regions",
     "categories",
     "components",
     "surfaces",
     "materialFamilies",
+    "materialVariants",
+    "assetManifest",
     "options"
   ], "catalog");
   check(catalog.schemaVersion === "2.0.0", "catalog.schemaVersion 必须为 2.0.0");
@@ -116,6 +180,7 @@ export function validateCatalog(catalog) {
   check(catalog.vehicle.priceStatus === "unconfirmed", "基础价状态必须为 unconfirmed");
   check(catalog.vehicle.quotable === false, "草案车型必须禁止报价");
 
+  const regions = uniqueIndex(catalog.regions, "regionId", "regions");
   const categories = uniqueIndex(catalog.categories, "categoryId", "categories");
   const components = uniqueIndex(catalog.components, "componentId", "components");
   const surfaces = uniqueIndex(catalog.surfaces, "surfaceId", "surfaces");
@@ -124,19 +189,37 @@ export function validateCatalog(catalog) {
     "materialFamilyId",
     "materialFamilies"
   );
+  const materialVariants = uniqueIndex(
+    catalog.materialVariants,
+    "variantId",
+    "materialVariants"
+  );
   const options = uniqueIndex(catalog.options, "optionId", "options");
 
   check(
     Array.isArray(catalog.selectionOrder)
-      && catalog.selectionOrder.length > 0
+      && catalog.selectionOrder.length === catalog.surfaces.length
       && new Set(catalog.selectionOrder).size === catalog.selectionOrder.length,
-    "selectionOrder 必须是非空且唯一的 surfaceId 数组"
+    "selectionOrder 必须按文档顺序完整覆盖所有 surfaceId"
+  );
+  check(
+    catalog.selectionOrder.every(
+      (surfaceId, index) => surfaceId === catalog.surfaces[index].surfaceId
+    ),
+    "selectionOrder 必须与 surfaces 文档顺序一致"
+  );
+  check(
+    catalog.surfaces.every((surface) => surface.required === true),
+    "所有 surface 都必须为 required"
   );
   for (const surfaceId of catalog.selectionOrder) {
     check(surfaces.get(surfaceId)?.required === true, `${surfaceId} 必须存在且为必选面`);
   }
   for (const component of components.values()) {
     check(categories.has(component.categoryId), `${component.componentId} 引用了未知 categoryId`);
+  }
+  for (const category of categories.values()) {
+    check(regions.has(category.regionId), `${category.categoryId} 引用了未知 regionId`);
   }
   for (const surface of surfaces.values()) {
     check(components.has(surface.componentId), `${surface.surfaceId} 引用了未知 componentId`);
@@ -152,7 +235,11 @@ export function validateCatalog(catalog) {
       `${option.optionId} 引用了未知 materialFamilyId`
     );
     check(isRecord(option.pricing), `${option.optionId}.pricing 必须是 object`);
-    check(option.pricing.unitPriceMinor === null, `${option.optionId} 未确认价格必须为 null`);
+    check(
+      option.pricing.unitPriceMinor === null
+        || (Number.isInteger(option.pricing.unitPriceMinor) && option.pricing.unitPriceMinor >= 0),
+      `${option.optionId} unitPriceMinor 必须为 null 或非负整数`
+    );
     check(
       option.pricing.quantity === null
         || (Number.isInteger(option.pricing.quantity) && option.pricing.quantity > 0),
@@ -170,15 +257,38 @@ export function validateCatalog(catalog) {
       `${option.optionId} pricingUnit 非法`
     );
     check(typeof option.renderRelevant === "boolean", `${option.optionId} renderRelevant 必须为 boolean`);
-    check(option.pricing.status === "unconfirmed", `${option.optionId} 价格状态必须未确认`);
+    check(
+      option.pricing.status === (option.pricing.unitPriceMinor === null ? "unconfirmed" : "confirmed"),
+      `${option.optionId} 价格状态与金额不一致`
+    );
     check(option.pricing.quotable === false, `${option.optionId} 必须禁止报价`);
     optionIdsBySurface.get(option.surfaceId).add(option.optionId);
+  }
+  for (const variant of materialVariants.values()) {
+    check(
+      materialFamilies.has(variant.materialFamilyId),
+      `${variant.variantId} 引用了未知 materialFamilyId`
+    );
+    check(
+      typeof variant.thumbnailUrl === "string" && variant.thumbnailUrl.startsWith("/"),
+      `${variant.variantId} thumbnailUrl 非法`
+    );
+    check(typeof variant.reviewRequired === "boolean", `${variant.variantId} reviewRequired 必须为 boolean`);
   }
   for (const surfaceId of catalog.selectionOrder) {
     check(optionIdsBySurface.get(surfaceId)?.size > 0, `${surfaceId} 至少需要一个选项`);
   }
 
-  return { categories, components, surfaces, materialFamilies, options, optionIdsBySurface };
+  return {
+    regions,
+    categories,
+    components,
+    surfaces,
+    materialFamilies,
+    materialVariants,
+    options,
+    optionIdsBySurface
+  };
 }
 
 export function validateConfiguration(configuration, catalog) {
@@ -190,7 +300,8 @@ export function validateConfiguration(configuration, catalog) {
     "vehicleId",
     "configurationId",
     "renderKey",
-    "selections"
+    "selections",
+    "customizations"
   ], "configuration");
   check(configuration.schemaVersion === "2.0.0", "configuration.schemaVersion 必须为 2.0.0");
   check(configuration.catalogVersion === catalog.catalogVersion, "catalogVersion 不匹配");
@@ -205,7 +316,40 @@ export function validateConfiguration(configuration, catalog) {
     );
   }
 
-  const expected = deriveConfigurationIdentity(catalog, configuration.selections);
+  check(isRecord(configuration.customizations), "customizations 必须是 object");
+  for (const [surfaceId, customization] of Object.entries(configuration.customizations)) {
+    check(catalog.selectionOrder.includes(surfaceId), `customizations 包含未知 surfaceId：${surfaceId}`);
+    check(isRecord(customization), `${surfaceId} customization 必须是 object`);
+    const option = indexes.options.get(configuration.selections[surfaceId]);
+    if (Object.hasOwn(customization, "materialVariantId")) {
+      assertExactKeys(customization, ["materialVariantId"], `${surfaceId} customization`);
+      const variant = indexes.materialVariants.get(customization.materialVariantId);
+      check(variant, `${surfaceId} 引用了未知 materialVariantId`);
+      check(
+        option.materialFamilyId === variant.materialFamilyId,
+        `${surfaceId} 的材料色卡与所选选项材料族不匹配`
+      );
+    } else {
+      assertExactKeys(customization, PAINT_KEYS, `${surfaceId} customization`);
+      check(option.optionId === "body-cover-custom", `${surfaceId} 不支持自定义车漆`);
+      check(/^#[0-9A-F]{6}$/.test(customization.colorHex), `${surfaceId}.colorHex 非法`);
+      for (const key of PAINT_KEYS.slice(1)) {
+        check(
+          typeof customization[key] === "number"
+            && Number.isFinite(customization[key])
+            && customization[key] >= 0
+            && customization[key] <= 1,
+          `${surfaceId}.${key} 必须在 0 到 1 之间`
+        );
+      }
+    }
+  }
+
+  const expected = deriveConfigurationIdentity(
+    catalog,
+    configuration.selections,
+    configuration.customizations
+  );
   check(CONFIGURATION_ID.test(configuration.configurationId), "configurationId 格式非法");
   check(
     configuration.configurationId === expected.configurationId,
@@ -233,17 +377,18 @@ export function buildPriceResult(configuration, catalog) {
       return {
         surfaceId,
         optionId: option.optionId,
-        unitPriceMinor: null,
+        unitPriceMinor: option.pricing.unitPriceMinor,
         quantity: option.pricing.quantity,
-        subtotalMinor: null,
-        priceStatus: "unconfirmed"
+        subtotalMinor: option.pricing.unitPriceMinor === null
+          ? null
+          : option.pricing.unitPriceMinor * option.pricing.quantity,
+        priceStatus: option.pricing.status
       };
     }),
     totalPriceMinor: null,
     quoteAllowed: false,
     blockingReasons: [
       "BASE_PRICE_UNCONFIRMED",
-      "OPTION_PRICE_UNCONFIRMED",
       "PRICE_UNCONFIRMED"
     ]
   };
@@ -253,7 +398,7 @@ export function validatePriceResult(result, configuration, catalog) {
   const expected = buildPriceResult(configuration, catalog);
   check(
     JSON.stringify(result) === JSON.stringify(expected),
-    "price-result 必须保持所有未知金额为 null，并明确禁止报价"
+    "price-result 必须保留已确认选项金额、保持未知总价为 null，并明确禁止报价"
   );
   return result;
 }
@@ -278,10 +423,12 @@ export function validateSourceReferences(catalog, sourceManifest) {
   }
 
   for (const collectionName of [
+    "regions",
     "categories",
     "components",
     "surfaces",
     "materialFamilies",
+    "materialVariants",
     "options"
   ]) {
     for (const item of catalog[collectionName]) {
@@ -305,6 +452,121 @@ export function validateSourceReferences(catalog, sourceManifest) {
   }
 }
 
+export async function validateCropManifest(catalog, manifest, publicRoot) {
+  check(isRecord(manifest), "crop manifest 根节点必须是 object");
+  assertExactKeys(manifest, [
+    "schemaVersion",
+    "vehicleId",
+    "generatedFrom",
+    "generator",
+    "target",
+    "itemCount",
+    "totalBytes",
+    "items"
+  ], "crop manifest");
+  check(manifest.schemaVersion === "2.0.0", "crop manifest schemaVersion 必须为 2.0.0");
+  check(manifest.vehicleId === catalog.vehicle.vehicleId, "crop manifest vehicleId 不匹配");
+  check(
+    manifest.generator === "tools/generate-sc01-thumbnails.py",
+    "crop manifest generator 非法"
+  );
+  check(
+    isRecord(manifest.target)
+      && manifest.target.width === 512
+      && manifest.target.height === 512
+      && manifest.target.format === "webp"
+      && Number.isInteger(manifest.target.quality)
+      && manifest.target.quality >= 80
+      && manifest.target.quality <= 100
+      && manifest.target.method === 6
+      && manifest.target.replaceable === true,
+    "crop manifest target 必须是 512x512 高质量 WebP"
+  );
+  check(
+    Array.isArray(manifest.items)
+      && manifest.itemCount === manifest.items.length
+      && manifest.itemCount === catalog.materialVariants.length,
+    "crop manifest itemCount 必须与 catalog.materialVariants 一致"
+  );
+
+  const thumbnails = resolve(publicRoot, "sc01", "thumbnails");
+  const files = await readdir(thumbnails);
+  const expectedFiles = new Set();
+  const variants = new Map(
+    catalog.materialVariants.map((variant) => [variant.variantId, variant])
+  );
+  let totalBytes = 0;
+
+  for (const item of manifest.items) {
+    check(isRecord(item), "crop manifest item 必须是 object");
+    const variant = variants.get(item.variantId);
+    check(variant, `crop manifest 包含未知 variantId：${item.variantId}`);
+    check(variant.thumbnailUrl === item.output, `${item.variantId} catalog URL 与 manifest 不一致`);
+    check(
+      typeof item.output === "string"
+        && item.output === `/sc01/thumbnails/${item.variantId}.webp`,
+      `${item.variantId} output 必须使用约定 WebP URL`
+    );
+    check(isRecord(item.sourcePage), `${item.variantId} 缺少 sourcePage`);
+    check(
+      typeof item.sourcePage.file === "string"
+        && item.sourcePage.file.length > 0
+        && Number.isInteger(item.sourcePage.width)
+        && item.sourcePage.width > 0
+        && Number.isInteger(item.sourcePage.height)
+        && item.sourcePage.height > 0
+        && /^[a-f0-9]{64}$/.test(item.sourcePage.sha256),
+      `${item.variantId} sourcePage 非法`
+    );
+    check(isRecord(item.crop), `${item.variantId} 缺少 crop`);
+    check(
+      ["x", "y", "width", "height"].every(
+        (key) => Number.isInteger(item.crop[key]) && item.crop[key] >= (key === "x" || key === "y" ? 0 : 1)
+      )
+        && item.crop.width === item.crop.height
+        && item.crop.x + item.crop.width <= item.sourcePage.width
+        && item.crop.y + item.crop.height <= item.sourcePage.height,
+      `${item.variantId} crop 越界或不是正方形`
+    );
+    check(
+      isRecord(item.outputSize)
+        && item.outputSize.width === 512
+        && item.outputSize.height === 512,
+      `${item.variantId} outputSize 非法`
+    );
+    check(Number.isInteger(item.byteLength) && item.byteLength > 0, `${item.variantId} byteLength 非法`);
+    check(/^[a-f0-9]{64}$/.test(item.sha256), `${item.variantId} sha256 非法`);
+    check(item.replaceable === true, `${item.variantId} 必须可替换`);
+    check(
+      item.reviewRequired === variant.reviewRequired,
+      `${item.variantId} reviewRequired 与 catalog 不一致`
+    );
+
+    const relative = item.output.slice(1);
+    const image = await readFile(resolve(publicRoot, relative));
+    check(image.length === item.byteLength, `${item.variantId} byteLength 不匹配`);
+    check(
+      createHash("sha256").update(image).digest("hex") === item.sha256,
+      `${item.variantId} sha256 不匹配`
+    );
+    const dimensions = readWebpSize(image, item.variantId);
+    check(
+      dimensions.width === 512 && dimensions.height === 512,
+      `${item.variantId} 必须是 512x512`
+    );
+    totalBytes += image.length;
+    expectedFiles.add(`${item.variantId}.webp`);
+  }
+
+  check(
+    files.length === expectedFiles.size && files.every((file) => expectedFiles.has(file)),
+    "thumbnails 目录必须只包含 manifest 声明的 WebP"
+  );
+  check(totalBytes === manifest.totalBytes, "crop manifest totalBytes 不匹配");
+  check(totalBytes < 64 * 1024 * 1024, "WebP 总体积必须低于 64 MiB");
+  return { itemCount: manifest.itemCount, totalBytes };
+}
+
 async function readJson(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
@@ -319,9 +581,12 @@ export async function validateSc01Fixtures(base = root) {
   const sourceManifest = await readJson(
     resolve(base, "docs", "product-data", "sc01", "source-manifest.json")
   );
+  const publicRoot = resolve(base, "source", "clients", "web", "public");
+  const cropManifest = await readJson(resolve(publicRoot, "sc01", "crop-manifest.json"));
 
   validateCatalog(catalog);
   validateSourceReferences(catalog, sourceManifest);
+  await validateCropManifest(catalog, cropManifest, publicRoot);
   validateConfiguration(valid, catalog);
   validatePriceResult(priceResult, valid, catalog);
 
@@ -335,11 +600,14 @@ export async function validateSc01Fixtures(base = root) {
 
   check(golden.schemaVersion === "2.0.0", "黄金向量 schemaVersion 错误");
   for (const [index, vector] of golden.vectors.entries()) {
-    const derived = deriveConfigurationIdentity(catalog, vector.selections);
+    assertExactKeys(vector.selections, catalog.selectionOrder, `黄金向量 ${index}.selections`);
+    const derived = deriveConfigurationIdentity(
+      catalog,
+      vector.selections,
+      vector.customizations ?? {}
+    );
     check(
-      derived.canonicalInput === vector.canonicalInput
-        && derived.canonicalRenderInput === vector.canonicalRenderInput
-        && derived.configurationId === vector.configurationId
+      derived.configurationId === vector.configurationId
         && derived.renderKey === vector.renderKey,
       `黄金向量 ${index} 不匹配`
     );

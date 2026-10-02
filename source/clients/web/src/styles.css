@@ -204,6 +204,30 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .option-card:not(.selected) .check { border: 1px solid rgba(0,0,0,.18); background: rgba(255,255,255,.75); }
 
+.variant-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px;
+  max-height: 250px; overflow-y: auto; padding: 2px;
+}
+.variant-grid button {
+  min-width: 0; overflow: hidden; padding: 0; border: 1px solid #d5d3ca; border-radius: 5px;
+  color: var(--ink); background: #fff; cursor: pointer;
+}
+.variant-grid button.selected { border: 2px solid #292c27; box-shadow: 0 0 0 2px var(--lime); }
+.variant-grid img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
+.variant-grid span {
+  display: block; overflow: hidden; padding: 5px; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 8px;
+}
+.paint-editor { margin-top: 4px; padding: 12px; border: 1px solid #d9d7cf; border-radius: 7px; background: #faf9f5; }
+.paint-editor .section-title { margin-top: 0; }
+.color-control, .range-control {
+  display: grid; grid-template-columns: 68px minmax(0, 1fr) 42px;
+  gap: 9px; align-items: center; min-height: 34px; color: #666a62; font-size: 10px;
+}
+.color-control input { width: 100%; height: 28px; padding: 2px; border: 1px solid #ccc9bf; background: #fff; }
+.color-control code, .range-control output { color: #555950; text-align: right; font-size: 9px; }
+.range-control input { width: 100%; accent-color: #33372f; }
+
 .summary { margin-top: auto; padding-top: 20px; }
 .canonical { padding: 11px 13px; border-radius: 4px; color: #999c92; background: #e9e7df; font-size: 8px; }
 .canonical span, .canonical code { display: block; }

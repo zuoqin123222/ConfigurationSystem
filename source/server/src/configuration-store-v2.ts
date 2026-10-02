@@ -44,6 +44,20 @@ function fingerprint(
     .digest("hex");
 }
 
+function configurationValue(
+  configuration: StoredConfigurationV2,
+): Sc01Configuration {
+  return {
+    schemaVersion: configuration.schemaVersion,
+    catalogVersion: configuration.catalogVersion,
+    vehicleId: configuration.vehicleId,
+    configurationId: configuration.configurationId,
+    renderKey: configuration.renderKey,
+    selections: configuration.selections,
+    customizations: configuration.customizations,
+  };
+}
+
 export class ConfigurationStoreV2 {
   private readonly configurations = new Map<string, StoredConfigurationV2>();
   private readonly idempotency = new Map<string, IdempotencyEntry>();
@@ -76,7 +90,15 @@ export class ConfigurationStoreV2 {
       ) {
         throw new Error("SC01 v2 配置存储包含非法记录");
       }
-      const configuration = item as StoredConfigurationV2;
+      const configuration = {
+        ...(item as StoredConfigurationV2),
+        customizations:
+          typeof (item as Partial<StoredConfigurationV2>).customizations === "object"
+            && (item as Partial<StoredConfigurationV2>).customizations !== null
+            && !Array.isArray((item as Partial<StoredConfigurationV2>).customizations)
+            ? (item as StoredConfigurationV2).customizations
+            : {},
+      };
       this.configurations.set(configuration.configurationId, copy(configuration));
     }
     if (snapshot.idempotency !== undefined && !Array.isArray(snapshot.idempotency)) {
@@ -99,10 +121,14 @@ export class ConfigurationStoreV2 {
       };
       const configuration = this.configurations.get(entry.configurationId);
       if (!configuration) {
-        throw new Error("SC01 v2 配置存储幂等记录引用未知配置");
+        // 配置更新会生成新的稳定 ID；旧版本留下的幂等索引不能阻断服务启动。
+        continue;
       }
       this.idempotency.set(entry.key, {
-        fingerprint: entry.fingerprint,
+        fingerprint: fingerprint(
+          configurationValue(configuration),
+          configuration.priceResult,
+        ),
         configuration: copy(configuration),
       });
     }
@@ -229,6 +255,11 @@ export class ConfigurationStoreV2 {
       updatedAt: this.now().toISOString(),
     };
     this.configurations.delete(configurationId);
+    for (const [key, entry] of this.idempotency) {
+      if (entry.configuration.configurationId === configurationId) {
+        this.idempotency.delete(key);
+      }
+    }
     this.configurations.set(stored.configurationId, stored);
     this.persist();
     return copy(stored);

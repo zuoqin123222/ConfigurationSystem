@@ -7,6 +7,7 @@ import {
   deriveConfigurationIdentity,
   validateCatalog,
   validateConfiguration,
+  validateCropManifest,
   validatePriceResult,
   validateSourceReferences,
   validateSc01Fixtures
@@ -18,21 +19,14 @@ const fixture = (name) =>
 
 test("SC01 v2 草案 catalog、正反配置、价格结果与黄金向量聚合通过", async () => {
   const result = await validateSc01Fixtures(root);
-  assert.deepEqual(result, { optionCount: 8, vectorCount: 2 });
+  assert.deepEqual(result, { optionCount: 136, vectorCount: 2 });
 });
 
 test("configurationId 与 renderKey 不受 selections 对象属性顺序影响", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
-  const first = {
-    "exterior-body-cover": "body-cover-yellow",
-    "wheel-material": "wheel-magnesium-alloy",
-    "steering-wheel-skin": "steering-skin-alcantara"
-  };
-  const reordered = {
-    "steering-wheel-skin": "steering-skin-alcantara",
-    "wheel-material": "wheel-magnesium-alloy",
-    "exterior-body-cover": "body-cover-yellow"
-  };
+  const valid = await fixture("sc01.configuration.valid.v2.json");
+  const first = valid.selections;
+  const reordered = Object.fromEntries(Object.entries(first).reverse());
   assert.deepEqual(
     deriveConfigurationIdentity(catalog, first),
     deriveConfigurationIdentity(catalog, reordered)
@@ -41,14 +35,11 @@ test("configurationId 与 renderKey 不受 selections 对象属性顺序影响",
 
 test("非渲染选项改变 configurationId，但复用同一 renderKey", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
+  const valid = await fixture("sc01.configuration.valid.v2.json");
   for (const option of catalog.options) {
     if (option.surfaceId === "steering-wheel-skin") option.renderRelevant = false;
   }
-  const base = {
-    "exterior-body-cover": "body-cover-red",
-    "wheel-material": "wheel-aluminum-alloy",
-    "steering-wheel-skin": "steering-skin-ultrasuede-black"
-  };
+  const base = valid.selections;
   const changed = {
     ...base,
     "steering-wheel-skin": "steering-skin-alcantara"
@@ -63,13 +54,12 @@ test("非渲染选项改变 configurationId，但复用同一 renderKey", async 
 test("拒绝缺选、跨 surface 选项、未知选项与伪造稳定身份", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const valid = await fixture("sc01.configuration.valid.v2.json");
+  const missingSelection = structuredClone(valid.selections);
+  delete missingSelection["steering-wheel-skin"];
   const cases = [
     {
       ...valid,
-      selections: {
-        "exterior-body-cover": "body-cover-red",
-        "wheel-material": "wheel-aluminum-alloy"
-      }
+      selections: missingSelection
     },
     {
       ...valid,
@@ -93,23 +83,23 @@ test("拒绝缺选、跨 surface 选项、未知选项与伪造稳定身份", as
   }
 });
 
-test("拒绝把来源表内未确认金额录入 catalog 或开放报价", async () => {
+test("拒绝价格状态与金额不一致或开放报价", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const valid = await fixture("sc01.configuration.valid.v2.json");
 
   const priced = structuredClone(catalog);
-  priced.options[0].pricing.unitPriceMinor = 960000;
-  assert.throws(() => validateCatalog(priced), /未确认价格必须为 null/);
+  priced.options[0].pricing.unitPriceMinor = null;
+  assert.throws(() => validateCatalog(priced), /价格状态与金额不一致/);
 
   const result = buildPriceResult(valid, catalog);
   result.quoteAllowed = true;
   assert.throws(
     () => validatePriceResult(result, valid, catalog),
-    /必须保持所有未知金额为 null，并明确禁止报价/
+    /必须保留已确认选项金额、保持未知总价为 null，并明确禁止报价/
   );
 });
 
-test("价格结果的基础价、单价、小计和总价全部为 null", async () => {
+test("价格结果保留已确认选项金额，基础价和总价仍为 null", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const valid = await fixture("sc01.configuration.valid.v2.json");
   const result = buildPriceResult(valid, catalog);
@@ -117,10 +107,104 @@ test("价格结果的基础价、单价、小计和总价全部为 null", async 
   assert.equal(result.basePriceMinor, null);
   assert.equal(result.totalPriceMinor, null);
   assert.equal(result.quoteAllowed, false);
+  assert.equal(result.lineItems.length, 38);
   assert.ok(result.lineItems.every(
-    (line) => line.unitPriceMinor === null && line.subtotalMinor === null
+    (line) => Number.isInteger(line.unitPriceMinor)
+      && Number.isInteger(line.subtotalMinor)
+      && line.priceStatus === "confirmed"
   ));
+  assert.ok(result.lineItems.some((line) => line.subtotalMinor > 0));
   assert.ok(result.blockingReasons.includes("PRICE_UNCONFIRMED"));
+});
+
+test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", async () => {
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  assert.equal(catalog.regions.length, 3);
+  assert.equal(catalog.surfaces.length, 38);
+  assert.equal(catalog.selectionOrder.length, 38);
+  assert.deepEqual(
+    catalog.selectionOrder,
+    catalog.surfaces.map((surface) => surface.surfaceId)
+  );
+  assert.ok(catalog.surfaces.every((surface) => surface.required));
+  assert.equal(catalog.materialVariants.length, 352);
+  assert.equal(catalog.assetManifest, "/sc01/crop-manifest.json");
+
+  const byId = new Map(catalog.options.map((option) => [option.optionId, option]));
+  assert.equal(byId.get("body-cover-red").pricing.unitPriceMinor, 0);
+  assert.equal(byId.get("body-cover-silver").pricing.unitPriceMinor, 0);
+  assert.equal(byId.get("body-cover-custom").pricing.unitPriceMinor, 960000);
+  assert.deepEqual(byId.get("body-cover-custom").parameters, {
+    color: { mode: "custom", value: null, required: true },
+    material: { materialFamilyId: "paint", variantId: null }
+  });
+  assert.ok(catalog.materialVariants.some((variant) => variant.reviewRequired));
+});
+
+test("每个有备选项的 surface 变化都会改变 configurationId，且仅非渲染项复用 renderKey", async () => {
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  const valid = await fixture("sc01.configuration.valid.v2.json");
+  const baseline = deriveConfigurationIdentity(catalog, valid.selections);
+
+  for (const surfaceId of catalog.selectionOrder) {
+    const alternative = catalog.options.find(
+      (option) => option.surfaceId === surfaceId
+        && option.optionId !== valid.selections[surfaceId]
+    );
+    if (!alternative) continue;
+    const changed = deriveConfigurationIdentity(catalog, {
+      ...valid.selections,
+      [surfaceId]: alternative.optionId
+    });
+    assert.notEqual(changed.configurationId, baseline.configurationId, surfaceId);
+    if (alternative.renderRelevant) {
+      assert.notEqual(changed.renderKey, baseline.renderKey, surfaceId);
+    }
+  }
+});
+
+test("crop manifest、catalog URL 与 352 张 512 方形 WebP 一致", async () => {
+  const publicRoot = resolve(root, "source", "clients", "web", "public");
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  const manifest = JSON.parse(await readFile(
+    resolve(publicRoot, "sc01", "crop-manifest.json"),
+    "utf8"
+  ));
+  const result = await validateCropManifest(catalog, manifest, publicRoot);
+
+  assert.equal(result.itemCount, 352);
+  assert.equal(result.totalBytes, manifest.totalBytes);
+  assert.ok(result.totalBytes < 64 * 1024 * 1024);
+  assert.equal(manifest.schemaVersion, "2.0.0");
+  assert.deepEqual(manifest.target, {
+    width: 512,
+    height: 512,
+    format: "webp",
+    quality: 90,
+    method: 6,
+    replaceable: true
+  });
+  assert.ok(manifest.items.some((item) => item.reviewRequired));
+  assert.ok(manifest.items.every(
+    (item) => item.output.endsWith(".webp")
+      && item.sourcePage.file.endsWith(".png")
+      && item.crop.width === item.crop.height
+  ));
+});
+
+test("crop manifest 拒绝被篡改的输出哈希", async () => {
+  const publicRoot = resolve(root, "source", "clients", "web", "public");
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  const manifest = JSON.parse(await readFile(
+    resolve(publicRoot, "sc01", "crop-manifest.json"),
+    "utf8"
+  ));
+  manifest.items[0].sha256 = "0".repeat(64);
+
+  await assert.rejects(
+    validateCropManifest(catalog, manifest, publicRoot),
+    /sha256 不匹配/
+  );
 });
 
 test("拒绝未知来源文档和越界页码", async () => {

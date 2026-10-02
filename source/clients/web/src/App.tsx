@@ -11,16 +11,19 @@ import {
   componentsForCategory,
   createCanonicalKey,
   createInitialSelections,
+  createRenderCanonicalKey,
+  normalizeCustomizations,
   normalizeSelections,
   optionsForFilters,
-  renderRelevantSelections,
   surfacesForComponent,
 } from './configurator'
 import type {
   CatalogV2,
   ConfigurationV2,
+  Customizations,
   LegacyCatalog,
   LegacyRender,
+  PaintCustomization,
   RenderViewId,
   Selections,
 } from './types'
@@ -32,6 +35,14 @@ const DEFAULT_VIEWS: Array<{ renderViewId: RenderViewId; zhName: string }> = [
   { renderViewId: 'side', zhName: '侧面' },
   { renderViewId: 'rear-right', zhName: '右后' },
 ]
+
+function optionPrice(option: CatalogV2['options'][number]): string {
+  if (option.pricing.unitPriceMinor === 0) return '免费'
+  if (option.pricing.unitPriceMinor !== null) {
+    return `¥${(option.pricing.unitPriceMinor / 100).toLocaleString('zh-CN')}`
+  }
+  return option.pricing.isStandard ? '标配' : '价格待确认'
+}
 
 function Showroom() {
   return (
@@ -57,6 +68,7 @@ function Showroom() {
 interface CachedDraft {
   catalog: CatalogV2
   selections: Selections
+  customizations?: Customizations
 }
 
 function readCachedDraft(): CachedDraft | null {
@@ -72,6 +84,7 @@ export default function App() {
   const [catalog, setCatalog] = useState<CatalogV2 | null>(null)
   const [legacyCatalog, setLegacyCatalog] = useState<LegacyCatalog | null>(null)
   const [selections, setSelections] = useState<Selections | null>(null)
+  const [customizations, setCustomizations] = useState<Customizations>({})
   const [savedConfiguration, setSavedConfiguration] = useState<ConfigurationV2 | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -102,20 +115,32 @@ export default function App() {
         if (controller.signal.aborted) return
         const configurationId = new URLSearchParams(window.location.search).get('configuration')
         let initialSelections = createInitialSelections(nextCatalog)
+        let initialCustomizations: Customizations = {}
         let loadedConfiguration: ConfigurationV2 | null = null
         if (configurationId) {
           loadedConfiguration = await fetchConfiguration(configurationId, controller.signal)
           initialSelections = normalizeSelections(nextCatalog, loadedConfiguration.selections)
+          initialCustomizations = normalizeCustomizations(
+            nextCatalog,
+            initialSelections,
+            loadedConfiguration.customizations,
+          )
         } else {
           const cached = readCachedDraft()
           if (cached?.catalog.catalogVersion === nextCatalog.catalogVersion) {
             initialSelections = normalizeSelections(nextCatalog, cached.selections)
+            initialCustomizations = normalizeCustomizations(
+              nextCatalog,
+              initialSelections,
+              cached.customizations ?? {},
+            )
           }
         }
         if (controller.signal.aborted) return
         setCatalog(nextCatalog)
         setLegacyCatalog(nextLegacyCatalog)
         setSelections(initialSelections)
+        setCustomizations(initialCustomizations)
         setSavedConfiguration(loadedConfiguration)
       })
       .catch((reason: unknown) => {
@@ -123,7 +148,13 @@ export default function App() {
         const cached = readCachedDraft()
         if (!navigator.onLine && cached) {
           setCatalog(cached.catalog)
-          setSelections(normalizeSelections(cached.catalog, cached.selections))
+          const cachedSelections = normalizeSelections(cached.catalog, cached.selections)
+          setSelections(cachedSelections)
+          setCustomizations(normalizeCustomizations(
+            cached.catalog,
+            cachedSelections,
+            cached.customizations ?? {},
+          ))
           setOfflineDraft(true)
         } else {
           setError(reason instanceof Error ? reason.message : '目录加载失败')
@@ -137,9 +168,9 @@ export default function App() {
 
   useEffect(() => {
     if (catalog && selections) {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ catalog, selections }))
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ catalog, selections, customizations }))
     }
-  }, [catalog, selections])
+  }, [catalog, customizations, selections])
 
   if (loading) return <StatusScreen title="正在准备您的专属座驾" detail="正在加载 SC01 草案目录…" />
   if (error || !catalog || !selections) {
@@ -152,6 +183,8 @@ export default function App() {
       legacyCatalog={legacyCatalog}
       selections={selections}
       setSelections={setSelections}
+      customizations={customizations}
+      setCustomizations={setCustomizations}
       savedConfiguration={savedConfiguration}
       setSavedConfiguration={setSavedConfiguration}
       online={online}
@@ -165,6 +198,8 @@ interface ConfiguratorProps {
   legacyCatalog: LegacyCatalog | null
   selections: Selections
   setSelections: (value: Selections) => void
+  customizations: Customizations
+  setCustomizations: (value: Customizations) => void
   savedConfiguration: ConfigurationV2 | null
   setSavedConfiguration: (value: ConfigurationV2 | null) => void
   online: boolean
@@ -176,6 +211,8 @@ function Configurator({
   legacyCatalog,
   selections,
   setSelections,
+  customizations,
+  setCustomizations,
   savedConfiguration,
   setSavedConfiguration,
   online,
@@ -218,13 +255,26 @@ function Configurator({
     return catalog.materialFamilies.filter((family) => ids.has(family.materialFamilyId))
   }, [catalog, currentSurface.surfaceId])
   const options = optionsForFilters(catalog, currentSurface.surfaceId, materialFamilyId)
-  const canonicalKey = createCanonicalKey(catalog, selections)
+  const selectedOption = catalog.options.find(
+    (option) => option.optionId === selections[currentSurface.surfaceId],
+  )
+  const materialVariants = selectedOption
+    ? catalog.materialVariants.filter(
+        (variant) => variant.materialFamilyId === selectedOption.materialFamilyId,
+      )
+    : []
+  const currentCustomization = customizations[currentSurface.surfaceId]
+  const canonicalKey = createCanonicalKey(catalog, selections, customizations)
   const savedKey = savedConfiguration
-    ? createCanonicalKey(catalog, normalizeSelections(catalog, savedConfiguration.selections))
+    ? createCanonicalKey(
+        catalog,
+        normalizeSelections(catalog, savedConfiguration.selections),
+        savedConfiguration.customizations,
+      )
     : ''
   const dirty = canonicalKey !== savedKey
   const views = legacyCatalog?.renderViews.length ? legacyCatalog.renderViews : DEFAULT_VIEWS
-  const renderSelectionKey = JSON.stringify(renderRelevantSelections(catalog, selections))
+  const renderSelectionKey = createRenderCanonicalKey(catalog, selections, customizations)
 
   useEffect(() => {
     const firstComponent = components[0]?.componentId
@@ -246,6 +296,7 @@ function Configurator({
       catalogVersion: catalog.catalogVersion,
       vehicleId: catalog.vehicle.vehicleId,
       selections,
+      customizations,
       renderViewId: activeView,
     }, controller.signal)
       .then(async (result) => {
@@ -288,7 +339,50 @@ function Configurator({
   }, [activeView, catalog.catalogVersion, catalog.vehicle.vehicleId, legacyCatalog, renderSelectionKey])
 
   const selectOption = (optionId: string) => {
-    setSelections({ ...selections, [currentSurface.surfaceId]: optionId })
+    const nextSelections = { ...selections, [currentSurface.surfaceId]: optionId }
+    setSelections(nextSelections)
+    const option = catalog.options.find((item) => item.optionId === optionId)
+    const existing = customizations[currentSurface.surfaceId]
+    let nextCustomizations = normalizeCustomizations(catalog, nextSelections, customizations)
+    if (option?.optionId === 'body-cover-custom' && !existing) {
+      nextCustomizations = {
+        ...nextCustomizations,
+        [currentSurface.surfaceId]: {
+          colorHex: '#A61D24',
+          metallic: 0.35,
+          roughness: 0.28,
+          clearCoat: 0.8,
+          orangePeel: 0.15,
+          flakeIntensity: 0.25,
+        },
+      }
+    }
+    setCustomizations(nextCustomizations)
+    setSyncState('idle')
+    setSyncMessage('')
+  }
+
+  const setMaterialVariant = (materialVariantId: string) => {
+    setCustomizations({
+      ...customizations,
+      [currentSurface.surfaceId]: { materialVariantId },
+    })
+    setSyncState('idle')
+    setSyncMessage('')
+  }
+
+  const setPaintParameter = (
+    key: keyof PaintCustomization,
+    value: string | number,
+  ) => {
+    const paint = currentCustomization && !('materialVariantId' in currentCustomization)
+      ? currentCustomization
+      : null
+    if (!paint) return
+    setCustomizations({
+      ...customizations,
+      [currentSurface.surfaceId]: { ...paint, [key]: value },
+    })
     setSyncState('idle')
     setSyncMessage('')
   }
@@ -306,6 +400,7 @@ function Configurator({
         catalogVersion: catalog.catalogVersion,
         vehicleId: catalog.vehicle.vehicleId,
         selections,
+        customizations,
         ...(savedConfiguration && dirty
           ? {
               configurationId: savedConfiguration.configurationId,
@@ -458,7 +553,7 @@ function Configurator({
                   </span>
                   <span className="option-info">
                     <strong>{option.displayName}</strong>
-                    <small>{family?.displayName} · {option.pricing.isStandard ? '标配' : '价格待确认'}</small>
+                    <small>{family?.displayName} · {optionPrice(option)}</small>
                   </span>
                   <span className="check" aria-hidden="true">{selected ? '✓' : ''}</span>
                 </button>
@@ -466,6 +561,83 @@ function Configurator({
             })}
           </div>
         </section>
+
+        {materialVariants.length > 0 && (
+          <section className="material-variants" aria-label="PDF 512 色卡">
+            <div className="section-title">
+              <h3>PDF 512 色卡</h3>
+              <span>{materialVariants.length} 色 · 512 × 512</span>
+            </div>
+            <div className="variant-grid">
+              {materialVariants.map((variant) => {
+                const selected = currentCustomization
+                  && 'materialVariantId' in currentCustomization
+                  && currentCustomization.materialVariantId === variant.variantId
+                return (
+                  <button
+                    key={variant.variantId}
+                    className={selected ? 'selected' : ''}
+                    onClick={() => setMaterialVariant(variant.variantId)}
+                    aria-pressed={selected}
+                    aria-label={`${variant.displayName}${selected ? '，已选择' : ''}`}
+                    title={variant.displayName}
+                  >
+                    <img
+                      src={variant.thumbnailUrl}
+                      alt=""
+                      width="512"
+                      height="512"
+                      loading="lazy"
+                    />
+                    <span>{variant.displayName}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {selectedOption?.optionId === 'body-cover-custom'
+          && currentCustomization
+          && !('materialVariantId' in currentCustomization) && (
+          <section className="paint-editor" aria-label="自定义车漆参数">
+            <div className="section-title">
+              <h3>自定义车漆</h3>
+              <span>¥9,600</span>
+            </div>
+            <label className="color-control">
+              <span>颜色</span>
+              <input
+                aria-label="车漆颜色"
+                type="color"
+                value={currentCustomization.colorHex}
+                onChange={(event) => setPaintParameter('colorHex', event.target.value.toUpperCase())}
+              />
+              <code>{currentCustomization.colorHex}</code>
+            </label>
+            {([
+              ['metallic', '金属度'],
+              ['roughness', '粗糙度'],
+              ['clearCoat', '清漆层'],
+              ['orangePeel', '橘皮纹'],
+              ['flakeIntensity', '金属闪片'],
+            ] as const).map(([key, label]) => (
+              <label className="range-control" key={key}>
+                <span>{label}</span>
+                <input
+                  aria-label={label}
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={currentCustomization[key]}
+                  onChange={(event) => setPaintParameter(key, Number(event.target.value))}
+                />
+                <output>{currentCustomization[key].toFixed(2)}</output>
+              </label>
+            ))}
+          </section>
+        )}
 
         <footer className="summary">
           <div className="canonical">

@@ -2,6 +2,7 @@ import {
   RENDER_VIEW_IDS,
   type CatalogV2,
   type ConfigurationV2,
+  type Customizations,
   type LegacyCatalog,
   type LegacyRender,
   type RenderViewId,
@@ -38,6 +39,7 @@ function isCatalogV2(value: unknown): value is CatalogV2 {
     Array.isArray(data.components) &&
     Array.isArray(data.surfaces) &&
     Array.isArray(data.materialFamilies) &&
+    Array.isArray(data.materialVariants) &&
     Array.isArray(data.options) &&
     data.selectionOrder.every((surfaceId) =>
       data.surfaces?.some((surface) => surface.surfaceId === surfaceId) &&
@@ -99,7 +101,13 @@ function isResolveRenderV2Response(value: unknown): value is ResolveRenderV2Resp
 }
 
 export async function resolveRender(
-  request: { catalogVersion: string; vehicleId: string; selections: Selections; renderViewId?: string },
+  request: {
+    catalogVersion: string
+    vehicleId: string
+    selections: Selections
+    customizations: Customizations
+    renderViewId?: string
+  },
   signal?: AbortSignal,
 ): Promise<ResolveRenderV2Response> {
   const response = await fetch('/api/v2/renders/resolve', {
@@ -130,6 +138,7 @@ function isConfiguration(value: unknown): value is ConfigurationV2 {
     typeof data.renderKey === 'string' &&
     typeof data.revision === 'number' &&
     !!data.selections &&
+    !!data.customizations &&
     !!data.priceResult &&
     data.priceResult.totalPriceMinor === null &&
     data.priceResult.quoteAllowed === false
@@ -181,7 +190,12 @@ export async function saveConfiguration(
 }
 
 function createIdempotencyKey(request: SaveConfigurationRequest): string {
-  const input = `${request.catalogVersion}:${request.vehicleId}:${JSON.stringify(request.selections)}`
+  const input = [
+    request.catalogVersion,
+    request.vehicleId,
+    JSON.stringify(request.selections),
+    JSON.stringify(request.customizations),
+  ].join(':')
   let hash = 2166136261
   for (let index = 0; index < input.length; index += 1) {
     hash ^= input.charCodeAt(index)
