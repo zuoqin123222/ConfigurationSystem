@@ -4,6 +4,7 @@
 #include "ConfiguratorPanel.h"
 #include "ConfiguratorVehicleActor.h"
 #include "ConfigShowroomPlayerController.h"
+#include "PathTracingExperienceSubsystem.h"
 #include "ReversiblePartActuatorComponent.h"
 #include "SmoothWheelControllerComponent.h"
 
@@ -15,6 +16,75 @@
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "UObject/UObjectGlobals.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FPathTracingWarmupPolicyAutomationTest,
+	"ConfigurationSystem.Runtime.Experience.PathTracingWarmupPolicy",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
+bool FPathTracingWarmupPolicyAutomationTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	const uint64 OneGiB = 1024ull * 1024ull * 1024ull;
+	TestFalse(
+		TEXT("不足 6 GiB 独立显存时拒绝 Path Tracing"),
+		FPathTracingWarmupPolicy::HasEnoughVideoMemory(6ull * OneGiB - 1ull));
+	TestTrue(
+		TEXT("6 GiB 边界允许 Path Tracing"),
+		FPathTracingWarmupPolicy::HasEnoughVideoMemory(6ull * OneGiB));
+
+	TestEqual(
+		TEXT("渲染栅栏未完成时保持等待"),
+		FPathTracingWarmupPolicy::AdvanceWaitState(
+			EPathTracingWarmupState::WaitingForRenderFence,
+			false,
+			0,
+			1.0),
+		EPathTracingWarmupState::WaitingForRenderFence);
+	TestEqual(
+		TEXT("渲染栅栏完成后开始观察 PipelineStateCache"),
+		FPathTracingWarmupPolicy::AdvanceWaitState(
+			EPathTracingWarmupState::WaitingForRenderFence,
+			true,
+			0,
+			1.0),
+		EPathTracingWarmupState::WaitingForPipelineCache);
+	TestEqual(
+		TEXT("仍有活跃 PSO 任务时不允许切换"),
+		FPathTracingWarmupPolicy::AdvanceWaitState(
+			EPathTracingWarmupState::WaitingForPipelineCache,
+			true,
+			1,
+			10.0),
+		EPathTracingWarmupState::WaitingForPipelineCache);
+	TestEqual(
+		TEXT("活跃 PSO 任务清零后预热就绪"),
+		FPathTracingWarmupPolicy::AdvanceWaitState(
+			EPathTracingWarmupState::WaitingForPipelineCache,
+			true,
+			0,
+			10.0),
+		EPathTracingWarmupState::Ready);
+	TestEqual(
+		TEXT("达到 90 秒时进入失败态"),
+		FPathTracingWarmupPolicy::AdvanceWaitState(
+			EPathTracingWarmupState::WaitingForPipelineCache,
+			true,
+			1,
+			FPathTracingWarmupPolicy::TimeoutSeconds),
+		EPathTracingWarmupState::Failed);
+	TestFalse(
+		TEXT("未请求 Path Tracing 时预热完成仍保持 Lit"),
+		FPathTracingWarmupPolicy::ShouldApplyPathTracing(
+			EPathTracingWarmupState::Ready,
+			false));
+	TestTrue(
+		TEXT("预热完成且请求仍有效时才切换 Path Tracing"),
+		FPathTracingWarmupPolicy::ShouldApplyPathTracing(
+			EPathTracingWarmupState::Ready,
+			true));
+	return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FWebConfiguratorDirectionAutomationTest,

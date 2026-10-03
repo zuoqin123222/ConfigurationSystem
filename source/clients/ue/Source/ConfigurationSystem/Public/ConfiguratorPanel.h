@@ -83,6 +83,8 @@ private:
 	UFUNCTION()
 	void HandleRenderClicked();
 	UFUNCTION()
+	void HandlePathTracingWarmupStateChanged();
+	UFUNCTION()
 	void HandleResetClicked();
 	UFUNCTION()
 	void HandleFullscreenClicked();

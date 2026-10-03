@@ -4,6 +4,7 @@
 #include "CarConfiguratorSubsystem.h"
 #include "ConfiguratorBrowserWidget.h"
 #include "ConfiguratorWebBridge.h"
+#include "PathTracingExperienceSubsystem.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
@@ -321,6 +322,16 @@ void UConfiguratorPanel::NativeConstruct()
 			&UConfiguratorPanel::ToggleWebConfigurator);
 	}
 	ApplyExpandedState(true, true);
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UPathTracingExperienceSubsystem* PathTracing =
+			GameInstance->GetSubsystem<UPathTracingExperienceSubsystem>())
+		{
+			PathTracing->OnWarmupStateChanged.AddUniqueDynamic(
+				this,
+				&UConfiguratorPanel::HandlePathTracingWarmupStateChanged);
+		}
+	}
 	RefreshExperienceControls();
 }
 
@@ -328,6 +339,16 @@ void UConfiguratorPanel::NativeDestruct()
 {
 	CancelHealthProbe();
 	WebBridge = nullptr;
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UPathTracingExperienceSubsystem* PathTracing =
+			GameInstance->GetSubsystem<UPathTracingExperienceSubsystem>())
+		{
+			PathTracing->OnWarmupStateChanged.RemoveDynamic(
+				this,
+				&UConfiguratorPanel::HandlePathTracingWarmupStateChanged);
+		}
+	}
 	if (ToggleButton != nullptr)
 	{
 		ToggleButton->OnClicked.RemoveDynamic(
@@ -850,6 +871,13 @@ void UConfiguratorPanel::RefreshExperienceControls()
 		&& Controller->GetLightPreset() == TEXT("outdoor");
 	const bool bPathTracing = Controller != nullptr
 		&& Controller->GetRenderMode() == TEXT("path-tracing");
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UPathTracingExperienceSubsystem* PathTracing =
+		IsValid(GameInstance)
+		? GameInstance->GetSubsystem<UPathTracingExperienceSubsystem>()
+		: nullptr;
+	const bool bPathTracingPreparing =
+		IsValid(PathTracing) && PathTracing->IsPreparingPathTracing();
 	const bool bFullscreen = Settings != nullptr
 		&& Settings->GetFullscreenMode() != EWindowMode::Windowed;
 	if (AnimationLabel != nullptr)
@@ -866,7 +894,9 @@ void UConfiguratorPanel::RefreshExperienceControls()
 	}
 	if (RenderLabel != nullptr)
 	{
-		RenderLabel->SetText(bPathTracing
+		RenderLabel->SetText(bPathTracingPreparing
+			? NSLOCTEXT("Configurator", "ExperienceRenderPreparing", "◇\n准备中")
+			: bPathTracing
 			? NSLOCTEXT("Configurator", "ExperienceRenderPathTracing", "◇\n渲染 光追")
 			: NSLOCTEXT("Configurator", "ExperienceRenderRealtime", "◇\n渲染"));
 	}
@@ -889,6 +919,7 @@ void UConfiguratorPanel::RefreshExperienceControls()
 	if (RenderButton != nullptr)
 	{
 		RenderButton->SetBackgroundColor(bPathTracing ? ActiveColor : IdleColor);
+		RenderButton->SetIsEnabled(!bPathTracingPreparing);
 	}
 	if (FullscreenButton != nullptr)
 	{
@@ -956,6 +987,11 @@ void UConfiguratorPanel::HandleRenderClicked()
 	{
 		SetExperienceError(Error.IsEmpty() ? TEXT("渲染模式未能应用。") : Error);
 	}
+	RefreshExperienceControls();
+}
+
+void UConfiguratorPanel::HandlePathTracingWarmupStateChanged()
+{
 	RefreshExperienceControls();
 }
 
