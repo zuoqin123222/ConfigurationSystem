@@ -356,9 +356,14 @@ void AConfiguratorVehicleActor::SetWheelMotion(
 	}
 }
 
+void AConfiguratorVehicleActor::SetWheelAnimationEnabled(const bool bEnabled)
+{
+	SetWheelMotion(0.0f, bEnabled ? 180.0f : 0.0f);
+}
+
 bool AConfiguratorVehicleActor::ToggleWheelSpin()
 {
-	SetWheelMotion(0.0f, bWheelsSpinning ? 0.0f : 180.0f);
+	SetWheelAnimationEnabled(!bWheelsSpinning);
 	return bWheelsSpinning;
 }
 

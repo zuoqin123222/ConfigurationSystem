@@ -40,6 +40,12 @@ public:
 	void SetWheelMotion(float SteeringDegrees, float SpinDegreesPerSecond);
 
 	UFUNCTION(BlueprintCallable, Category = "车辆体验")
+	void SetWheelAnimationEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintPure, Category = "车辆体验")
+	bool IsWheelAnimationEnabled() const { return bWheelsSpinning; }
+
+	UFUNCTION(BlueprintCallable, Category = "车辆体验")
 	bool ToggleWheelSpin();
 
 	/** 自动化探针使用：验证真实几何或代理回退、分区标签及可逆执行器绑定。 */

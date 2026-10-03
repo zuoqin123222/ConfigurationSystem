@@ -95,6 +95,7 @@ async function loadProxy() {
 describe('App v2', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    delete window.ue
     localStorage.clear()
     window.history.replaceState(null, '', '/')
   })
@@ -135,6 +136,8 @@ describe('App v2', () => {
     expect(screen.getByRole('complementary', { name: '车辆选配' })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: '车辆展示区' })).not.toBeInTheDocument()
     expect(screen.queryByRole('group', { name: '车辆视角' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '画质设置' })).not.toBeInTheDocument()
     expect(screen.getByRole('region', { name: '阶段筛选' }))
       .toHaveTextContent('外饰内饰性能个性化')
     expect(screen.getByRole('region', { name: '部件筛选' }))
@@ -147,6 +150,49 @@ describe('App v2', () => {
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/renders/resolve')).toBe(false)
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/renders/resolve')).toBe(false)
     expect(fetchMock.mock.calls.some(([url]) => url === '/health')).toBe(false)
+  })
+
+  it('静态 Web 预览隐藏 UE 专属能力，只保留可用的镜头和全屏', async () => {
+    mockApi()
+    render(<App />)
+
+    await screen.findByRole('heading', { name: 'SC01' })
+    const toolbar = screen.getByRole('navigation', { name: '体验控制' })
+    expect(within(toolbar).getByRole('button', { name: /镜头/ })).toBeInTheDocument()
+    expect(within(toolbar).getByRole('button', { name: /全屏/ })).toBeInTheDocument()
+    expect(within(toolbar).queryByRole('button', { name: /动画/ })).not.toBeInTheDocument()
+    expect(within(toolbar).queryByRole('button', { name: /灯光/ })).not.toBeInTheDocument()
+    expect(within(toolbar).queryByRole('button', { name: /渲染/ })).not.toBeInTheDocument()
+    expect(within(toolbar).queryByRole('button', { name: /复位/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '画质设置' })).not.toBeInTheDocument()
+  })
+
+  it('embedded bridge 仅把 Web 选配 JSON 同步给 UE v2 状态', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    const applyconfigurationjson = vi.fn()
+    window.ue = {
+      uebridge: { applyconfigurationjson },
+    }
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+
+    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await waitFor(() => expect(applyconfigurationjson).toHaveBeenCalled())
+    expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
+    await waitFor(() => {
+      const payload = JSON.parse(String(applyconfigurationjson.mock.lastCall?.[0]))
+      expect(payload).toEqual({
+        schemaVersion: '2.0.0',
+        selections: {
+          ...initialSelections,
+          'exterior-body-cover': 'body-cover-silver',
+        },
+        customizations: {},
+      })
+    })
   })
 
   it('阶段、部件、项目联动，并将材质作为同级分组展示', async () => {
@@ -244,7 +290,8 @@ describe('App v2', () => {
     await screen.findByRole('heading', { name: 'SC01' })
     await loadProxy()
 
-    await user.click(screen.getByRole('button', { name: '侧面' }))
+    await user.click(screen.getByRole('button', { name: /镜头/ }))
+    await user.click(screen.getByRole('menuitemradio', { name: '侧面' }))
     await waitFor(() => {
       expect(fetchMock.mock.calls.filter(([url]) => url === '/api/v2/renders/resolve')).toHaveLength(2)
     })

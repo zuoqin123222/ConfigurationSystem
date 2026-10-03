@@ -2,6 +2,7 @@
 
 #include "ConfiguratorExperienceSaveGame.h"
 #include "ConfiguratorPanel.h"
+#include "ConfiguratorVehicleActor.h"
 #include "ConfigShowroomPlayerController.h"
 #include "ReversiblePartActuatorComponent.h"
 #include "SmoothWheelControllerComponent.h"
@@ -57,6 +58,59 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		TEXT("无已完成请求时不安排退避"),
 		UConfiguratorPanel::GetHealthRetryDelaySeconds(0),
 		0.0f);
+	TestTrue(TEXT("原生画质弹层接受极致画质"), UConfiguratorPanel::IsSupportedQuality(TEXT("epic")));
+	TestFalse(TEXT("原生画质弹层拒绝未知画质"), UConfiguratorPanel::IsSupportedQuality(TEXT("ultra")));
+
+	TMap<FString, FString> Selections;
+	TMap<FString, FSc01V2Customization> Customizations;
+	FString ParseError;
+	const FString ValidConfigurationJson = TEXT(
+		"{\"schemaVersion\":\"2.0.0\","
+		"\"selections\":{\"exterior-body-cover\":\"body-cover-custom\","
+		"\"door-middle\":\"door-middle-leather\"},"
+		"\"customizations\":{"
+		"\"exterior-body-cover\":{\"colorHex\":\"#123456\","
+		"\"metallic\":0.4,\"roughness\":0.2,\"clearCoat\":0.8,"
+		"\"orangePeel\":0.1,\"flakeIntensity\":0.3},"
+		"\"door-middle\":{\"materialVariantId\":\"leather-p10-1217\"}}}");
+	TestTrue(
+		TEXT("白名单 bridge 解析 v2 selection 与两类材质定制"),
+		UConfiguratorPanel::ParseWebConfigurationJson(
+			ValidConfigurationJson,
+			Selections,
+			Customizations,
+			ParseError));
+	TestEqual(
+		TEXT("解析车身 option"),
+		Selections.FindRef(TEXT("exterior-body-cover")),
+		FString(TEXT("body-cover-custom")));
+	TestEqual(
+		TEXT("车漆颜色规范为大写"),
+		Customizations.FindRef(TEXT("exterior-body-cover")).Paint.ColorHex,
+		FString(TEXT("#123456")));
+	TestEqual(
+		TEXT("解析材质 variant"),
+		Customizations.FindRef(TEXT("door-middle")).MaterialVariantId,
+		FString(TEXT("leather-p10-1217")));
+
+	TestFalse(
+		TEXT("bridge 拒绝非白名单根字段"),
+		UConfiguratorPanel::ParseWebConfigurationJson(
+			TEXT("{\"schemaVersion\":\"2.0.0\",\"selections\":{},"
+				"\"customizations\":{},\"setRenderMode\":\"path-tracing\"}"),
+			Selections,
+			Customizations,
+			ParseError));
+	TestFalse(
+		TEXT("bridge 拒绝越界车漆参数"),
+		UConfiguratorPanel::ParseWebConfigurationJson(
+			TEXT("{\"schemaVersion\":\"2.0.0\",\"selections\":{},"
+				"\"customizations\":{\"exterior-body-cover\":{"
+				"\"colorHex\":\"#123456\",\"metallic\":1.1,\"roughness\":0.2,"
+				"\"clearCoat\":0.8,\"orangePeel\":0.1,\"flakeIntensity\":0.3}}}"),
+			Selections,
+			Customizations,
+			ParseError));
 	return true;
 }
 
@@ -290,6 +344,13 @@ bool FSmoothWheelControllerAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("四轮独立 Spin Pivot 均绕已校正轮轴滚动"),
 		!SpinPivots[0]->GetRelativeRotation().Equals(FRotator(0.0, 0.0, 90.0))
 			&& !SpinPivots[3]->GetRelativeRotation().Equals(FRotator(0.0, 0.0, 90.0)));
+
+	AConfiguratorVehicleActor* Vehicle =
+		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+	Vehicle->SetWheelAnimationEnabled(true);
+	TestTrue(TEXT("显式 Set 开启动画并返回真实状态"), Vehicle->IsWheelAnimationEnabled());
+	Vehicle->SetWheelAnimationEnabled(false);
+	TestFalse(TEXT("显式 Set 关闭动画并返回真实状态"), Vehicle->IsWheelAnimationEnabled());
 	return true;
 }
 

@@ -51,6 +51,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Configurator|Camera")
 	bool SwitchCamera(int32 CameraIndex);
 
+	/** 原生体验 UI 的明确 Set 入口；保留 SwitchCamera 兼容既有调用。 */
+	UFUNCTION(BlueprintCallable, Category="Configurator|Camera")
+	bool SetCamera(int32 CameraIndex);
+
 	/** 外部机位围绕 Pivot 按最短方位角弧线插值，供运行时和自动化测试共用。 */
 	static FVector InterpolateOrbitLocation(
 		const FVector& Start,
@@ -102,8 +106,29 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	void ToggleEnvironment();
 
+	UFUNCTION(BlueprintCallable, Category="Configurator|Experience")
+	bool SetAnimationEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintPure, Category="Configurator|Experience")
+	bool IsAnimationEnabled() const;
+
+	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
+	bool SetLightPreset(const FString& Preset);
+
+	UFUNCTION(BlueprintPure, Category="Configurator|Environment")
+	FString GetLightPreset() const;
+
 	UFUNCTION(BlueprintCallable, Category="Configurator|Rendering")
 	bool TogglePathTracing(FString& OutFailureReason);
+
+	UFUNCTION(BlueprintCallable, Category="Configurator|Rendering")
+	bool SetRenderMode(const FString& Mode, FString& OutFailureReason);
+
+	UFUNCTION(BlueprintPure, Category="Configurator|Rendering")
+	FString GetRenderMode() const;
+
+	UFUNCTION(BlueprintCallable, Category="Configurator|Experience")
+	void ResetPresentation();
 
 	UFUNCTION(BlueprintCallable, Category="Configurator|Persistence")
 	bool SaveExperience(FString& OutError);

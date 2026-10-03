@@ -29,6 +29,7 @@ import type {
   RenderViewId,
   Selections,
 } from './types'
+import { applyUeConfiguration, getUeBridge } from './ueBridge'
 
 const CACHE_KEY = 'sc01-v2-configurator'
 const DEFAULT_VIEWS: Array<{ renderViewId: RenderViewId; zhName: string }> = [
@@ -40,6 +41,65 @@ const DEFAULT_VIEWS: Array<{ renderViewId: RenderViewId; zhName: string }> = [
 
 export function isEmbeddedView(search = window.location.search): boolean {
   return new URLSearchParams(search).get('view') === 'embedded'
+}
+
+const STATIC_VIEW_IDS: RenderViewId[] = ['front', 'front-left', 'side', 'rear-right']
+
+function ExperienceControls({
+  activeView,
+  onStaticViewChange,
+}: {
+  activeView: RenderViewId
+  onStaticViewChange: (view: RenderViewId) => void
+}) {
+  const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
+  const [browserFullscreen, setBrowserFullscreen] = useState(Boolean(document.fullscreenElement))
+
+  useEffect(() => {
+    const handleFullscreen = () => setBrowserFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', handleFullscreen)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreen)
+    }
+  }, [])
+
+  const toggleBrowserFullscreen = async () => {
+    if (document.fullscreenElement) await document.exitFullscreen()
+    else await document.documentElement.requestFullscreen()
+  }
+
+  return (
+    <nav className="experience-toolbar" aria-label="体验控制">
+      <div className="toolbar-item">
+        <button
+          aria-expanded={cameraMenuOpen}
+          onClick={() => setCameraMenuOpen((open) => !open)}
+        >
+          <span>◉</span>镜头
+        </button>
+        {cameraMenuOpen && (
+          <div className="control-popover camera-popover" role="menu" aria-label="镜头预设">
+            {DEFAULT_VIEWS.map((view, index) => (
+              <button
+                key={view.renderViewId}
+                role="menuitemradio"
+                aria-checked={STATIC_VIEW_IDS[index] === activeView}
+                onClick={() => onStaticViewChange(STATIC_VIEW_IDS[index])}
+              >
+                {view.zhName}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <button
+        aria-pressed={browserFullscreen}
+        onClick={() => void toggleBrowserFullscreen()}
+      >
+        <span>□</span>全屏
+      </button>
+    </nav>
+  )
 }
 
 function optionPrice(option: CatalogV2['options'][number]): string {
@@ -291,7 +351,6 @@ function Configurator({
       )
     : ''
   const dirty = canonicalKey !== savedKey
-  const views = legacyCatalog?.renderViews.length ? legacyCatalog.renderViews : DEFAULT_VIEWS
   const renderSelectionKey = createRenderCanonicalKey(catalog, selections, customizations)
   const referenceTotal = catalog.vehicle.basePriceMinor + catalog.selectionOrder.reduce(
     (total, id) => {
@@ -378,6 +437,11 @@ function Configurator({
     legacyCatalog,
     renderSelectionKey,
   ])
+
+  useEffect(() => {
+    const bridge = getUeBridge(embedded)
+    if (bridge) applyUeConfiguration(bridge, selections, customizations)
+  }, [customizations, embedded, selections])
 
   const selectOption = (optionId?: string) => {
     const nextSelections = { ...selections }
@@ -523,18 +587,6 @@ function Configurator({
             />
           )}
         </div>
-        <div className="view-switcher" aria-label="车辆视角">
-          {views.map((view) => (
-            <button
-              key={view.renderViewId}
-              className={activeView === view.renderViewId ? 'active' : ''}
-              onClick={() => setActiveView(view.renderViewId)}
-              aria-pressed={activeView === view.renderViewId}
-            >
-              {view.zhName}
-            </button>
-          ))}
-        </div>
         <div className="image-meta">
           <strong>{renderMessage || 'v2 渲染图已就绪'}</strong>
           <code title={renderKey}>renderKey · {renderKey || '解析中'}</code>
@@ -544,7 +596,7 @@ function Configurator({
       <aside className="config-panel" aria-label="车辆选配">
         <div className="panel-head">
           <div>
-            <span className="eyebrow">SC01 动态配置</span>
+            <span className="eyebrow">SC01 / CONFIGURATOR</span>
             <h2>打造你的座驾</h2>
           </div>
           <span className="step">4 阶段顺序选配</span>
@@ -716,6 +768,12 @@ function Configurator({
           </div>
         </footer>
       </aside>
+      {!embedded && (
+        <ExperienceControls
+          activeView={activeView}
+          onStaticViewChange={setActiveView}
+        />
+      )}
     </main>
   )
 }

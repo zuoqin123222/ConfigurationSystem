@@ -362,6 +362,11 @@ bool AConfigShowroomPlayerController::SwitchCamera(const int32 CameraIndex)
 	return true;
 }
 
+bool AConfigShowroomPlayerController::SetCamera(const int32 CameraIndex)
+{
+	return SwitchCamera(CameraIndex);
+}
+
 void AConfigShowroomPlayerController::FinishInteriorExteriorCameraSwitch()
 {
 	if (!ShowroomCameras.IsValidIndex(PendingCameraIndex)
@@ -561,8 +566,66 @@ void AConfigShowroomPlayerController::ToggleEnvironment()
 	}
 }
 
+bool AConfigShowroomPlayerController::SetAnimationEnabled(const bool bEnabled)
+{
+	if (!IsValid(Vehicle))
+	{
+		return false;
+	}
+	Vehicle->SetWheelAnimationEnabled(bEnabled);
+	return Vehicle->IsWheelAnimationEnabled() == bEnabled;
+}
+
+bool AConfigShowroomPlayerController::IsAnimationEnabled() const
+{
+	return IsValid(Vehicle) && Vehicle->IsWheelAnimationEnabled();
+}
+
+bool AConfigShowroomPlayerController::SetLightPreset(const FString& Preset)
+{
+	if (!IsValid(Environment))
+	{
+		return false;
+	}
+	if (Preset == TEXT("studio"))
+	{
+		Environment->SetEnvironmentIndex(0);
+	}
+	else if (Preset == TEXT("outdoor"))
+	{
+		Environment->SetEnvironmentIndex(1);
+	}
+	else
+	{
+		return false;
+	}
+	FString IgnoredSaveError;
+	SaveExperience(IgnoredSaveError);
+	return GetLightPreset() == Preset;
+}
+
+FString AConfigShowroomPlayerController::GetLightPreset() const
+{
+	return GetCurrentEnvironmentIndex() == 1 ? TEXT("outdoor") : TEXT("studio");
+}
+
 bool AConfigShowroomPlayerController::TogglePathTracing(FString& OutFailureReason)
 {
+	return SetRenderMode(
+		GetRenderMode() == TEXT("path-tracing") ? TEXT("realtime") : TEXT("path-tracing"),
+		OutFailureReason);
+}
+
+bool AConfigShowroomPlayerController::SetRenderMode(
+	const FString& Mode,
+	FString& OutFailureReason)
+{
+	const bool bEnablePathTracing = Mode == TEXT("path-tracing");
+	if (!bEnablePathTracing && Mode != TEXT("realtime"))
+	{
+		OutFailureReason = TEXT("不支持的渲染模式。");
+		return false;
+	}
 	UGameInstance* GameInstance = GetGameInstance();
 	if (!IsValid(GameInstance))
 	{
@@ -571,13 +634,33 @@ bool AConfigShowroomPlayerController::TogglePathTracing(FString& OutFailureReaso
 	}
 	UPathTracingExperienceSubsystem* PathTracing =
 		GameInstance->GetSubsystem<UPathTracingExperienceSubsystem>();
-	if (IsValid(PathTracing) && !PathTracing->IsPathTracingEnabled() && IsValid(Vehicle))
+	if (IsValid(PathTracing) && bEnablePathTracing && IsValid(Vehicle))
 	{
 		// 持续运动会让 Path Tracing 每帧清空累积；产品模式进入前先平滑停轮。
-		Vehicle->SetWheelMotion(0.0f, 0.0f);
+		Vehicle->SetWheelAnimationEnabled(false);
 	}
 	return IsValid(PathTracing)
-		&& PathTracing->SetPathTracingEnabled(!PathTracing->IsPathTracingEnabled(), OutFailureReason);
+		&& PathTracing->SetPathTracingEnabled(bEnablePathTracing, OutFailureReason);
+}
+
+FString AConfigShowroomPlayerController::GetRenderMode() const
+{
+	const UGameInstance* GameInstance = GetGameInstance();
+	const UPathTracingExperienceSubsystem* PathTracing = IsValid(GameInstance)
+		? GameInstance->GetSubsystem<UPathTracingExperienceSubsystem>()
+		: nullptr;
+	return IsValid(PathTracing) && PathTracing->IsPathTracingEnabled()
+		? TEXT("path-tracing")
+		: TEXT("realtime");
+}
+
+void AConfigShowroomPlayerController::ResetPresentation()
+{
+	SwitchCamera(0);
+	SetAnimationEnabled(false);
+	SetLightPreset(TEXT("studio"));
+	FString IgnoredFailureReason;
+	SetRenderMode(TEXT("realtime"), IgnoredFailureReason);
 }
 
 bool AConfigShowroomPlayerController::SaveExperience(FString& OutError)

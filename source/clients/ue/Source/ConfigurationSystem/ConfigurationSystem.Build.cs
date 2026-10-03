@@ -22,6 +22,7 @@ public class ConfigurationSystem : ModuleRules
 				"SlateCore",
 				// 右侧选配面板由 UE5.8 WebBrowserWidget 内嵌承载。
 				"WebBrowserWidget",
+				"WebBrowser",
 				// 内嵌浏览器加载前异步探测同源 /health。
 				"HTTP",
 				// Runtime Path Tracing 探针只依赖公开的 RHI/RenderCore 接口。
