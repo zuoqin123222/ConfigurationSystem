@@ -16,6 +16,18 @@
 html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
 button { font: inherit; }
 button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.ue-color-filter {
+  position: fixed;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ue-color-corrected {
+  width: 100%;
+  min-height: 100vh;
+  filter: url("#ue-srgb-to-linear");
+}
 
 .app-shell { min-height: 100vh; background: #fff; }
 .stage {

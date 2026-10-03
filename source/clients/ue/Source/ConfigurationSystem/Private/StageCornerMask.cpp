@@ -1,11 +1,15 @@
 #include "StageCornerMask.h"
 
+#include "Framework/Application/SlateApplication.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/SLeafWidget.h"
 
 namespace
 {
+	constexpr int32 ArcSegmentCount = 48;
+	constexpr float FeatherWidth = 1.25f;
+
 	class SStageCornerMask final : public SLeafWidget
 	{
 	public:
@@ -43,47 +47,167 @@ namespace
 			(void)MyCullingRect;
 			(void)InWidgetStyle;
 			(void)bParentEnabled;
-			const int32 StripeCount = FMath::CeilToInt(Radius);
-			const bool bRight = Corner == EStageCorner::TopRight
-				|| Corner == EStageCorner::BottomRight;
-			const bool bBottom = Corner == EStageCorner::BottomLeft
-				|| Corner == EStageCorner::BottomRight;
+
 			const FSlateBrush* WhiteBrush =
 				FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
-
-			for (int32 Stripe = 0; Stripe < StripeCount; ++Stripe)
+			const FSlateResourceHandle ResourceHandle =
+				FSlateApplication::Get().GetRenderer()->GetResourceHandle(*WhiteBrush);
+			const FSlateRenderTransform RenderTransform =
+				AllottedGeometry.GetAccumulatedRenderTransform();
+			const FVector2f OuterCorner = GetOuterCorner();
+			const FVector2f CircleCenter = FVector2f(Radius, Radius) - OuterCorner;
+			const FVector2f FirstArcPoint = GetFirstArcPoint();
+			const FVector2f LastArcPoint = GetLastArcPoint();
+			const float StartAngle = FMath::Atan2(
+				FirstArcPoint.Y - CircleCenter.Y,
+				FirstArcPoint.X - CircleCenter.X);
+			float EndAngle = FMath::Atan2(
+				LastArcPoint.Y - CircleCenter.Y,
+				LastArcPoint.X - CircleCenter.X);
+			while (EndAngle < StartAngle)
 			{
-				const float SampleY = FMath::Min(
-					Radius,
-					static_cast<float>(Stripe) + 0.5f);
-				const float Delta = SampleY - Radius;
-				const float Boundary = Radius - FMath::Sqrt(
-					FMath::Max(0.0f, Radius * Radius - Delta * Delta));
-				const float MaskWidth = FMath::Min(
-					Radius,
-					FMath::CeilToFloat(Boundary) + 0.75f);
-				if (MaskWidth <= 0.0f)
-				{
-					continue;
-				}
-				const float X = bRight ? Radius - MaskWidth : 0.0f;
-				const float Y = bBottom
-					? Radius - static_cast<float>(Stripe) - 1.05f
-					: static_cast<float>(Stripe);
-				FSlateDrawElement::MakeBox(
-					OutDrawElements,
-					LayerId,
-					AllottedGeometry.ToPaintGeometry(
-						FVector2f(MaskWidth, 1.1f),
-						FSlateLayoutTransform(FVector2f(X, Y))),
-					WhiteBrush,
-					ESlateDrawEffect::None,
-					FLinearColor::White);
+				EndAngle += 2.0f * PI;
 			}
+			if (EndAngle - StartAngle > PI)
+			{
+				EndAngle -= 2.0f * PI;
+			}
+
+			TArray<FSlateVertex> Vertices;
+			TArray<SlateIndex> Indices;
+			Vertices.Reserve(1 + (ArcSegmentCount + 1) * 3);
+			Indices.Reserve(ArcSegmentCount * 9);
+			AddVertex(
+				Vertices,
+				RenderTransform,
+				OuterCorner,
+				FColor::White);
+
+			const float SolidRadius = Radius + FeatherWidth;
+			const float TransparentRadius = FMath::Max(
+				0.0f,
+				Radius - FeatherWidth);
+			for (int32 Segment = 0; Segment <= ArcSegmentCount; ++Segment)
+			{
+				const float Alpha =
+					static_cast<float>(Segment) / ArcSegmentCount;
+				const float Angle = FMath::Lerp(StartAngle, EndAngle, Alpha);
+				const FVector2f Direction(
+					FMath::Cos(Angle),
+					FMath::Sin(Angle));
+				const FVector2f SolidPoint = ClampToMask(
+					CircleCenter + Direction * SolidRadius);
+				const FVector2f TransparentPoint =
+					CircleCenter + Direction * TransparentRadius;
+				AddVertex(
+					Vertices,
+					RenderTransform,
+					SolidPoint,
+					FColor::White);
+				AddVertex(
+					Vertices,
+					RenderTransform,
+					TransparentPoint,
+					FColor::Transparent);
+			}
+
+			for (int32 Segment = 0; Segment < ArcSegmentCount; ++Segment)
+			{
+				const SlateIndex SolidA =
+					static_cast<SlateIndex>(1 + Segment * 2);
+				const SlateIndex TransparentA = SolidA + 1;
+				const SlateIndex SolidB = SolidA + 2;
+				const SlateIndex TransparentB = SolidA + 3;
+				Indices.Append({0, SolidA, SolidB});
+				Indices.Append({
+					SolidA,
+					TransparentA,
+					TransparentB,
+					SolidA,
+					TransparentB,
+					SolidB});
+			}
+
+			FSlateDrawElement::MakeCustomVerts(
+				OutDrawElements,
+				LayerId,
+				ResourceHandle,
+				Vertices,
+				Indices,
+				nullptr,
+				0,
+				0,
+				ESlateDrawEffect::PreMultipliedAlpha);
 			return LayerId;
 		}
 
 	private:
+		static void AddVertex(
+			TArray<FSlateVertex>& Vertices,
+			const FSlateRenderTransform& RenderTransform,
+			const FVector2f Position,
+			const FColor Color)
+		{
+			Vertices.Add(
+				FSlateVertex::Make<ESlateVertexRounding::Disabled>(
+					RenderTransform,
+					Position,
+					FVector2f::ZeroVector,
+					Color));
+		}
+
+		FVector2f ClampToMask(const FVector2f Point) const
+		{
+			return FVector2f(
+				FMath::Clamp(Point.X, 0.0f, Radius),
+				FMath::Clamp(Point.Y, 0.0f, Radius));
+		}
+
+		FVector2f GetOuterCorner() const
+		{
+			switch (Corner)
+			{
+			case EStageCorner::TopRight:
+				return FVector2f(Radius, 0.0f);
+			case EStageCorner::BottomLeft:
+				return FVector2f(0.0f, Radius);
+			case EStageCorner::BottomRight:
+				return FVector2f(Radius, Radius);
+			default:
+				return FVector2f::ZeroVector;
+			}
+		}
+
+		FVector2f GetFirstArcPoint() const
+		{
+			switch (Corner)
+			{
+			case EStageCorner::TopRight:
+				return FVector2f(0.0f, 0.0f);
+			case EStageCorner::BottomLeft:
+				return FVector2f(0.0f, 0.0f);
+			case EStageCorner::BottomRight:
+				return FVector2f(Radius, 0.0f);
+			default:
+				return FVector2f(Radius, 0.0f);
+			}
+		}
+
+		FVector2f GetLastArcPoint() const
+		{
+			switch (Corner)
+			{
+			case EStageCorner::TopRight:
+				return FVector2f(Radius, Radius);
+			case EStageCorner::BottomLeft:
+				return FVector2f(Radius, Radius);
+			case EStageCorner::BottomRight:
+				return FVector2f(0.0f, Radius);
+			default:
+				return FVector2f(0.0f, Radius);
+			}
+		}
+
 		EStageCorner Corner = EStageCorner::TopLeft;
 		float Radius = 24.0f;
 	};

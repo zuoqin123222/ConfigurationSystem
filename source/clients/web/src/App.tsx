@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ApiError,
   fetchCatalog,
@@ -47,6 +47,12 @@ import {
 import ExperienceControls from './ExperienceControls'
 
 const CACHE_KEY = 'sc01-v2-configurator'
+const SRGB_TO_LINEAR_TABLE = Array.from({ length: 256 }, (_, index) => {
+  const value = index / 255
+  return value <= 0.04045
+    ? value / 12.92
+    : Math.pow((value + 0.055) / 1.055, 2.4)
+}).join(' ')
 
 export function isEmbeddedView(search = window.location.search): boolean {
   return new URLSearchParams(search).get('view') === 'embedded'
@@ -107,12 +113,34 @@ function readCachedDraft(): CachedDraft | null {
 export default function App() {
   const view = getAppView()
   if (view === 'controls') {
-    return <ExperienceControls ueEnabled />
+    return <UeColorCorrected><ExperienceControls ueEnabled /></UeColorCorrected>
   }
   if (view === 'header') {
-    return <ConfiguratorHeader />
+    return <UeColorCorrected><ConfiguratorHeader /></UeColorCorrected>
   }
-  return <ConfiguratorApp embedded={view === 'embedded'} />
+  if (view === 'embedded') {
+    return <UeColorCorrected><ConfiguratorApp embedded /></UeColorCorrected>
+  }
+  return <ConfiguratorApp embedded={false} />
+}
+
+function UeColorCorrected({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <svg className="ue-color-filter" aria-hidden="true">
+        <defs>
+          <filter id="ue-srgb-to-linear" colorInterpolationFilters="sRGB">
+            <feComponentTransfer>
+              <feFuncR type="table" tableValues={SRGB_TO_LINEAR_TABLE} />
+              <feFuncG type="table" tableValues={SRGB_TO_LINEAR_TABLE} />
+              <feFuncB type="table" tableValues={SRGB_TO_LINEAR_TABLE} />
+            </feComponentTransfer>
+          </filter>
+        </defs>
+      </svg>
+      <div className="ue-color-corrected">{children}</div>
+    </>
+  )
 }
 
 function ConfiguratorHeader() {
