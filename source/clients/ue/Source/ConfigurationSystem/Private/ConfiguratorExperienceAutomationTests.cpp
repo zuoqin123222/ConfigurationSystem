@@ -2,6 +2,7 @@
 
 #include "ConfiguratorExperienceSaveGame.h"
 #include "ConfiguratorPanel.h"
+#include "ConfiguratorWebBridge.h"
 #include "ConfiguratorVehicleActor.h"
 #include "ConfigShowroomPlayerController.h"
 #include "ReversiblePartActuatorComponent.h"
@@ -29,6 +30,12 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		|| Url.StartsWith(TEXT("https://")));
 	TestTrue(TEXT("UE 入口包含 source=ue"), Url.Contains(TEXT("source=ue")));
 	TestTrue(TEXT("UE 入口启用 embedded 视图"), Url.Contains(TEXT("view=embedded")));
+	const FString ControlsUrl = UConfiguratorPanel::GetControlsWebUrl();
+	TestTrue(TEXT("控制层使用独立 controls 视图"), ControlsUrl.Contains(TEXT("view=controls")));
+	TestFalse(TEXT("控制层不加载选配 embedded 视图"), ControlsUrl.Contains(TEXT("view=embedded")));
+	const FString HeaderUrl = UConfiguratorPanel::GetHeaderWebUrl();
+	TestTrue(TEXT("顶部栏使用独立 header 视图"), HeaderUrl.Contains(TEXT("view=header")));
+	TestFalse(TEXT("顶部栏不加载选配 embedded 视图"), HeaderUrl.Contains(TEXT("view=embedded")));
 	TestEqual(
 		TEXT("健康检查使用网页 URL 的同一 scheme 与 authority"),
 		UConfiguratorPanel::BuildHealthUrl(
@@ -61,8 +68,60 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		TEXT("无已完成请求时不安排退避"),
 		UConfiguratorPanel::GetHealthRetryDelaySeconds(0),
 		0.0f);
-	TestTrue(TEXT("原生画质弹层接受极致画质"), UConfiguratorPanel::IsSupportedQuality(TEXT("epic")));
-	TestFalse(TEXT("原生画质弹层拒绝未知画质"), UConfiguratorPanel::IsSupportedQuality(TEXT("ultra")));
+	TestTrue(TEXT("bridge 接受六个固定镜头中的最后一个"),
+		UConfiguratorWebBridge::IsSupportedCameraIndex(5));
+	TestFalse(TEXT("bridge 拒绝越界镜头"),
+		UConfiguratorWebBridge::IsSupportedCameraIndex(6));
+	TestTrue(TEXT("bridge 接受户外灯光白名单"),
+		UConfiguratorWebBridge::IsSupportedLightPreset(TEXT("outdoor")));
+	TestFalse(TEXT("bridge 拒绝未知灯光预设"),
+		UConfiguratorWebBridge::IsSupportedLightPreset(TEXT("night")));
+	TestTrue(TEXT("bridge 接受光追渲染白名单"),
+		UConfiguratorWebBridge::IsSupportedRenderMode(TEXT("path-tracing")));
+	TestFalse(TEXT("bridge 拒绝任意渲染命令"),
+		UConfiguratorWebBridge::IsSupportedRenderMode(TEXT("r.HighResScreenshot")));
+	TestTrue(TEXT("bridge 接受 Web 画质极高白名单"),
+		UConfiguratorWebBridge::IsSupportedQualityLevel(TEXT("epic")));
+	TestFalse(TEXT("bridge 拒绝任意 scalability 命令"),
+		UConfiguratorWebBridge::IsSupportedQualityLevel(TEXT("sg.ViewDistanceQuality 0")));
+	TestTrue(TEXT("bridge 接受固定选配阶段"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("interior")));
+	TestFalse(TEXT("bridge 拒绝任意选配阶段"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("admin")));
+	TestTrue(TEXT("bridge 接受 Header 保存动作"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("save")));
+	TestTrue(TEXT("bridge 接受 Header 分享动作"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("share")));
+	TestFalse(TEXT("bridge 拒绝 Header 调试动作"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("debug")));
+	FString HeaderStateError;
+	TestTrue(
+		TEXT("bridge 接受完整的 Header 白名单状态"),
+		UConfiguratorPanel::IsValidConfiguratorHeaderStateJson(
+			TEXT("{\"categoryId\":\"interior\","
+				"\"referenceTotalMinor\":23940000,"
+				"\"syncState\":\"saved\","
+				"\"syncMessage\":\"已同步\","
+				"\"dirty\":false,\"online\":true}"),
+			HeaderStateError));
+	TestFalse(
+		TEXT("bridge 拒绝 Header 状态中的额外 debug 字段"),
+		UConfiguratorPanel::IsValidConfiguratorHeaderStateJson(
+			TEXT("{\"categoryId\":\"interior\","
+				"\"referenceTotalMinor\":23940000,"
+				"\"syncState\":\"saved\","
+				"\"syncMessage\":\"已同步\","
+				"\"dirty\":false,\"online\":true,\"debug\":true}"),
+			HeaderStateError));
+	TestFalse(
+		TEXT("bridge 拒绝 Header 状态中的负总价"),
+		UConfiguratorPanel::IsValidConfiguratorHeaderStateJson(
+			TEXT("{\"categoryId\":\"interior\","
+				"\"referenceTotalMinor\":-1,"
+				"\"syncState\":\"saved\","
+				"\"syncMessage\":\"已同步\","
+				"\"dirty\":false,\"online\":true}"),
+			HeaderStateError));
 
 	TMap<FString, FString> Selections;
 	TMap<FString, FSc01V2Customization> Customizations;

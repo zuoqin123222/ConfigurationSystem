@@ -100,14 +100,13 @@ describe('App v2', () => {
     window.history.replaceState(null, '', '/')
   })
 
-  it('加载四阶段目录并展示基础价参考总价和 v1 代理图提示', async () => {
+  it('加载四阶段目录并展示 v1 代理图提示', async () => {
     mockApi()
     render(<App />)
 
     expect(screen.getByText('正在加载 SC01 草案目录…')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'SC01' })).toBeInTheDocument()
     expect(screen.getByText('DRAFT · 不可报价')).toBeInTheDocument()
-    expect(screen.getByText('¥229,800')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '阶段筛选' }))
       .toHaveTextContent('外饰内饰性能个性化')
     expect(screen.getByRole('region', { name: '部件筛选' }))
@@ -152,19 +151,98 @@ describe('App v2', () => {
     expect(fetchMock.mock.calls.some(([url]) => url === '/health')).toBe(false)
   })
 
-  it('静态 Web 预览隐藏 UE 专属能力，只保留可用的镜头和全屏', async () => {
+  it('普通 Web 页面不挂载只供 UE 使用的体验控制层', async () => {
     mockApi()
     render(<App />)
 
     await screen.findByRole('heading', { name: 'SC01' })
-    const toolbar = screen.getByRole('navigation', { name: '体验控制' })
-    expect(within(toolbar).getByRole('button', { name: /镜头/ })).toBeInTheDocument()
-    expect(within(toolbar).getByRole('button', { name: /全屏/ })).toBeInTheDocument()
-    expect(within(toolbar).queryByRole('button', { name: /动画/ })).not.toBeInTheDocument()
-    expect(within(toolbar).queryByRole('button', { name: /灯光/ })).not.toBeInTheDocument()
-    expect(within(toolbar).queryByRole('button', { name: /渲染/ })).not.toBeInTheDocument()
-    expect(within(toolbar).queryByRole('button', { name: /复位/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '画质设置' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
+  })
+
+  it('controls 视图只渲染透明体验控制层且不请求目录', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=controls')
+    const fetchMock = mockApi()
+    window.ue = {
+      uebridge: {
+        getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
+          cameraIndex: 1,
+          animationEnabled: false,
+          lightPreset: 'studio',
+          renderMode: 'realtime',
+          quality: 'high',
+          fullscreen: false,
+        })),
+        setcamera: vi.fn().mockResolvedValue(true),
+        setanimationenabled: vi.fn().mockResolvedValue(true),
+        setlightpreset: vi.fn().mockResolvedValue(true),
+        setrendermode: vi.fn().mockResolvedValue(true),
+        setqualitylevel: vi.fn().mockResolvedValue(true),
+        resetpresentation: vi.fn().mockResolvedValue(true),
+        setfullscreen: vi.fn().mockResolvedValue(true),
+      },
+    }
+    render(<App />)
+
+    expect(screen.getByRole('navigation', { name: '体验控制' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '画质' })).toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: '车辆选配' })).not.toBeInTheDocument()
+    expect(document.body).toHaveClass('controls-document')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('header 视图展示顶部标题和四阶段，并通过受限 bridge 联动右栏', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=header')
+    const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
+    const triggerconfiguratorheaderaction = vi.fn().mockResolvedValue(true)
+    window.ue = {
+      uebridge: { setconfiguratorcategory, triggerconfiguratorheaderaction },
+    }
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: '打造你的座驾' })).toBeInTheDocument()
+    const stages = screen.getByRole('navigation', { name: '选配阶段' })
+    expect(within(stages).getAllByRole('button')).toHaveLength(4)
+    expect(stages.querySelectorAll('.header-stage-separator')).toHaveLength(3)
+
+    fireEvent(window, new CustomEvent('ue-configurator-header-state', {
+      detail: {
+        categoryId: 'exterior',
+        referenceTotalMinor: 23940000,
+        syncState: 'idle',
+        syncMessage: '',
+        dirty: true,
+        online: true,
+      },
+    }))
+    expect(screen.getByText('¥239,400')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '保存' }))
+    await user.click(screen.getByRole('button', { name: '分享' }))
+    expect(triggerconfiguratorheaderaction.mock.calls).toEqual([['save'], ['share']])
+
+    const interior = within(stages).getByRole('button', { name: /内饰/ })
+    await user.click(interior)
+    expect(setconfiguratorcategory).toHaveBeenCalledWith('interior')
+    expect(interior).toHaveAttribute('aria-current', 'step')
+    expect(document.body).toHaveClass('header-document')
+  })
+
+  it('embedded 右栏响应顶部阶段事件，且不再包含保存栏、汇总和 canonical 调试信息', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    mockApi()
+    render(<App />)
+    const panel = await screen.findByRole('complementary', { name: '车辆选配' })
+
+    fireEvent(window, new CustomEvent('ue-configurator-category', { detail: 'interior' }))
+
+    expect(await within(screen.getByRole('region', { name: '部件筛选' }))
+      .findByRole('button', { name: '方向盘' })).toBeInTheDocument()
+    const scrollRegion = panel.querySelector('.panel-scroll')
+    const summary = panel.querySelector('.summary')
+    expect(scrollRegion).not.toBeNull()
+    expect(summary).toBeNull()
+    expect(panel.querySelector('.save-bar')).toBeNull()
+    expect(panel.querySelector('.canonical')).toBeNull()
   })
 
   it('embedded bridge 仅把 Web 选配 JSON 同步给 UE v2 状态', async () => {
@@ -210,7 +288,8 @@ describe('App v2', () => {
     expect(screen.getByRole('region', { name: '镁合金材质组' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /镁合金.*价格待确认/ }))
-    expect(screen.getByText(/wheel-material=wheel-magnesium-alloy/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /镁合金.*价格待确认/ }))
+      .toHaveAttribute('aria-pressed', 'true')
 
     await user.click(within(screen.getByRole('region', { name: '阶段筛选' }))
       .getByRole('button', { name: '内饰' }))
@@ -219,8 +298,8 @@ describe('App v2', () => {
     expect(await screen.findByText('Ultrasuede（黑）')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Ultrasuede PDF 色卡' })).toHaveTextContent('SF4')
     await user.click(screen.getByRole('button', { name: /SF4，PDF 色卡定制，¥1,180/ }))
-    expect(screen.getByText(/steering-wheel-skin=steering-skin-ultrasuede-custom/))
-      .toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /SF4，PDF 色卡定制/ }))
+      .toHaveAttribute('aria-pressed', 'true')
   })
 
   it('不为未声明 variant 色彩能力的付费材质选项展示色卡', async () => {
@@ -253,15 +332,17 @@ describe('App v2', () => {
     await user.click(within(screen.getByRole('region', { name: '真皮用户定制 PDF 色卡' }))
       .getByRole('button', { name: /1217，PDF 色卡定制/ }))
 
-    expect(screen.getByText(/steering-wheel-skin=steering-skin-leather-user/))
-      .toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: '真皮用户定制 PDF 色卡' }))
+      .getByRole('button', { name: /1217，PDF 色卡定制/ }))
+      .toHaveAttribute('aria-pressed', 'true')
   })
 
   it('自定义车漆显示调色盘和受限参数，并随配置保存', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const user = userEvent.setup()
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: 'SC01' })
+    await screen.findByRole('heading', { name: '打造你的座驾' })
 
     expect(screen.getByRole('button', { name: /红色.*免费/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /银色.*免费/ })).toBeInTheDocument()
@@ -274,7 +355,7 @@ describe('App v2', () => {
     fireEvent.change(within(editor).getByLabelText('车漆颜色'), {
       target: { value: '#123456' },
     })
-    await user.click(screen.getByRole('button', { name: '保存配置' }))
+    fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'save' }))
     await waitFor(() => {
       const saveCall = fetchMock.mock.calls.find(([url]) => url === '/api/v2/configurations')
       expect(saveCall).toBeDefined()
@@ -283,58 +364,66 @@ describe('App v2', () => {
     })
   })
 
-  it('视角变化会刷新对应代理图，配置中非渲染变化不会触发无意义替换', async () => {
+  it('渲染相关配置变化会刷新代理图并保留上一张直到新图就绪', async () => {
     const user = userEvent.setup()
     const fetchMock = mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01' })
     await loadProxy()
 
-    await user.click(screen.getByRole('button', { name: /镜头/ }))
-    await user.click(screen.getByRole('menuitemradio', { name: '侧面' }))
+    await user.click(screen.getByRole('button', { name: /银色/ }))
     await waitFor(() => {
       expect(fetchMock.mock.calls.filter(([url]) => url === '/api/v2/renders/resolve')).toHaveLength(2)
+      expect(document.querySelector('.vehicle-image-preload')).not.toBeNull()
     })
-    const viewPreload = document.querySelector('.vehicle-image-preload')
-    expect(viewPreload).not.toBeNull()
-    fireEvent.load(viewPreload!)
-    expect(screen.getByAltText('SC01 代理车辆')).toHaveAttribute('src', '/assets/renders/v1-proxy.png')
-    expect(screen.getByText('v2 暂无渲染图，当前保留 v1 代理图')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: /银色/ }))
-    await waitFor(() => expect(document.querySelector('.vehicle-image-preload')).not.toBeNull())
     expect(screen.getByAltText('SC01 代理车辆')).toBeInTheDocument()
   })
 
   it('保存配置并生成可分享链接', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const user = userEvent.setup()
     const writeText = vi.fn().mockResolvedValue(undefined)
+    const setconfiguratorheaderstatejson = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { setconfiguratorheaderstatejson } }
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: 'SC01' })
+    await screen.findByRole('heading', { name: '打造你的座驾' })
 
     await user.click(screen.getByRole('button', { name: /银色/ }))
-    await user.click(screen.getByRole('button', { name: '保存配置' }))
-    expect(await screen.findByText('已同步 · revision 1')).toBeInTheDocument()
+    fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'save' }))
+    await waitFor(() => {
+      const state = JSON.parse(String(setconfiguratorheaderstatejson.mock.lastCall?.[0]))
+      expect(state.syncMessage).toBe('已同步 · revision 1')
+      expect(state.dirty).toBe(false)
+    })
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(true)
 
-    await user.click(screen.getByRole('button', { name: '分享配置' }))
-    expect(await screen.findByText('分享链接已复制')).toBeInTheDocument()
-    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('configuration=cfg-body-cover-silver'))
+    fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'share' }))
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining('configuration=cfg-body-cover-silver'),
+      )
+    })
   })
 
   it('离线时显示本地草稿状态并阻止远端保存', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const user = userEvent.setup()
+    const setconfiguratorheaderstatejson = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { setconfiguratorheaderstatejson } }
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: 'SC01' })
+    await screen.findByRole('heading', { name: '打造你的座驾' })
     fireEvent(window, new Event('offline'))
 
-    expect(await screen.findByText('离线 · 本地草稿')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /银色/ }))
-    await user.click(screen.getByRole('button', { name: '保存配置' }))
-    expect(screen.getByText('当前离线，草稿已保存在本机，联网后可同步')).toBeInTheDocument()
+    fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'save' }))
+    await waitFor(() => {
+      const state = JSON.parse(String(setconfiguratorheaderstatejson.mock.lastCall?.[0]))
+      expect(state.online).toBe(false)
+      expect(state.syncMessage).toBe('当前离线，草稿已保存在本机，联网后可同步')
+    })
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(false)
   })
 })

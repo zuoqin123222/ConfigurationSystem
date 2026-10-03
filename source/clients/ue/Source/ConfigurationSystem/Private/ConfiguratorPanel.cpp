@@ -4,17 +4,11 @@
 #include "CarConfiguratorSubsystem.h"
 #include "ConfiguratorBrowserWidget.h"
 #include "ConfiguratorWebBridge.h"
+#include "StageCornerMask.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
-#include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
-#include "Components/HorizontalBox.h"
-#include "Components/HorizontalBoxSlot.h"
-#include "Components/SizeBox.h"
-#include "Components/TextBlock.h"
-#include "Components/VerticalBox.h"
-#include "Components/VerticalBoxSlot.h"
 #include "Dom/JsonObject.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
@@ -26,7 +20,8 @@
 #include "Misc/ConfigCacheIni.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
-#include "Styling/CoreStyle.h"
+#include "Serialization/JsonWriter.h"
+#include "Styling/SlateBrush.h"
 #include "TimerManager.h"
 
 namespace
@@ -34,7 +29,12 @@ namespace
 	const TCHAR* WebConfiguratorSection = TEXT("ConfigurationSystem.WebConfigurator");
 	const TCHAR* DefaultWebConfiguratorEndpoint = TEXT("127.0.0.1:8080");
 	constexpr float ExpandedPanelWidth = 480.0f;
-	constexpr float ToggleWidth = 34.0f;
+	constexpr float HeaderHeight = 76.0f;
+	constexpr float StageMargin = 18.0f;
+	constexpr float StageCornerRadius = 24.0f;
+	constexpr float ControlsLayerWidth = 620.0f;
+	constexpr float ControlsLayerHeight = 190.0f;
+	constexpr float ControlsBottomInset = 32.0f;
 	constexpr float HealthRequestTimeoutSeconds = 3.0f;
 	constexpr int32 MaxBridgeJsonCharacters = 65536;
 
@@ -108,6 +108,20 @@ FString UConfiguratorPanel::GetConfiguredWebUrl()
 		*Endpoint);
 }
 
+FString UConfiguratorPanel::GetControlsWebUrl()
+{
+	FString Url = GetConfiguredWebUrl();
+	Url.ReplaceInline(TEXT("view=embedded"), TEXT("view=controls"));
+	return Url;
+}
+
+FString UConfiguratorPanel::GetHeaderWebUrl()
+{
+	FString Url = GetConfiguredWebUrl();
+	Url.ReplaceInline(TEXT("view=embedded"), TEXT("view=header"));
+	return Url;
+}
+
 FString UConfiguratorPanel::BuildHealthUrl(const FString& WebUrl)
 {
 	FString TrimmedUrl = WebUrl;
@@ -151,14 +165,6 @@ float UConfiguratorPanel::GetHealthRetryDelaySeconds(
 		return 0.0f;
 	}
 	return static_cast<float>(1 << (CompletedAttemptCount - 1));
-}
-
-bool UConfiguratorPanel::IsSupportedQuality(const FString& Quality)
-{
-	return Quality == TEXT("low")
-		|| Quality == TEXT("medium")
-		|| Quality == TEXT("high")
-		|| Quality == TEXT("epic");
 }
 
 bool UConfiguratorPanel::ParseWebConfigurationJson(
@@ -314,26 +320,13 @@ TSharedRef<SWidget> UConfiguratorPanel::RebuildWidget()
 void UConfiguratorPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
-	if (ToggleButton != nullptr)
-	{
-		ToggleButton->OnClicked.AddUniqueDynamic(
-			this,
-			&UConfiguratorPanel::ToggleWebConfigurator);
-	}
-	ApplyExpandedState(true, true);
-	RefreshExperienceControls();
+	StartHealthProbe();
 }
 
 void UConfiguratorPanel::NativeDestruct()
 {
 	CancelHealthProbe();
 	WebBridge = nullptr;
-	if (ToggleButton != nullptr)
-	{
-		ToggleButton->OnClicked.RemoveDynamic(
-			this,
-			&UConfiguratorPanel::ToggleWebConfigurator);
-	}
 	Super::NativeDestruct();
 }
 
@@ -342,286 +335,159 @@ void UConfiguratorPanel::BuildWidgetTree()
 	UCanvasPanel* Root = WidgetTree->ConstructWidget<UCanvasPanel>(
 		UCanvasPanel::StaticClass(), TEXT("Root"));
 	WidgetTree->RootWidget = Root;
+	PageMasks.Reset();
 
-	PanelSize = WidgetTree->ConstructWidget<USizeBox>(
-		USizeBox::StaticClass(), TEXT("WebConfiguratorPanelSize"));
-	PanelSize->SetWidthOverride(ExpandedPanelWidth);
-	PanelCanvasSlot = Root->AddChildToCanvas(PanelSize);
-	PanelCanvasSlot->SetAnchors(FAnchors(1.0f, 0.0f, 1.0f, 1.0f));
-	PanelCanvasSlot->SetAlignment(FVector2D(1.0f, 0.0f));
-	PanelCanvasSlot->SetOffsets(FMargin(0.0f, 0.0f, ExpandedPanelWidth, 0.0f));
+	auto AddWhiteMask = [this, Root](
+		const FName Name,
+		const FAnchors& Anchors,
+		const FMargin& Offsets,
+		const int32 ZOrder)
+	{
+		UBorder* Mask = WidgetTree->ConstructWidget<UBorder>(
+			UBorder::StaticClass(), Name);
+		Mask->SetBrushColor(FLinearColor::White);
+		Mask->SetVisibility(ESlateVisibility::HitTestInvisible);
+		PageMasks.Add(Mask);
+		UCanvasPanelSlot* Slot = Root->AddChildToCanvas(Mask);
+		Slot->SetAnchors(Anchors);
+		Slot->SetOffsets(Offsets);
+		Slot->SetZOrder(ZOrder);
+		return Mask;
+	};
 
-	UBorder* Background = WidgetTree->ConstructWidget<UBorder>(
-		UBorder::StaticClass(), TEXT("WebConfiguratorPanelBackground"));
-	Background->SetBrushColor(FLinearColor(0.025f, 0.03f, 0.028f, 0.94f));
-	Background->SetPadding(FMargin(0.0f));
-	PanelSize->AddChild(Background);
+	// 四条实心白边定义舞台窗口，避免透明 Web 与场景之间出现黑缝。
+	AddWhiteMask(
+		TEXT("PageStageTopMask"),
+		FAnchors(0.0f, 0.0f, 1.0f, 0.0f),
+		FMargin(0.0f, HeaderHeight, ExpandedPanelWidth, StageMargin),
+		1);
+	AddWhiteMask(
+		TEXT("PageLeftMask"),
+		FAnchors(0.0f, 0.0f, 0.0f, 1.0f),
+		FMargin(0.0f, HeaderHeight, StageMargin, StageMargin),
+		1);
+	AddWhiteMask(
+		TEXT("PageBottomMask"),
+		FAnchors(0.0f, 1.0f, 1.0f, 1.0f),
+		FMargin(0.0f, -StageMargin, ExpandedPanelWidth, StageMargin),
+		1);
+	AddWhiteMask(
+		TEXT("PageRightPanelBackground"),
+		FAnchors(1.0f, 0.0f, 1.0f, 1.0f),
+		FMargin(-ExpandedPanelWidth, 0.0f, ExpandedPanelWidth, 0.0f),
+		1);
+	AddWhiteMask(
+		TEXT("PageStageRightMask"),
+		FAnchors(1.0f, 0.0f, 1.0f, 1.0f),
+		FMargin(
+			-(ExpandedPanelWidth + StageMargin),
+			HeaderHeight,
+			StageMargin,
+			StageMargin),
+		2);
 
-	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>(
-		UHorizontalBox::StaticClass(), TEXT("WebConfiguratorPanelRow"));
-	Background->SetContent(Row);
-
-	USizeBox* ToggleSize = WidgetTree->ConstructWidget<USizeBox>(
-		USizeBox::StaticClass(), TEXT("WebConfiguratorToggleSize"));
-	ToggleSize->SetWidthOverride(ToggleWidth);
-	UHorizontalBoxSlot* ToggleSlot = Row->AddChildToHorizontalBox(ToggleSize);
-	ToggleSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
-
-	ToggleButton = WidgetTree->ConstructWidget<UButton>(
-		UButton::StaticClass(), TEXT("WebConfiguratorToggle"));
-	ToggleButton->SetBackgroundColor(FLinearColor(0.16f, 0.2f, 0.17f, 1.0f));
-	ToggleSize->AddChild(ToggleButton);
-
-	ToggleLabel = WidgetTree->ConstructWidget<UTextBlock>(
-		UTextBlock::StaticClass(), TEXT("WebConfiguratorToggleLabel"));
-	ToggleLabel->SetJustification(ETextJustify::Center);
-	ToggleLabel->SetColorAndOpacity(FSlateColor(FLinearColor::White));
-	ToggleLabel->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 20));
-	ToggleButton->AddChild(ToggleLabel);
+	// 四角分别使用同一原生反向圆角遮罩，不再绘制 RoundedBox 白色描边。
+	auto AddCornerMask = [this, Root](
+		const FName Name,
+		const EStageCorner Corner,
+		const FAnchors& Anchors,
+		const FMargin& Offsets)
+	{
+		UStageCornerMask* Mask = WidgetTree->ConstructWidget<UStageCornerMask>(
+			UStageCornerMask::StaticClass(), Name);
+		Mask->SetCorner(Corner);
+		Mask->SetRadius(StageCornerRadius);
+		Mask->SetVisibility(ESlateVisibility::HitTestInvisible);
+		PageMasks.Add(Mask);
+		UCanvasPanelSlot* Slot = Root->AddChildToCanvas(Mask);
+		Slot->SetAnchors(Anchors);
+		Slot->SetOffsets(Offsets);
+		Slot->SetZOrder(3);
+	};
+	AddCornerMask(
+		TEXT("StageTopLeftInverseCorner"),
+		EStageCorner::TopLeft,
+		FAnchors(0.0f, 0.0f),
+		FMargin(
+			StageMargin,
+			HeaderHeight + StageMargin,
+			StageCornerRadius,
+			StageCornerRadius));
+	AddCornerMask(
+		TEXT("StageTopRightInverseCorner"),
+		EStageCorner::TopRight,
+		FAnchors(1.0f, 0.0f),
+		FMargin(
+			-(ExpandedPanelWidth + StageMargin + StageCornerRadius),
+			HeaderHeight + StageMargin,
+			StageCornerRadius,
+			StageCornerRadius));
+	AddCornerMask(
+		TEXT("StageBottomLeftInverseCorner"),
+		EStageCorner::BottomLeft,
+		FAnchors(0.0f, 1.0f),
+		FMargin(
+			StageMargin,
+			-(StageMargin + StageCornerRadius),
+			StageCornerRadius,
+			StageCornerRadius));
+	AddCornerMask(
+		TEXT("StageBottomRightInverseCorner"),
+		EStageCorner::BottomRight,
+		FAnchors(1.0f, 1.0f),
+		FMargin(
+			-(ExpandedPanelWidth + StageMargin + StageCornerRadius),
+			-(StageMargin + StageCornerRadius),
+			StageCornerRadius,
+			StageCornerRadius));
 
 	WebBrowser = WidgetTree->ConstructWidget<UConfiguratorBrowserWidget>(
 		UConfiguratorBrowserWidget::StaticClass(), TEXT("EmbeddedWebConfigurator"));
 	WebBridge = NewObject<UConfiguratorWebBridge>(this);
 	WebBridge->Initialize(this);
 	WebBrowser->SetBridge(WebBridge);
-	UHorizontalBoxSlot* BrowserSlot = Row->AddChildToHorizontalBox(WebBrowser);
-	BrowserSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	RefreshToggleLabel();
-	BuildExperienceControls(Root);
-}
+	UCanvasPanelSlot* BrowserSlot = Root->AddChildToCanvas(WebBrowser);
+	BrowserSlot->SetAnchors(FAnchors(1.0f, 0.0f, 1.0f, 1.0f));
+	BrowserSlot->SetAlignment(FVector2D(1.0f, 0.0f));
+	BrowserSlot->SetOffsets(FMargin(
+		0.0f,
+		HeaderHeight,
+		ExpandedPanelWidth,
+		0.0f));
+	BrowserSlot->SetZOrder(4);
 
-UButton* UConfiguratorPanel::CreateToolbarButton(
-	UHorizontalBox* Toolbar,
-	const FName Name,
-	const FText& Label,
-	TObjectPtr<UTextBlock>& OutLabel)
-{
-	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>(
-		USizeBox::StaticClass(), *FString::Printf(TEXT("%sSize"), *Name.ToString()));
-	Size->SetWidthOverride(78.0f);
-	Size->SetHeightOverride(54.0f);
-	UHorizontalBoxSlot* ToolbarSlot = Toolbar->AddChildToHorizontalBox(Size);
-	ToolbarSlot->SetPadding(FMargin(1.0f));
+	HeaderBrowser = WidgetTree->ConstructWidget<UConfiguratorBrowserWidget>(
+		UConfiguratorBrowserWidget::StaticClass(), TEXT("WebConfiguratorHeader"));
+	HeaderBrowser->SetBridge(WebBridge);
+	UCanvasPanelSlot* HeaderSlot = Root->AddChildToCanvas(HeaderBrowser);
+	HeaderSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 0.0f));
+	HeaderSlot->SetOffsets(FMargin(0.0f, 0.0f, 0.0f, HeaderHeight));
+	HeaderSlot->SetZOrder(6);
 
-	UButton* Button = WidgetTree->ConstructWidget<UButton>(
-		UButton::StaticClass(), Name);
-	Button->SetBackgroundColor(FLinearColor(0.08f, 0.08f, 0.075f, 1.0f));
-	Size->AddChild(Button);
-	OutLabel = WidgetTree->ConstructWidget<UTextBlock>(
-		UTextBlock::StaticClass(), *FString::Printf(TEXT("%sLabel"), *Name.ToString()));
-	OutLabel->SetText(Label);
-	OutLabel->SetJustification(ETextJustify::Center);
-	OutLabel->SetColorAndOpacity(FSlateColor(FLinearColor(0.85f, 0.85f, 0.83f)));
-	OutLabel->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 10));
-	Button->AddChild(OutLabel);
-	return Button;
-}
-
-void UConfiguratorPanel::BuildExperienceControls(UCanvasPanel* Root)
-{
-	UBorder* ToolbarBackground = WidgetTree->ConstructWidget<UBorder>(
-		UBorder::StaticClass(), TEXT("ExperienceToolbarBackground"));
-	ToolbarBackground->SetBrushColor(FLinearColor(0.035f, 0.035f, 0.033f, 0.96f));
-	ToolbarBackground->SetPadding(FMargin(5.0f));
-	UCanvasPanelSlot* ToolbarCanvasSlot = Root->AddChildToCanvas(ToolbarBackground);
-	ToolbarCanvasSlot->SetAnchors(FAnchors(0.5f, 1.0f));
-	ToolbarCanvasSlot->SetAlignment(FVector2D(0.5f, 1.0f));
-	// The browser owns the right-side configurator column. Keep the native
-	// presentation controls centered inside the remaining live viewport.
-	ToolbarCanvasSlot->SetPosition(FVector2D(-ExpandedPanelWidth * 0.5f, -24.0f));
-	ToolbarCanvasSlot->SetAutoSize(true);
-
-	UHorizontalBox* Toolbar = WidgetTree->ConstructWidget<UHorizontalBox>(
-		UHorizontalBox::StaticClass(), TEXT("ExperienceToolbar"));
-	ToolbarBackground->SetContent(Toolbar);
-	UButton* CameraButton = CreateToolbarButton(
-		Toolbar,
-		TEXT("ExperienceCamera"),
-		NSLOCTEXT("Configurator", "ExperienceCamera", "◉\n镜头"),
-		CameraLabel);
-	AnimationButton = CreateToolbarButton(
-		Toolbar,
-		TEXT("ExperienceAnimation"),
-		NSLOCTEXT("Configurator", "ExperienceAnimation", "▷\n动画"),
-		AnimationLabel);
-	LightButton = CreateToolbarButton(
-		Toolbar,
-		TEXT("ExperienceLight"),
-		NSLOCTEXT("Configurator", "ExperienceLight", "☼\n灯光"),
-		LightLabel);
-	RenderButton = CreateToolbarButton(
-		Toolbar,
-		TEXT("ExperienceRender"),
-		NSLOCTEXT("Configurator", "ExperienceRender", "◇\n渲染"),
-		RenderLabel);
-	TObjectPtr<UTextBlock> ResetLabel = nullptr;
-	UButton* ResetButton = CreateToolbarButton(
-		Toolbar,
-		TEXT("ExperienceReset"),
-		NSLOCTEXT("Configurator", "ExperienceReset", "↺\n复位"),
-		ResetLabel);
-	FullscreenButton = CreateToolbarButton(
-		Toolbar,
-		TEXT("ExperienceFullscreen"),
-		NSLOCTEXT("Configurator", "ExperienceFullscreen", "□\n全屏"),
-		FullscreenLabel);
-
-	CameraButton->OnClicked.AddUniqueDynamic(
-		this, &UConfiguratorPanel::HandleCameraClicked);
-	AnimationButton->OnClicked.AddUniqueDynamic(
-		this, &UConfiguratorPanel::HandleAnimationClicked);
-	LightButton->OnClicked.AddUniqueDynamic(
-		this, &UConfiguratorPanel::HandleLightClicked);
-	RenderButton->OnClicked.AddUniqueDynamic(
-		this, &UConfiguratorPanel::HandleRenderClicked);
-	ResetButton->OnClicked.AddUniqueDynamic(
-		this, &UConfiguratorPanel::HandleResetClicked);
-	FullscreenButton->OnClicked.AddUniqueDynamic(
-		this, &UConfiguratorPanel::HandleFullscreenClicked);
-
-	UVerticalBox* QualityColumn = WidgetTree->ConstructWidget<UVerticalBox>(
-		UVerticalBox::StaticClass(), TEXT("QualityColumn"));
-	UCanvasPanelSlot* QualityCanvasSlot = Root->AddChildToCanvas(QualityColumn);
-	QualityCanvasSlot->SetAnchors(FAnchors(1.0f, 0.0f));
-	QualityCanvasSlot->SetAlignment(FVector2D(1.0f, 0.0f));
-	// Keep the UE-only settings affordance on the live render surface instead
-	// of layering it over the CEF panel, which would also steal pointer input.
-	QualityCanvasSlot->SetPosition(
-		FVector2D(-(ExpandedPanelWidth + 20.0f), 20.0f));
-	QualityCanvasSlot->SetAutoSize(true);
-
-	USizeBox* GearSize = WidgetTree->ConstructWidget<USizeBox>(
-		USizeBox::StaticClass(), TEXT("QualityGearSize"));
-	GearSize->SetWidthOverride(42.0f);
-	GearSize->SetHeightOverride(42.0f);
-	UVerticalBoxSlot* GearSlot = QualityColumn->AddChildToVerticalBox(GearSize);
-	GearSlot->SetHorizontalAlignment(HAlign_Right);
-	UButton* GearButton = WidgetTree->ConstructWidget<UButton>(
-		UButton::StaticClass(), TEXT("QualityGear"));
-	GearButton->SetBackgroundColor(FLinearColor(0.97f, 0.97f, 0.95f, 0.96f));
-	GearButton->SetToolTipText(
-		NSLOCTEXT("Configurator", "QualityGearHint", "画质设置"));
-	GearSize->AddChild(GearButton);
-	UTextBlock* GearLabel = WidgetTree->ConstructWidget<UTextBlock>(
-		UTextBlock::StaticClass(), TEXT("QualityGearLabel"));
-	GearLabel->SetText(FText::FromString(TEXT("⚙")));
-	GearLabel->SetJustification(ETextJustify::Center);
-	GearLabel->SetColorAndOpacity(FSlateColor(FLinearColor(0.08f, 0.08f, 0.07f)));
-	GearLabel->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 17));
-	GearButton->AddChild(GearLabel);
-	GearButton->OnClicked.AddUniqueDynamic(
-		this, &UConfiguratorPanel::HandleQualityMenuClicked);
-
-	QualityPopup = WidgetTree->ConstructWidget<UBorder>(
-		UBorder::StaticClass(), TEXT("QualityPopup"));
-	QualityPopup->SetBrushColor(FLinearColor(0.97f, 0.97f, 0.95f, 0.98f));
-	QualityPopup->SetPadding(FMargin(6.0f));
-	UVerticalBoxSlot* PopupSlot = QualityColumn->AddChildToVerticalBox(QualityPopup);
-	PopupSlot->SetPadding(FMargin(0.0f, 8.0f, 0.0f, 0.0f));
-	PopupSlot->SetHorizontalAlignment(HAlign_Right);
-	UVerticalBox* QualityOptions = WidgetTree->ConstructWidget<UVerticalBox>(
-		UVerticalBox::StaticClass(), TEXT("QualityOptions"));
-	QualityPopup->SetContent(QualityOptions);
-
-	auto AddQualityButton = [this, QualityOptions](
-		const FName Name,
-		const FText& Label) -> UButton*
-	{
-		USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>(
-			USizeBox::StaticClass(), *FString::Printf(TEXT("%sSize"), *Name.ToString()));
-		Size->SetWidthOverride(148.0f);
-		Size->SetHeightOverride(34.0f);
-		QualityOptions->AddChildToVerticalBox(Size);
-		UButton* Button = WidgetTree->ConstructWidget<UButton>(
-			UButton::StaticClass(), Name);
-		Button->SetBackgroundColor(FLinearColor::Transparent);
-		Size->AddChild(Button);
-		UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>(
-			UTextBlock::StaticClass(), *FString::Printf(TEXT("%sLabel"), *Name.ToString()));
-		Text->SetText(Label);
-		Text->SetColorAndOpacity(FSlateColor(FLinearColor(0.12f, 0.12f, 0.11f)));
-		Text->SetFont(FSlateFontInfo(FCoreStyle::GetDefaultFont(), 11));
-		Button->AddChild(Text);
-		return Button;
-	};
-	UButton* Low = AddQualityButton(
-		TEXT("QualityLow"), NSLOCTEXT("Configurator", "QualityLow", "流畅"));
-	UButton* Medium = AddQualityButton(
-		TEXT("QualityMedium"), NSLOCTEXT("Configurator", "QualityMedium", "均衡"));
-	UButton* High = AddQualityButton(
-		TEXT("QualityHigh"), NSLOCTEXT("Configurator", "QualityHigh", "高"));
-	UButton* Epic = AddQualityButton(
-		TEXT("QualityEpic"), NSLOCTEXT("Configurator", "QualityEpic", "极致"));
-	Low->OnClicked.AddUniqueDynamic(this, &UConfiguratorPanel::HandleQualityLowClicked);
-	Medium->OnClicked.AddUniqueDynamic(this, &UConfiguratorPanel::HandleQualityMediumClicked);
-	High->OnClicked.AddUniqueDynamic(this, &UConfiguratorPanel::HandleQualityHighClicked);
-	Epic->OnClicked.AddUniqueDynamic(this, &UConfiguratorPanel::HandleQualityEpicClicked);
-	QualityPopup->SetVisibility(ESlateVisibility::Collapsed);
-}
-
-void UConfiguratorPanel::ToggleWebConfigurator()
-{
-	if (bExpanded && HealthProbeState == EHealthProbeState::Failed)
-	{
-		StartHealthProbe();
-		return;
-	}
-	ApplyExpandedState(!bExpanded, !bExpanded);
-}
-
-void UConfiguratorPanel::ApplyExpandedState(
-	const bool bShouldExpand,
-	const bool bReloadPage)
-{
-	bExpanded = bShouldExpand;
-	if (!bExpanded)
-	{
-		CancelHealthProbe();
-	}
-	if (WebBrowser != nullptr)
-	{
-		WebBrowser->SetVisibility(
-			bExpanded ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		if (bExpanded && bReloadPage)
-		{
-			StartHealthProbe();
-		}
-	}
-	if (PanelSize != nullptr)
-	{
-		PanelSize->SetWidthOverride(
-			bExpanded ? ExpandedPanelWidth : ToggleWidth);
-	}
-	if (PanelCanvasSlot != nullptr)
-	{
-		PanelCanvasSlot->SetSize(FVector2D(
-			bExpanded ? ExpandedPanelWidth : ToggleWidth,
-			PanelCanvasSlot->GetSize().Y));
-	}
-	RefreshToggleLabel();
+	ControlsBrowser = WidgetTree->ConstructWidget<UConfiguratorBrowserWidget>(
+		UConfiguratorBrowserWidget::StaticClass(), TEXT("WebExperienceControls"));
+	ControlsBrowser->SetBridge(WebBridge);
+	ControlsCanvasSlot = Root->AddChildToCanvas(ControlsBrowser);
+	ControlsCanvasSlot->SetAnchors(FAnchors(0.5f, 1.0f));
+	ControlsCanvasSlot->SetAlignment(FVector2D(0.5f, 1.0f));
+	ControlsCanvasSlot->SetPosition(FVector2D(
+		-ExpandedPanelWidth * 0.5f,
+		-ControlsBottomInset));
+	ControlsCanvasSlot->SetSize(FVector2D(ControlsLayerWidth, ControlsLayerHeight));
+	ControlsCanvasSlot->SetZOrder(10);
 }
 
 void UConfiguratorPanel::StartHealthProbe()
 {
 	CancelHealthProbe();
-	if (!bExpanded)
-	{
-		return;
-	}
 	HealthProbeAttemptCount = 0;
 	PendingRetryDelaySeconds = 0.0f;
 	HealthProbeState = EHealthProbeState::Waiting;
-	RefreshToggleLabel();
 	IssueHealthProbe();
 }
 
 void UConfiguratorPanel::IssueHealthProbe()
 {
-	if (!bExpanded)
-	{
-		return;
-	}
-
 	const FString HealthUrl = BuildHealthUrl(GetConfiguredWebUrl());
 	if (HealthUrl.IsEmpty())
 	{
@@ -633,7 +499,6 @@ void UConfiguratorPanel::IssueHealthProbe()
 	++HealthProbeAttemptCount;
 	PendingRetryDelaySeconds = 0.0f;
 	HealthProbeState = EHealthProbeState::Waiting;
-	RefreshToggleLabel();
 
 	ActiveHealthRequest = FHttpModule::Get().CreateRequest();
 	ActiveHealthRequest->SetURL(HealthUrl);
@@ -667,14 +532,21 @@ void UConfiguratorPanel::HandleHealthProbeCompleted(
 		&& Response.IsValid()
 		&& Response->GetResponseCode() >= 200
 		&& Response->GetResponseCode() < 300;
-	if (bHealthy && bExpanded)
+	if (bHealthy)
 	{
 		HealthProbeState = EHealthProbeState::Ready;
 		PendingRetryDelaySeconds = 0.0f;
-		RefreshToggleLabel();
 		if (WebBrowser != nullptr)
 		{
 			WebBrowser->LoadURL(GetConfiguredWebUrl());
+		}
+		if (ControlsBrowser != nullptr)
+		{
+			ControlsBrowser->LoadURL(GetControlsWebUrl());
+		}
+		if (HeaderBrowser != nullptr)
+		{
+			HeaderBrowser->LoadURL(GetHeaderWebUrl());
 		}
 		return;
 	}
@@ -683,22 +555,15 @@ void UConfiguratorPanel::HandleHealthProbeCompleted(
 
 void UConfiguratorPanel::HandleHealthProbeFailure()
 {
-	if (!bExpanded)
-	{
-		return;
-	}
-
 	PendingRetryDelaySeconds =
 		GetHealthRetryDelaySeconds(HealthProbeAttemptCount);
 	if (PendingRetryDelaySeconds <= 0.0f)
 	{
 		HealthProbeState = EHealthProbeState::Failed;
-		RefreshToggleLabel();
 		return;
 	}
 
 	HealthProbeState = EHealthProbeState::Waiting;
-	RefreshToggleLabel();
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
@@ -712,7 +577,6 @@ void UConfiguratorPanel::HandleHealthProbeFailure()
 	{
 		HealthProbeState = EHealthProbeState::Failed;
 		PendingRetryDelaySeconds = 0.0f;
-		RefreshToggleLabel();
 	}
 }
 
@@ -733,61 +597,6 @@ void UConfiguratorPanel::CancelHealthProbe()
 	HealthProbeAttemptCount = 0;
 	PendingRetryDelaySeconds = 0.0f;
 	HealthProbeState = EHealthProbeState::Idle;
-	RefreshToggleLabel();
-}
-
-void UConfiguratorPanel::RefreshToggleLabel()
-{
-	if (ToggleLabel != nullptr)
-	{
-		ToggleLabel->SetText(bExpanded
-			? NSLOCTEXT("Configurator", "CollapseWebConfigurator", "›")
-			: NSLOCTEXT("Configurator", "ExpandWebConfigurator", "‹"));
-		FText ToolTip;
-		if (!bExpanded)
-		{
-			ToolTip = NSLOCTEXT(
-				"Configurator",
-				"ExpandWebConfiguratorHint",
-				"展开网页选配");
-		}
-		else if (HealthProbeState == EHealthProbeState::Failed)
-		{
-			ToolTip = NSLOCTEXT(
-				"Configurator",
-				"RetryWebConfiguratorHint",
-				"网页服务连接失败，点击重试");
-		}
-		else if (HealthProbeState == EHealthProbeState::Waiting)
-		{
-			ToolTip = PendingRetryDelaySeconds > 0.0f
-				? FText::Format(
-					NSLOCTEXT(
-						"Configurator",
-						"WaitingToRetryWebConfiguratorHint",
-						"网页服务未就绪，{0} 秒后重试（第 {1}/5 次）；点击折叠可取消"),
-					FText::AsNumber(FMath::RoundToInt(PendingRetryDelaySeconds)),
-					FText::AsNumber(HealthProbeAttemptCount))
-				: FText::Format(
-					NSLOCTEXT(
-						"Configurator",
-						"WaitingForWebConfiguratorHint",
-						"正在等待网页服务（第 {0}/5 次）；点击折叠可取消"),
-					FText::AsNumber(HealthProbeAttemptCount));
-		}
-		else
-		{
-			ToolTip = NSLOCTEXT(
-				"Configurator",
-				"CollapseWebConfiguratorHint",
-				"折叠网页选配");
-		}
-		ToggleLabel->SetToolTipText(ToolTip);
-		if (ToggleButton != nullptr)
-		{
-			ToggleButton->SetToolTipText(ToolTip);
-		}
-	}
 }
 
 void UConfiguratorPanel::ApplyWebConfigurationJson(
@@ -823,190 +632,42 @@ void UConfiguratorPanel::ApplyWebConfigurationJson(
 	}
 }
 
-void UConfiguratorPanel::SetExperienceError(const FString& Error)
+bool UConfiguratorPanel::SetExperienceCamera(const int32 CameraIndex)
 {
-	ExperienceError = Error;
-	if (!ExperienceError.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("原生体验控制：%s"), *ExperienceError);
-	}
-}
-
-void UConfiguratorPanel::RefreshExperienceControls()
-{
-	const AConfigShowroomPlayerController* Controller =
-		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
-	const UGameUserSettings* Settings =
-		GEngine != nullptr ? GEngine->GetGameUserSettings() : nullptr;
-	if (CameraLabel != nullptr)
-	{
-		CameraLabel->SetText(FText::Format(
-			NSLOCTEXT("Configurator", "ExperienceCameraState", "◉\n镜头 {0}"),
-			FText::AsNumber(Controller != nullptr
-				? Controller->GetCurrentCameraIndex() + 1 : 1)));
-	}
-	const bool bAnimation = Controller != nullptr && Controller->IsAnimationEnabled();
-	const bool bOutdoor = Controller != nullptr
-		&& Controller->GetLightPreset() == TEXT("outdoor");
-	const bool bPathTracing = Controller != nullptr
-		&& Controller->GetRenderMode() == TEXT("path-tracing");
-	const bool bFullscreen = Settings != nullptr
-		&& Settings->GetFullscreenMode() != EWindowMode::Windowed;
-	if (AnimationLabel != nullptr)
-	{
-		AnimationLabel->SetText(bAnimation
-			? NSLOCTEXT("Configurator", "ExperienceAnimationOn", "▷\n动画 开")
-			: NSLOCTEXT("Configurator", "ExperienceAnimationOff", "▷\n动画"));
-	}
-	if (LightLabel != nullptr)
-	{
-		LightLabel->SetText(bOutdoor
-			? NSLOCTEXT("Configurator", "ExperienceLightOutdoor", "☼\n灯光 户外")
-			: NSLOCTEXT("Configurator", "ExperienceLightStudio", "☼\n灯光"));
-	}
-	if (RenderLabel != nullptr)
-	{
-		RenderLabel->SetText(bPathTracing
-			? NSLOCTEXT("Configurator", "ExperienceRenderPathTracing", "◇\n渲染 光追")
-			: NSLOCTEXT("Configurator", "ExperienceRenderRealtime", "◇\n渲染"));
-	}
-	if (FullscreenLabel != nullptr)
-	{
-		FullscreenLabel->SetText(bFullscreen
-			? NSLOCTEXT("Configurator", "ExperienceFullscreenOn", "□\n全屏 开")
-			: NSLOCTEXT("Configurator", "ExperienceFullscreenOff", "□\n全屏"));
-	}
-	const FLinearColor ActiveColor(0.42f, 0.01f, 0.045f, 1.0f);
-	const FLinearColor IdleColor(0.08f, 0.08f, 0.075f, 1.0f);
-	if (AnimationButton != nullptr)
-	{
-		AnimationButton->SetBackgroundColor(bAnimation ? ActiveColor : IdleColor);
-	}
-	if (LightButton != nullptr)
-	{
-		LightButton->SetBackgroundColor(bOutdoor ? ActiveColor : IdleColor);
-	}
-	if (RenderButton != nullptr)
-	{
-		RenderButton->SetBackgroundColor(bPathTracing ? ActiveColor : IdleColor);
-	}
-	if (FullscreenButton != nullptr)
-	{
-		FullscreenButton->SetBackgroundColor(bFullscreen ? ActiveColor : IdleColor);
-	}
-	if (QualityPopup != nullptr)
-	{
-		QualityPopup->SetVisibility(
-			bQualityMenuOpen ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
-}
-
-void UConfiguratorPanel::HandleCameraClicked()
-{
-	SetExperienceError(FString());
 	AConfigShowroomPlayerController* Controller =
 		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
-	const int32 NextCamera = Controller != nullptr
-		? (Controller->GetCurrentCameraIndex() + 1) % 6 : 0;
-	if (Controller == nullptr || !Controller->SetCamera(NextCamera))
-	{
-		SetExperienceError(TEXT("镜头未能切换。"));
-	}
-	RefreshExperienceControls();
+	return Controller != nullptr && Controller->SetCamera(CameraIndex);
 }
 
-void UConfiguratorPanel::HandleAnimationClicked()
+bool UConfiguratorPanel::SetExperienceAnimationEnabled(const bool bEnabled)
 {
-	SetExperienceError(FString());
 	AConfigShowroomPlayerController* Controller =
 		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
-	const bool bNext = Controller == nullptr || !Controller->IsAnimationEnabled();
-	if (Controller == nullptr || !Controller->SetAnimationEnabled(bNext))
-	{
-		SetExperienceError(TEXT("动画状态未能应用。"));
-	}
-	RefreshExperienceControls();
+	return Controller != nullptr && Controller->SetAnimationEnabled(bEnabled);
 }
 
-void UConfiguratorPanel::HandleLightClicked()
+bool UConfiguratorPanel::SetExperienceLightPreset(const FString& Preset)
 {
-	SetExperienceError(FString());
 	AConfigShowroomPlayerController* Controller =
 		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
-	const FString NextPreset = Controller != nullptr
-		&& Controller->GetLightPreset() == TEXT("studio")
-		? TEXT("outdoor") : TEXT("studio");
-	if (Controller == nullptr || !Controller->SetLightPreset(NextPreset))
-	{
-		SetExperienceError(TEXT("灯光预设未能应用。"));
-	}
-	RefreshExperienceControls();
+	return Controller != nullptr && Controller->SetLightPreset(Preset);
 }
 
-void UConfiguratorPanel::HandleRenderClicked()
+bool UConfiguratorPanel::SetExperienceRenderMode(const FString& Mode)
 {
-	SetExperienceError(FString());
 	AConfigShowroomPlayerController* Controller =
 		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
-	const FString NextMode = Controller != nullptr
-		&& Controller->GetRenderMode() == TEXT("realtime")
-		? TEXT("path-tracing") : TEXT("realtime");
 	FString Error;
-	if (Controller == nullptr || !Controller->SetRenderMode(NextMode, Error))
-	{
-		SetExperienceError(Error.IsEmpty() ? TEXT("渲染模式未能应用。") : Error);
-	}
-	RefreshExperienceControls();
+	return Controller != nullptr && Controller->SetRenderMode(Mode, Error);
 }
 
-void UConfiguratorPanel::HandleResetClicked()
-{
-	SetExperienceError(FString());
-	if (AConfigShowroomPlayerController* Controller =
-		Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
-	{
-		Controller->ResetPresentation();
-	}
-	else
-	{
-		SetExperienceError(TEXT("体验控制器不可用。"));
-	}
-	RefreshExperienceControls();
-}
-
-void UConfiguratorPanel::HandleFullscreenClicked()
-{
-	SetExperienceError(FString());
-	UGameUserSettings* Settings =
-		GEngine != nullptr ? GEngine->GetGameUserSettings() : nullptr;
-	if (Settings == nullptr)
-	{
-		SetExperienceError(TEXT("显示设置不可用。"));
-	}
-	else
-	{
-		const bool bEnable =
-			Settings->GetFullscreenMode() == EWindowMode::Windowed;
-		Settings->SetFullscreenMode(
-			bEnable ? EWindowMode::WindowedFullscreen : EWindowMode::Windowed);
-		Settings->ApplySettings(false);
-	}
-	RefreshExperienceControls();
-}
-
-void UConfiguratorPanel::HandleQualityMenuClicked()
-{
-	bQualityMenuOpen = !bQualityMenuOpen;
-	RefreshExperienceControls();
-}
-
-bool UConfiguratorPanel::ApplyQualityLevel(const FString& Quality)
+bool UConfiguratorPanel::SetExperienceQualityLevel(const FString& Quality)
 {
 	UGameUserSettings* Settings =
 		GEngine != nullptr ? GEngine->GetGameUserSettings() : nullptr;
-	if (!IsSupportedQuality(Quality) || Settings == nullptr)
+	if (!UConfiguratorWebBridge::IsSupportedQualityLevel(Quality)
+		|| Settings == nullptr)
 	{
-		SetExperienceError(TEXT("画质等级不受支持或显示设置不可用。"));
 		return false;
 	}
 	const int32 Level = Quality == TEXT("low") ? 0
@@ -1015,28 +676,205 @@ bool UConfiguratorPanel::ApplyQualityLevel(const FString& Quality)
 		: 3;
 	Settings->SetOverallScalabilityLevel(Level);
 	Settings->ApplySettings(false);
-	SetExperienceError(FString());
-	bQualityMenuOpen = false;
-	RefreshExperienceControls();
 	return true;
 }
 
-void UConfiguratorPanel::HandleQualityLowClicked()
+bool UConfiguratorPanel::IsValidConfiguratorHeaderStateJson(
+	const FString& StateJson,
+	FString& OutError)
 {
-	ApplyQualityLevel(TEXT("low"));
+	OutError.Reset();
+	if (StateJson.IsEmpty() || StateJson.Len() > 2048)
+	{
+		OutError = TEXT("Header 状态为空或超过 2 KiB 限制。");
+		return false;
+	}
+	TSharedPtr<FJsonObject> Root;
+	const TSharedRef<TJsonReader<>> Reader =
+		TJsonReaderFactory<>::Create(StateJson);
+	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
+	{
+		OutError = TEXT("Header 状态不是有效 JSON 对象。");
+		return false;
+	}
+	const TSet<FString> AllowedFields = {
+		TEXT("categoryId"),
+		TEXT("referenceTotalMinor"),
+		TEXT("syncState"),
+		TEXT("syncMessage"),
+		TEXT("dirty"),
+		TEXT("online")
+	};
+	FString CategoryId;
+	FString SyncState;
+	FString SyncMessage;
+	double ReferenceTotalMinor = -1.0;
+	bool bDirty = false;
+	bool bOnline = false;
+	if (!HasOnlyFields(Root, AllowedFields)
+		|| Root->Values.Num() != AllowedFields.Num()
+		|| !Root->TryGetStringField(TEXT("categoryId"), CategoryId)
+		|| !UConfiguratorWebBridge::IsSupportedConfiguratorCategory(CategoryId)
+		|| !Root->TryGetNumberField(
+			TEXT("referenceTotalMinor"), ReferenceTotalMinor)
+		|| ReferenceTotalMinor < 0.0
+		|| ReferenceTotalMinor > 1000000000000.0
+		|| !FMath::IsNearlyEqual(
+			ReferenceTotalMinor,
+			FMath::RoundToDouble(ReferenceTotalMinor))
+		|| !Root->TryGetStringField(TEXT("syncState"), SyncState)
+		|| !(SyncState == TEXT("idle")
+			|| SyncState == TEXT("saving")
+			|| SyncState == TEXT("saved")
+			|| SyncState == TEXT("error"))
+		|| !Root->TryGetStringField(TEXT("syncMessage"), SyncMessage)
+		|| SyncMessage.Len() > 256
+		|| !Root->TryGetBoolField(TEXT("dirty"), bDirty)
+		|| !Root->TryGetBoolField(TEXT("online"), bOnline))
+	{
+		OutError = TEXT("Header 状态包含非白名单字段或非法值。");
+		return false;
+	}
+	return true;
 }
 
-void UConfiguratorPanel::HandleQualityMediumClicked()
+bool UConfiguratorPanel::ResetExperiencePresentation()
 {
-	ApplyQualityLevel(TEXT("medium"));
+	AConfigShowroomPlayerController* Controller =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
+	if (Controller == nullptr)
+	{
+		return false;
+	}
+	Controller->ResetPresentation();
+	return true;
 }
 
-void UConfiguratorPanel::HandleQualityHighClicked()
+bool UConfiguratorPanel::SetExperienceFullscreen(const bool bEnabled)
 {
-	ApplyQualityLevel(TEXT("high"));
+	bWebFullscreen = bEnabled;
+	const ESlateVisibility WebVisibility =
+		bWebFullscreen ? ESlateVisibility::Collapsed : ESlateVisibility::Visible;
+	if (WebBrowser != nullptr)
+	{
+		WebBrowser->SetVisibility(WebVisibility);
+	}
+	if (HeaderBrowser != nullptr)
+	{
+		HeaderBrowser->SetVisibility(WebVisibility);
+	}
+	for (UWidget* Mask : PageMasks)
+	{
+		if (Mask != nullptr)
+		{
+			Mask->SetVisibility(
+				bWebFullscreen
+					? ESlateVisibility::Collapsed
+					: ESlateVisibility::HitTestInvisible);
+		}
+	}
+	if (ControlsCanvasSlot != nullptr)
+	{
+		ControlsCanvasSlot->SetPosition(FVector2D(
+			bWebFullscreen ? 0.0f : -ExpandedPanelWidth * 0.5f,
+			-ControlsBottomInset));
+	}
+	return true;
 }
 
-void UConfiguratorPanel::HandleQualityEpicClicked()
+bool UConfiguratorPanel::SetConfiguratorCategory(const FString& CategoryId)
 {
-	ApplyQualityLevel(TEXT("epic"));
+	if (!UConfiguratorWebBridge::IsSupportedConfiguratorCategory(CategoryId))
+	{
+		return false;
+	}
+	const FString Script = FString::Printf(
+		TEXT("window.dispatchEvent(new CustomEvent('ue-configurator-category',"
+			"{detail:'%s'}));"),
+		*CategoryId);
+	if (WebBrowser != nullptr)
+	{
+		WebBrowser->ExecuteJavascript(Script);
+	}
+	if (HeaderBrowser != nullptr)
+	{
+		HeaderBrowser->ExecuteJavascript(Script);
+	}
+	return WebBrowser != nullptr || HeaderBrowser != nullptr;
+}
+
+bool UConfiguratorPanel::SetConfiguratorHeaderStateJson(
+	const FString& StateJson)
+{
+	FString Error;
+	if (!IsValidConfiguratorHeaderStateJson(StateJson, Error)
+		|| HeaderBrowser == nullptr)
+	{
+		if (!Error.IsEmpty())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("拒绝 Web Header 状态：%s"), *Error);
+		}
+		return false;
+	}
+	LatestConfiguratorHeaderStateJson = StateJson;
+	const FString Script = FString::Printf(
+		TEXT("window.dispatchEvent(new CustomEvent("
+			"'ue-configurator-header-state',{detail:%s}));"),
+		*StateJson);
+	HeaderBrowser->ExecuteJavascript(Script);
+	return true;
+}
+
+bool UConfiguratorPanel::TriggerConfiguratorHeaderAction(
+	const FString& Action)
+{
+	if (!UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(Action)
+		|| WebBrowser == nullptr)
+	{
+		return false;
+	}
+	const FString Script = FString::Printf(
+		TEXT("window.dispatchEvent(new CustomEvent("
+			"'ue-configurator-header-action',{detail:'%s'}));"),
+		*Action);
+	WebBrowser->ExecuteJavascript(Script);
+	return true;
+}
+
+FString UConfiguratorPanel::GetConfiguratorHeaderStateJson() const
+{
+	return LatestConfiguratorHeaderStateJson;
+}
+
+FString UConfiguratorPanel::GetExperienceStateJson()
+{
+	AConfigShowroomPlayerController* Controller =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
+	UGameUserSettings* Settings =
+		GEngine != nullptr ? GEngine->GetGameUserSettings() : nullptr;
+	if (Controller == nullptr || Settings == nullptr)
+	{
+		return FString();
+	}
+
+	const int32 ScalabilityLevel = Settings->GetOverallScalabilityLevel();
+	const FString Quality = ScalabilityLevel <= 0 ? TEXT("low")
+		: ScalabilityLevel == 1 ? TEXT("medium")
+		: ScalabilityLevel == 2 ? TEXT("high")
+		: TEXT("epic");
+	TSharedRef<FJsonObject> State = MakeShared<FJsonObject>();
+	State->SetNumberField(
+		TEXT("cameraIndex"),
+		FMath::Clamp(Controller->GetCurrentCameraIndex(), 0, 5));
+	State->SetBoolField(
+		TEXT("animationEnabled"),
+		Controller->IsAnimationEnabled());
+	State->SetStringField(TEXT("lightPreset"), Controller->GetLightPreset());
+	State->SetStringField(TEXT("renderMode"), Controller->GetRenderMode());
+	State->SetStringField(TEXT("quality"), Quality);
+	State->SetBoolField(TEXT("fullscreen"), bWebFullscreen);
+
+	FString Json;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Json);
+	return FJsonSerializer::Serialize(State, Writer) ? Json : FString();
 }

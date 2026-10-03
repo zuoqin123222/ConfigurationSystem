@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ApiError,
   fetchCatalog,
@@ -29,77 +29,41 @@ import type {
   RenderViewId,
   Selections,
 } from './types'
-import { applyUeConfiguration, getUeBridge } from './ueBridge'
+import {
+  applyUeConfiguration,
+  CONFIGURATOR_CATEGORIES,
+  CONFIGURATOR_CATEGORY_EVENT,
+  CONFIGURATOR_HEADER_ACTION_EVENT,
+  CONFIGURATOR_HEADER_STATE_EVENT,
+  getUeConfiguratorHeaderState,
+  getUeBridge,
+  isUeConfiguratorHeaderState,
+  syncUeConfiguratorCategory,
+  syncUeConfiguratorHeaderState,
+  triggerUeConfiguratorHeaderAction,
+  type UeConfiguratorCategory,
+  type UeConfiguratorHeaderState,
+} from './ueBridge'
+import ExperienceControls from './ExperienceControls'
 
 const CACHE_KEY = 'sc01-v2-configurator'
-const DEFAULT_VIEWS: Array<{ renderViewId: RenderViewId; zhName: string }> = [
-  { renderViewId: 'front', zhName: '正前' },
-  { renderViewId: 'front-left', zhName: '左前' },
-  { renderViewId: 'side', zhName: '侧面' },
-  { renderViewId: 'rear-right', zhName: '右后' },
-]
+const SRGB_TO_LINEAR_TABLE = Array.from({ length: 256 }, (_, index) => {
+  const value = index / 255
+  return value <= 0.04045
+    ? value / 12.92
+    : Math.pow((value + 0.055) / 1.055, 2.4)
+}).join(' ')
 
 export function isEmbeddedView(search = window.location.search): boolean {
   return new URLSearchParams(search).get('view') === 'embedded'
 }
 
-const STATIC_VIEW_IDS: RenderViewId[] = ['front', 'front-left', 'side', 'rear-right']
+export type AppView = 'default' | 'embedded' | 'controls' | 'header'
 
-function ExperienceControls({
-  activeView,
-  onStaticViewChange,
-}: {
-  activeView: RenderViewId
-  onStaticViewChange: (view: RenderViewId) => void
-}) {
-  const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
-  const [browserFullscreen, setBrowserFullscreen] = useState(Boolean(document.fullscreenElement))
-
-  useEffect(() => {
-    const handleFullscreen = () => setBrowserFullscreen(Boolean(document.fullscreenElement))
-    document.addEventListener('fullscreenchange', handleFullscreen)
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreen)
-    }
-  }, [])
-
-  const toggleBrowserFullscreen = async () => {
-    if (document.fullscreenElement) await document.exitFullscreen()
-    else await document.documentElement.requestFullscreen()
-  }
-
-  return (
-    <nav className="experience-toolbar" aria-label="体验控制">
-      <div className="toolbar-item">
-        <button
-          aria-expanded={cameraMenuOpen}
-          onClick={() => setCameraMenuOpen((open) => !open)}
-        >
-          <span>◉</span>镜头
-        </button>
-        {cameraMenuOpen && (
-          <div className="control-popover camera-popover" role="menu" aria-label="镜头预设">
-            {DEFAULT_VIEWS.map((view, index) => (
-              <button
-                key={view.renderViewId}
-                role="menuitemradio"
-                aria-checked={STATIC_VIEW_IDS[index] === activeView}
-                onClick={() => onStaticViewChange(STATIC_VIEW_IDS[index])}
-              >
-                {view.zhName}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <button
-        aria-pressed={browserFullscreen}
-        onClick={() => void toggleBrowserFullscreen()}
-      >
-        <span>□</span>全屏
-      </button>
-    </nav>
-  )
+export function getAppView(search = window.location.search): AppView {
+  const view = new URLSearchParams(search).get('view')
+  if (view === 'embedded' || view === 'controls' || view === 'header') return view
+  return 'default'
 }
 
 function optionPrice(option: CatalogV2['options'][number]): string {
@@ -115,17 +79,17 @@ function Showroom() {
     <svg className="showroom" viewBox="0 0 1200 760" aria-hidden="true">
       <defs>
         <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#252823" />
-          <stop offset="1" stopColor="#11130f" />
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#ececea" />
         </linearGradient>
         <radialGradient id="floor">
-          <stop offset="0" stopColor="#5d6354" stopOpacity=".42" />
-          <stop offset="1" stopColor="#11130f" stopOpacity="0" />
+          <stop offset="0" stopColor="#b7b7b4" stopOpacity=".32" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
       </defs>
       <rect width="1200" height="760" fill="url(#wall)" />
-      <path d="M0 0h1200v70L0 250z" fill="#30332c" />
-      <path d="M0 760V455L1200 70v690z" fill="#151713" />
+      <path d="M0 0h1200v70L0 250z" fill="#f7f7f5" />
+      <path d="M0 760V455L1200 70v690z" fill="#efefed" />
       <ellipse cx="575" cy="605" rx="530" ry="145" fill="url(#floor)" />
     </svg>
   )
@@ -147,7 +111,136 @@ function readCachedDraft(): CachedDraft | null {
 }
 
 export default function App() {
-  const embedded = isEmbeddedView()
+  const view = getAppView()
+  if (view === 'controls') {
+    return <UeColorCorrected><ExperienceControls ueEnabled /></UeColorCorrected>
+  }
+  if (view === 'header') {
+    return <UeColorCorrected><ConfiguratorHeader /></UeColorCorrected>
+  }
+  if (view === 'embedded') {
+    return <UeColorCorrected><ConfiguratorApp embedded /></UeColorCorrected>
+  }
+  return <ConfiguratorApp embedded={false} />
+}
+
+function UeColorCorrected({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <svg className="ue-color-filter" aria-hidden="true">
+        <defs>
+          <filter id="ue-srgb-to-linear" colorInterpolationFilters="sRGB">
+            <feComponentTransfer>
+              <feFuncR type="table" tableValues={SRGB_TO_LINEAR_TABLE} />
+              <feFuncG type="table" tableValues={SRGB_TO_LINEAR_TABLE} />
+              <feFuncB type="table" tableValues={SRGB_TO_LINEAR_TABLE} />
+            </feComponentTransfer>
+          </filter>
+        </defs>
+      </svg>
+      <div className="ue-color-corrected">{children}</div>
+    </>
+  )
+}
+
+function ConfiguratorHeader() {
+  const [categoryId, setCategoryId] = useState<UeConfiguratorCategory>('exterior')
+  const [headerState, setHeaderState] = useState<UeConfiguratorHeaderState>({
+    categoryId: 'exterior',
+    referenceTotalMinor: 22980000,
+    syncState: 'idle',
+    syncMessage: '',
+    dirty: true,
+    online: true,
+  })
+
+  useEffect(() => {
+    document.documentElement.classList.add('header-document')
+    document.body.classList.add('header-document')
+    const handleCategory = (event: Event) => {
+      const nextCategory = (event as CustomEvent<string>).detail
+      if (CONFIGURATOR_CATEGORIES.some((category) => category.id === nextCategory)) {
+        setCategoryId(nextCategory as UeConfiguratorCategory)
+      }
+    }
+    const handleHeaderState = (event: Event) => {
+      const nextState = (event as CustomEvent<unknown>).detail
+      if (isUeConfiguratorHeaderState(nextState)) {
+        setHeaderState(nextState)
+        setCategoryId(nextState.categoryId)
+      }
+    }
+    window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+    window.addEventListener(CONFIGURATOR_HEADER_STATE_EVENT, handleHeaderState)
+    void getUeConfiguratorHeaderState(getUeBridge(true)).then((state) => {
+      if (state) {
+        setHeaderState(state)
+        setCategoryId(state.categoryId)
+      }
+    })
+    return () => {
+      window.removeEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+      window.removeEventListener(CONFIGURATOR_HEADER_STATE_EVENT, handleHeaderState)
+      document.documentElement.classList.remove('header-document')
+      document.body.classList.remove('header-document')
+    }
+  }, [])
+
+  const selectCategory = (nextCategory: UeConfiguratorCategory) => {
+    setCategoryId(nextCategory)
+    void syncUeConfiguratorCategory(getUeBridge(true), nextCategory)
+  }
+
+  const triggerAction = (action: 'save' | 'share') => {
+    void triggerUeConfiguratorHeaderAction(getUeBridge(true), action)
+  }
+
+  return (
+    <header className="configurator-header">
+      <h1>打造你的座驾</h1>
+      <nav aria-label="选配阶段">
+        {CONFIGURATOR_CATEGORIES.map((category, index) => (
+          <div className="header-stage" key={category.id}>
+            {index > 0 && <span className="header-stage-separator" aria-hidden="true">&gt;&gt;</span>}
+            <button
+              className={categoryId === category.id ? 'active' : ''}
+              aria-current={categoryId === category.id ? 'step' : undefined}
+              onClick={() => selectCategory(category.id)}
+            >
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              {category.label}
+            </button>
+          </div>
+        ))}
+      </nav>
+      <div className="header-actions">
+        <span className={`header-sync ${headerState.syncState}`}>
+          {headerState.syncMessage || (headerState.dirty ? '未同步更改' : '已同步')}
+        </span>
+        <span className="header-total">
+          <small>参考总价</small>
+          <strong>¥{(headerState.referenceTotalMinor / 100).toLocaleString('zh-CN')}</strong>
+        </span>
+        <button
+          className="header-save"
+          onClick={() => triggerAction('save')}
+          disabled={!headerState.online || headerState.syncState === 'saving' || !headerState.dirty}
+        >
+          {headerState.syncState === 'saving' ? '保存中…' : '保存'}
+        </button>
+        <button
+          className="header-share"
+          onClick={() => triggerAction('share')}
+          disabled={!headerState.online || headerState.syncState === 'saving'}
+        >
+          分享
+        </button>
+      </div>
+    </header>
+  )
+}
+
+function ConfiguratorApp({ embedded }: { embedded: boolean }) {
   const [catalog, setCatalog] = useState<CatalogV2 | null>(null)
   const [legacyCatalog, setLegacyCatalog] = useState<LegacyCatalog | null>(null)
   const [selections, setSelections] = useState<Selections | null>(null)
@@ -364,6 +457,26 @@ function Configurator({
     0,
   )
 
+  const selectCategory = useCallback((nextCategoryId: string) => {
+    if (!catalog.categories.some((category) => category.categoryId === nextCategoryId)) return
+    setCategoryId(nextCategoryId)
+    if (embedded) {
+      void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
+    }
+  }, [catalog.categories, embedded])
+
+  useEffect(() => {
+    if (!embedded) return
+    const handleCategory = (event: Event) => {
+      const nextCategoryId = (event as CustomEvent<string>).detail
+      if (catalog.categories.some((category) => category.categoryId === nextCategoryId)) {
+        setCategoryId(nextCategoryId)
+      }
+    }
+    window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+    return () => window.removeEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+  }, [catalog.categories, embedded])
+
   useEffect(() => {
     const firstComponent = components[0]?.componentId
     setComponentId(firstComponent ?? 'all')
@@ -542,6 +655,29 @@ function Configurator({
     }
   }
 
+  useEffect(() => {
+    if (!embedded) return
+    void syncUeConfiguratorHeaderState(getUeBridge(true), {
+      categoryId: categoryId as UeConfiguratorCategory,
+      referenceTotalMinor: referenceTotal,
+      syncState,
+      syncMessage,
+      dirty,
+      online,
+    })
+  }, [categoryId, dirty, embedded, online, referenceTotal, syncMessage, syncState])
+
+  useEffect(() => {
+    if (!embedded) return
+    const handleHeaderAction = (event: Event) => {
+      const action = (event as CustomEvent<unknown>).detail
+      if (action === 'save') void persist()
+      if (action === 'share') void share()
+    }
+    window.addEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
+    return () => window.removeEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
+  })
+
   return (
     <main className={`app-shell ${embedded ? 'embedded' : ''}`}>
       {!embedded && <section className="stage" aria-label="车辆展示区">
@@ -602,27 +738,26 @@ function Configurator({
           <span className="step">4 阶段顺序选配</span>
         </div>
 
-        <div className="save-bar">
-          <span className={`sync-state ${syncState}`}>{syncMessage || (dirty ? '未同步更改' : '已同步')}</span>
-          <button onClick={() => void persist()} disabled={syncState === 'saving' || !dirty}>
-            {syncState === 'saving' ? '保存中…' : '保存配置'}
-          </button>
-          <button onClick={() => void share()} disabled={syncState === 'saving'}>分享配置</button>
-        </div>
-
-        <FilterGroup label="阶段" items={catalog.categories.map((item) => ({
-          id: item.categoryId,
-          name: item.displayName,
-        }))} value={categoryId} onChange={setCategoryId} />
-        <FilterGroup label="部件" items={components.map((item) => ({
-          id: item.componentId,
-          name: item.displayName,
-        }))} value={componentId} onChange={setComponentId} />
-        <FilterGroup label="项目" items={surfaces.map((item) => ({
-          id: item.surfaceId,
-          name: item.displayName,
-        }))} value={currentSurface.surfaceId} onChange={setSurfaceId} />
-        <section className="options" aria-live="polite">
+        <div className="panel-scroll">
+          <FilterGroup
+            className="filter-group-stage"
+            label="阶段"
+            items={catalog.categories.map((item) => ({
+              id: item.categoryId,
+              name: item.displayName,
+            }))}
+            value={categoryId}
+            onChange={selectCategory}
+          />
+          <FilterGroup label="部件" items={components.map((item) => ({
+            id: item.componentId,
+            name: item.displayName,
+          }))} value={componentId} onChange={setComponentId} />
+          <FilterGroup label="项目" items={surfaces.map((item) => ({
+            id: item.surfaceId,
+            name: item.displayName,
+          }))} value={currentSurface.surfaceId} onChange={setSurfaceId} />
+          <section className="options" aria-live="polite">
           <div className="section-title">
             <h3>选择{currentSurface.displayName}</h3>
             <span>{currentSurface.required ? `${options.length} 款可选` : '默认不选装'}</span>
@@ -713,12 +848,12 @@ function Configurator({
               )
             })}
           </div>
-        </section>
+          </section>
 
-        {selectedOption?.optionId === 'body-cover-custom'
-          && currentCustomization
-          && !('materialVariantId' in currentCustomization) && (
-          <section className="paint-editor" aria-label="自定义车漆参数">
+          {selectedOption?.optionId === 'body-cover-custom'
+            && currentCustomization
+            && !('materialVariantId' in currentCustomization) && (
+            <section className="paint-editor" aria-label="自定义车漆参数">
             <div className="section-title">
               <h3>自定义车漆</h3>
               <span>¥9,600</span>
@@ -754,43 +889,30 @@ function Configurator({
                 <output>{currentCustomization[key].toFixed(2)}</output>
               </label>
             ))}
-          </section>
-        )}
+            </section>
+          )}
+        </div>
 
-        <footer className="summary">
-          <div className="canonical">
-            <span>配置标识 · {savedConfiguration?.configurationId ?? '尚未保存'}</span>
-            <code>{canonicalKey}</code>
-          </div>
-          <div className="total">
-            <span>参考总价<small>基础价 ¥229,800 · 草案不构成报价</small></span>
-            <strong>¥{(referenceTotal / 100).toLocaleString('zh-CN')}</strong>
-          </div>
-        </footer>
       </aside>
-      {!embedded && (
-        <ExperienceControls
-          activeView={activeView}
-          onStaticViewChange={setActiveView}
-        />
-      )}
     </main>
   )
 }
 
 function FilterGroup({
+  className = '',
   label,
   items,
   value,
   onChange,
 }: {
+  className?: string
   label: string
   items: Array<{ id: string; name: string }>
   value: string
   onChange: (value: string) => void
 }) {
   return (
-    <section className="filter-group" aria-label={`${label}筛选`}>
+    <section className={`filter-group ${className}`.trim()} aria-label={`${label}筛选`}>
       <span>{label}</span>
       <div>
         {items.map((item) => (

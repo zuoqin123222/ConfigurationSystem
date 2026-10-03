@@ -17,9 +17,39 @@ class CONFIGURATIONSYSTEM_API UConfiguratorWebBridge final : public UObject
 
 public:
 	void Initialize(UConfiguratorPanel* InOwner);
+	static bool IsSupportedCameraIndex(int32 CameraIndex);
+	static bool IsSupportedLightPreset(const FString& Preset);
+	static bool IsSupportedRenderMode(const FString& Mode);
+	static bool IsSupportedQualityLevel(const FString& Quality);
+	static bool IsSupportedConfiguratorCategory(const FString& CategoryId);
+	static bool IsSupportedConfiguratorHeaderAction(const FString& Action);
 
 	UFUNCTION()
 	void ApplyConfigurationJson(const FString& ConfigurationJson);
+	UFUNCTION()
+	FString GetPresentationStateJson() const;
+	UFUNCTION()
+	bool SetCamera(int32 CameraIndex);
+	UFUNCTION()
+	bool SetAnimationEnabled(bool bEnabled);
+	UFUNCTION()
+	bool SetLightPreset(const FString& Preset);
+	UFUNCTION()
+	bool SetRenderMode(const FString& Mode);
+	UFUNCTION()
+	bool SetQualityLevel(const FString& Quality);
+	UFUNCTION()
+	bool ResetPresentation();
+	UFUNCTION()
+	bool SetFullscreen(bool bEnabled);
+	UFUNCTION()
+	bool SetConfiguratorCategory(const FString& CategoryId);
+	UFUNCTION()
+	bool SetConfiguratorHeaderStateJson(const FString& StateJson);
+	UFUNCTION()
+	bool TriggerConfiguratorHeaderAction(const FString& Action);
+	UFUNCTION()
+	FString GetConfiguratorHeaderStateJson() const;
 
 private:
 	UPROPERTY(Transient)

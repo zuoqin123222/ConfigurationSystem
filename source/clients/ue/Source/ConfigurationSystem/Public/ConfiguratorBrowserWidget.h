@@ -13,6 +13,7 @@ class CONFIGURATIONSYSTEM_API UConfiguratorBrowserWidget final : public UWebBrow
 	GENERATED_BODY()
 
 public:
+	UConfiguratorBrowserWidget();
 	void SetBridge(UConfiguratorWebBridge* InBridge);
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 

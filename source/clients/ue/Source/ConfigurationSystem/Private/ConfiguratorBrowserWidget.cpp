@@ -3,6 +3,11 @@
 #include "ConfiguratorWebBridge.h"
 #include "SWebBrowser.h"
 
+UConfiguratorBrowserWidget::UConfiguratorBrowserWidget()
+{
+	bSupportsTransparency = true;
+}
+
 void UConfiguratorBrowserWidget::SetBridge(UConfiguratorWebBridge* InBridge)
 {
 	Bridge = InBridge;
