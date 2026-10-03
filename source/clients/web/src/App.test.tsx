@@ -159,6 +159,23 @@ describe('App v2', () => {
     expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
   })
 
+  it('普通浏览器即使使用 UE 视图参数也不启用颜色补偿', () => {
+    window.history.replaceState(null, '', '/?source=ue&view=header')
+    render(<App />)
+
+    expect(document.querySelector('.ue-color-corrected')).toBeNull()
+    expect(screen.getByRole('banner')).toBeInTheDocument()
+  })
+
+  it('仅在真实 ueBridge 存在时启用颜色补偿', () => {
+    window.history.replaceState(null, '', '/?source=ue&view=header')
+    window.ue = { uebridge: {} }
+    render(<App />)
+
+    expect(document.querySelector('.ue-color-corrected')).not.toBeNull()
+    expect(document.querySelector('#ue-srgb-to-linear')).not.toBeNull()
+  })
+
   it('controls 视图只渲染透明体验控制层且不请求目录', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=controls')
     const fetchMock = mockApi()
