@@ -10,6 +10,7 @@
 #include "Sc01MaterialBinder.h"
 #include "SmoothWheelControllerComponent.h"
 #include "UObject/ConstructorHelpers.h"
+#include "UObject/UObjectGlobals.h"
 
 const FName AConfiguratorVehicleActor::PaintPartTag(TEXT("Configurator.Part.paint"));
 const FName AConfiguratorVehicleActor::WheelPartTag(TEXT("Configurator.Part.wheel"));
@@ -20,25 +21,38 @@ const FName AConfiguratorVehicleActor::WheelSlotTag(TEXT("Configurator.Slot.whee
 const FName AConfiguratorVehicleActor::InteriorSlotTag(TEXT("Configurator.Slot.interior_trim"));
 const FName AConfiguratorVehicleActor::FrameSlotTag(TEXT("Configurator.Slot.paint_frame"));
 const FName AConfiguratorVehicleActor::TemporaryResourceTag(TEXT("Configurator.Resource.Temporary"));
+const FName AConfiguratorVehicleActor::AuthorizedResourceTag(TEXT("Configurator.Resource.AuthorizedAudiA5"));
 
 namespace ConfiguratorVehicle
 {
+	UStaticMesh* LoadOptionalStaticMesh(const TCHAR* ObjectPath)
+	{
+		return Cast<UStaticMesh>(StaticLoadObject(
+			UStaticMesh::StaticClass(),
+			nullptr,
+			ObjectPath,
+			nullptr,
+			LOAD_NoWarn));
+	}
+
 	void MarkPartition(
 		UActorComponent* Component,
 		const FName PartTag,
-		const FName SlotTag)
+		const FName SlotTag,
+		const bool bAuthorized)
 	{
 		Component->ComponentTags.Add(PartTag);
 		Component->ComponentTags.Add(SlotTag);
-		Component->ComponentTags.Add(AConfiguratorVehicleActor::TemporaryResourceTag);
+		Component->ComponentTags.Add(
+			bAuthorized
+				? AConfiguratorVehicleActor::AuthorizedResourceTag
+				: AConfiguratorVehicleActor::TemporaryResourceTag);
 	}
 }
 
 AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	Tags.Add(TemporaryResourceTag);
-
 	VehicleRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VehicleRoot"));
 	VehicleRoot->ComponentTags.Add(TEXT("Vehicle.Root"));
 	SetRootComponent(VehicleRoot);
@@ -49,45 +63,89 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 		TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	UStaticMesh* AuthorizedBody = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/BodyMesh.BodyMesh"));
+	UStaticMesh* AuthorizedInterior = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/InteriorMesh.InteriorMesh"));
+	UStaticMesh* AuthorizedFrame = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/FrameMesh.FrameMesh"));
+	UStaticMesh* AuthorizedDoorLeft = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/DoorMesh_FL.DoorMesh_FL"));
+	UStaticMesh* AuthorizedDoorRight = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/DoorMesh_FR.DoorMesh_FR"));
+	UStaticMesh* AuthorizedHood = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/HoodMesh.HoodMesh"));
+	UStaticMesh* AuthorizedTrunk = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/TrunkMesh.TrunkMesh"));
+	UStaticMesh* AuthorizedWheelFL = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/WheelMesh_FL.WheelMesh_FL"));
+	UStaticMesh* AuthorizedWheelFR = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/WheelMesh_FR.WheelMesh_FR"));
+	UStaticMesh* AuthorizedWheelRL = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/WheelMesh_RL.WheelMesh_RL"));
+	UStaticMesh* AuthorizedWheelRR = ConfiguratorVehicle::LoadOptionalStaticMesh(
+		TEXT("/Game/Configurator/AuthorizedAudiA5/WheelMesh_RR.WheelMesh_RR"));
+	const bool bAuthorizedBody = AuthorizedBody != nullptr;
+	Tags.Add(bAuthorizedBody ? AuthorizedResourceTag : TemporaryResourceTag);
 
 	PaintBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PaintBody"));
 	PaintBody->SetupAttachment(VehicleRoot);
-	PaintBody->SetStaticMesh(CubeMesh.Object);
-	PaintBody->SetMaterial(0, BasicMaterial.Object);
-	PaintBody->SetRelativeLocation(FVector(0.0, 0.0, 95.0));
-	PaintBody->SetRelativeScale3D(FVector(4.6, 1.9, 0.55));
-	ConfiguratorVehicle::MarkPartition(PaintBody, PaintPartTag, PaintSlotTag);
+	PaintBody->SetStaticMesh(bAuthorizedBody ? AuthorizedBody : CubeMesh.Object.Get());
+	if (!bAuthorizedBody)
+	{
+		PaintBody->SetMaterial(0, BasicMaterial.Object);
+		PaintBody->SetRelativeLocation(FVector(0.0, 0.0, 95.0));
+		PaintBody->SetRelativeScale3D(FVector(4.6, 1.9, 0.55));
+	}
+	ConfiguratorVehicle::MarkPartition(PaintBody, PaintPartTag, PaintSlotTag, bAuthorizedBody);
 
 	InteriorCabin = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InteriorCabin"));
 	InteriorCabin->SetupAttachment(VehicleRoot);
-	InteriorCabin->SetStaticMesh(CubeMesh.Object);
-	InteriorCabin->SetMaterial(0, BasicMaterial.Object);
-	InteriorCabin->SetRelativeLocation(FVector(-25.0, 0.0, 160.0));
-	InteriorCabin->SetRelativeScale3D(FVector(2.0, 1.55, 0.55));
-	ConfiguratorVehicle::MarkPartition(InteriorCabin, InteriorPartTag, InteriorSlotTag);
+	const bool bAuthorizedInterior = AuthorizedInterior != nullptr;
+	InteriorCabin->SetStaticMesh(
+		bAuthorizedInterior ? AuthorizedInterior : CubeMesh.Object.Get());
+	if (!bAuthorizedInterior)
+	{
+		InteriorCabin->SetMaterial(0, BasicMaterial.Object);
+		InteriorCabin->SetRelativeLocation(FVector(-25.0, 0.0, 160.0));
+		InteriorCabin->SetRelativeScale3D(FVector(2.0, 1.55, 0.55));
+	}
+	ConfiguratorVehicle::MarkPartition(
+		InteriorCabin, InteriorPartTag, InteriorSlotTag, bAuthorizedInterior);
 	// SC01 v2 最小闭环只驱动这一个明确代理槽，避免把 38 个 surface
 	// 错误地广播到整车所有内饰 Mesh。
 	InteriorCabin->ComponentTags.Add(USc01MaterialBinder::InteriorProxySlotTag);
 
 	Frame = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InternalFrame"));
 	Frame->SetupAttachment(VehicleRoot);
-	Frame->SetStaticMesh(CubeMesh.Object);
-	Frame->SetMaterial(0, BasicMaterial.Object);
-	Frame->SetRelativeLocation(FVector(15.0, 0.0, 55.0));
-	Frame->SetRelativeScale3D(FVector(3.8, 1.45, 0.12));
-	ConfiguratorVehicle::MarkPartition(Frame, FramePartTag, FrameSlotTag);
+	const bool bAuthorizedFrame = AuthorizedFrame != nullptr;
+	Frame->SetStaticMesh(bAuthorizedFrame ? AuthorizedFrame : CubeMesh.Object.Get());
+	if (!bAuthorizedFrame)
+	{
+		Frame->SetMaterial(0, BasicMaterial.Object);
+		Frame->SetRelativeLocation(FVector(15.0, 0.0, 55.0));
+		Frame->SetRelativeScale3D(FVector(3.8, 1.45, 0.12));
+	}
+	ConfiguratorVehicle::MarkPartition(Frame, FramePartTag, FrameSlotTag, bAuthorizedFrame);
 
 	WheelGroup = CreateDefaultSubobject<USceneComponent>(TEXT("WheelGroup"));
 	WheelGroup->SetupAttachment(VehicleRoot);
 	WheelGroup->ComponentTags.Add(WheelPartTag);
 	WheelGroup->ComponentTags.Add(WheelSlotTag);
-	WheelGroup->ComponentTags.Add(TemporaryResourceTag);
+	WheelGroup->ComponentTags.Add(
+		AuthorizedWheelFL != nullptr && AuthorizedWheelFR != nullptr
+			&& AuthorizedWheelRL != nullptr && AuthorizedWheelRR != nullptr
+			? AuthorizedResourceTag : TemporaryResourceTag);
 
 	const FVector WheelLocations[] = {
-		FVector(275.0, -175.0, 55.0),
-		FVector(275.0, 175.0, 55.0),
-		FVector(-275.0, -175.0, 55.0),
-		FVector(-275.0, 175.0, 55.0)
+		FVector(20.4874, -78.8235, 1.6167),
+		FVector(20.4874, 78.8235, 1.6167),
+		FVector(-254.4983, -78.8235, 1.6167),
+		FVector(-254.4983, 78.8235, 1.6167)
+	};
+	UStaticMesh* AuthorizedWheelMeshes[] = {
+		AuthorizedWheelFL, AuthorizedWheelFR,
+		AuthorizedWheelRL, AuthorizedWheelRR
 	};
 	const TCHAR* WheelNames[] = {
 		TEXT("WheelFrontLeft"),
@@ -112,64 +170,87 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 		USceneComponent* SpinPivot = CreateDefaultSubobject<USceneComponent>(
 			*FString::Printf(TEXT("%sSpinPivot"), WheelNames[Index]));
 		SpinPivot->SetupAttachment(SteeringPivot);
-		// Engine Cylinder 的轴为本地 Z；Roll 90° 将轮轴对齐车辆横向 Y。
-		SpinPivot->SetRelativeRotation(FRotator(0.0, 0.0, 90.0));
+		if (AuthorizedWheelMeshes[Index] == nullptr)
+		{
+			// Engine Cylinder 的轴为本地 Z；Roll 90° 将轮轴对齐车辆横向 Y。
+			SpinPivot->SetRelativeRotation(FRotator(0.0, 0.0, 90.0));
+		}
 		WheelSpinPivots.Add(SpinPivot);
 
 		UStaticMeshComponent* Wheel =
 			CreateDefaultSubobject<UStaticMeshComponent>(WheelNames[Index]);
 		Wheel->SetupAttachment(SpinPivot);
-		Wheel->SetStaticMesh(CylinderMesh.Object);
-		Wheel->SetMaterial(0, BasicMaterial.Object);
-		Wheel->SetRelativeScale3D(FVector(0.72, 0.72, 0.38));
-		ConfiguratorVehicle::MarkPartition(Wheel, WheelPartTag, WheelSlotTag);
+		const bool bAuthorizedWheel = AuthorizedWheelMeshes[Index] != nullptr;
+		Wheel->SetStaticMesh(
+			bAuthorizedWheel ? AuthorizedWheelMeshes[Index] : CylinderMesh.Object.Get());
+		if (!bAuthorizedWheel)
+		{
+			Wheel->SetMaterial(0, BasicMaterial.Object);
+			Wheel->SetRelativeScale3D(FVector(0.72, 0.72, 0.38));
+		}
+		else
+		{
+			Wheel->SetRelativeLocation(-WheelLocations[Index]);
+		}
+		ConfiguratorVehicle::MarkPartition(
+			Wheel, WheelPartTag, WheelSlotTag, bAuthorizedWheel);
 		Wheel->ComponentTags.Add(WheelControlTags[Index]);
 		Wheels.Add(Wheel);
 	}
 
-	const auto CreateTemporaryPanel = [this](
+	const auto CreateActuatedPanel = [this](
 		const FName PivotName,
 		const FName Name,
 		const FVector& PivotLocation,
 		const FVector& PanelOffset,
-		const FVector& Scale)
+		const FVector& Scale,
+		UStaticMesh* AuthorizedMesh)
 	{
 		USceneComponent* Pivot = CreateDefaultSubobject<USceneComponent>(PivotName);
 		Pivot->SetupAttachment(VehicleRoot);
 		Pivot->SetRelativeLocation(PivotLocation);
 		UStaticMeshComponent* Panel = CreateDefaultSubobject<UStaticMeshComponent>(Name);
 		Panel->SetupAttachment(Pivot);
-		Panel->SetStaticMesh(CubeMesh.Object);
-		Panel->SetMaterial(0, BasicMaterial.Object);
-		Panel->SetRelativeLocation(PanelOffset);
-		Panel->SetRelativeScale3D(Scale);
-		Panel->ComponentTags.Add(TemporaryResourceTag);
+		const bool bAuthorized = AuthorizedMesh != nullptr;
+		Panel->SetStaticMesh(bAuthorized ? AuthorizedMesh : CubeMesh.Object.Get());
+		if (!bAuthorized)
+		{
+			Panel->SetMaterial(0, BasicMaterial.Object);
+			Panel->SetRelativeLocation(PanelOffset);
+			Panel->SetRelativeScale3D(Scale);
+		}
+		else
+		{
+			Panel->SetRelativeLocation(-PivotLocation);
+		}
+		Panel->ComponentTags.Add(
+			bAuthorized ? AuthorizedResourceTag : TemporaryResourceTag);
 		Panel->ComponentTags.Add(TEXT("Configurator.Part.Actuated"));
 		return TPair<USceneComponent*, UStaticMeshComponent*>(Pivot, Panel);
 	};
 
-	const auto LeftDoorParts = CreateTemporaryPanel(
-		TEXT("LeftDoorHingePivot"), TEXT("DoorLeft_TEMP"),
-		FVector(-200.0, -196.0, 120.0), FVector(175.0, 0.0, 0.0),
-		FVector(1.75, 0.08, 0.52));
+	const auto LeftDoorParts = CreateActuatedPanel(
+		TEXT("LeftDoorHingePivot"), TEXT("DoorLeft"),
+		FVector(-35.9232, -82.8285, 59.6402), FVector(175.0, 0.0, 0.0),
+		FVector(1.75, 0.08, 0.52), AuthorizedDoorLeft);
 	LeftDoorPivot = LeftDoorParts.Key;
 	LeftDoor = LeftDoorParts.Value;
-	const auto RightDoorParts = CreateTemporaryPanel(
-		TEXT("RightDoorHingePivot"), TEXT("DoorRight_TEMP"),
-		FVector(-200.0, 196.0, 120.0), FVector(175.0, 0.0, 0.0),
-		FVector(1.75, 0.08, 0.52));
+	const auto RightDoorParts = CreateActuatedPanel(
+		TEXT("RightDoorHingePivot"), TEXT("DoorRight"),
+		FVector(-35.9232, 82.8285, 59.6402), FVector(175.0, 0.0, 0.0),
+		FVector(1.75, 0.08, 0.52), AuthorizedDoorRight);
 	RightDoorPivot = RightDoorParts.Key;
 	RightDoor = RightDoorParts.Value;
-	const auto HoodParts = CreateTemporaryPanel(
-		TEXT("HoodHingePivot"), TEXT("Hood_TEMP"),
-		FVector(125.0, 0.0, 130.0), FVector(135.0, 0.0, 0.0),
-		FVector(1.35, 1.72, 0.08));
+	const auto HoodParts = CreateActuatedPanel(
+		TEXT("HoodHingePivot"), TEXT("Hood"),
+		FVector(-43.4899, 0.0, 95.0235), FVector(135.0, 0.0, 0.0),
+		FVector(1.35, 1.72, 0.08), AuthorizedHood);
 	HoodPivot = HoodParts.Key;
 	Hood = HoodParts.Value;
-	const auto TrunkParts = CreateTemporaryPanel(
-		TEXT("TrunkHingePivot"), TEXT("Trunk_TEMP"),
-		FVector(-165.0, 0.0, 125.0), FVector(-105.0, 0.0, 0.0),
-		FVector(1.05, 1.72, 0.08));
+	const auto TrunkParts = CreateActuatedPanel(
+		TEXT("TrunkHingePivot"), TEXT("Trunk"),
+		FVector(-298.9839, 0.0, 103.8786), FVector(-105.0, 0.0, 0.0),
+		FVector(1.05, 1.72, 0.08), AuthorizedTrunk);
 	TrunkPivot = TrunkParts.Key;
 	Trunk = TrunkParts.Value;
 
@@ -284,18 +365,25 @@ bool AConfiguratorVehicleActor::ToggleWheelSpin()
 void AConfiguratorVehicleActor::ApplyConfiguration(
 	const FCarConfigurationSelection& Selection)
 {
-	SetComponentColor(
-		PaintBody,
-		PaintMaterial,
+	const FLinearColor PaintColor =
 		Selection.Paint == TEXT("paint-silver")
 			? FLinearColor(0.58f, 0.62f, 0.66f)
-			: FLinearColor(0.72f, 0.015f, 0.02f));
-	SetComponentColor(
-		InteriorCabin,
-		InteriorMaterial,
+			: FLinearColor(0.72f, 0.015f, 0.02f);
+	const FLinearColor InteriorColor =
 		Selection.Interior == TEXT("interior-ivory")
 			? FLinearColor(0.82f, 0.75f, 0.58f)
-			: FLinearColor(0.015f, 0.018f, 0.022f));
+			: FLinearColor(0.015f, 0.018f, 0.022f);
+	SetMaterialFamilyColor(TEXT("M_A5_Paint"), PaintColor);
+	SetMaterialFamilyColor(TEXT("M_A5_Interior"), InteriorColor);
+
+	if (PaintBody->ComponentHasTag(TemporaryResourceTag))
+	{
+		SetComponentColor(PaintBody, PaintMaterial, PaintColor);
+	}
+	if (InteriorCabin->ComponentHasTag(TemporaryResourceTag))
+	{
+		SetComponentColor(InteriorCabin, InteriorMaterial, InteriorColor);
+	}
 	SetComponentColor(
 		Frame,
 		FrameMaterial,
@@ -313,6 +401,45 @@ void AConfiguratorVehicleActor::ApplyConfiguration(
 		if (WheelMaterial != nullptr)
 		{
 			Wheel->SetMaterial(0, WheelMaterial);
+		}
+	}
+}
+
+void AConfiguratorVehicleActor::SetMaterialFamilyColor(
+	const FName& MaterialName,
+	const FLinearColor& Color)
+{
+	TInlineComponentArray<UStaticMeshComponent*> MeshComponents(this);
+	for (UStaticMeshComponent* Component : MeshComponents)
+	{
+		if (!IsValid(Component))
+		{
+			continue;
+		}
+		for (int32 MaterialIndex = 0;
+			MaterialIndex < Component->GetNumMaterials();
+			++MaterialIndex)
+		{
+			UMaterialInterface* Current = Component->GetMaterial(MaterialIndex);
+			UMaterialInstanceDynamic* Dynamic = Cast<UMaterialInstanceDynamic>(Current);
+			UMaterialInterface* Base =
+				Dynamic != nullptr ? Dynamic->Parent.Get() : Current;
+			if (!IsValid(Base) || Base->GetFName() != MaterialName)
+			{
+				continue;
+			}
+			if (Dynamic == nullptr)
+			{
+				Dynamic = Component->CreateAndSetMaterialInstanceDynamic(MaterialIndex);
+				if (Dynamic != nullptr)
+				{
+					RuntimeMaterialInstances.Add(Dynamic);
+				}
+			}
+			if (Dynamic != nullptr)
+			{
+				Dynamic->SetVectorParameterValue(TEXT("Color"), Color);
+			}
 		}
 	}
 }
@@ -352,9 +479,10 @@ bool AConfiguratorVehicleActor::HasStablePlaceholderBindings(
 		if (Component == nullptr
 			|| !Component->ComponentHasTag(PartTag)
 			|| !Component->ComponentHasTag(SlotTag)
-			|| !Component->ComponentHasTag(TemporaryResourceTag))
+			|| (!Component->ComponentHasTag(TemporaryResourceTag)
+				&& !Component->ComponentHasTag(AuthorizedResourceTag)))
 		{
-			OutErrors.Add(FString::Printf(TEXT("%s 标签或临时资源声明不完整。"), Label));
+			OutErrors.Add(FString::Printf(TEXT("%s 标签或资源声明不完整。"), Label));
 		}
 	};
 
@@ -369,10 +497,12 @@ bool AConfiguratorVehicleActor::HasStablePlaceholderBindings(
 	Validate(WheelGroup, WheelPartTag, WheelSlotTag, TEXT("wheel"));
 	for (const UStaticMeshComponent* Panel : { LeftDoor, RightDoor, Hood, Trunk })
 	{
-		if (Panel == nullptr || !Panel->ComponentHasTag(TemporaryResourceTag)
+		if (Panel == nullptr
+			|| (!Panel->ComponentHasTag(TemporaryResourceTag)
+				&& !Panel->ComponentHasTag(AuthorizedResourceTag))
 			|| !Panel->ComponentHasTag(TEXT("Configurator.Part.Actuated")))
 		{
-			OutErrors.Add(TEXT("可逆车身部件缺少临时资源或执行器绑定标签。"));
+			OutErrors.Add(TEXT("可逆车身部件缺少资源或执行器绑定标签。"));
 		}
 	}
 	if (LeftDoorPivot == nullptr || RightDoorPivot == nullptr
@@ -408,12 +538,14 @@ bool AConfiguratorVehicleActor::HasStablePlaceholderBindings(
 			|| Wheel == nullptr
 			|| Wheel->GetAttachParent() != WheelSpinPivots[Index]
 			|| WheelSpinPivots[Index]->GetAttachParent() != WheelSteeringPivots[Index]
-			|| !FMath::IsNearlyEqual(
-				FMath::Abs(WheelSpinPivots[Index]->GetRelativeRotation().Roll),
-				90.0f))
+			|| (!Wheel->ComponentHasTag(AuthorizedResourceTag)
+				&& !FMath::IsNearlyEqual(
+					FMath::Abs(WheelSpinPivots[Index]->GetRelativeRotation().Roll),
+					90.0f)))
 		{
 			OutErrors.Add(TEXT("车轮轴向或 Steering/Spin/Mesh 层级不正确。"));
 		}
 	}
-	return OutErrors.IsEmpty() && Tags.Contains(TemporaryResourceTag);
+	return OutErrors.IsEmpty()
+		&& (Tags.Contains(TemporaryResourceTag) || Tags.Contains(AuthorizedResourceTag));
 }

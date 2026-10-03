@@ -12,10 +12,7 @@ class USmoothWheelControllerComponent;
 class UStaticMeshComponent;
 
 /**
- * 首个原子阶段使用的可运行车辆占位 Actor。
- *
- * 几何和基础材质全部来自 /Engine/BasicShapes，明确属于临时资源；正式车辆接入时
- * 保留四个 Configurator.Part.* 标签与 Configurator.Slot.* 逻辑槽即可替换本类。
+ * 运行时优先加载 AuthorizedAudiA5 真实几何；单个资产缺失时保留 Engine 基础形状回退。
  */
 UCLASS(BlueprintType)
 class CONFIGURATIONSYSTEM_API AConfiguratorVehicleActor final : public AActor
@@ -28,7 +25,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	/** 把领域状态映射到占位几何颜色，不参与 canonical key 或价格计算。 */
+	/** 把领域状态映射到车辆逻辑分区颜色，不参与 canonical key 或价格计算。 */
 	UFUNCTION(BlueprintCallable, Category = "车辆配置")
 	void ApplyConfiguration(const FCarConfigurationSelection& Selection);
 
@@ -45,7 +42,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "车辆体验")
 	bool ToggleWheelSpin();
 
-	/** 自动化探针使用：验证四分区标签、逻辑槽和临时资源声明未漂移。 */
+	/** 自动化探针使用：验证真实几何或代理回退、分区标签及可逆执行器绑定。 */
 	bool HasStablePlaceholderBindings(TArray<FString>& OutErrors) const;
 
 	static const FName PaintPartTag;
@@ -57,6 +54,7 @@ public:
 	static const FName InteriorSlotTag;
 	static const FName FrameSlotTag;
 	static const FName TemporaryResourceTag;
+	static const FName AuthorizedResourceTag;
 
 private:
 	UMaterialInstanceDynamic* GetOrCreateMaterial(
@@ -66,6 +64,7 @@ private:
 		UStaticMeshComponent* Component,
 		TObjectPtr<UMaterialInstanceDynamic>& Storage,
 		const FLinearColor& Color);
+	void SetMaterialFamilyColor(const FName& MaterialName, const FLinearColor& Color);
 
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TObjectPtr<USceneComponent> VehicleRoot;
@@ -141,6 +140,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> FrameMaterial;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UMaterialInstanceDynamic>> RuntimeMaterialInstances;
 
 	bool bWheelsSpinning = false;
 };

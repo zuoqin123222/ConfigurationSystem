@@ -8,6 +8,21 @@
 /package/
 /.trae-html-share-packages/
 
+# 内部授权资产（不得推送到公开远端）
+/source/clients/ue/SourceAssets/Authorized/
+/source/clients/ue/Content/Configurator/AuthorizedAudiA5/
+/source/clients/ue/Content/Configurator/_ImportStaging/03FC3866EEB049DE8A1A14D521E49321/
+/source/clients/ue/Content/Configurator/_ImportStaging/CDF1A16663CD47AF963602DE04499D19/
+/source/clients/ue/Content/Configurator/_ImportStaging/FB0AA0CD468DA10EA08DB7B67A3E141C/
+/source/clients/ue/Content/Configurator/_Validation/
+/docs/technical-probes/AUTOMOTIVE_CONFIGURATOR_INTAKE_2026-10-03.md
+/docs/technical-probes/VEHICLE_REBUILD_*.md
+/docs/technical-probes/assets/authorized-a5-*/
+/docs/technical-probes/assets/authorized-a5-material-repair.json
+/docs/technical-probes/assets/vehicle-rebuild-*/
+/AuthorizedAudiA5棋盘格修复验证报告.md
+/AuthorizedAudiA5代码审查报告.*
+
 # Unreal Engine 与 IDE 生成文件
 *.sln
 *.slnx
