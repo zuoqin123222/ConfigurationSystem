@@ -224,6 +224,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     : resolveActivePublicationVersion(
         bakeRoot,
         legacyData.publication.publicationVersion,
+        options.bakeRoot === undefined
+          ? process.env.PUBLICATION_VERSION
+          : null,
       );
   const data: ContractData = {
     ...legacyData,

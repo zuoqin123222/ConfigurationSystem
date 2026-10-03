@@ -84,9 +84,9 @@ function assertPublicationVersion(value: unknown, source: string): string {
 export function resolveActivePublicationVersion(
   packageRoot: string,
   fallbackVersion = "mvp-v1",
-  environmentVersion = process.env.PUBLICATION_VERSION,
+  environmentVersion: string | null | undefined = process.env.PUBLICATION_VERSION,
 ): string {
-  if (environmentVersion !== undefined) {
+  if (environmentVersion !== undefined && environmentVersion !== null) {
     return assertPublicationVersion(environmentVersion, "环境变量 PUBLICATION_VERSION");
   }
 
