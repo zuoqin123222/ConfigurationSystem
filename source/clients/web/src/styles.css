@@ -23,6 +23,16 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   overflow: hidden;
   pointer-events: none;
 }
+.header-stage > button {
+  min-width: 116px;
+  height: 100%;
+  padding-inline: 22px;
+}
+.header-stage > button::after {
+  right: 22px;
+  bottom: 0;
+  left: 22px;
+}
 .ue-color-corrected {
   width: 100%;
   min-height: 100vh;
@@ -245,12 +255,89 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .paint-editor { margin-top: 4px; padding: 12px; border: 1px solid #d9d7cf; border-radius: 7px; background: #faf9f5; }
 .paint-editor .section-title { margin-top: 0; }
-.color-control, .range-control {
+.color-control {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  margin-bottom: 8px;
+  color: #666a62;
+  font-size: 10px;
+}
+.color-picker-wrap { display: grid; gap: 7px; }
+.color-hex-input {
+  justify-self: end;
+  width: 82px;
+  border: 1px solid #d2d1ca;
+  border-radius: 5px;
+  padding: 5px 7px;
+  color: #353833;
+  background: #fff;
+  text-align: center;
+  font: 10px ui-monospace, SFMono-Regular, Consolas, monospace;
+  text-transform: uppercase;
+}
+.inline-color-picker { display: grid; gap: 8px; }
+.color-picker-plane {
+  position: relative;
+  height: 118px;
+  overflow: hidden;
+  border: 1px solid #bcbeb7;
+  border-radius: 8px;
+  touch-action: none;
+  cursor: crosshair;
+  background:
+    linear-gradient(to bottom, transparent, #000),
+    linear-gradient(to right, #fff, transparent),
+    var(--picker-hue);
+}
+.color-picker-cursor {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.65), 0 2px 7px rgba(0,0,0,.24);
+  pointer-events: none;
+}
+.color-picker-hue {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.color-picker-hue input {
+  appearance: none;
+  width: 100%;
+  height: 12px;
+  border: 1px solid #bcbeb7;
+  border-radius: 99px;
+  background: linear-gradient(
+    to right,
+    #f00,
+    #ff0,
+    #0f0,
+    #0ff,
+    #00f,
+    #f0f,
+    #f00
+  );
+}
+.color-picker-hue input::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.65), 0 2px 7px rgba(0,0,0,.24);
+}
+.range-control {
   display: grid; grid-template-columns: 68px minmax(0, 1fr) 42px;
   gap: 9px; align-items: center; min-height: 34px; color: #666a62; font-size: 10px;
 }
-.color-control input { width: 100%; height: 28px; padding: 2px; border: 1px solid #ccc9bf; background: #fff; }
-.color-control code, .range-control output { color: #555950; text-align: right; font-size: 9px; }
+.range-control output { color: #555950; text-align: right; font-size: 9px; }
 .range-control input { width: 100%; accent-color: #33372f; }
 
 .panel-scroll {
@@ -391,9 +478,9 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   gap: 24px;
   align-items: center;
   width: 100%;
-  height: 100vh;
-  padding: 0 30px 8px;
-  overflow: hidden;
+  height: calc(100vh - 18px);
+  padding: 0 30px;
+  overflow: visible;
   color: #171815;
   background: #fff;
 }
@@ -402,11 +489,11 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   position: absolute;
   z-index: 0;
   right: 0;
-  bottom: 0;
+  top: 100%;
   left: 0;
   height: 18px;
   pointer-events: none;
-  background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,.18));
+  background: linear-gradient(to bottom, rgba(0,0,0,.2), rgba(0,0,0,0));
 }
 .configurator-header > * { position: relative; z-index: 1; }
 .configurator-header h1 {
@@ -420,8 +507,14 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   align-items: stretch;
   justify-content: center;
   height: 100%;
+  gap: 14px;
 }
-.header-stage { display: flex; align-items: center; }
+.header-stage {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 14px;
+}
 .header-stage-separator {
   color: #a8aaa4;
   font-size: 13px;

@@ -30,6 +30,7 @@ namespace
 	const TCHAR* DefaultWebConfiguratorEndpoint = TEXT("127.0.0.1:8080");
 	constexpr float ExpandedPanelWidth = 480.0f;
 	constexpr float HeaderHeight = 76.0f;
+	constexpr float HeaderShadowHeight = 18.0f;
 	constexpr float StageMargin = 18.0f;
 	constexpr float StageCornerRadius = 24.0f;
 	constexpr float ControlsLayerWidth = 620.0f;
@@ -461,7 +462,11 @@ void UConfiguratorPanel::BuildWidgetTree()
 	HeaderBrowser->SetBridge(WebBridge);
 	UCanvasPanelSlot* HeaderSlot = Root->AddChildToCanvas(HeaderBrowser);
 	HeaderSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 0.0f));
-	HeaderSlot->SetOffsets(FMargin(0.0f, 0.0f, 0.0f, HeaderHeight));
+	HeaderSlot->SetOffsets(FMargin(
+		0.0f,
+		0.0f,
+		0.0f,
+		HeaderHeight + HeaderShadowHeight));
 	HeaderSlot->SetZOrder(6);
 
 	ControlsBrowser = WidgetTree->ConstructWidget<UConfiguratorBrowserWidget>(

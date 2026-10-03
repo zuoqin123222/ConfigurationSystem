@@ -45,6 +45,7 @@ import {
   type UeConfiguratorHeaderState,
 } from './ueBridge'
 import ExperienceControls from './ExperienceControls'
+import InlineColorPicker from './InlineColorPicker'
 
 const CACHE_KEY = 'sc01-v2-configurator'
 const SRGB_TO_LINEAR_TABLE = Array.from({ length: 256 }, (_, index) => {
@@ -858,16 +859,28 @@ function Configurator({
               <h3>自定义车漆</h3>
               <span>¥9,600</span>
             </div>
-            <label className="color-control">
+            <div className="color-control">
               <span>颜色</span>
-              <input
-                aria-label="车漆颜色"
-                type="color"
-                value={currentCustomization.colorHex}
-                onChange={(event) => setPaintParameter('colorHex', event.target.value.toUpperCase())}
-              />
-              <code>{currentCustomization.colorHex}</code>
-            </label>
+              <div className="color-picker-wrap">
+                <InlineColorPicker
+                  value={currentCustomization.colorHex}
+                  onChange={(value) => setPaintParameter('colorHex', value)}
+                />
+                <input
+                  className="color-hex-input"
+                  aria-label="车漆颜色"
+                  type="text"
+                  maxLength={7}
+                  value={currentCustomization.colorHex}
+                  onChange={(event) => {
+                    const value = event.target.value.toUpperCase()
+                    if (/^#[0-9A-F]{6}$/.test(value)) {
+                      setPaintParameter('colorHex', value)
+                    }
+                  }}
+                />
+              </div>
+            </div>
             {([
               ['metallic', '金属度'],
               ['roughness', '粗糙度'],

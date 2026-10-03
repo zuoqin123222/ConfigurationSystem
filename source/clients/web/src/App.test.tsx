@@ -348,7 +348,8 @@ describe('App v2', () => {
     expect(screen.getByRole('button', { name: /银色.*免费/ })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /自定义车漆.*¥9,600/ }))
     const editor = screen.getByRole('region', { name: '自定义车漆参数' })
-    expect(within(editor).getByLabelText('车漆颜色')).toHaveAttribute('type', 'color')
+    expect(within(editor).getByLabelText('车漆颜色')).toHaveAttribute('type', 'text')
+    expect(within(editor).getByRole('slider', { name: '车漆颜色饱和度和亮度' })).toBeInTheDocument()
     expect(within(editor).getByLabelText('金属度')).toHaveAttribute('min', '0')
     expect(within(editor).getByLabelText('金属度')).toHaveAttribute('max', '1')
 
