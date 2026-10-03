@@ -286,7 +286,10 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 			1000.0,
 			0.1));
 	TestTrue(TEXT("完整 POV 插值包含视场角"),
-		FMath::IsNearlyEqual(MidPOV.FOV, 56.0f, 0.1f));
+		FMath::IsNearlyEqual(
+			MidPOV.FOV,
+			FMath::Lerp(StartPOV.FOV, EndPOV.FOV, 0.5f),
+			0.1f));
 	AConfigRuntimeCameraActor* RuntimeCamera =
 		NewObject<AConfigRuntimeCameraActor>(GetTransientPackage());
 	RuntimeCamera->ApplyCameraPOV(FinalPOV);
