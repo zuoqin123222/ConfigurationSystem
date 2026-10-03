@@ -173,6 +173,26 @@ namespace Sc01V2
 				}
 				Out.DefaultSelections.Add(Pair.Key, MoveTemp(OptionId));
 			}
+			const TSharedPtr<FJsonObject>* OptionIdAliases = nullptr;
+			if (!Root->TryGetObjectField(TEXT("optionIdAliases"), OptionIdAliases))
+			{
+				SetError(OutError, TEXT("INVALID_CATALOG"),
+					TEXT("optionIdAliases 必须是 object"));
+				return false;
+			}
+			for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : (*OptionIdAliases)->Values)
+			{
+				FString OptionId;
+				if (!Pair.Value.IsValid()
+					|| !Pair.Value->TryGetString(OptionId)
+					|| OptionId.IsEmpty())
+				{
+					SetError(OutError, TEXT("INVALID_CATALOG"),
+						TEXT("optionIdAliases 包含非法迁移目标"));
+					return false;
+				}
+				Out.OptionIdAliases.Add(Pair.Key, MoveTemp(OptionId));
+			}
 
 			const TArray<TSharedPtr<FJsonValue>>* Regions = nullptr;
 			if (!Root->TryGetArrayField(TEXT("regions"), Regions))
@@ -720,7 +740,6 @@ namespace Sc01V2
 				|| (Option.ColorMode.IsSet()
 					&& Option.ColorMode.GetValue() == TEXT("variant")
 					&& (!Option.MaterialFamilyId.IsSet()
-						|| Option.Pricing.bIsStandard
 						|| !Option.Pricing.UnitPriceMinor.IsSet())))
 			{
 				Private::SetError(OutError, TEXT("INVALID_PRICING"), Option.OptionId);
@@ -728,6 +747,16 @@ namespace Sc01V2
 			}
 			CandidateOptions.Add(Option.OptionId, Index);
 			CandidateOptionsBySurface.FindChecked(Option.SurfaceId).Add(Option.OptionId);
+		}
+		for (const TPair<FString, FString>& Pair : Candidate.OptionIdAliases)
+		{
+			if (Pair.Key.IsEmpty()
+				|| CandidateOptions.Contains(Pair.Key)
+				|| !CandidateOptions.Contains(Pair.Value))
+			{
+				Private::SetError(OutError, TEXT("INVALID_OPTION_ID_ALIAS"), Pair.Key);
+				return false;
+			}
 		}
 		for (const FString& SurfaceId : Candidate.SelectionOrder)
 		{
@@ -777,6 +806,7 @@ namespace Sc01V2
 
 		Catalog = MoveTemp(Candidate);
 		OptionIndexById = MoveTemp(CandidateOptions);
+		OptionIdAliases = Catalog.OptionIdAliases;
 		VariantIndexById = MoveTemp(CandidateVariants);
 		OptionIdsBySurface = MoveTemp(CandidateOptionsBySurface);
 		RegionIndexById = MoveTemp(CandidateRegions);
@@ -796,8 +826,15 @@ namespace Sc01V2
 
 	const FOption* FCatalogIndex::FindOption(const FString& OptionId) const
 	{
-		const int32* Index = OptionIndexById.Find(OptionId);
+		const FString Resolved = ResolveOptionId(OptionId);
+		const int32* Index = OptionIndexById.Find(Resolved);
 		return bValid && Index != nullptr ? &Catalog.Options[*Index] : nullptr;
+	}
+
+	FString FCatalogIndex::ResolveOptionId(const FString& OptionId) const
+	{
+		const FString* Resolved = OptionIdAliases.Find(OptionId);
+		return Resolved != nullptr ? *Resolved : OptionId;
 	}
 
 	const FMaterialVariant* FCatalogIndex::FindMaterialVariant(const FString& VariantId) const
@@ -994,10 +1031,10 @@ namespace Sc01V2
 					return false;
 				}
 			}
-			else if (*OptionId != CustomPaintOptionId || !Private::IsPaintValid(Pair.Value.Paint))
+			else if (!Option->SupportsCustomColor() || !Private::IsPaintValid(Pair.Value.Paint))
 			{
 				Private::SetError(OutError, TEXT("INVALID_PAINT_CUSTOMIZATION"),
-					FString::Printf(TEXT("%s 自定义车漆必须包含合法色值和 0 到 1 的完整参数"), *Pair.Key));
+					FString::Printf(TEXT("%s 所选 option 不支持自定义色，或自定义色参数非法"), *Pair.Key));
 				return false;
 			}
 		}
@@ -1011,8 +1048,13 @@ namespace Sc01V2
 		FConfiguration& OutConfiguration,
 		FError& OutError)
 	{
-		if (!ValidateSelections(Selections, Catalog, OutError)
-			|| !ValidateCustomizations(Customizations, Selections, Catalog, OutError))
+		FSelections NormalizedSelections;
+		for (const TPair<FString, FString>& Pair : Selections)
+		{
+			NormalizedSelections.Add(Pair.Key, Catalog.ResolveOptionId(Pair.Value));
+		}
+		if (!ValidateSelections(NormalizedSelections, Catalog, OutError)
+			|| !ValidateCustomizations(Customizations, NormalizedSelections, Catalog, OutError))
 		{
 			return false;
 		}
@@ -1026,7 +1068,7 @@ namespace Sc01V2
 		TSet<FString> RenderRelevant;
 		for (const FString& SurfaceId : Data.SelectionOrder)
 		{
-			const FString* OptionId = Selections.Find(SurfaceId);
+			const FString* OptionId = NormalizedSelections.Find(SurfaceId);
 			if (OptionId == nullptr)
 			{
 				continue;
@@ -1052,7 +1094,7 @@ namespace Sc01V2
 			*Data.VehicleId,
 			*Data.CatalogVersion,
 			*Private::Sha256Digest24(FString::Join(RenderLines, TEXT("\n"))));
-		Candidate.Selections = Selections;
+		Candidate.Selections = MoveTemp(NormalizedSelections);
 		Candidate.Customizations = Customizations;
 		for (TPair<FString, FCustomization>& Pair : Candidate.Customizations)
 		{

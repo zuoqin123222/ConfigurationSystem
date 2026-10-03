@@ -252,14 +252,14 @@ bool USc01V2ConfigurationState::TryCommit(
 
 	LastErrorCode.Reset();
 	const bool bChanged =
-		!Selections.OrderIndependentCompareEqual(CandidateSelections)
+		!Selections.OrderIndependentCompareEqual(Derived.Selections)
 		|| !CustomizationMapsEqual(Customizations, NormalizedCustomizations);
 	if (!bChanged)
 	{
 		return true;
 	}
 
-	Selections = CandidateSelections;
+	Selections = MoveTemp(Derived.Selections);
 	Customizations = MoveTemp(NormalizedCustomizations);
 	ConfigurationId = MoveTemp(Derived.ConfigurationId);
 	RenderKey = MoveTemp(Derived.RenderKey);

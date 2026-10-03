@@ -39,7 +39,7 @@ const additionalDefaults = [
   ['lower-skirt', 'lower-skirt-aluminum', '车辆下护板'],
   ['front-caliper-color', 'front-caliper-black', '前卡钳'],
   ['rear-caliper-color', 'rear-caliper-black', '后卡钳'],
-  ['engine-bay-cover', 'engine-cover-ppg', '机舱盖板'],
+  ['engine-bay-cover', 'engine-cover-silver', '车架'],
   ['steering-wheel-addon', 'steering-addon-eva', '加粗'],
   ['steering-center-mark', 'steering-center-standard', '回中标'],
   ['seat-backrest', 'seat-back-ultrasuede-black', '座椅接触面'],
@@ -73,7 +73,6 @@ const additionalDefaults = [
 
 const optionalSurfaceIds = new Set([
   'lower-skirt',
-  'engine-bay-cover',
   'steering-wheel-addon',
   'interior-painted-parts',
   'door-sill',
@@ -125,6 +124,7 @@ export const catalogFixture: CatalogV2 = {
     'wheel-color': 'wheel-color-bright-silver',
     'front-caliper-color': 'front-caliper-black',
     'rear-caliper-color': 'rear-caliper-black',
+    'engine-bay-cover': 'engine-cover-silver',
     'steering-wheel-skin': 'steering-skin-ultrasuede-black',
     'steering-center-mark': 'steering-center-standard',
     'seat-backrest': 'seat-back-ultrasuede-black',
@@ -167,7 +167,7 @@ export const catalogFixture: CatalogV2 = {
     { componentId: 'wheel', categoryId: 'exterior', displayName: '轮毂' },
     { componentId: 'caliper', categoryId: 'exterior', displayName: '卡钳' },
     { componentId: 'steering-wheel', categoryId: 'interior', displayName: '方向盘' },
-    { componentId: 'instrument-panel', categoryId: 'interior', displayName: 'IP' },
+    { componentId: 'instrument-panel', categoryId: 'interior', displayName: '仪表台' },
     { componentId: 'a-pillar', categoryId: 'interior', displayName: 'A柱' },
     { componentId: 'seat', categoryId: 'interior', displayName: '座椅' },
     { componentId: 'door-trim', categoryId: 'interior', displayName: '门板' },
@@ -200,33 +200,33 @@ export const catalogFixture: CatalogV2 = {
     { materialFamilyId: 'paint', displayName: '喷漆' },
     { materialFamilyId: 'aluminum-alloy', displayName: '铝合金' },
     { materialFamilyId: 'magnesium-alloy', displayName: '镁合金' },
-    { materialFamilyId: 'ultrasuede', displayName: 'Ultrasuede' },
+    { materialFamilyId: 'ultrasuede', displayName: '奥司维' },
     { materialFamilyId: 'alcantara', displayName: 'Alcantara' },
-    { materialFamilyId: 'leather', displayName: '真皮' },
+    { materialFamilyId: 'leather', displayName: '牛皮' },
   ],
   materialVariants: [
     {
-      variantId: 'ultrasuede-p6-sf4',
+      variantId: 'ultrasuede-p6-uf7',
       materialFamilyId: 'ultrasuede',
-      displayName: 'SF4',
-      colorCode: 'SF4',
-      thumbnailUrl: '/sc01/thumbnails/ultrasuede-p6-sf4.png',
+      displayName: 'Black UF7',
+      colorCode: 'UF7',
+      thumbnailUrl: '/sc01/thumbnails/ultrasuede-p6-uf7.webp',
       reviewRequired: false,
     },
     {
-      variantId: 'alcantara-p2-2911',
+      variantId: 'alcantara-p4-9002',
       materialFamilyId: 'alcantara',
-      displayName: '2911',
-      colorCode: '2911',
-      thumbnailUrl: '/sc01/thumbnails/alcantara-p2-2911.png',
+      displayName: '9002',
+      colorCode: '9002',
+      thumbnailUrl: '/sc01/thumbnails/alcantara-p4-9002.webp',
       reviewRequired: false,
     },
     {
-      variantId: 'leather-p10-1217',
+      variantId: 'leather-p9-9743',
       materialFamilyId: 'leather',
-      displayName: '1217',
-      colorCode: '1217',
-      thumbnailUrl: '/sc01/thumbnails/leather-p10-1217.webp',
+      displayName: '9743 Nero',
+      colorCode: '9743',
+      thumbnailUrl: '/sc01/thumbnails/leather-p9-9743.webp',
       reviewRequired: false,
     },
   ],
@@ -256,13 +256,13 @@ export const catalogFixture: CatalogV2 = {
     },
     option('wheel-aluminum-alloy', 'wheel-material', 'aluminum-alloy', '铝合金'),
     option('wheel-magnesium-alloy', 'wheel-material', 'magnesium-alloy', '镁合金', false),
-    option('steering-skin-ultrasuede-black', 'steering-wheel-skin', 'ultrasuede', 'Ultrasuede（黑）'),
+    option('steering-skin-ultrasuede-black', 'steering-wheel-skin', 'ultrasuede', '奥司维（黑）'),
     {
       ...option(
         'seat-back-ultrasuede-custom',
         'seat-backrest',
         'ultrasuede',
-        'Ultrasuede 定制',
+        '奥司维定制',
         false,
       ),
       pricing: {
@@ -278,7 +278,7 @@ export const catalogFixture: CatalogV2 = {
         'steering-skin-ultrasuede-custom',
         'steering-wheel-skin',
         'ultrasuede',
-        'Ultrasuede（PDF 色卡定制）',
+        '奥司维',
         false,
       ),
       parameters: {
@@ -301,7 +301,7 @@ export const catalogFixture: CatalogV2 = {
       },
     },
     {
-      ...option('steering-skin-leather', 'steering-wheel-skin', 'leather', '真皮定制', false),
+      ...option('steering-skin-leather', 'steering-wheel-skin', 'leather', '牛皮', false),
       parameters: {
         color: { mode: 'variant', value: null, required: true },
         material: { materialFamilyId: 'leather', variantId: null },
@@ -315,22 +315,46 @@ export const catalogFixture: CatalogV2 = {
       },
     },
     {
-      ...option('steering-skin-leather-user', 'steering-wheel-skin', 'leather', '真皮用户定制', false),
+      ...option(
+        'engine-cover-ppg-custom',
+        'engine-bay-cover',
+        'paint',
+        '自定义颜色(PPG涂层)',
+        false,
+      ),
       parameters: {
-        color: { mode: 'variant', value: null, required: true },
-        material: { materialFamilyId: 'leather', variantId: null },
+        color: { mode: 'custom' as const, value: null, required: true },
+        material: { materialFamilyId: 'paint', variantId: null },
       },
       pricing: {
         ...pricing,
-        unitPriceMinor: 128000,
+        unitPriceMinor: 960000,
         quantity: 1,
         isStandard: false,
-        status: 'confirmed',
+        status: 'confirmed' as const,
       },
     },
-    ...additionalDefaults.map(([surfaceId, optionId, displayName]) => (
-      option(optionId, surfaceId, 'paint', displayName, !optionalSurfaceIds.has(surfaceId))
-    )),
+    ...additionalDefaults.map(([surfaceId, optionId, displayName]) => {
+      const result = option(
+        optionId,
+        surfaceId,
+        'paint',
+        displayName,
+        !optionalSurfaceIds.has(surfaceId),
+      )
+      if (surfaceId === 'engine-bay-cover') {
+        return {
+          ...result,
+          displayName: '银色',
+          colorCode: '#C0C0C0',
+          parameters: {
+            color: { mode: 'fixed' as const, value: '#C0C0C0', required: true },
+            material: { materialFamilyId: 'paint', variantId: null },
+          },
+        }
+      }
+      return result
+    }),
   ],
 }
 

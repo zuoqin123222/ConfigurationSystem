@@ -19,7 +19,7 @@ const selections: Record<string, string> = {
   "lower-skirt": "lower-skirt-aluminum",
   "front-caliper-color": "front-caliper-black",
   "rear-caliper-color": "rear-caliper-black",
-  "engine-bay-cover": "engine-cover-ppg",
+  "engine-bay-cover": "engine-cover-ppg-custom",
   "steering-wheel-skin": "steering-skin-ultrasuede-black",
   "steering-wheel-addon": "steering-addon-eva",
   "steering-center-mark": "steering-center-standard",
@@ -70,7 +70,7 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().vehicle.vehicleId, "sc01");
   assert.equal(response.json().vehicle.quotable, false);
-  assert.equal(response.json().options.length, 136);
+  assert.equal(response.json().options.length, 152);
   assert.equal(response.json().surfaces.length, 38);
   assert.equal(response.json().selectionOrder.length, 38);
   assert.equal(response.json().categories.map(
@@ -78,7 +78,7 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   ).join(" > "), "外饰 > 内饰 > 性能 > 个性化");
   assert.equal(response.json().surfaces.filter(
     (surface: { required: boolean }) => !surface.required,
-  ).length, 9);
+  ).length, 8);
   assert.equal(response.json().materialVariants.length, 352);
 });
 
@@ -360,8 +360,8 @@ test("Server 拒绝不具备 variant 色彩能力的同材料族 option", async 
   const app = buildApp();
   t.after(() => app.close());
   const data = loadSc01V2();
-  const ultrasuede = data.catalog.materialVariants.find(
-    (item) => item.materialFamilyId === "ultrasuede",
+  const microfiber = data.catalog.materialVariants.find(
+    (item) => item.materialFamilyId === "microfiber",
   )!;
 
   const response = await app.inject({
@@ -369,8 +369,12 @@ test("Server 拒绝不具备 variant 色彩能力的同材料族 option", async 
     url: "/api/v2/configurations",
     payload: {
       ...request,
+      selections: {
+        ...request.selections,
+        "embroidered-logo": "embroidered-logo-custom",
+      },
       customizations: {
-        "seat-backrest": { materialVariantId: ultrasuede.variantId },
+        "embroidered-logo": { materialVariantId: microfiber.variantId },
       },
     },
   });
@@ -411,6 +415,31 @@ test("customizations 可随配置保存并恢复", async (t) => {
   });
   assert.equal(restored.statusCode, 200);
   assert.deepEqual(restored.json().customizations, payload.customizations);
+});
+
+test("旧 optionId 迁移到规范 ID，且自定义色按 option 能力验证", () => {
+  const data = loadSc01V2();
+  const migrated = deriveSc01Configuration({
+    ...selections,
+    "steering-wheel-skin": "steering-skin-leather-user",
+  }, data);
+  assert.equal(
+    migrated.selections["steering-wheel-skin"],
+    "steering-skin-leather",
+  );
+
+  const paint = {
+    colorHex: "#445566",
+    metallic: 0.5,
+    roughness: 0.2,
+    clearCoat: 0.8,
+    orangePeel: 0.1,
+    flakeIntensity: 0.3,
+  };
+  const chassis = deriveSc01Configuration(selections, data, {
+    "engine-bay-cover": paint,
+  });
+  assert.deepEqual(chassis.customizations["engine-bay-cover"], paint);
 });
 
 test("草案拒绝报价请求，render resolve 只返回投影标识", async (t) => {

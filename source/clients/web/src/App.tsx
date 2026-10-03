@@ -11,12 +11,13 @@ import {
 import {
   componentsForCategory,
   createCanonicalKey,
+  createDefaultPaintCustomization,
   createInitialSelections,
   createRenderCanonicalKey,
-  materialGroupsForSurface,
   materialVariantsForOption,
   normalizeCustomizations,
   normalizeSelections,
+  supportsMaterialVariants,
   surfacesForComponent,
 } from './configurator'
 import type {
@@ -68,11 +69,60 @@ export function getAppView(search = window.location.search): AppView {
 }
 
 function optionPrice(option: CatalogV2['options'][number]): string {
-  if (option.pricing.unitPriceMinor === 0) return '免费'
+  if (option.pricing.isStandard || option.pricing.unitPriceMinor === 0) return '免费'
   if (option.pricing.unitPriceMinor !== null) {
     return `¥${(option.pricing.unitPriceMinor / 100).toLocaleString('zh-CN')}`
   }
-  return option.pricing.isStandard ? '标配' : '价格待确认'
+  return '价格待确认'
+}
+
+function colorSortKey(displayName: string, colorCode: string | null): string {
+  const value = `${displayName} ${colorCode ?? ''}`.toLowerCase()
+  const hues = [
+    ['黑', 'black'],
+    ['灰', 'grey', 'gray', '银', 'silver', '白', 'white'],
+    ['红', 'red', '酒红', 'burgundy'],
+    ['橙', 'orange'],
+    ['黄', 'yellow', '金', 'gold'],
+    ['绿', 'green'],
+    ['青', 'cyan', 'teal'],
+    ['蓝', 'blue'],
+    ['紫', 'purple', 'violet'],
+    ['粉', 'pink'],
+    ['棕', 'brown', '咖', 'tan', '米', 'beige'],
+  ]
+  const hueIndex = hues.findIndex((names) => names.some((name) => value.includes(name)))
+  return `${String(hueIndex < 0 ? 99 : hueIndex).padStart(2, '0')}:${value}`
+}
+
+const PREFERRED_DARK_VARIANTS: Record<string, string> = {
+  ultrasuede: 'ultrasuede-p6-uf7',
+  alcantara: 'alcantara-p4-9002',
+  leather: 'leather-p9-9743',
+  microfiber: 'microfiber-p16-np-3048',
+}
+
+function sortMaterialVariants(
+  variants: CatalogV2['materialVariants'],
+  materialFamilyId: string,
+): CatalogV2['materialVariants'] {
+  const preferredId = PREFERRED_DARK_VARIANTS[materialFamilyId]
+  return variants.slice().sort((left, right) => {
+    if (left.variantId === preferredId) return -1
+    if (right.variantId === preferredId) return 1
+    return colorSortKey(left.displayName, left.colorCode)
+      .localeCompare(colorSortKey(right.displayName, right.colorCode), 'zh-CN')
+  })
+}
+
+function optionSwatch(option: CatalogV2['options'][number]): string {
+  if (option.parameters.color?.mode === 'custom') {
+    return 'conic-gradient(#e84b4b, #e8ce4b, #55bb6a, #4b8ee8, #9855c7, #e84b4b)'
+  }
+  const color = option.parameters.color?.value ?? option.colorCode
+  if (color && /^#[0-9a-f]{6}$/i.test(color)) return color
+  if (option.pricing.isStandard) return '#171817'
+  return '#8b8d88'
 }
 
 function Showroom() {
@@ -221,13 +271,22 @@ function ConfiguratorTopBar({
   onAction: (action: 'save' | 'share') => void
   standalone?: boolean
 }) {
+  const activeStageIndex = Math.max(
+    0,
+    CONFIGURATOR_CATEGORIES.findIndex((category) => category.id === categoryId),
+  )
   return (
     <header className={`configurator-header ${standalone ? 'standalone-header' : ''}`}>
-      <h1>打造你的座驾</h1>
+      <h1 className="brand-title" aria-label="SC01 定制">
+        <strong>SC</strong><em>01</em><small>定制</small>
+      </h1>
       <nav aria-label="选配阶段">
+        <span
+          className={`stage-indicator stage-indicator-${activeStageIndex}`}
+          aria-hidden="true"
+        />
         {CONFIGURATOR_CATEGORIES.map((category, index) => (
           <div className="header-stage" key={category.id}>
-            {index > 0 && <span className="header-stage-separator" aria-hidden="true">&gt;&gt;</span>}
             <button
               className={categoryId === category.id ? 'active' : ''}
               aria-label={category.label}
@@ -308,7 +367,7 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
         if (controller.signal.aborted) return
         const configurationId = new URLSearchParams(window.location.search).get('configuration')
         let initialSelections = createInitialSelections(nextCatalog)
-        let initialCustomizations: Customizations = {}
+        let initialCustomizations = normalizeCustomizations(nextCatalog, initialSelections, {})
         let loadedConfiguration: ConfigurationV2 | null = null
         if (configurationId) {
           loadedConfiguration = await fetchConfiguration(configurationId, controller.signal)
@@ -444,23 +503,30 @@ function Configurator({
   const [syncMessage, setSyncMessage] = useState('')
 
   const components = useMemo(
-    () => componentsForCategory(catalog, categoryId),
+    () => {
+      const categoryComponents = componentsForCategory(catalog, categoryId)
+      if (categoryId !== 'personalization') return categoryComponents
+      const componentIds = new Set(categoryComponents.map((component) => component.componentId))
+      return catalog.surfaces
+        .filter((surface) => componentIds.has(surface.componentId))
+        .map((surface) => ({
+          componentId: `surface:${surface.surfaceId}`,
+          categoryId,
+          displayName: surface.displayName,
+        }))
+    },
     [catalog, categoryId],
   )
   const surfaces = useMemo(
-    () => surfacesForComponent(catalog, componentId)
-      .filter((surface) => components.some((component) => component.componentId === surface.componentId)),
+    () => componentId.startsWith('surface:')
+      ? catalog.surfaces.filter((surface) => surface.surfaceId === componentId.slice(8))
+      : surfacesForComponent(catalog, componentId)
+        .filter((surface) => components.some((component) => component.componentId === surface.componentId)),
     [catalog, componentId, components],
   )
   const currentSurface = catalog.surfaces.find((surface) => surface.surfaceId === surfaceId)
     ?? surfaces[0]
     ?? catalog.surfaces[0]
-  const materialGroups = materialGroupsForSurface(catalog, currentSurface.surfaceId)
-  const options = materialGroups.flatMap((group) => group.options)
-  const selectedOption = catalog.options.find(
-    (option) => option.optionId === selections[currentSurface.surfaceId],
-  )
-  const currentCustomization = customizations[currentSurface.surfaceId]
   const canonicalKey = createCanonicalKey(catalog, selections, customizations)
   const savedKey = savedConfiguration
     ? createCanonicalKey(
@@ -581,25 +647,18 @@ function Configurator({
     if (bridge) applyUeConfiguration(bridge, selections, customizations)
   }, [customizations, embedded, selections])
 
-  const selectOption = (optionId?: string) => {
+  const selectOption = (surfaceId: string, optionId?: string) => {
     const nextSelections = { ...selections }
-    if (optionId) nextSelections[currentSurface.surfaceId] = optionId
-    else delete nextSelections[currentSurface.surfaceId]
+    if (optionId) nextSelections[surfaceId] = optionId
+    else delete nextSelections[surfaceId]
     setSelections(nextSelections)
     const option = catalog.options.find((item) => item.optionId === optionId)
-    const existing = customizations[currentSurface.surfaceId]
+    const existing = customizations[surfaceId]
     let nextCustomizations = normalizeCustomizations(catalog, nextSelections, customizations)
-    if (option?.optionId === 'body-cover-custom' && !existing) {
+    if (option?.parameters.color?.mode === 'custom' && !existing) {
       nextCustomizations = {
         ...nextCustomizations,
-        [currentSurface.surfaceId]: {
-          colorHex: '#A61D24',
-          metallic: 0.35,
-          roughness: 0.28,
-          clearCoat: 0.8,
-          orangePeel: 0.15,
-          flakeIntensity: 0.25,
-        },
+        [surfaceId]: createDefaultPaintCustomization(),
       }
     }
     setCustomizations(nextCustomizations)
@@ -607,28 +666,30 @@ function Configurator({
     setSyncMessage('')
   }
 
-  const setMaterialVariant = (materialVariantId: string, optionId: string) => {
-    const nextSelections = { ...selections, [currentSurface.surfaceId]: optionId }
+  const setMaterialVariant = (surfaceId: string, materialVariantId: string, optionId: string) => {
+    const nextSelections = { ...selections, [surfaceId]: optionId }
     setSelections(nextSelections)
     setCustomizations(normalizeCustomizations(catalog, nextSelections, {
       ...customizations,
-      [currentSurface.surfaceId]: { materialVariantId },
+      [surfaceId]: { materialVariantId },
     }))
     setSyncState('idle')
     setSyncMessage('')
   }
 
   const setPaintParameter = (
+    surfaceId: string,
     key: keyof PaintCustomization,
     value: string | number,
   ) => {
-    const paint = currentCustomization && !('materialVariantId' in currentCustomization)
-      ? currentCustomization
+    const customization = customizations[surfaceId]
+    const paint = customization && !('materialVariantId' in customization)
+      ? customization
       : null
     if (!paint) return
     setCustomizations({
       ...customizations,
-      [currentSurface.surfaceId]: { ...paint, [key]: value },
+      [surfaceId]: { ...paint, [key]: value },
     })
     setSyncState('idle')
     setSyncMessage('')
@@ -702,6 +763,210 @@ function Configurator({
     window.addEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
     return () => window.removeEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
   })
+
+  const visibleSurfaces = componentId === 'wheel' ? surfaces : [currentSurface]
+
+  const renderSurfaceOptions = (surface: CatalogV2['surfaces'][number]) => {
+    const options = catalog.options.filter((option) => option.surfaceId === surface.surfaceId)
+    const variantFamilyIds = new Set(
+      options.flatMap((option) =>
+        supportsMaterialVariants(option) && option.materialFamilyId
+          ? [option.materialFamilyId]
+          : []),
+    )
+    const flatOptions = options.filter(
+      (option) => !option.materialFamilyId || !variantFamilyIds.has(option.materialFamilyId),
+    )
+    const materialGroups = catalog.materialFamilies.flatMap((materialFamily) => {
+      if (!variantFamilyIds.has(materialFamily.materialFamilyId)) return []
+      const familyOptions = options.filter(
+        (option) => option.materialFamilyId === materialFamily.materialFamilyId,
+      )
+      return familyOptions.length > 0 ? [{ materialFamily, options: familyOptions }] : []
+    })
+    const selectedOption = catalog.options.find(
+      (option) => option.optionId === selections[surface.surfaceId],
+    )
+    const currentCustomization = customizations[surface.surfaceId]
+
+    const renderFlatOption = (
+      option: CatalogV2['options'][number],
+      displayName = option.displayName,
+      thumbnailUrl = option.thumbnailUrl,
+    ) => {
+      const optionSelected = selections[surface.surfaceId] === option.optionId
+        && !(currentCustomization && 'materialVariantId' in currentCustomization)
+      return (
+        <button
+          key={option.optionId}
+          className={`color-choice ${optionSelected ? 'selected' : ''}`}
+          onClick={() => selectOption(surface.surfaceId, option.optionId)}
+          aria-pressed={optionSelected}
+          aria-label={`${displayName}，${optionPrice(option)}`}
+        >
+          {thumbnailUrl
+            ? <img src={thumbnailUrl} alt="" loading="lazy" />
+            : option.parameters.color?.mode === 'custom'
+              ? <img src="/sc01/option-icons/rainbow.svg" alt="" />
+              : <span
+                  className="color-choice-swatch"
+                  style={{ background: optionSwatch(option) }}
+                  aria-hidden="true"
+                />}
+          <span className="color-choice-name">{displayName}</span>
+          <small>{optionPrice(option)}</small>
+        </button>
+      )
+    }
+
+    return (
+      <section className="surface-options" key={surface.surfaceId} aria-label={`${surface.displayName}配置`}>
+        <div className="section-title">
+          <h3>{surface.displayName}</h3>
+        </div>
+        {(flatOptions.length > 0 || !surface.required) && (
+          <div className="choice-grid flat-options">
+            {!surface.required && (
+              <button
+                className={`color-choice ${selections[surface.surfaceId] ? '' : 'selected'}`}
+                onClick={() => selectOption(surface.surfaceId)}
+                aria-pressed={!selections[surface.surfaceId]}
+                aria-label="默认，免费"
+              >
+                <img src="/sc01/option-icons/default.svg" alt="" />
+                <span className="color-choice-name">默认</span>
+                <small>免费</small>
+              </button>
+            )}
+            {flatOptions.map((option) => renderFlatOption(option))}
+          </div>
+        )}
+        <div className="material-options">
+          {materialGroups.map(({ materialFamily, options: unsortedFamilyOptions }) => {
+            const familyOptions = unsortedFamilyOptions.slice().sort((left, right) =>
+              Number(right.pricing.isStandard) - Number(left.pricing.isStandard))
+            const familyOptionIds = new Set(familyOptions.map((option) => option.optionId))
+            const familySelected = selectedOption
+              ? familyOptionIds.has(selectedOption.optionId)
+              : false
+            const standardFamilyOption = familyOptions.find(
+              (option) => option.pricing.isStandard && !supportsMaterialVariants(option),
+            )
+            const variantOptions = familyOptions.filter(supportsMaterialVariants)
+            const variantChoices = variantOptions.flatMap((option) =>
+              sortMaterialVariants(
+                materialVariantsForOption(catalog, option),
+                materialFamily.materialFamilyId,
+              ).map((variant) => ({ option, variant })))
+            const preferredVariantId = PREFERRED_DARK_VARIANTS[materialFamily.materialFamilyId]
+            const preferredVariant = catalog.materialVariants.find(
+              (variant) =>
+                variant.materialFamilyId === materialFamily.materialFamilyId
+                && variant.variantId === preferredVariantId,
+            )
+            const remainingFamilyOptions = familyOptions.filter(
+              (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
+            )
+            const firstVariantChoice = variantChoices[0]
+            const activateFamily = () => {
+              if (standardFamilyOption) {
+                selectOption(surface.surfaceId, standardFamilyOption.optionId)
+              } else if (firstVariantChoice) {
+                setMaterialVariant(
+                  surface.surfaceId,
+                  firstVariantChoice.variant.variantId,
+                  firstVariantChoice.option.optionId,
+                )
+              }
+            }
+            return (
+              <section
+                className={`material-family ${familySelected ? 'selected' : 'muted'}`}
+                key={materialFamily.materialFamilyId}
+                aria-label={`${materialFamily.displayName}材质`}
+              >
+                <button
+                  className="material-family-title"
+                  onClick={activateFamily}
+                  aria-pressed={familySelected}
+                >
+                  <strong>{materialFamily.displayName}</strong>
+                  <span className="check" aria-hidden="true">{familySelected ? '✓' : ''}</span>
+                </button>
+                <div className="choice-grid">
+                  {standardFamilyOption && renderFlatOption(
+                    standardFamilyOption,
+                    preferredVariant?.displayName ?? standardFamilyOption.displayName,
+                    preferredVariant?.thumbnailUrl ?? standardFamilyOption.thumbnailUrl,
+                  )}
+                  {remainingFamilyOptions.map((option) => renderFlatOption(option))}
+                  {variantChoices
+                    .filter(({ variant }) =>
+                      !standardFamilyOption || variant.variantId !== preferredVariantId)
+                    .map(({ option, variant }) => {
+                      const variantSelected = selections[surface.surfaceId] === option.optionId
+                        && currentCustomization
+                        && 'materialVariantId' in currentCustomization
+                        && currentCustomization.materialVariantId === variant.variantId
+                      return (
+                      <button
+                        key={`${option.optionId}:${variant.variantId}`}
+                        className={`color-choice ${variantSelected ? 'selected' : ''}`}
+                        onClick={() => setMaterialVariant(
+                          surface.surfaceId,
+                          variant.variantId,
+                          option.optionId,
+                        )}
+                        aria-pressed={Boolean(variantSelected)}
+                        aria-label={`${variant.displayName}，${materialFamily.displayName}，${optionPrice(option)}`}
+                      >
+                        <img src={variant.thumbnailUrl} alt="" loading="lazy" />
+                        <span className="color-choice-name">{variant.displayName}</span>
+                        <small>{optionPrice(option)}</small>
+                      </button>
+                      )
+                    })}
+                </div>
+              </section>
+            )
+          })}
+        </div>
+
+        {selectedOption?.parameters.color?.mode === 'custom'
+          && currentCustomization
+          && !('materialVariantId' in currentCustomization) && (
+          <section className="paint-editor" aria-label={`${selectedOption.displayName}颜色`}>
+            <div className="section-title">
+              <h3>自定义色</h3>
+              <span>{optionPrice(selectedOption)}</span>
+            </div>
+            <div className="color-control">
+              <span>颜色</span>
+              <div className="color-picker-wrap">
+                <InlineColorPicker
+                  value={currentCustomization.colorHex}
+                  onChange={(value) => setPaintParameter(surface.surfaceId, 'colorHex', value)}
+                />
+                <input
+                  className="color-hex-input"
+                  aria-label={`${surface.displayName}颜色`}
+                  type="text"
+                  maxLength={7}
+                  value={currentCustomization.colorHex}
+                  onChange={(event) => {
+                    const value = event.target.value.toUpperCase()
+                    if (/^#[0-9A-F]{6}$/.test(value)) {
+                      setPaintParameter(surface.surfaceId, 'colorHex', value)
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+      </section>
+    )
+  }
 
   return (
     <main className={`app-shell ${embedded ? 'embedded' : 'standalone'}`}>
@@ -780,7 +1045,7 @@ function Configurator({
           {embedded && <div className="panel-head">
             <div>
               <span className="eyebrow">SC01 / CONFIGURATOR</span>
-              <h2>打造你的座驾</h2>
+              <h2 aria-label="SC01 定制">SC01 定制</h2>
             </div>
             <span className="step">4 阶段顺序选配</span>
           </div>}
@@ -796,160 +1061,21 @@ function Configurator({
               value={categoryId}
               onChange={selectCategory}
             />}
-          <FilterGroup label="部件" items={components.map((item) => ({
-            id: item.componentId,
-            name: item.displayName,
-          }))} value={componentId} onChange={setComponentId} />
-          <FilterGroup label="项目" items={surfaces.map((item) => ({
-            id: item.surfaceId,
-            name: item.displayName,
-          }))} value={currentSurface.surfaceId} onChange={setSurfaceId} />
-          <section className="options" aria-live="polite">
-          <div className="section-title">
-            <h3>选择{currentSurface.displayName}</h3>
-            <span>{currentSurface.required ? `${options.length} 款可选` : '默认不选装'}</span>
-          </div>
-          {!currentSurface.required && (
-            <button
-              className={`none-option ${selections[currentSurface.surfaceId] ? '' : 'selected'}`}
-              onClick={() => selectOption()}
-              aria-pressed={!selections[currentSurface.surfaceId]}
-            >
-              不选装 <small>默认 · ¥0</small>
-            </button>
-          )}
-          <div className="material-groups">
-            {materialGroups.map(({ materialFamily, options: familyOptions }) => {
-              const active = selectedOption?.materialFamilyId === materialFamily.materialFamilyId
-              const colorCardOptions = familyOptions.filter(
-                (option) => materialVariantsForOption(catalog, option).length > 0,
-              )
-              return (
-                <section
-                  className={`material-group ${active ? 'active' : ''}`}
-                  key={materialFamily.materialFamilyId}
-                  aria-label={`${materialFamily.displayName}材质组`}
-                >
-                  <div className="material-group-title">
-                    <strong>{materialFamily.displayName}</strong>
-                    <span>{active ? '当前材质' : '可选材质'}</span>
-                  </div>
-                  <div className="option-grid">
-                    {familyOptions.map((option) => {
-                      const selected = selections[currentSurface.surfaceId] === option.optionId
-                      return (
-                <button
-                  key={option.optionId}
-                  className={`option-card ${selected ? 'selected' : ''}`}
-                  onClick={() => selectOption(option.optionId)}
-                  aria-pressed={selected}
-                >
-                  <span className={`option-swatch swatch-${option.optionId}`} aria-hidden="true">
-                    {option.displayName.slice(0, 1)}
-                  </span>
-                  <span className="option-info">
-                    <strong>{option.displayName}</strong>
-                    <small>
-                      {option.pricing.isStandard ? '默认色 · 免费' : optionPrice(option)}
-                    </small>
-                  </span>
-                  <span className="check" aria-hidden="true">{selected ? '✓' : ''}</span>
-                </button>
-                      )
-                    })}
-                  </div>
-                  {colorCardOptions.map((colorCardOption) => (
-                    <div
-                      className="variant-strip"
-                      role="region"
-                      key={colorCardOption.optionId}
-                      aria-label={colorCardOptions.length === 1
-                        ? `${materialFamily.displayName} PDF 色卡`
-                        : `${colorCardOption.displayName} PDF 色卡`}
-                    >
-                      {materialVariantsForOption(catalog, colorCardOption).map((variant) => {
-                        const selected = selections[currentSurface.surfaceId] === colorCardOption.optionId
-                          && currentCustomization
-                          && 'materialVariantId' in currentCustomization
-                          && currentCustomization.materialVariantId === variant.variantId
-                        return (
-                          <button
-                            key={variant.variantId}
-                            className={selected ? 'selected' : ''}
-                            onClick={() => setMaterialVariant(
-                              variant.variantId,
-                              colorCardOption.optionId,
-                            )}
-                            aria-pressed={Boolean(selected)}
-                            aria-label={`${variant.displayName}，PDF 色卡定制，${optionPrice(colorCardOption)}`}
-                            title={`${variant.displayName} · PDF 色卡定制`}
-                          >
-                            <img src={variant.thumbnailUrl} alt="" loading="lazy" />
-                            <span>{variant.displayName}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  ))}
-                </section>
-              )
-            })}
-          </div>
+          <section className="part-selector" aria-label="部件与子项">
+            <FilterGroup label="部件" items={components.map((item) => ({
+              id: item.componentId,
+              name: item.displayName,
+            }))} value={componentId} onChange={setComponentId} />
+            {surfaces.length > 1 && componentId !== 'wheel' && (
+              <FilterGroup label="子项" items={surfaces.map((item) => ({
+                id: item.surfaceId,
+                name: item.displayName,
+              }))} value={currentSurface.surfaceId} onChange={setSurfaceId} />
+            )}
           </section>
-
-          {selectedOption?.optionId === 'body-cover-custom'
-            && currentCustomization
-            && !('materialVariantId' in currentCustomization) && (
-            <section className="paint-editor" aria-label="自定义车漆参数">
-            <div className="section-title">
-              <h3>自定义车漆</h3>
-              <span>¥9,600</span>
-            </div>
-            <div className="color-control">
-              <span>颜色</span>
-              <div className="color-picker-wrap">
-                <InlineColorPicker
-                  value={currentCustomization.colorHex}
-                  onChange={(value) => setPaintParameter('colorHex', value)}
-                />
-                <input
-                  className="color-hex-input"
-                  aria-label="车漆颜色"
-                  type="text"
-                  maxLength={7}
-                  value={currentCustomization.colorHex}
-                  onChange={(event) => {
-                    const value = event.target.value.toUpperCase()
-                    if (/^#[0-9A-F]{6}$/.test(value)) {
-                      setPaintParameter('colorHex', value)
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            {([
-              ['metallic', '金属度'],
-              ['roughness', '粗糙度'],
-              ['clearCoat', '清漆层'],
-              ['orangePeel', '橘皮纹'],
-              ['flakeIntensity', '金属闪片'],
-            ] as const).map(([key, label]) => (
-              <label className="range-control" key={key}>
-                <span>{label}</span>
-                <input
-                  aria-label={label}
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={currentCustomization[key]}
-                  onChange={(event) => setPaintParameter(key, Number(event.target.value))}
-                />
-                <output>{currentCustomization[key].toFixed(2)}</output>
-              </label>
-            ))}
-            </section>
-          )}
+          <section className="options" aria-live="polite">
+            {visibleSurfaces.map(renderSurfaceOptions)}
+          </section>
           </div>
 
         </aside>

@@ -17,7 +17,7 @@
         "lower-skirt": "lower-skirt-aluminum",
         "front-caliper-color": "front-caliper-black",
         "rear-caliper-color": "rear-caliper-black",
-        "engine-bay-cover": "engine-cover-ppg",
+        "engine-bay-cover": "engine-cover-ppg-custom",
         "steering-wheel-skin": "steering-skin-ultrasuede-black",
         "steering-wheel-addon": "steering-addon-eva",
         "steering-center-mark": "steering-center-standard",
@@ -50,8 +50,8 @@
         "pedal": "pedal-racing"
       },
       "customizations": {},
-      "configurationId": "cfg-f18d00c50d8fd21d99e524b0",
-      "renderKey": "sc01__sc01-draft-20260121__render-f18d00c50d8fd21d99e524b0"
+      "configurationId": "cfg-a6f4ff1da447a06af7ce32fa",
+      "renderKey": "sc01__sc01-draft-20260121__render-a6f4ff1da447a06af7ce32fa"
     },
     {
       "name": "property-order-independent-selection",
@@ -64,7 +64,7 @@
         "lower-skirt": "lower-skirt-aluminum",
         "front-caliper-color": "front-caliper-black",
         "rear-caliper-color": "rear-caliper-black",
-        "engine-bay-cover": "engine-cover-ppg",
+        "engine-bay-cover": "engine-cover-ppg-custom",
         "steering-wheel-addon": "steering-addon-eva",
         "steering-center-mark": "steering-center-standard",
         "seat-backrest": "seat-back-ultrasuede-black",
@@ -96,8 +96,8 @@
         "pedal": "pedal-racing"
       },
       "customizations": {},
-      "configurationId": "cfg-49e26bc4e86caaccdc01d46d",
-      "renderKey": "sc01__sc01-draft-20260121__render-49e26bc4e86caaccdc01d46d"
+      "configurationId": "cfg-678808a394da496861a249ca",
+      "renderKey": "sc01__sc01-draft-20260121__render-678808a394da496861a249ca"
     }
   ]
 }

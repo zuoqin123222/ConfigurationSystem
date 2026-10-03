@@ -19,7 +19,7 @@ const fixture = (name) =>
 
 test("SC01 v2 草案 catalog、正反配置、价格结果与黄金向量聚合通过", async () => {
   const result = await validateSc01Fixtures(root);
-  assert.deepEqual(result, { optionCount: 136, vectorCount: 2 });
+  assert.deepEqual(result, { optionCount: 152, vectorCount: 2 });
 });
 
 test("catalog 使用显式 defaultSelections 消除多标配项的顺序歧义", async () => {
@@ -124,8 +124,9 @@ test("材料 variant 只允许应用到声明 variant 色彩能力的 option", a
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const valid = await fixture("sc01.configuration.valid.v2.json");
   const unsupported = structuredClone(valid);
+  unsupported.selections["embroidered-logo"] = "embroidered-logo-custom";
   unsupported.customizations = {
-    "seat-backrest": { materialVariantId: "ultrasuede-p6-sf4" }
+    "embroidered-logo": { materialVariantId: "microfiber-p16-np-3048" }
   };
 
   assert.throws(
@@ -161,7 +162,7 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
   );
   assert.equal(catalog.surfaces.length, 38);
   assert.equal(catalog.selectionOrder.length, 38);
-  assert.equal(catalog.surfaces.filter((surface) => !surface.required).length, 9);
+  assert.equal(catalog.surfaces.filter((surface) => !surface.required).length, 8);
   assert.ok(catalog.surfaces.every((surface) =>
     surface.required === catalog.options.some(
       (option) => option.surfaceId === surface.surfaceId && option.pricing.isStandard
@@ -179,6 +180,29 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
     material: { materialFamilyId: "paint", variantId: null }
   });
   assert.ok(catalog.materialVariants.some((variant) => variant.reviewRequired));
+  assert.deepEqual(
+    catalog.materialFamilies
+      .filter((family) => ["ultrasuede", "alcantara", "leather", "microfiber", "woven-wool"]
+        .includes(family.materialFamilyId))
+      .map((family) => family.displayName),
+    ["奥司维", "Alcantara", "牛皮", "超纤皮", "织物羊毛"]
+  );
+  assert.ok(catalog.options.every((option) => !option.displayName.includes("%用户选择")));
+  assert.equal(catalog.optionIdAliases["door-middle-leather-72"], "door-middle-leather");
+  assert.equal(byId.get("engine-cover-silver").pricing.isStandard, true);
+  assert.equal(byId.get("engine-cover-ppg-custom").parameters.color.mode, "custom");
+  assert.deepEqual(
+    catalog.components
+      .filter((component) => component.categoryId === "personalization")
+      .map((component) => component.displayName),
+    ["饰件", "缝线与徽标", "操控与脚垫"]
+  );
+  assert.deepEqual(
+    catalog.options
+      .filter((option) => option.surfaceId === "wheel-color")
+      .map((option) => option.displayName),
+    ["亮银色", "黑色", "深灰色", "碳纤维", "金色", "古铜色"]
+  );
 });
 
 test("每个有备选项的 surface 变化都会改变 configurationId，且仅非渲染项复用 renderKey", async () => {

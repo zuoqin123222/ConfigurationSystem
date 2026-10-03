@@ -53,7 +53,7 @@ describe('v2 动态选配逻辑', () => {
     expect(componentsForCategory(catalogFixture, 'exterior').map((item) => item.componentId))
       .toEqual(['car-paint', 'chassis', 'wheel', 'caliper'])
     expect(componentsForCategory(catalogFixture, 'interior').map((item) => item.displayName))
-      .toEqual(['方向盘', 'IP', 'A柱', '座椅', '门板', '储物盒盖', '副仪表台', '车顶'])
+      .toEqual(['方向盘', '仪表台', 'A柱', '座椅', '门板', '储物盒盖', '副仪表台', '车顶'])
     expect(surfacesForComponent(catalogFixture, 'wheel').map((item) => item.surfaceId))
       .toEqual([
         'wheel-material',
@@ -90,7 +90,7 @@ describe('v2 动态选配逻辑', () => {
       'exterior-body-cover': 'body-cover-custom',
     }
     const customizations = {
-      'steering-wheel-skin': { materialVariantId: 'ultrasuede-p6-sf4' },
+      'steering-wheel-skin': { materialVariantId: 'ultrasuede-p6-uf7' },
       'exterior-body-cover': {
         colorHex: '#123456',
         metallic: 0.2,
@@ -110,15 +110,15 @@ describe('v2 动态选配逻辑', () => {
 
   it('恢复时丢弃与所选 option 材料族不匹配的 variant', () => {
     expect(normalizeCustomizations(catalogFixture, initialSelections, {
-      'steering-wheel-skin': { materialVariantId: 'alcantara-p2-2911' },
+      'steering-wheel-skin': { materialVariantId: 'alcantara-p4-9002' },
     })).toEqual({})
     expect(normalizeCustomizations(catalogFixture, {
       ...initialSelections,
       'steering-wheel-skin': 'steering-skin-ultrasuede-custom',
     }, {
-      'steering-wheel-skin': { materialVariantId: 'ultrasuede-p6-sf4' },
+      'steering-wheel-skin': { materialVariantId: 'ultrasuede-p6-uf7' },
     })).toEqual({
-      'steering-wheel-skin': { materialVariantId: 'ultrasuede-p6-sf4' },
+      'steering-wheel-skin': { materialVariantId: 'ultrasuede-p6-uf7' },
     })
   })
 })

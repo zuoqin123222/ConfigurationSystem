@@ -55,6 +55,7 @@ export interface Sc01Catalog {
   };
   selectionOrder: string[];
   defaultSelections: Record<string, string>;
+  optionIdAliases: Record<string, string>;
   surfaces: Array<{ surfaceId: string; required: boolean; [key: string]: unknown }>;
   materialVariants: Sc01MaterialVariant[];
   options: Sc01Option[];
@@ -159,9 +160,12 @@ export function validateSc01Selections(
 
   const selections: Sc01Selections = {};
   for (const surfaceId of expected) {
-    const optionId = value[surfaceId];
+    const submittedOptionId = value[surfaceId];
     const surface = data.catalog.surfaces.find((item) => item.surfaceId === surfaceId);
-    if (optionId === undefined && surface?.required === false) continue;
+    if (submittedOptionId === undefined && surface?.required === false) continue;
+    const optionId = typeof submittedOptionId === "string"
+      ? data.catalog.optionIdAliases[submittedOptionId] ?? submittedOptionId
+      : submittedOptionId;
     if (
       typeof optionId !== "string" ||
       !data.optionIdsBySurface.get(surfaceId)?.has(optionId)
@@ -244,7 +248,6 @@ export function validateSc01Customizations(
       }
       if (
         option.parameters.color?.mode !== "variant"
-        || option.pricing.isStandard
         || option.pricing.unitPriceMinor === null
       ) {
         throw new RequestError(
@@ -268,7 +271,7 @@ export function validateSc01Customizations(
     }
 
     if (
-      option.optionId !== "body-cover-custom"
+      option.parameters.color?.mode !== "custom"
       || Object.keys(customization).length !== PAINT_KEYS.length
       || !PAINT_KEYS.every((key) => Object.hasOwn(customization, key))
       || typeof customization.colorHex !== "string"
@@ -278,7 +281,7 @@ export function validateSc01Customizations(
       throw new RequestError(
         400,
         "INVALID_PAINT_CUSTOMIZATION",
-        `${surfaceId} 自定义车漆必须包含合法色值和 0 到 1 的完整参数`,
+        `${surfaceId} 所选 option 不支持自定义色，或自定义色参数非法`,
       );
     }
     result[surfaceId] = {
@@ -454,6 +457,7 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
     catalog.vehicle.quotable !== false ||
     catalog.selectionOrder.length !== catalog.surfaces.length ||
     !isRecord(catalog.defaultSelections) ||
+    !isRecord(catalog.optionIdAliases) ||
     catalog.selectionOrder.some((surfaceId) =>
       !catalog.surfaces.some((surface) => surface.surfaceId === surfaceId)
     ) ||
@@ -505,7 +509,6 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
         option.parameters.color?.mode === "variant"
         && (
           option.materialFamilyId === null
-          || option.pricing.isStandard
           || option.pricing.unitPriceMinor === null
         )
       )
@@ -514,6 +517,17 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
     }
     options.set(option.optionId, option);
     optionIdsBySurface.get(option.surfaceId)?.add(option.optionId);
+  }
+  for (const [legacyOptionId, optionId] of Object.entries(catalog.optionIdAliases)) {
+    if (
+      options.has(legacyOptionId)
+      || typeof optionId !== "string"
+      || !options.has(optionId)
+    ) {
+      throw new Error(
+        `SC01 v2 旧 optionId 迁移非法：${legacyOptionId} -> ${String(optionId)}`,
+      );
+    }
   }
   for (const variant of catalog.materialVariants) {
     if (materialVariants.has(variant.variantId)) {

@@ -43,14 +43,15 @@ bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 	USc01V2ConfigurationState* State =
 		NewObject<USc01V2ConfigurationState>(GetTransientPackage());
 	TestTrue(TEXT("从 Primary Asset 初始化 v2 状态"), State->Initialize(CatalogAsset));
-	TestEqual(TEXT("默认状态仅包含 29 个显式标配项目"), State->GetSelections().Num(), 29);
+	TestEqual(TEXT("默认状态包含 30 个显式标配项目"), State->GetSelections().Num(), 30);
 	TestEqual(
 		TEXT("车漆读取首个显式标配项"),
 		State->GetSelections().FindRef(TEXT("exterior-body-cover")),
 		FString(TEXT("body-cover-red")));
-	TestFalse(
-		TEXT("可选机舱盖板默认不选装"),
-		State->GetSelections().Contains(TEXT("engine-bay-cover")));
+	TestEqual(
+		TEXT("车架默认银色"),
+		State->GetSelections().FindRef(TEXT("engine-bay-cover")),
+		FString(TEXT("engine-cover-silver")));
 	TestFalse(TEXT("初始化已派生 configurationId"), State->GetConfigurationId().IsEmpty());
 	TestFalse(TEXT("初始化已派生 renderKey"), State->GetRenderKey().IsEmpty());
 
@@ -76,7 +77,7 @@ bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("非法事务不产生部分提交"), State->GetConfigurationId(), IdBeforeInvalid);
 
 	TMap<FString, FString> PaintSelections = Defaults;
-	PaintSelections[TEXT("exterior-body-cover")] = Sc01V2::CustomPaintOptionId;
+	PaintSelections[TEXT("exterior-body-cover")] = TEXT("body-cover-custom");
 	FSc01V2PaintCustomization Paint;
 	Paint.ColorHex = TEXT("#336699");
 	Paint.Metallic = 0.45;

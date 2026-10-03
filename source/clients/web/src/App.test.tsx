@@ -105,7 +105,7 @@ describe('App v2', () => {
     render(<App />)
 
     expect(screen.getByText('正在加载 SC01 草案目录…')).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: '打造你的座驾' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'SC01 定制' })).toBeInTheDocument()
     const stages = screen.getByRole('navigation', { name: '选配阶段' })
     expect(within(stages).getAllByRole('button')).toHaveLength(4)
     expect(within(stages).getByRole('button', { name: '外饰' })).toHaveAttribute('aria-current', 'step')
@@ -121,10 +121,14 @@ describe('App v2', () => {
     expect(screen.queryByRole('region', { name: '阶段筛选' })).not.toBeInTheDocument()
     expect(screen.getByRole('region', { name: '部件筛选' }))
       .toHaveTextContent('车漆车架轮毂卡钳')
+    expect(screen.queryByText(/当前材质|可选材质|款可选/)).not.toBeInTheDocument()
+    expect(document.querySelector('.option-card')).toBeNull()
+    expect(document.querySelector('.material-family-title')).toBeNull()
+    expect(document.querySelectorAll('.color-choice')).toHaveLength(3)
     expect(within(screen.getByRole('group', { name: '车辆视角' }))
       .getAllByRole('button')).toHaveLength(4)
     expect(catalogFixture.selectionOrder).toHaveLength(38)
-    expect(catalogFixture.surfaces.filter((surface) => !surface.required)).toHaveLength(9)
+    expect(catalogFixture.surfaces.filter((surface) => !surface.required)).toHaveLength(8)
     expect(Object.keys(initialSelections)).toEqual(
       catalogFixture.selectionOrder.filter((surfaceId) =>
         catalogFixture.options.some(
@@ -144,7 +148,7 @@ describe('App v2', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
 
     await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
     await user.click(screen.getByRole('button', { name: '保存' }))
@@ -163,7 +167,7 @@ describe('App v2', () => {
     const fetchMock = mockApi()
     render(<App />)
 
-    expect(await screen.findByRole('heading', { name: '打造你的座驾' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'SC01 定制' })).toBeInTheDocument()
     expect(screen.getByRole('complementary', { name: '车辆选配' })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: '车辆展示区' })).not.toBeInTheDocument()
     expect(screen.queryByRole('group', { name: '车辆视角' })).not.toBeInTheDocument()
@@ -187,7 +191,7 @@ describe('App v2', () => {
     mockApi()
     render(<App />)
 
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
     expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
   })
 
@@ -249,10 +253,10 @@ describe('App v2', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    expect(screen.getByRole('heading', { name: '打造你的座驾' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'SC01 定制' })).toBeInTheDocument()
     const stages = screen.getByRole('navigation', { name: '选配阶段' })
     expect(within(stages).getAllByRole('button')).toHaveLength(4)
-    expect(stages.querySelectorAll('.header-stage-separator')).toHaveLength(3)
+    expect(stages.querySelectorAll('.stage-indicator')).toHaveLength(1)
 
     fireEvent(window, new CustomEvent('ue-configurator-header-state', {
       detail: {
@@ -304,7 +308,7 @@ describe('App v2', () => {
     mockApi()
     render(<App />)
 
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
     await waitFor(() => expect(applyconfigurationjson).toHaveBeenCalled())
     expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
 
@@ -322,67 +326,77 @@ describe('App v2', () => {
     })
   })
 
-  it('阶段、部件、项目联动，并将材质作为同级分组展示', async () => {
+  it('阶段、部件、子项联动，轮毂三项纵排且个性化 surface 提升为部件', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
     await loadProxy()
 
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '轮毂' }))
-    expect(screen.getByRole('region', { name: '项目筛选' })).toHaveTextContent('轮毂材质')
+    expect(screen.queryByRole('region', { name: '子项筛选' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '轮毂材质配置' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '轮毂造型配置' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '轮毂颜色配置' })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: '材质系列筛选' })).not.toBeInTheDocument()
-    expect(screen.getByRole('region', { name: '铝合金材质组' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: '镁合金材质组' })).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: /镁合金.*价格待确认/ }))
-    expect(screen.getByRole('button', { name: /镁合金.*价格待确认/ }))
+    expect(screen.queryByRole('region', { name: '铝合金材质' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: '镁合金材质' })).not.toBeInTheDocument()
+    const magnesiumOption = screen.getByRole('button', { name: /镁合金，/ })
+    await user.click(magnesiumOption)
+    expect(magnesiumOption)
       .toHaveAttribute('aria-pressed', 'true')
 
     await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
-    expect(await screen.findByText('Ultrasuede（黑）')).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Ultrasuede PDF 色卡' })).toHaveTextContent('SF4')
-    await user.click(screen.getByRole('button', { name: /SF4，PDF 色卡定制，¥1,180/ }))
-    expect(screen.getByRole('button', { name: /SF4，PDF 色卡定制/ }))
+    expect(await screen.findByText('Black UF7')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '奥司维材质' })).toHaveTextContent('Black UF7')
+    await user.click(screen.getByRole('button', { name: /Black UF7，免费/ }))
+    expect(screen.getByRole('button', { name: /Black UF7，免费/ }))
       .toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+      .getByRole('button', { name: '其他个性化' }))
+    const personalizationParts = await screen.findByRole('region', { name: '部件筛选' })
+    expect(personalizationParts).toHaveTextContent(
+      '内饰全车黑色喷漆件缝线徽标中面板横饰板换挡刹车脚垫',
+    )
+    expect(screen.queryByRole('region', { name: '子项筛选' })).not.toBeInTheDocument()
   })
 
   it('不为未声明 variant 色彩能力的付费材质选项展示色卡', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
 
     await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '座椅' }))
 
-    expect(await screen.findByRole('heading', { name: '选择座椅接触面' })).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Ultrasuede PDF 色卡' }))
+    expect(await screen.findByRole('heading', { name: '座椅接触面' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Black UF7，奥司维定制/ }))
       .not.toBeInTheDocument()
   })
 
-  it('点击色卡保持其显式关联的 option，而不是同材料族首项', async () => {
+  it('材料族标题直接选择材质，色卡保持其显式关联的付费 option', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
 
     await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
-    await user.click(screen.getByRole('button', { name: /真皮用户定制.*¥1,280/ }))
-    await user.click(within(screen.getByRole('region', { name: '真皮用户定制 PDF 色卡' }))
-      .getByRole('button', { name: /1217，PDF 色卡定制/ }))
+    const leatherFamily = within(screen.getByRole('region', { name: '牛皮材质' }))
+    await user.click(leatherFamily.getByRole('button', { name: /^牛皮$/ }))
+    await user.click(leatherFamily.getByRole('button', { name: /9743 Nero，牛皮，¥1,280/ }))
 
-    expect(within(screen.getByRole('region', { name: '真皮用户定制 PDF 色卡' }))
-      .getByRole('button', { name: /1217，PDF 色卡定制/ }))
+    expect(leatherFamily.getByRole('button', { name: /9743 Nero，牛皮，¥1,280/ }))
       .toHaveAttribute('aria-pressed', 'true')
   })
 
@@ -391,16 +405,15 @@ describe('App v2', () => {
     const user = userEvent.setup()
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
 
     expect(screen.getByRole('button', { name: /红色.*免费/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /银色.*免费/ })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /自定义车漆.*¥9,600/ }))
-    const editor = screen.getByRole('region', { name: '自定义车漆参数' })
+    const editor = screen.getByRole('region', { name: '自定义车漆颜色' })
     expect(within(editor).getByLabelText('车漆颜色')).toHaveAttribute('type', 'text')
     expect(within(editor).getByRole('slider', { name: '车漆颜色饱和度和亮度' })).toBeInTheDocument()
-    expect(within(editor).getByLabelText('金属度')).toHaveAttribute('min', '0')
-    expect(within(editor).getByLabelText('金属度')).toHaveAttribute('max', '1')
+    expect(within(editor).queryByLabelText('金属度')).not.toBeInTheDocument()
 
     fireEvent.change(within(editor).getByLabelText('车漆颜色'), {
       target: { value: '#123456' },
@@ -414,11 +427,30 @@ describe('App v2', () => {
     })
   })
 
+  it('车架默认银色免费，PPG 按 custom 能力初始化同款调色盘', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
+      .getByRole('button', { name: '车架' }))
+    const silverOption = screen.getByRole('button', { name: '银色，免费' })
+    expect(silverOption).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByText(/默认 · 免费|默认 · ¥0|标配/)).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /自定义颜色\(PPG涂层\)，¥9,600/ }))
+    const editor = screen.getByRole('region', { name: '自定义颜色(PPG涂层)颜色' })
+    expect(within(editor).getByLabelText('车架颜色')).toHaveValue('#A61D24')
+    expect(within(editor).getByRole('slider', { name: '车漆颜色饱和度和亮度' }))
+      .toBeInTheDocument()
+  })
+
   it('渲染相关配置变化会刷新代理图并保留上一张直到新图就绪', async () => {
     const user = userEvent.setup()
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
     await loadProxy()
 
     await user.click(screen.getByRole('button', { name: /银色/ }))
@@ -438,7 +470,7 @@ describe('App v2', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
 
     await user.click(screen.getByRole('button', { name: /银色/ }))
     fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'save' }))
@@ -464,7 +496,7 @@ describe('App v2', () => {
     window.ue = { uebridge: { setconfiguratorheaderstatejson } }
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: '打造你的座驾' })
+    await screen.findByRole('heading', { name: 'SC01 定制' })
     fireEvent(window, new Event('offline'))
 
     await user.click(screen.getByRole('button', { name: /银色/ }))

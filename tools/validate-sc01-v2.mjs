@@ -155,6 +155,7 @@ export function validateCatalog(catalog) {
     "vehicle",
     "selectionOrder",
     "defaultSelections",
+    "optionIdAliases",
     "regions",
     "categories",
     "components",
@@ -196,6 +197,12 @@ export function validateCatalog(catalog) {
     "materialVariants"
   );
   const options = uniqueIndex(catalog.options, "optionId", "options");
+  check(isRecord(catalog.optionIdAliases), "optionIdAliases 必须是 object");
+  for (const [legacyOptionId, optionId] of Object.entries(catalog.optionIdAliases)) {
+    check(ID.test(legacyOptionId), `旧 optionId 非法：${legacyOptionId}`);
+    check(!options.has(legacyOptionId), `旧 optionId 不得继续作为 option：${legacyOptionId}`);
+    check(options.has(optionId), `旧 optionId ${legacyOptionId} 的迁移目标不存在`);
+  }
 
   check(
     Array.isArray(catalog.selectionOrder)
@@ -252,9 +259,8 @@ export function validateCatalog(catalog) {
     if (option.parameters?.color?.mode === "variant") {
       check(
         option.materialFamilyId !== null
-          && option.pricing.isStandard === false
           && option.pricing.unitPriceMinor !== null,
-        `${option.optionId} 色卡能力只允许用于已定价的非标配材料 option`
+        `${option.optionId} 色卡能力只允许用于已定价且具有材料族的 option`
       );
     }
     check(
@@ -365,7 +371,7 @@ export function validateConfiguration(configuration, catalog) {
       );
     } else {
       assertExactKeys(customization, PAINT_KEYS, `${surfaceId} customization`);
-      check(option.optionId === "body-cover-custom", `${surfaceId} 不支持自定义车漆`);
+      check(option.parameters?.color?.mode === "custom", `${surfaceId} 不支持自定义色`);
       check(/^#[0-9A-F]{6}$/.test(customization.colorHex), `${surfaceId}.colorHex 非法`);
       for (const key of PAINT_KEYS.slice(1)) {
         check(

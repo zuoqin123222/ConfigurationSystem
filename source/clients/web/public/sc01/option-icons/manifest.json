@@ -1,0 +1,8 @@
+{
+  "version": "sc01-option-icons-v1",
+  "icons": {
+    "default": "/sc01/option-icons/default.svg",
+    "fixedColor": "/sc01/option-icons/color.svg",
+    "customColor": "/sc01/option-icons/rainbow.svg"
+  }
+}

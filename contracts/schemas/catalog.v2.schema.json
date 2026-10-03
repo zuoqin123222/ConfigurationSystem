@@ -12,6 +12,7 @@
     "vehicle",
     "selectionOrder",
     "defaultSelections",
+    "optionIdAliases",
     "regions",
     "categories",
     "components",
@@ -47,6 +48,11 @@
     "defaultSelections": {
       "type": "object",
       "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/id" }
+    },
+    "optionIdAliases": {
+      "type": "object",
       "propertyNames": { "$ref": "#/$defs/id" },
       "additionalProperties": { "$ref": "#/$defs/id" }
     },

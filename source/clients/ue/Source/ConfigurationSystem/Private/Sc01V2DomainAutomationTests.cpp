@@ -74,13 +74,13 @@ bool FSc01V2GoldenVectorsAutomationTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("必选表面数"), Catalog.GetCatalog().SelectionOrder.Num(), 38);
-	TestEqual(TEXT("选项索引覆盖 catalog"), Catalog.GetCatalog().Options.Num(), 136);
+	TestEqual(TEXT("选项索引覆盖 catalog"), Catalog.GetCatalog().Options.Num(), 152);
 	TestEqual(TEXT("色卡索引覆盖 catalog"), Catalog.GetCatalog().MaterialVariants.Num(), 352);
 	TestEqual(TEXT("车辆 displayName"), Catalog.GetCatalog().VehicleDisplayName, FString(TEXT("SC01")));
 	TestEqual(TEXT("基础价读取为 22980000 分"), Catalog.GetCatalog().BasePriceMinor, int64(22980000));
 	TestEqual(TEXT("region 数"), Catalog.GetCatalog().Regions.Num(), 4);
 	TestEqual(TEXT("四阶段 category 数"), Catalog.GetCatalog().Categories.Num(), 4);
-	TestEqual(TEXT("component 数"), Catalog.GetCatalog().Components.Num(), 14);
+	TestEqual(TEXT("component 数"), Catalog.GetCatalog().Components.Num(), 16);
 	TestEqual(
 		TEXT("四阶段按契约顺序"),
 		FString::JoinBy(
@@ -119,9 +119,12 @@ bool FSc01V2GoldenVectorsAutomationTest::RunTest(const FString& Parameters)
 	TestFalse(
 		TEXT("拒绝缺少必选 surface 显式默认项的 catalog"),
 		MissingDefaultIndex.Initialize(MissingDefaultCatalog, Error));
-	TestNull(
-		TEXT("可选机舱盖板无隐式默认项"),
-		Catalog.FindDefaultOptionIdForSurface(TEXT("engine-bay-cover")));
+	TestEqual(
+		TEXT("车架默认银色"),
+		Catalog.FindDefaultOptionIdForSurface(TEXT("engine-bay-cover")) != nullptr
+			? *Catalog.FindDefaultOptionIdForSurface(TEXT("engine-bay-cover"))
+			: FString(),
+		FString(TEXT("engine-cover-silver")));
 	const TArray<FString>* ExteriorComponents =
 		Catalog.FindComponentIdsForCategory(TEXT("exterior"));
 	TestTrue(
@@ -222,7 +225,7 @@ bool FSc01V2CustomizationAutomationTest::RunTest(const FString& Parameters)
 	}
 	Sc01V2::FSelections Selections;
 	Sc01V2Automation::ReadSelections(Valid, Selections);
-	Selections[TEXT("exterior-body-cover")] = Sc01V2::CustomPaintOptionId;
+	Selections[TEXT("exterior-body-cover")] = TEXT("body-cover-custom");
 	Selections[TEXT("steering-wheel-skin")] = TEXT("steering-skin-ultrasuede-custom");
 
 	Sc01V2::FPaintCustomization Paint;
@@ -248,11 +251,11 @@ bool FSc01V2CustomizationAutomationTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("定制 configurationId 与 server sc01-v2.ts 一致"),
 		Configuration.ConfigurationId,
-		FString(TEXT("cfg-3c1f9dd4444802a20100a1d2")));
+		FString(TEXT("cfg-107edc9c2b0200b34757143d")));
 	TestEqual(
 		TEXT("定制 renderKey 与 server sc01-v2.ts 一致"),
 		Configuration.RenderKey,
-		FString(TEXT("sc01__sc01-draft-20260121__render-3c1f9dd4444802a20100a1d2")));
+		FString(TEXT("sc01__sc01-draft-20260121__render-107edc9c2b0200b34757143d")));
 
 	Sc01V2::FCustomizations Mismatch = Customizations;
 	Mismatch[TEXT("steering-wheel-skin")] =
@@ -266,12 +269,14 @@ bool FSc01V2CustomizationAutomationTest::RunTest(const FString& Parameters)
 		FString(TEXT("MATERIAL_VARIANT_FAMILY_MISMATCH")));
 
 	Sc01V2::FCustomizations Unsupported;
+	Sc01V2::FSelections UnsupportedSelections = Selections;
+	UnsupportedSelections.Add(TEXT("embroidered-logo"), TEXT("embroidered-logo-custom"));
 	Unsupported.Add(
-		TEXT("seat-backrest"),
-		Sc01V2::FCustomization::ForMaterialVariant(TEXT("ultrasuede-p6-uf7")));
+		TEXT("embroidered-logo"),
+		Sc01V2::FCustomization::ForMaterialVariant(TEXT("microfiber-p16-np-3048")));
 	TestFalse(
 		TEXT("不支持 variant 色彩能力的同材料族 option 拒绝色卡"),
-		Sc01V2::ValidateCustomizations(Unsupported, Selections, Catalog, Error));
+		Sc01V2::ValidateCustomizations(Unsupported, UnsupportedSelections, Catalog, Error));
 	TestEqual(
 		TEXT("材料色卡能力错误码"),
 		Error.Code,
@@ -286,6 +291,38 @@ bool FSc01V2CustomizationAutomationTest::RunTest(const FString& Parameters)
 		TEXT("车漆错误码"),
 		Error.Code,
 		FString(TEXT("INVALID_PAINT_CUSTOMIZATION")));
+
+	Sc01V2::FSelections LegacySelections = Selections;
+	LegacySelections[TEXT("steering-wheel-skin")] =
+		TEXT("steering-skin-leather-user");
+	Sc01V2::FConfiguration Migrated;
+	TestTrue(
+		TEXT("旧 optionId 可迁移"),
+		Sc01V2::DeriveConfiguration(
+			LegacySelections,
+			Sc01V2::FCustomizations(),
+			Catalog,
+			Migrated,
+			Error));
+	TestEqual(
+		TEXT("迁移后保存规范 optionId"),
+		Migrated.Selections.FindRef(TEXT("steering-wheel-skin")),
+		FString(TEXT("steering-skin-leather")));
+
+	Sc01V2::FSelections ChassisSelections = Selections;
+	ChassisSelections[TEXT("engine-bay-cover")] =
+		TEXT("engine-cover-ppg-custom");
+	Sc01V2::FCustomizations ChassisCustomizations;
+	ChassisCustomizations.Add(
+		TEXT("engine-bay-cover"),
+		Sc01V2::FCustomization::ForPaint(Paint));
+	TestTrue(
+		TEXT("自定义色按 option 能力而非固定 ID 放行"),
+		Sc01V2::ValidateCustomizations(
+			ChassisCustomizations,
+			ChassisSelections,
+			Catalog,
+			Error));
 
 	Sc01V2::FSelections OptionalOmitted = Selections;
 	OptionalOmitted.Remove(TEXT("pedal"));

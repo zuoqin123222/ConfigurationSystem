@@ -53,6 +53,17 @@ const PAINT_KEYS: Array<keyof PaintCustomization> = [
   'flakeIntensity',
 ]
 
+export function createDefaultPaintCustomization(): PaintCustomization {
+  return {
+    colorHex: '#A61D24',
+    metallic: 0.35,
+    roughness: 0.28,
+    clearCoat: 0.8,
+    orangePeel: 0.15,
+    flakeIntensity: 0.25,
+  }
+}
+
 export function normalizeCustomizations(
   catalog: CatalogV2,
   selections: Selections,
@@ -62,7 +73,13 @@ export function normalizeCustomizations(
   for (const surfaceId of catalog.selectionOrder) {
     const customization = customizations[surfaceId]
     const option = catalog.options.find((item) => item.optionId === selections[surfaceId])
-    if (!customization || !option) continue
+    if (!option) continue
+    if (!customization) {
+      if (option.parameters.color?.mode === 'custom') {
+        normalized[surfaceId] = createDefaultPaintCustomization()
+      }
+      continue
+    }
     if ('materialVariantId' in customization) {
       const variant = catalog.materialVariants.find(
         (item) => item.variantId === customization.materialVariantId,
@@ -75,7 +92,7 @@ export function normalizeCustomizations(
       }
       continue
     }
-    if (option.optionId === 'body-cover-custom') normalized[surfaceId] = customization
+    if (option.parameters.color?.mode === 'custom') normalized[surfaceId] = customization
   }
   return normalized
 }
@@ -150,8 +167,7 @@ export interface MaterialOptionGroup {
 
 export function supportsMaterialVariants(option: CatalogOption): boolean {
   return option.parameters.color?.mode === 'variant'
-    && !option.pricing.isStandard
-    && option.pricing.unitPriceMinor !== null
+    && option.materialFamilyId !== null
 }
 
 export function materialVariantsForOption(

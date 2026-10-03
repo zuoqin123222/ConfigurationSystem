@@ -73,7 +73,7 @@ bool FSc01MaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		TEXT("选择自定义车漆 option"),
 		State->SelectOption(
 			USc01MaterialBinder::PaintSurfaceId,
-			Sc01V2::CustomPaintOptionId));
+			TEXT("body-cover-custom")));
 	FSc01V2PaintCustomization Paint;
 	Paint.ColorHex = TEXT("#336699");
 	Paint.Metallic = 0.45;

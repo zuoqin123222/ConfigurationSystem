@@ -2,7 +2,7 @@
   "schemaVersion": "2.0.0",
   "catalogVersion": "sc01-draft-20260121",
   "vehicleId": "sc01",
-  "configurationId": "cfg-f18d00c50d8fd21d99e524b0",
+  "configurationId": "cfg-a6f4ff1da447a06af7ce32fa",
   "currency": "CNY",
   "basePriceMinor": 22980000,
   "lineItems": [
@@ -64,7 +64,7 @@
     },
     {
       "surfaceId": "engine-bay-cover",
-      "optionId": "engine-cover-ppg",
+      "optionId": "engine-cover-ppg-custom",
       "unitPriceMinor": 480000,
       "quantity": 1,
       "subtotalMinor": 480000,

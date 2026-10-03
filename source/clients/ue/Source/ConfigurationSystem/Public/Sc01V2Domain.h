@@ -7,7 +7,6 @@ namespace Sc01V2
 {
 	inline constexpr int32 RequiredSelectionCount = 38;
 	inline constexpr TCHAR SchemaVersion[] = TEXT("2.0.0");
-	inline constexpr TCHAR CustomPaintOptionId[] = TEXT("body-cover-custom");
 
 	struct CONFIGURATIONSYSTEM_API FError
 	{
@@ -82,8 +81,12 @@ namespace Sc01V2
 		{
 			return ColorMode.IsSet()
 				&& ColorMode.GetValue() == TEXT("variant")
-				&& !Pricing.bIsStandard
 				&& Pricing.UnitPriceMinor.IsSet();
+		}
+
+		bool SupportsCustomColor() const
+		{
+			return ColorMode.IsSet() && ColorMode.GetValue() == TEXT("custom");
 		}
 	};
 
@@ -109,6 +112,7 @@ namespace Sc01V2
 		bool bQuotable = false;
 		TArray<FString> SelectionOrder;
 		TMap<FString, FString> DefaultSelections;
+		TMap<FString, FString> OptionIdAliases;
 		TArray<FRegion> Regions;
 		TArray<FCategory> Categories;
 		TArray<FComponent> Components;
@@ -131,6 +135,7 @@ namespace Sc01V2
 		bool IsValid() const { return bValid; }
 		const FCatalog& GetCatalog() const { return Catalog; }
 		const FOption* FindOption(const FString& OptionId) const;
+		FString ResolveOptionId(const FString& OptionId) const;
 		const FMaterialVariant* FindMaterialVariant(const FString& VariantId) const;
 		const TArray<FString>* FindOptionIdsForSurface(const FString& SurfaceId) const;
 		const TArray<FString>* FindCategoryIdsForRegion(const FString& RegionId) const;
@@ -148,6 +153,7 @@ namespace Sc01V2
 	private:
 		FCatalog Catalog;
 		TMap<FString, int32> OptionIndexById;
+		TMap<FString, FString> OptionIdAliases;
 		TMap<FString, int32> VariantIndexById;
 		TMap<FString, TArray<FString>> OptionIdsBySurface;
 		TMap<FString, int32> RegionIndexById;
