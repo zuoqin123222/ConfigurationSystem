@@ -32,6 +32,18 @@ bool FPathTracingWarmupPolicyAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("6 GiB 边界允许 Path Tracing"),
 		FPathTracingWarmupPolicy::HasEnoughVideoMemory(6ull * OneGiB));
+	TestFalse(
+		TEXT("NVIDIA 581.95 低于 UE 5.8 安全门槛"),
+		FPathTracingWarmupPolicy::IsDriverSupported(
+			TEXT("NVIDIA GeForce RTX 5080"), TEXT("581.95")));
+	TestTrue(
+		TEXT("NVIDIA 610.00 达到 UE 5.8 安全门槛"),
+		FPathTracingWarmupPolicy::IsDriverSupported(
+			TEXT("NVIDIA GeForce RTX 5080"), TEXT("610.00")));
+	TestTrue(
+		TEXT("非 NVIDIA 适配器不应用 NVIDIA 驱动门槛"),
+		FPathTracingWarmupPolicy::IsDriverSupported(
+			TEXT("AMD Radeon"), TEXT("31.0.0")));
 
 	TestEqual(
 		TEXT("渲染栅栏未完成时保持等待"),

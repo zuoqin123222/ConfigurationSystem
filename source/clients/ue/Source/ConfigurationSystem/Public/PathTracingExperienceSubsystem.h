@@ -28,8 +28,12 @@ struct CONFIGURATIONSYSTEM_API FPathTracingWarmupPolicy
 	static constexpr uint64 MinimumDedicatedVideoMemoryBytes =
 		6ull * 1024ull * 1024ull * 1024ull;
 	static constexpr double TimeoutSeconds = 90.0;
+	static constexpr int32 MinimumSafeNvidiaDriverMajor = 610;
 
 	static bool HasEnoughVideoMemory(uint64 DedicatedVideoMemoryBytes);
+	static bool IsDriverSupported(
+		const FString& AdapterName,
+		const FString& UserDriverVersion);
 	static EPathTracingWarmupState AdvanceWaitState(
 		EPathTracingWarmupState State,
 		bool bRenderFenceComplete,
