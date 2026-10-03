@@ -17,6 +17,7 @@
 #include "Engine/SkyLight.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/Texture2D.h"
+#include "Engine/LevelStreamingDynamic.h"
 #include "Engine/World.h"
 #include "GameFramework/WorldSettings.h"
 #include "EngineUtils.h"
@@ -48,6 +49,8 @@ namespace PrimaryAssetProbeEditor
 	constexpr TCHAR DataAssetName[] = TEXT("DA_ProbeUnreferenced");
 	constexpr TCHAR ProbeMapPackageName[] = TEXT("/Game/Maps/L_ConfigProbe");
 	constexpr TCHAR ShowroomMapPackageName[] = TEXT("/Game/Maps/L_ConfigShowroom");
+	constexpr TCHAR StudioLightingMapPackageName[] = TEXT("/Game/Maps/L_Lighting_Studio");
+	constexpr TCHAR OutdoorLightingMapPackageName[] = TEXT("/Game/Maps/L_Lighting_Outdoor");
 
 	template <typename AssetType>
 	AssetType* LoadOrCreateAsset(const TCHAR* PackageName, const TCHAR* AssetName, bool& bWasCreated)
@@ -113,6 +116,97 @@ namespace PrimaryAssetProbeEditor
 		}
 		return Result;
 	}
+
+	bool CreateLightingMap(const TCHAR* PackageName, const bool bStudio)
+	{
+		UWorld* World = UEditorLoadingAndSavingUtils::NewBlankMap(false);
+		if (World == nullptr)
+		{
+			return false;
+		}
+
+		const TCHAR* Prefix = bStudio ? TEXT("Studio") : TEXT("Outdoor");
+		AStaticMeshActor* Floor = FindOrSpawnActor<AStaticMeshActor>(
+			World,
+			*FString::Printf(TEXT("%sFloor_TEMP"), Prefix),
+			FTransform(
+				FRotator::ZeroRotator,
+				FVector(0.0, 0.0, -10.0),
+				FVector(18.0, 18.0, 0.2)));
+		if (Floor != nullptr)
+		{
+			Floor->GetStaticMeshComponent()->SetStaticMesh(LoadObject<UStaticMesh>(
+				nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")));
+			Floor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Static);
+			Floor->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
+		}
+
+		ADirectionalLight* KeyLight = FindOrSpawnActor<ADirectionalLight>(
+			World,
+			*FString::Printf(TEXT("%sDirectionalLight_TEMP"), Prefix),
+			FTransform(
+				bStudio ? FRotator(-38.0, -32.0, 0.0) : FRotator(-24.0, 145.0, 0.0),
+				FVector::ZeroVector));
+		if (KeyLight != nullptr)
+		{
+			KeyLight->GetLightComponent()->SetIntensity(bStudio ? 7.0f : 9.0f);
+			KeyLight->GetLightComponent()->SetLightColor(
+				bStudio
+					? FLinearColor(1.0f, 0.92f, 0.8f)
+					: FLinearColor(0.82f, 0.9f, 1.0f));
+			KeyLight->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
+		}
+
+		ASkyLight* PresetSky = FindOrSpawnActor<ASkyLight>(
+			World,
+			*FString::Printf(TEXT("%sSkyLight_TEMP"), Prefix),
+			FTransform::Identity);
+		if (PresetSky != nullptr)
+		{
+			PresetSky->GetLightComponent()->SetIntensity(bStudio ? 0.8f : 1.35f);
+			PresetSky->GetLightComponent()->SetMobility(EComponentMobility::Movable);
+			PresetSky->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
+		}
+
+		APointLight* FillLight = FindOrSpawnActor<APointLight>(
+			World,
+			*FString::Printf(TEXT("%sFillLight_TEMP"), Prefix),
+			FTransform(FRotator::ZeroRotator, FVector(-250.0, -450.0, 380.0)));
+		if (FillLight != nullptr)
+		{
+			FillLight->PointLightComponent->SetIntensity(6500.0f);
+			FillLight->PointLightComponent->SetAttenuationRadius(1800.0f);
+			FillLight->PointLightComponent->SetLightColor(
+				FLinearColor(0.55f, 0.68f, 1.0f));
+			FillLight->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
+		}
+
+		const bool bComplete =
+			Floor != nullptr && KeyLight != nullptr && PresetSky != nullptr && FillLight != nullptr;
+		return bComplete && UEditorLoadingAndSavingUtils::SaveMap(World, PackageName);
+	}
+
+	bool AddLightingStreamingLevel(
+		UWorld* World,
+		const TCHAR* PackageName,
+		const bool bInitiallyLoaded)
+	{
+		ULevelStreamingDynamic* StreamingLevel =
+			NewObject<ULevelStreamingDynamic>(World, NAME_None, RF_Transactional);
+		if (StreamingLevel == nullptr)
+		{
+			return false;
+		}
+		StreamingLevel->SetWorldAssetByPackageName(FName(PackageName));
+		StreamingLevel->bInitiallyLoaded = bInitiallyLoaded;
+		StreamingLevel->bInitiallyVisible = bInitiallyLoaded;
+		StreamingLevel->bShouldBlockOnLoad = true;
+		StreamingLevel->SetShouldBeLoaded(bInitiallyLoaded);
+		StreamingLevel->SetShouldBeVisible(bInitiallyLoaded);
+		StreamingLevel->SetShouldBeVisibleInEditor(bInitiallyLoaded);
+		World->AddStreamingLevel(StreamingLevel);
+		return true;
+	}
 }
 
 IMPLEMENT_MODULE(FConfigurationSystemEditorModule, ConfigurationSystemEditor);
@@ -154,7 +248,7 @@ void FConfigurationSystemEditorModule::StartupModule()
 
 	CreateShowroomMapCommand = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("ConfigurationSystem.CreateShowroomMap"),
-		TEXT("幂等创建/刷新 /Game/Maps/L_ConfigShowroom，并设置占位车、地台、灯光和默认相机。"),
+		TEXT("幂等创建/刷新主展厅与两套灯光流式关卡。"),
 		FConsoleCommandDelegate::CreateRaw(
 			this, &FConfigurationSystemEditorModule::RequestCreateConfigShowroomMap),
 		ECVF_Default);
@@ -483,6 +577,18 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 {
 	using namespace PrimaryAssetProbeEditor;
 
+	const bool bStudioMapSaved = CreateLightingMap(StudioLightingMapPackageName, true);
+	const bool bOutdoorMapSaved = CreateLightingMap(OutdoorLightingMapPackageName, false);
+	if (!bStudioMapSaved || !bOutdoorMapSaved)
+	{
+		UE_LOG(LogPrimaryAssetProbeEditor, Error, TEXT("展厅灯光流式关卡创建或保存失败。"));
+		if (FApp::IsUnattended())
+		{
+			FPlatformMisc::RequestExitWithStatus(false, 9);
+		}
+		return;
+	}
+
 	// 该地图完全由代码拥有；从空世界重建比在当前默认地图上原地保存更稳定，
 	// 且避免命令行启动时递归加载正在打开的同名地图。
 	UWorld* World = UEditorLoadingAndSavingUtils::NewBlankMap(false);
@@ -498,22 +604,6 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		World,
 		TEXT("ConfiguratorPlaceholderVehicle_TEMP"),
 		FTransform(FRotator::ZeroRotator, FVector::ZeroVector));
-
-	AStaticMeshActor* Floor = FindOrSpawnActor<AStaticMeshActor>(
-		World,
-		TEXT("ShowroomFloor_TEMP"),
-		// Engine Cube 半高 50 cm，Z 缩放 0.2 后半高 10 cm；
-		// 中心放在 -10，使展厅地面顶面精确位于世界 Z=0。
-		FTransform(FRotator::ZeroRotator, FVector(0.0, 0.0, -10.0), FVector(18.0, 18.0, 0.2)));
-	if (Floor != nullptr)
-	{
-		UStaticMesh* Cube = LoadObject<UStaticMesh>(
-			nullptr,
-			TEXT("/Engine/BasicShapes/Cube.Cube"));
-		Floor->GetStaticMeshComponent()->SetStaticMesh(Cube);
-		Floor->GetStaticMeshComponent()->SetMobility(EComponentMobility::Static);
-		Floor->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
-	}
 
 	const TCHAR* CameraLabels[] = {
 		TEXT("ShowroomCamera"), TEXT("ShowroomCameraRear"), TEXT("ShowroomCameraLeft"),
@@ -546,37 +636,17 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 
 	AShowroomEnvironmentActor* Environment =
 		FindOrSpawnActor<AShowroomEnvironmentActor>(
-			World, TEXT("ShowroomDualEnvironment_TEMP"), FTransform::Identity);
-
-	APointLight* FillLight = FindOrSpawnActor<APointLight>(
-		World,
-		TEXT("ShowroomFillLight_TEMP"),
-		FTransform(FRotator::ZeroRotator, FVector(-250.0, -450.0, 380.0)));
-	if (FillLight != nullptr)
-	{
-		FillLight->PointLightComponent->SetIntensity(6500.0f);
-		FillLight->PointLightComponent->SetAttenuationRadius(1800.0f);
-		FillLight->PointLightComponent->SetLightColor(FLinearColor(0.55f, 0.68f, 1.0f));
-		FillLight->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
-	}
-
-	ASkyLight* SkyLight = FindOrSpawnActor<ASkyLight>(
-		World,
-		TEXT("ShowroomSkyLight_TEMP"),
-		FTransform::Identity);
-	if (SkyLight != nullptr)
-	{
-		SkyLight->GetLightComponent()->SetIntensity(0.8f);
-		SkyLight->GetLightComponent()->SetMobility(EComponentMobility::Movable);
-		SkyLight->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
-	}
+			World, TEXT("ShowroomEnvironmentStreamController"), FTransform::Identity);
+	const bool bStudioStreamingAdded =
+		AddLightingStreamingLevel(World, StudioLightingMapPackageName, true);
+	const bool bOutdoorStreamingAdded =
+		AddLightingStreamingLevel(World, OutdoorLightingMapPackageName, false);
 
 	const bool bComplete = Vehicle != nullptr
-		&& Floor != nullptr
 		&& bAllCamerasCreated
 		&& Environment != nullptr
-		&& FillLight != nullptr
-		&& SkyLight != nullptr;
+		&& bStudioStreamingAdded
+		&& bOutdoorStreamingAdded;
 	const bool bSaved =
 		bComplete && UEditorLoadingAndSavingUtils::SaveMap(World, ShowroomMapPackageName);
 	if (bSaved)
@@ -584,7 +654,7 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		UE_LOG(
 			LogPrimaryAssetProbeEditor,
 			Display,
-			TEXT("展厅地图已幂等创建/刷新：%s（占位资源均标记为 TEMP）。"),
+			TEXT("展厅主关卡与双灯光流式关卡已幂等创建/刷新：%s。"),
 			ShowroomMapPackageName);
 	}
 	else

@@ -4,11 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "ShowroomEnvironmentActor.generated.h"
 
-class UDirectionalLightComponent;
-class USceneComponent;
-class USkyLightComponent;
-
-/** 两套纯 C++ 展厅灯光环境；几何/灯光方案均标记为 UE 体验阶段临时方案。 */
+/** 主关卡中的无可视环境控制器；两套灯光与地面由独立流式关卡承载。 */
 UCLASS()
 class CONFIGURATIONSYSTEM_API AShowroomEnvironmentActor final : public AActor
 {
@@ -16,6 +12,7 @@ class CONFIGURATIONSYSTEM_API AShowroomEnvironmentActor final : public AActor
 
 public:
 	AShowroomEnvironmentActor();
+	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	void SetEnvironmentIndex(int32 InIndex);
@@ -28,23 +25,10 @@ public:
 
 	static const FName EnvironmentActorTag;
 	static const FName TemporaryEnvironmentTag;
+	static const FName StudioLevelName;
+	static const FName OutdoorLevelName;
 
 private:
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USceneComponent> Root;
-
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UDirectionalLightComponent> StudioKey;
-
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USkyLightComponent> StudioSky;
-
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UDirectionalLightComponent> OutdoorSun;
-
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<USkyLightComponent> OutdoorSky;
-
 	UPROPERTY(VisibleInstanceOnly)
 	int32 EnvironmentIndex = 0;
 };

@@ -1,56 +1,73 @@
 #include "ShowroomEnvironmentActor.h"
 
-#include "Components/DirectionalLightComponent.h"
-#include "Components/SceneComponent.h"
-#include "Components/SkyLightComponent.h"
+#include "Engine/LevelStreaming.h"
+#include "Engine/World.h"
 
 const FName AShowroomEnvironmentActor::EnvironmentActorTag(
 	TEXT("Configurator.EnvironmentController"));
 const FName AShowroomEnvironmentActor::TemporaryEnvironmentTag(
 	TEXT("Configurator.Environment.Temporary"));
+const FName AShowroomEnvironmentActor::StudioLevelName(
+	TEXT("/Game/Maps/L_Lighting_Studio"));
+const FName AShowroomEnvironmentActor::OutdoorLevelName(
+	TEXT("/Game/Maps/L_Lighting_Outdoor"));
 
 AShowroomEnvironmentActor::AShowroomEnvironmentActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	Tags.Add(EnvironmentActorTag);
 	Tags.Add(TemporaryEnvironmentTag);
+}
 
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("EnvironmentRoot"));
-	SetRootComponent(Root);
-
-	StudioKey = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("StudioKey_TEMP"));
-	StudioKey->SetupAttachment(Root);
-	StudioKey->SetRelativeRotation(FRotator(-38.0, -32.0, 0.0));
-	StudioKey->SetIntensity(7.0f);
-	StudioKey->SetLightColor(FLinearColor(1.0f, 0.92f, 0.8f));
-
-	StudioSky = CreateDefaultSubobject<USkyLightComponent>(TEXT("StudioSky_TEMP"));
-	StudioSky->SetupAttachment(Root);
-	StudioSky->SetMobility(EComponentMobility::Movable);
-	StudioSky->SetIntensity(0.8f);
-
-	OutdoorSun = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("OutdoorSun_TEMP"));
-	OutdoorSun->SetupAttachment(Root);
-	OutdoorSun->SetRelativeRotation(FRotator(-24.0, 145.0, 0.0));
-	OutdoorSun->SetIntensity(9.0f);
-	OutdoorSun->SetLightColor(FLinearColor(0.82f, 0.9f, 1.0f));
-
-	OutdoorSky = CreateDefaultSubobject<USkyLightComponent>(TEXT("OutdoorSky_TEMP"));
-	OutdoorSky->SetupAttachment(Root);
-	OutdoorSky->SetMobility(EComponentMobility::Movable);
-	OutdoorSky->SetIntensity(1.35f);
-
-	SetEnvironmentIndex(0);
+void AShowroomEnvironmentActor::BeginPlay()
+{
+	Super::BeginPlay();
+	SetEnvironmentIndex(EnvironmentIndex);
 }
 
 void AShowroomEnvironmentActor::SetEnvironmentIndex(const int32 InIndex)
 {
 	EnvironmentIndex = FMath::Clamp(InIndex, 0, 1);
-	const bool bStudio = EnvironmentIndex == 0;
-	StudioKey->SetVisibility(bStudio, true);
-	StudioSky->SetVisibility(bStudio, true);
-	OutdoorSun->SetVisibility(!bStudio, true);
-	OutdoorSky->SetVisibility(!bStudio, true);
+	if (GetWorld() == nullptr)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	const FName TargetLevel =
+		EnvironmentIndex == 0 ? StudioLevelName : OutdoorLevelName;
+	const FName PreviousLevel =
+		EnvironmentIndex == 0 ? OutdoorLevelName : StudioLevelName;
+	ULevelStreaming* TargetStreaming = nullptr;
+	ULevelStreaming* PreviousStreaming = nullptr;
+	for (ULevelStreaming* StreamingLevel : World->GetStreamingLevels())
+	{
+		if (!IsValid(StreamingLevel))
+		{
+			continue;
+		}
+		const FName PackageName = StreamingLevel->GetWorldAssetPackageFName();
+		if (PackageName == TargetLevel)
+		{
+			TargetStreaming = StreamingLevel;
+		}
+		else if (PackageName == PreviousLevel)
+		{
+			PreviousStreaming = StreamingLevel;
+		}
+	}
+	if (TargetStreaming == nullptr || PreviousStreaming == nullptr)
+	{
+		return;
+	}
+
+	// 先阻塞载入目标场景，再卸载旧场景，避免切换期间出现无地面、无灯光帧。
+	TargetStreaming->SetShouldBeLoaded(true);
+	TargetStreaming->SetShouldBeVisible(true);
+	World->FlushLevelStreaming(EFlushLevelStreamingType::Full);
+	PreviousStreaming->SetShouldBeVisible(false);
+	PreviousStreaming->SetShouldBeLoaded(false);
+	World->FlushLevelStreaming(EFlushLevelStreamingType::Full);
 }
 
 void AShowroomEnvironmentActor::ToggleEnvironment()
