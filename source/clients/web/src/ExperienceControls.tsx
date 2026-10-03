@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   executeUeControl,
   getUeBridge,
@@ -38,7 +38,9 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const [renderMode, setRenderMode] = useState<'realtime' | 'path-tracing'>('realtime')
   const [quality, setQuality] = useState<UeQualityLevel>('high')
   const [fullscreen, setFullscreen] = useState(false)
+  const [toolbarIdle, setToolbarIdle] = useState(false)
   const [error, setError] = useState('')
+  const idleTimer = useRef<number | null>(null)
 
   useEffect(() => {
     document.documentElement.classList.add('controls-document')
@@ -48,6 +50,21 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       document.body.classList.remove('controls-document')
     }
   }, [])
+
+  const keepToolbarAwake = useCallback(() => {
+    setToolbarIdle(false)
+    if (idleTimer.current !== null) window.clearTimeout(idleTimer.current)
+    if (fullscreen) {
+      idleTimer.current = window.setTimeout(() => setToolbarIdle(true), 1800)
+    }
+  }, [fullscreen])
+
+  useEffect(() => {
+    keepToolbarAwake()
+    return () => {
+      if (idleTimer.current !== null) window.clearTimeout(idleTimer.current)
+    }
+  }, [keepToolbarAwake])
 
   const applyState = (state: UePresentationState) => {
     setCameraIndex(state.cameraIndex)
@@ -84,7 +101,10 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   }
 
   return (
-    <main className="controls-view">
+    <main
+      className={`controls-view ${fullscreen ? 'fullscreen' : ''} ${toolbarIdle ? 'toolbar-idle' : ''}`}
+      onPointerMove={keepToolbarAwake}
+    >
       <nav className="experience-toolbar" aria-label="体验控制">
         <div className="toolbar-item">
           <button

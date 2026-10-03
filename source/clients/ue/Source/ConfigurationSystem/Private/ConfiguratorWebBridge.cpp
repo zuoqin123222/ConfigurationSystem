@@ -30,6 +30,15 @@ bool UConfiguratorWebBridge::IsSupportedQualityLevel(const FString& Quality)
 		|| Quality == TEXT("epic");
 }
 
+bool UConfiguratorWebBridge::IsSupportedConfiguratorCategory(
+	const FString& CategoryId)
+{
+	return CategoryId == TEXT("exterior")
+		|| CategoryId == TEXT("interior")
+		|| CategoryId == TEXT("performance")
+		|| CategoryId == TEXT("personalization");
+}
+
 void UConfiguratorWebBridge::ApplyConfigurationJson(
 	const FString& ConfigurationJson)
 {
@@ -87,4 +96,11 @@ bool UConfiguratorWebBridge::ResetPresentation()
 bool UConfiguratorWebBridge::SetFullscreen(const bool bEnabled)
 {
 	return Owner != nullptr && Owner->SetExperienceFullscreen(bEnabled);
+}
+
+bool UConfiguratorWebBridge::SetConfiguratorCategory(const FString& CategoryId)
+{
+	return Owner != nullptr
+		&& IsSupportedConfiguratorCategory(CategoryId)
+		&& Owner->SetConfiguratorCategory(CategoryId);
 }

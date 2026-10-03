@@ -191,6 +191,41 @@ describe('App v2', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('header 视图展示顶部标题和四阶段，并通过受限 bridge 联动右栏', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=header')
+    const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { setconfiguratorcategory } }
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: '打造你的座驾' })).toBeInTheDocument()
+    const stages = screen.getByRole('navigation', { name: '选配阶段' })
+    expect(within(stages).getAllByRole('button')).toHaveLength(4)
+
+    const interior = within(stages).getByRole('button', { name: /内饰/ })
+    await user.click(interior)
+    expect(setconfiguratorcategory).toHaveBeenCalledWith('interior')
+    expect(interior).toHaveAttribute('aria-current', 'step')
+    expect(document.body).toHaveClass('header-document')
+  })
+
+  it('embedded 右栏响应顶部阶段事件，且滚动内容与固定总价分层', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    mockApi()
+    render(<App />)
+    const panel = await screen.findByRole('complementary', { name: '车辆选配' })
+
+    fireEvent(window, new CustomEvent('ue-configurator-category', { detail: 'interior' }))
+
+    expect(await within(screen.getByRole('region', { name: '部件筛选' }))
+      .findByRole('button', { name: '方向盘' })).toBeInTheDocument()
+    const scrollRegion = panel.querySelector('.panel-scroll')
+    const summary = panel.querySelector('.summary')
+    expect(scrollRegion).not.toBeNull()
+    expect(summary).not.toBeNull()
+    expect(scrollRegion?.contains(summary)).toBe(false)
+  })
+
   it('embedded bridge 仅把 Web 选配 JSON 同步给 UE v2 状态', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const applyconfigurationjson = vi.fn()

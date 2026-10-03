@@ -2,6 +2,7 @@ import type { Customizations, Selections } from './types'
 
 export interface ReflectedUeBridge {
   applyconfigurationjson?: (configurationJson: string) => void
+  setconfiguratorcategory?: (categoryId: string) => Promise<boolean>
   getpresentationstatejson?: () => Promise<string>
   setcamera?: (cameraIndex: number) => Promise<boolean>
   setanimationenabled?: (enabled: boolean) => Promise<boolean>
@@ -13,6 +14,18 @@ export interface ReflectedUeBridge {
 }
 
 export type UeCameraIndex = 0 | 1 | 2 | 3 | 4 | 5
+export type UeConfiguratorCategory = 'exterior' | 'interior' | 'performance' | 'personalization'
+
+export const CONFIGURATOR_CATEGORY_EVENT = 'ue-configurator-category'
+export const CONFIGURATOR_CATEGORIES: Array<{
+  id: UeConfiguratorCategory
+  label: string
+}> = [
+  { id: 'exterior', label: '外饰' },
+  { id: 'interior', label: '内饰' },
+  { id: 'performance', label: '性能配置' },
+  { id: 'personalization', label: '其他个性化' },
+]
 
 export type UeControlCommand =
   | { type: 'camera'; cameraIndex: UeCameraIndex }
@@ -66,6 +79,19 @@ export function applyUeConfiguration(
   if (typeof bridge.applyconfigurationjson !== 'function') return false
   bridge.applyconfigurationjson(createUeConfigurationJson(selections, customizations))
   return true
+}
+
+export async function syncUeConfiguratorCategory(
+  bridge: ReflectedUeBridge | null,
+  categoryId: string,
+): Promise<boolean> {
+  if (!CONFIGURATOR_CATEGORIES.some((category) => category.id === categoryId)
+    || typeof bridge?.setconfiguratorcategory !== 'function') return false
+  try {
+    return await bridge.setconfiguratorcategory(categoryId)
+  } catch {
+    return false
+  }
 }
 
 export async function getUePresentationState(

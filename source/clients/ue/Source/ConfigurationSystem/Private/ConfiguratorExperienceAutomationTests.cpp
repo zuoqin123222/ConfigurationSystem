@@ -33,6 +33,9 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 	const FString ControlsUrl = UConfiguratorPanel::GetControlsWebUrl();
 	TestTrue(TEXT("控制层使用独立 controls 视图"), ControlsUrl.Contains(TEXT("view=controls")));
 	TestFalse(TEXT("控制层不加载选配 embedded 视图"), ControlsUrl.Contains(TEXT("view=embedded")));
+	const FString HeaderUrl = UConfiguratorPanel::GetHeaderWebUrl();
+	TestTrue(TEXT("顶部栏使用独立 header 视图"), HeaderUrl.Contains(TEXT("view=header")));
+	TestFalse(TEXT("顶部栏不加载选配 embedded 视图"), HeaderUrl.Contains(TEXT("view=embedded")));
 	TestEqual(
 		TEXT("健康检查使用网页 URL 的同一 scheme 与 authority"),
 		UConfiguratorPanel::BuildHealthUrl(
@@ -81,6 +84,10 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		UConfiguratorWebBridge::IsSupportedQualityLevel(TEXT("epic")));
 	TestFalse(TEXT("bridge 拒绝任意 scalability 命令"),
 		UConfiguratorWebBridge::IsSupportedQualityLevel(TEXT("sg.ViewDistanceQuality 0")));
+	TestTrue(TEXT("bridge 接受固定选配阶段"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("interior")));
+	TestFalse(TEXT("bridge 拒绝任意选配阶段"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("admin")));
 
 	TMap<FString, FString> Selections;
 	TMap<FString, FSc01V2Customization> Customizations;

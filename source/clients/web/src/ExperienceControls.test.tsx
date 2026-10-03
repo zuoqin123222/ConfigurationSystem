@@ -1,10 +1,11 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ExperienceControls from './ExperienceControls'
 
 describe('ExperienceControls', () => {
   afterEach(() => {
+    vi.useRealTimers()
     delete window.ue
     document.documentElement.classList.remove('controls-document')
     document.body.classList.remove('controls-document')
@@ -100,5 +101,34 @@ describe('ExperienceControls', () => {
     view.unmount()
     expect(document.documentElement).not.toHaveClass('controls-document')
     expect(document.body).not.toHaveClass('controls-document')
+  })
+
+  it('Web 全屏时底栏空闲渐隐，指针 hover 后立即恢复', async () => {
+    vi.useFakeTimers()
+    window.ue = {
+      uebridge: {
+        getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
+          cameraIndex: 1,
+          animationEnabled: false,
+          lightPreset: 'studio',
+          renderMode: 'realtime',
+          quality: 'high',
+          fullscreen: true,
+        })),
+      },
+    }
+    const { container } = render(<ExperienceControls ueEnabled />)
+    const view = container.querySelector('.controls-view')
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(view).toHaveClass('fullscreen')
+
+    act(() => vi.advanceTimersByTime(1800))
+    expect(view).toHaveClass('toolbar-idle')
+
+    fireEvent.pointerMove(view!)
+    expect(view).not.toHaveClass('toolbar-idle')
   })
 })

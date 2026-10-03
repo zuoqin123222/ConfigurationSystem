@@ -29,7 +29,14 @@ import type {
   RenderViewId,
   Selections,
 } from './types'
-import { applyUeConfiguration, getUeBridge } from './ueBridge'
+import {
+  applyUeConfiguration,
+  CONFIGURATOR_CATEGORIES,
+  CONFIGURATOR_CATEGORY_EVENT,
+  getUeBridge,
+  syncUeConfiguratorCategory,
+  type UeConfiguratorCategory,
+} from './ueBridge'
 import ExperienceControls from './ExperienceControls'
 
 const CACHE_KEY = 'sc01-v2-configurator'
@@ -38,11 +45,11 @@ export function isEmbeddedView(search = window.location.search): boolean {
   return new URLSearchParams(search).get('view') === 'embedded'
 }
 
-export type AppView = 'default' | 'embedded' | 'controls'
+export type AppView = 'default' | 'embedded' | 'controls' | 'header'
 
 export function getAppView(search = window.location.search): AppView {
   const view = new URLSearchParams(search).get('view')
-  if (view === 'embedded' || view === 'controls') return view
+  if (view === 'embedded' || view === 'controls' || view === 'header') return view
   return 'default'
 }
 
@@ -95,7 +102,56 @@ export default function App() {
   if (view === 'controls') {
     return <ExperienceControls ueEnabled />
   }
+  if (view === 'header') {
+    return <ConfiguratorHeader />
+  }
   return <ConfiguratorApp embedded={view === 'embedded'} />
+}
+
+function ConfiguratorHeader() {
+  const [categoryId, setCategoryId] = useState<UeConfiguratorCategory>('exterior')
+
+  useEffect(() => {
+    document.documentElement.classList.add('header-document')
+    document.body.classList.add('header-document')
+    const handleCategory = (event: Event) => {
+      const nextCategory = (event as CustomEvent<string>).detail
+      if (CONFIGURATOR_CATEGORIES.some((category) => category.id === nextCategory)) {
+        setCategoryId(nextCategory as UeConfiguratorCategory)
+      }
+    }
+    window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+    return () => {
+      window.removeEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+      document.documentElement.classList.remove('header-document')
+      document.body.classList.remove('header-document')
+    }
+  }, [])
+
+  const selectCategory = (nextCategory: UeConfiguratorCategory) => {
+    setCategoryId(nextCategory)
+    void syncUeConfiguratorCategory(getUeBridge(true), nextCategory)
+  }
+
+  return (
+    <header className="configurator-header">
+      <h1>打造你的座驾</h1>
+      <nav aria-label="选配阶段">
+        {CONFIGURATOR_CATEGORIES.map((category, index) => (
+          <button
+            key={category.id}
+            className={categoryId === category.id ? 'active' : ''}
+            aria-current={categoryId === category.id ? 'step' : undefined}
+            onClick={() => selectCategory(category.id)}
+          >
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            {category.label}
+          </button>
+        ))}
+      </nav>
+      <span className="header-model">SC01</span>
+    </header>
+  )
 }
 
 function ConfiguratorApp({ embedded }: { embedded: boolean }) {
@@ -314,6 +370,26 @@ function Configurator({
     },
     0,
   )
+
+  const selectCategory = useCallback((nextCategoryId: string) => {
+    if (!catalog.categories.some((category) => category.categoryId === nextCategoryId)) return
+    setCategoryId(nextCategoryId)
+    if (embedded) {
+      void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
+    }
+  }, [catalog.categories, embedded])
+
+  useEffect(() => {
+    if (!embedded) return
+    const handleCategory = (event: Event) => {
+      const nextCategoryId = (event as CustomEvent<string>).detail
+      if (catalog.categories.some((category) => category.categoryId === nextCategoryId)) {
+        setCategoryId(nextCategoryId)
+      }
+    }
+    window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+    return () => window.removeEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+  }, [catalog.categories, embedded])
 
   useEffect(() => {
     const firstComponent = components[0]?.componentId
@@ -561,19 +637,26 @@ function Configurator({
           <button onClick={() => void share()} disabled={syncState === 'saving'}>分享配置</button>
         </div>
 
-        <FilterGroup label="阶段" items={catalog.categories.map((item) => ({
-          id: item.categoryId,
-          name: item.displayName,
-        }))} value={categoryId} onChange={setCategoryId} />
-        <FilterGroup label="部件" items={components.map((item) => ({
-          id: item.componentId,
-          name: item.displayName,
-        }))} value={componentId} onChange={setComponentId} />
-        <FilterGroup label="项目" items={surfaces.map((item) => ({
-          id: item.surfaceId,
-          name: item.displayName,
-        }))} value={currentSurface.surfaceId} onChange={setSurfaceId} />
-        <section className="options" aria-live="polite">
+        <div className="panel-scroll">
+          <FilterGroup
+            className="filter-group-stage"
+            label="阶段"
+            items={catalog.categories.map((item) => ({
+              id: item.categoryId,
+              name: item.displayName,
+            }))}
+            value={categoryId}
+            onChange={selectCategory}
+          />
+          <FilterGroup label="部件" items={components.map((item) => ({
+            id: item.componentId,
+            name: item.displayName,
+          }))} value={componentId} onChange={setComponentId} />
+          <FilterGroup label="项目" items={surfaces.map((item) => ({
+            id: item.surfaceId,
+            name: item.displayName,
+          }))} value={currentSurface.surfaceId} onChange={setSurfaceId} />
+          <section className="options" aria-live="polite">
           <div className="section-title">
             <h3>选择{currentSurface.displayName}</h3>
             <span>{currentSurface.required ? `${options.length} 款可选` : '默认不选装'}</span>
@@ -664,12 +747,12 @@ function Configurator({
               )
             })}
           </div>
-        </section>
+          </section>
 
-        {selectedOption?.optionId === 'body-cover-custom'
-          && currentCustomization
-          && !('materialVariantId' in currentCustomization) && (
-          <section className="paint-editor" aria-label="自定义车漆参数">
+          {selectedOption?.optionId === 'body-cover-custom'
+            && currentCustomization
+            && !('materialVariantId' in currentCustomization) && (
+            <section className="paint-editor" aria-label="自定义车漆参数">
             <div className="section-title">
               <h3>自定义车漆</h3>
               <span>¥9,600</span>
@@ -705,8 +788,9 @@ function Configurator({
                 <output>{currentCustomization[key].toFixed(2)}</output>
               </label>
             ))}
-          </section>
-        )}
+            </section>
+          )}
+        </div>
 
         <footer className="summary">
           <div className="canonical">
@@ -724,18 +808,20 @@ function Configurator({
 }
 
 function FilterGroup({
+  className = '',
   label,
   items,
   value,
   onChange,
 }: {
+  className?: string
   label: string
   items: Array<{ id: string; name: string }>
   value: string
   onChange: (value: string) => void
 }) {
   return (
-    <section className="filter-group" aria-label={`${label}筛选`}>
+    <section className={`filter-group ${className}`.trim()} aria-label={`${label}筛选`}>
       <span>{label}</span>
       <div>
         {items.map((item) => (

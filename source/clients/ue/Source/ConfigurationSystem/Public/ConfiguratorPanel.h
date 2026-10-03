@@ -7,16 +7,13 @@
 #include "ConfiguratorPanel.generated.h"
 
 class UBorder;
-class UButton;
 class UCanvasPanel;
 class UConfiguratorBrowserWidget;
-class UHorizontalBox;
 class USizeBox;
-class UTextBlock;
 class UCanvasPanelSlot;
 class UConfiguratorWebBridge;
 
-/** 右侧承载 480px Web 选配面板，并以透明 WebBrowser 承载底部体验控制层。 */
+/** 承载顶部 Web 导航、右侧 480px 选配面板和透明底部体验控制层。 */
 UCLASS()
 class CONFIGURATIONSYSTEM_API UConfiguratorPanel final : public UUserWidget
 {
@@ -25,6 +22,7 @@ class CONFIGURATIONSYSTEM_API UConfiguratorPanel final : public UUserWidget
 public:
 	static FString GetConfiguredWebUrl();
 	static FString GetControlsWebUrl();
+	static FString GetHeaderWebUrl();
 	static FString BuildHealthUrl(const FString& WebUrl);
 	static float GetHealthRetryDelaySeconds(int32 CompletedAttemptCount);
 	static bool ParseWebConfigurationJson(
@@ -42,6 +40,7 @@ public:
 	bool SetExperienceQualityLevel(const FString& Quality);
 	bool ResetExperiencePresentation();
 	bool SetExperienceFullscreen(bool bEnabled);
+	bool SetConfiguratorCategory(const FString& CategoryId);
 	FString GetExperienceStateJson();
 
 protected:
@@ -59,7 +58,6 @@ private:
 	};
 
 	void BuildWidgetTree();
-	void ApplyExpandedState(bool bShouldExpand, bool bReloadPage);
 	void StartHealthProbe();
 	void IssueHealthProbe();
 	void HandleHealthProbeCompleted(
@@ -68,27 +66,16 @@ private:
 		bool bConnectedSuccessfully);
 	void HandleHealthProbeFailure();
 	void CancelHealthProbe();
-	void RefreshToggleLabel();
-
-	UFUNCTION()
-	void ToggleWebConfigurator();
-
-	UPROPERTY(Transient)
-	TObjectPtr<USizeBox> PanelSize;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UCanvasPanelSlot> PanelCanvasSlot;
-
 	UPROPERTY(Transient)
 	TObjectPtr<UConfiguratorBrowserWidget> WebBrowser;
 	UPROPERTY(Transient)
 	TObjectPtr<UConfiguratorBrowserWidget> ControlsBrowser;
-
 	UPROPERTY(Transient)
-	TObjectPtr<UButton> ToggleButton;
-
+	TObjectPtr<UConfiguratorBrowserWidget> HeaderBrowser;
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> ToggleLabel;
+	TObjectPtr<UCanvasPanelSlot> ControlsCanvasSlot;
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UBorder>> PageMasks;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UConfiguratorWebBridge> WebBridge;
@@ -98,5 +85,5 @@ private:
 	EHealthProbeState HealthProbeState = EHealthProbeState::Idle;
 	int32 HealthProbeAttemptCount = 0;
 	float PendingRetryDelaySeconds = 0.0f;
-	bool bExpanded = true;
+	bool bWebFullscreen = false;
 };

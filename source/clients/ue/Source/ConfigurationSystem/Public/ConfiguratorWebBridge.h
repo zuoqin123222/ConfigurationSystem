@@ -21,6 +21,7 @@ public:
 	static bool IsSupportedLightPreset(const FString& Preset);
 	static bool IsSupportedRenderMode(const FString& Mode);
 	static bool IsSupportedQualityLevel(const FString& Quality);
+	static bool IsSupportedConfiguratorCategory(const FString& CategoryId);
 
 	UFUNCTION()
 	void ApplyConfigurationJson(const FString& ConfigurationJson);
@@ -40,6 +41,8 @@ public:
 	bool ResetPresentation();
 	UFUNCTION()
 	bool SetFullscreen(bool bEnabled);
+	UFUNCTION()
+	bool SetConfiguratorCategory(const FString& CategoryId);
 
 private:
 	UPROPERTY(Transient)

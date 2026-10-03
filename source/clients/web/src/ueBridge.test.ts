@@ -5,6 +5,7 @@ import {
   executeUeControl,
   getUeBridge,
   getUePresentationState,
+  syncUeConfiguratorCategory,
   type UeControlCommand,
 } from './ueBridge'
 
@@ -53,6 +54,16 @@ describe('受限 UE bridge', () => {
 
   it('缺少白名单入口时不尝试调用其他 UE 能力', () => {
     expect(applyUeConfiguration({}, {}, {})).toBe(false)
+  })
+
+  it('只允许四个固定阶段通过 bridge 联动选配右栏', async () => {
+    const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
+    const bridge = { setconfiguratorcategory }
+
+    await expect(syncUeConfiguratorCategory(bridge, 'interior')).resolves.toBe(true)
+    await expect(syncUeConfiguratorCategory(bridge, 'unknown')).resolves.toBe(false)
+    expect(setconfiguratorcategory).toHaveBeenCalledOnce()
+    expect(setconfiguratorcategory).toHaveBeenCalledWith('interior')
   })
 
   it('await CEF Promise 并只把七类显式命令路由到对应的 bridge 方法', async () => {
