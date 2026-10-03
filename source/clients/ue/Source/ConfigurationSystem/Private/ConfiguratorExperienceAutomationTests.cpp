@@ -274,6 +274,10 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 	FMinimalViewInfo AppliedPOV;
 	RuntimeCamera->CalcCamera(0.0f, AppliedPOV);
 	TestTrue(TEXT("过渡视图目标完整保留 FMinimalViewInfo"), AppliedPOV.Equals(FinalPOV));
+	TestTrue(TEXT("运行时相机 Actor 同步 POV 位置"),
+		RuntimeCamera->GetActorLocation().Equals(FinalPOV.Location, 0.01));
+	TestTrue(TEXT("运行时相机 Actor 同步 POV 旋转"),
+		RuntimeCamera->GetActorRotation().Equals(FinalPOV.Rotation, 0.01));
 	TestEqual(TEXT("过渡视图保留偏轴投影"), AppliedPOV.OffCenterProjectionOffset, EndPOV.OffCenterProjectionOffset);
 	TestEqual(TEXT("过渡视图保留透视近裁剪面"), AppliedPOV.PerspectiveNearClipPlane, EndPOV.PerspectiveNearClipPlane);
 	TestEqual(TEXT("过渡视图保留正交近裁剪面"), AppliedPOV.OrthoNearClipPlane, EndPOV.OrthoNearClipPlane);

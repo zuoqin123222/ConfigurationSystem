@@ -19,7 +19,11 @@ class CONFIGURATIONSYSTEM_API AConfigRuntimeCameraActor final : public ACameraAc
 	GENERATED_BODY()
 
 public:
-	void ApplyCameraPOV(const FMinimalViewInfo& InPOV) { CameraPOV = InPOV; }
+	void ApplyCameraPOV(const FMinimalViewInfo& InPOV)
+	{
+		CameraPOV = InPOV;
+		SetActorLocationAndRotation(InPOV.Location, InPOV.Rotation);
+	}
 	const FMinimalViewInfo& GetCameraPOV() const { return CameraPOV; }
 	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override
 	{
@@ -190,7 +194,7 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<AConfigRuntimeCameraActor> RuntimeCamera;
 
-	int32 CurrentCameraIndex = 0;
+	int32 CurrentCameraIndex = INDEX_NONE;
 	int32 PendingCameraIndex = INDEX_NONE;
 	FMinimalViewInfo CameraTransitionStartPOV;
 	FMinimalViewInfo CameraTransitionEndPOV;

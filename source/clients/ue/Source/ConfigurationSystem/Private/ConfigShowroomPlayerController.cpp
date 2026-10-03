@@ -188,7 +188,6 @@ void AConfigShowroomPlayerController::BeginPlay()
 			}
 		}
 	}
-	SwitchCamera(0);
 
 	for (TActorIterator<AShowroomEnvironmentActor> It(GetWorld()); It; ++It)
 	{
@@ -202,6 +201,15 @@ void AConfigShowroomPlayerController::BeginPlay()
 	{
 		Vehicle = *It;
 		break;
+	}
+
+	RuntimeCamera = GetWorld()->SpawnActor<AConfigRuntimeCameraActor>();
+	FMinimalViewInfo InitialCameraPOV;
+	if (IsValid(RuntimeCamera) && GetCameraPresetPOV(0, InitialCameraPOV))
+	{
+		CurrentCameraIndex = 0;
+		RuntimeCamera->ApplyCameraPOV(InitialCameraPOV);
+		SetViewTarget(RuntimeCamera);
 	}
 
 	ConfiguratorPanel = CreateWidget<UConfiguratorPanel>(
