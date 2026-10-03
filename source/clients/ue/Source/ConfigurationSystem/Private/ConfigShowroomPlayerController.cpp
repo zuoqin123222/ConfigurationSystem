@@ -1,6 +1,7 @@
 #include "ConfigShowroomPlayerController.h"
 
 #include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "CarConfiguratorSubsystem.h"
 #include "ConfiguratorExperienceSaveGame.h"
@@ -42,6 +43,37 @@ FVector AConfigShowroomPlayerController::InterpolateOrbitLocation(
 		Height);
 }
 
+FMinimalViewInfo AConfigShowroomPlayerController::InterpolateCameraPOV(
+	const FMinimalViewInfo& Start,
+	const FMinimalViewInfo& End,
+	const FVector& Pivot,
+	const float Alpha)
+{
+	const float ClampedAlpha = FMath::Clamp(Alpha, 0.0f, 1.0f);
+	if (ClampedAlpha <= 0.0f)
+	{
+		return Start;
+	}
+	if (ClampedAlpha >= 1.0f)
+	{
+		// BlendViewInfo intentionally ignores several discrete/advanced fields.
+		// Return the complete target POV at the boundary so the transition actor
+		// cannot retain defaults for any FMinimalViewInfo member.
+		return End;
+	}
+	const float Eased = FMath::SmoothStep(0.0f, 1.0f, ClampedAlpha);
+	FMinimalViewInfo Result = Start;
+	FMinimalViewInfo BlendTarget = End;
+	Result.BlendViewInfo(BlendTarget, Eased);
+	Result.Location = InterpolateOrbitLocation(Start.Location, End.Location, Pivot, Alpha);
+	Result.Rotation = FQuat::Slerp(
+		Start.Rotation.Quaternion(),
+		End.Rotation.Quaternion(),
+		Eased).Rotator();
+	Result.FOV = FMath::Lerp(Start.FOV, End.FOV, Eased);
+	return Result;
+}
+
 void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -55,17 +87,17 @@ void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 		CameraTransitionElapsed / FMath::Max(CameraTransitionDuration, KINDA_SMALL_NUMBER),
 		0.0f,
 		1.0f);
-	const FVector Location = InterpolateOrbitLocation(
-		CameraTransitionStart,
-		CameraTransitionEnd,
+	const FMinimalViewInfo POV = InterpolateCameraPOV(
+		CameraTransitionStartPOV,
+		CameraTransitionEndPOV,
 		CameraTransitionPivot,
 		Alpha);
-	TransitionCamera->SetActorLocation(Location);
-	TransitionCamera->SetActorRotation((CameraTransitionPivot - Location).Rotation());
+	TransitionCamera->ApplyCameraPOV(POV);
 
 	if (Alpha >= 1.0f)
 	{
 		bOrbitTransitionActive = false;
+		TransitionCamera->ApplyCameraPOV(CameraTransitionEndPOV);
 		SetViewTarget(ShowroomCameras[CurrentCameraIndex]);
 	}
 }
@@ -224,20 +256,20 @@ bool AConfigShowroomPlayerController::SwitchCamera(const int32 CameraIndex)
 
 	if (!IsValid(TransitionCamera))
 	{
-		TransitionCamera = GetWorld()->SpawnActor<ACameraActor>();
+		TransitionCamera = GetWorld()->SpawnActor<AConfigTransitionCameraActor>();
 	}
 	if (!IsValid(TransitionCamera) || PlayerCameraManager == nullptr)
 	{
 		return false;
 	}
-	CameraTransitionStart = PlayerCameraManager->GetCameraLocation();
-	CameraTransitionEnd = ShowroomCameras[CameraIndex]->GetActorLocation();
+	CameraTransitionStartPOV = PlayerCameraManager->GetCameraCacheView();
+	ShowroomCameras[CameraIndex]->GetCameraComponent()->GetCameraView(
+		0.0f,
+		CameraTransitionEndPOV);
 	CameraTransitionPivot = GetVehicleCameraPivot();
 	CameraTransitionElapsed = 0.0f;
 	CurrentCameraIndex = CameraIndex;
-	TransitionCamera->SetActorLocation(CameraTransitionStart);
-	TransitionCamera->SetActorRotation(
-		(CameraTransitionPivot - CameraTransitionStart).Rotation());
+	TransitionCamera->ApplyCameraPOV(CameraTransitionStartPOV);
 	SetViewTarget(TransitionCamera);
 	bOrbitTransitionActive = true;
 	return true;

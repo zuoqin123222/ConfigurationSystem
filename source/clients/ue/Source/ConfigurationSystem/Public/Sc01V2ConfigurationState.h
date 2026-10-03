@@ -78,7 +78,7 @@ public:
 	/** C++ 观察者入口，与 Blueprint 事件在同一事务提交点广播。 */
 	FSc01V2ConfigurationChangedNative OnChangedNative;
 
-	/** 使用每个 surface 的第一个 option 建立 38 项确定性默认状态。 */
+	/** 使用 catalog.defaultSelections 建立唯一默认状态；可选 surface 默认不选装。 */
 	UFUNCTION(BlueprintCallable, Category = "SC01 v2")
 	bool Initialize(USc01V2CatalogData* InCatalogAsset);
 
@@ -95,6 +95,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SC01 v2")
 	bool SelectOption(const FString& SurfaceId, const FString& OptionId);
+
+	UFUNCTION(BlueprintCallable, Category = "SC01 v2")
+	bool ClearOptionalSelection(const FString& SurfaceId);
 
 	UFUNCTION(BlueprintCallable, Category = "SC01 v2")
 	bool SetMaterialVariant(const FString& SurfaceId, const FString& MaterialVariantId);

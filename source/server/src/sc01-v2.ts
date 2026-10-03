@@ -20,6 +20,17 @@ export interface Sc01Option {
   surfaceId: string;
   materialFamilyId: string | null;
   renderRelevant: boolean;
+  parameters: {
+    color: {
+      mode: "fixed" | "custom" | "choice" | "variant";
+      value: string | null;
+      required: boolean;
+    } | null;
+    material: {
+      materialFamilyId: string;
+      variantId: string | null;
+    } | null;
+  };
   pricing: Sc01Pricing;
   [key: string]: unknown;
 }
@@ -37,12 +48,13 @@ export interface Sc01Catalog {
   currency: "CNY";
   vehicle: {
     vehicleId: string;
-    basePriceMinor: null;
-    priceStatus: "unconfirmed";
+    basePriceMinor: number;
+    priceStatus: "confirmed";
     quotable: false;
     [key: string]: unknown;
   };
   selectionOrder: string[];
+  defaultSelections: Record<string, string>;
   surfaces: Array<{ surfaceId: string; required: boolean; [key: string]: unknown }>;
   materialVariants: Sc01MaterialVariant[];
   options: Sc01Option[];
@@ -80,7 +92,7 @@ export interface Sc01PriceResult {
   vehicleId: string;
   configurationId: string;
   currency: "CNY";
-  basePriceMinor: null;
+  basePriceMinor: number;
   lineItems: Array<{
     surfaceId: string;
     optionId: string;
@@ -89,12 +101,9 @@ export interface Sc01PriceResult {
     subtotalMinor: number | null;
     priceStatus: "confirmed" | "unconfirmed";
   }>;
-  totalPriceMinor: null;
+  totalPriceMinor: number;
   quoteAllowed: false;
-  blockingReasons: [
-    "BASE_PRICE_UNCONFIRMED",
-    "PRICE_UNCONFIRMED",
-  ];
+  blockingReasons: ["PRICE_UNCONFIRMED"];
 }
 
 export interface Sc01V2Data {
@@ -140,20 +149,19 @@ export function validateSc01Selections(
   }
   const expected = data.catalog.selectionOrder;
   const actual = Object.keys(value);
-  if (
-    actual.length !== expected.length ||
-    !actual.every((surfaceId) => expected.includes(surfaceId))
-  ) {
+  if (!actual.every((surfaceId) => expected.includes(surfaceId))) {
     throw new RequestError(
       400,
       "INVALID_SELECTIONS",
-      "selections 必须恰好包含 selectionOrder 中的全部表面",
+      "selections 包含未知表面",
     );
   }
 
   const selections: Sc01Selections = {};
   for (const surfaceId of expected) {
     const optionId = value[surfaceId];
+    const surface = data.catalog.surfaces.find((item) => item.surfaceId === surfaceId);
+    if (optionId === undefined && surface?.required === false) continue;
     if (
       typeof optionId !== "string" ||
       !data.optionIdsBySurface.get(surfaceId)?.has(optionId)
@@ -208,7 +216,11 @@ export function validateSc01Customizations(
     }
     const option = data.options.get(selections[surfaceId]!);
     if (!option) {
-      throw new RequestError(500, "CONTRACT_INCONSISTENT", `catalog 缺少选项 ${selections[surfaceId]}`);
+      throw new RequestError(
+        400,
+        "INVALID_CUSTOMIZATION",
+        `${surfaceId} 未选择 option，不能提交 customization`,
+      );
     }
 
     if (Object.hasOwn(customization, "materialVariantId")) {
@@ -228,6 +240,17 @@ export function validateSc01Customizations(
           400,
           "INVALID_MATERIAL_VARIANT",
           `${surfaceId} 引用了未知 materialVariantId`,
+        );
+      }
+      if (
+        option.parameters.color?.mode !== "variant"
+        || option.pricing.isStandard
+        || option.pricing.unitPriceMinor === null
+      ) {
+        throw new RequestError(
+          400,
+          "MATERIAL_VARIANT_NOT_SUPPORTED",
+          `${surfaceId} 所选 option 不支持材料色卡`,
         );
       }
       if (
@@ -315,8 +338,8 @@ export function deriveSc01Configuration(
   ];
   const canonicalInput = [
     ...header,
-    ...catalog.selectionOrder.map(
-      (surfaceId) => `${surfaceId}=${selections[surfaceId]}`,
+    ...catalog.selectionOrder.flatMap((surfaceId) =>
+      selections[surfaceId] ? [`${surfaceId}=${selections[surfaceId]}`] : [],
     ),
     ...customizationLines(catalog, customizations),
   ].join("\n");
@@ -354,9 +377,10 @@ export function buildSc01PriceResult(
     vehicleId: data.catalog.vehicle.vehicleId,
     configurationId: configuration.configurationId,
     currency: data.catalog.currency,
-    basePriceMinor: null,
-    lineItems: data.catalog.selectionOrder.map((surfaceId) => {
-      const optionId = configuration.selections[surfaceId]!;
+    basePriceMinor: data.catalog.vehicle.basePriceMinor,
+    lineItems: data.catalog.surfaces.flatMap(({ surfaceId }) => {
+      const optionId = configuration.selections[surfaceId];
+      if (!optionId) return [];
       const option = data.options.get(optionId);
       if (!option) {
         throw new RequestError(
@@ -365,7 +389,7 @@ export function buildSc01PriceResult(
           `catalog 缺少选项 ${optionId}`,
         );
       }
-      return {
+      return [{
         surfaceId,
         optionId,
         unitPriceMinor: option.pricing.unitPriceMinor,
@@ -375,14 +399,21 @@ export function buildSc01PriceResult(
             ? null
             : option.pricing.unitPriceMinor * (option.pricing.quantity ?? 1),
         priceStatus: option.pricing.status,
-      };
+      }];
     }),
-    totalPriceMinor: null,
+    totalPriceMinor:
+      data.catalog.vehicle.basePriceMinor
+      + data.catalog.selectionOrder.reduce((total, surfaceId) => {
+        const optionId = configuration.selections[surfaceId];
+        const option = optionId ? data.options.get(optionId) : undefined;
+        return total + (
+          option?.pricing.unitPriceMinor === null || option?.pricing.unitPriceMinor === undefined
+            ? 0
+            : option.pricing.unitPriceMinor * (option.pricing.quantity ?? 1)
+        );
+      }, 0),
     quoteAllowed: false,
-    blockingReasons: [
-      "BASE_PRICE_UNCONFIRMED",
-      "PRICE_UNCONFIRMED",
-    ],
+    blockingReasons: ["PRICE_UNCONFIRMED"],
   };
 }
 
@@ -418,16 +449,36 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
   if (
     catalog.schemaVersion !== SC01_SCHEMA_VERSION ||
     catalog.lifecycle !== "draft" ||
-    catalog.vehicle.basePriceMinor !== null ||
+    catalog.vehicle.basePriceMinor !== 22_980_000 ||
+    catalog.vehicle.priceStatus !== "confirmed" ||
     catalog.vehicle.quotable !== false ||
     catalog.selectionOrder.length !== catalog.surfaces.length ||
-    catalog.selectionOrder.some(
-      (surfaceId, index) => surfaceId !== catalog.surfaces[index]?.surfaceId,
+    !isRecord(catalog.defaultSelections) ||
+    catalog.selectionOrder.some((surfaceId) =>
+      !catalog.surfaces.some((surface) => surface.surfaceId === surfaceId)
     ) ||
-    catalog.surfaces.some((surface) => surface.required !== true)
+    catalog.surfaces.some((surface) => {
+      const hasStandard = catalog.options.some(
+        (option) => option.surfaceId === surface.surfaceId && option.pricing.isStandard,
+      );
+      const defaultOptionId = catalog.defaultSelections[surface.surfaceId];
+      const defaultOption = catalog.options.find(
+        (option) => option.optionId === defaultOptionId,
+      );
+      return surface.required !== hasStandard
+        || surface.required !== Object.hasOwn(catalog.defaultSelections, surface.surfaceId)
+        || (surface.required
+          && (
+            defaultOption?.surfaceId !== surface.surfaceId
+            || defaultOption.pricing.isStandard !== true
+          ));
+    })
+    || Object.keys(catalog.defaultSelections).some((surfaceId) =>
+      !catalog.surfaces.some((surface) => surface.surfaceId === surfaceId)
+    )
   ) {
     throw new Error(
-      "SC01 v2 catalog 必须是禁止报价、全表面必选且顺序完整的 2.0.0 draft",
+      "SC01 v2 catalog 必须包含确认基础价、显式标配和完整顺序的 2.0.0 draft",
     );
   }
 
@@ -449,7 +500,15 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
             || option.pricing.unitPriceMinor < 0
             || option.pricing.status !== "confirmed"
       ) ||
-      option.pricing.quotable !== false
+      option.pricing.quotable !== false ||
+      (
+        option.parameters.color?.mode === "variant"
+        && (
+          option.materialFamilyId === null
+          || option.pricing.isStandard
+          || option.pricing.unitPriceMinor === null
+        )
+      )
     ) {
       throw new Error(`SC01 v2 选项 ${option.optionId} 价格状态非法`);
     }

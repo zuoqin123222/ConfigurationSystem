@@ -235,7 +235,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     if (body.quoteRequested === true) {
       return reply.status(422).send({
         code: "PRICE_UNCONFIRMED",
-        message: "SC01 草案价格未确认，禁止报价",
+        message: "SC01 草案仅提供参考总价，不构成正式报价",
         details: priceResult,
       });
     }

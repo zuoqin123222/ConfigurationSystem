@@ -25,19 +25,17 @@
       "pattern": "^cfg-[a-f0-9]{24}$"
     },
     "currency": { "const": "CNY" },
-    "basePriceMinor": { "type": "null" },
+    "basePriceMinor": { "type": "integer", "minimum": 0 },
     "lineItems": {
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/$defs/lineItem" }
     },
-    "totalPriceMinor": { "type": "null" },
+    "totalPriceMinor": { "type": "integer", "minimum": 0 },
     "quoteAllowed": { "const": false },
     "blockingReasons": {
       "type": "array",
-      "minItems": 1,
       "uniqueItems": true,
-      "contains": { "const": "PRICE_UNCONFIRMED" },
       "items": {
         "enum": [
           "BASE_PRICE_UNCONFIRMED",

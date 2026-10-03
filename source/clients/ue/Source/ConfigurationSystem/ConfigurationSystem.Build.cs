@@ -1,4 +1,5 @@
 using UnrealBuildTool;
+using System.IO;
 
 public class ConfigurationSystem : ModuleRules
 {
@@ -30,5 +31,21 @@ public class ConfigurationSystem : ModuleRules
 				"PakFile"
 			}
 		);
+
+		// catalog.thumbnailUrl 指向 Web 公共色卡；把同一份经校验的 WebP 以 NonUFS
+		// 资源随桌面端分发，运行时可按 URL 路径直接加载，避免 Editor-only 资产导入。
+		string ThumbnailSource = Path.GetFullPath(Path.Combine(
+			ModuleDirectory,
+			"..", "..", "..", "web", "public", "sc01", "thumbnails"));
+		if (Directory.Exists(ThumbnailSource))
+		{
+			foreach (string Thumbnail in Directory.GetFiles(ThumbnailSource, "*.webp"))
+			{
+				RuntimeDependencies.Add(
+					"$(TargetOutputDir)/sc01/thumbnails/" + Path.GetFileName(Thumbnail),
+					Thumbnail,
+					StagedFileType.NonUFS);
+			}
+		}
 	}
 }

@@ -1,16 +1,140 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "ConfiguratorExperienceSaveGame.h"
+#include "ConfiguratorPanel.h"
 #include "ConfigShowroomPlayerController.h"
 #include "ReversiblePartActuatorComponent.h"
 #include "SmoothWheelControllerComponent.h"
 
+#include "Components/Image.h"
 #include "Components/SceneComponent.h"
 #include "Engine/GameInstance.h"
+#include "Engine/Texture2D.h"
 #include "HAL/FileManager.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
+#include "UObject/GarbageCollection.h"
+#include "UObject/StrongObjectPtr.h"
 #include "UObject/UnrealType.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FConfiguratorThumbnailCacheAutomationTest,
+	"ConfigurationSystem.Runtime.ConfiguratorPanel.ThumbnailCache",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
+bool FConfiguratorThumbnailCacheAutomationTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	const FMapProperty* CacheProperty = FindFProperty<FMapProperty>(
+		UConfiguratorPanel::StaticClass(),
+		TEXT("VariantThumbnailCache"));
+	TestNotNull(TEXT("ConfiguratorPanel 使用 UPROPERTY 持有缩略图缓存"), CacheProperty);
+	if (CacheProperty != nullptr)
+	{
+		TestTrue(TEXT("缩略图缓存仅为瞬态生命周期"), CacheProperty->HasAnyPropertyFlags(CPF_Transient));
+		const FObjectPropertyBase* ValueProperty =
+			CastField<FObjectPropertyBase>(CacheProperty->ValueProp);
+		TestTrue(
+			TEXT("缩略图缓存值由反射系统作为 UTexture2D 强引用追踪"),
+			ValueProperty != nullptr
+				&& ValueProperty->PropertyClass == UTexture2D::StaticClass());
+	}
+
+	TStrongObjectPtr<UConfiguratorPanel> Panel(NewObject<UConfiguratorPanel>());
+	Panel->bAcceptThumbnailResults = true;
+	int32 DecodeCount = 0;
+	Panel->VariantThumbnailLoaderOverride =
+		[&DecodeCount](const FString& ThumbnailUrl) -> UTexture2D*
+		{
+			++DecodeCount;
+			return ThumbnailUrl.Contains(TEXT("missing-"))
+				? nullptr
+				: NewObject<UTexture2D>();
+		};
+	const FString ThumbnailUrl(TEXT("/sc01/thumbnails/alcantara-p2-1045.webp"));
+	TStrongObjectPtr<UImage> FirstImage(NewObject<UImage>());
+	Panel->RequestVariantThumbnail(ThumbnailUrl, FirstImage.Get());
+	TestEqual(TEXT("请求阶段不在游戏线程同步解码"), DecodeCount, 0);
+	TestEqual(TEXT("请求阶段只登记一个待加载 URL"), Panel->PendingVariantThumbnailUrls.Num(), 1);
+	Panel->PumpVariantThumbnailLoads();
+	TestEqual(TEXT("分批泵送后执行一次加载"), DecodeCount, 1);
+	TestEqual(TEXT("有效缩略图进入受 GC 追踪的缓存"), Panel->VariantThumbnailCache.Num(), 1);
+	UTexture2D* FirstTexture = Cast<UTexture2D>(
+		FirstImage->GetBrush().GetResourceObject());
+	TestNotNull(TEXT("完成加载后真实纹理绑定到色卡 Image"), FirstTexture);
+
+	TWeakObjectPtr<UTexture2D> TextureAfterGc(FirstTexture);
+	FirstTexture = nullptr;
+	CollectGarbage(RF_NoFlags);
+	TestTrue(TEXT("UPROPERTY 缓存在 GC 后仍持有纹理"), TextureAfterGc.IsValid());
+	TStrongObjectPtr<UImage> SecondImage(NewObject<UImage>());
+	Panel->RequestVariantThumbnail(ThumbnailUrl, SecondImage.Get());
+	TestTrue(
+		TEXT("同一 thumbnailUrl 刷新时复用同一纹理"),
+		SecondImage->GetBrush().GetResourceObject() == TextureAfterGc.Get());
+	TestEqual(TEXT("重复加载不增加缓存项"), Panel->VariantThumbnailCache.Num(), 1);
+	TestEqual(TEXT("重复加载不再次解码"), DecodeCount, 1);
+
+	const FInt32Range InitialRange =
+		UConfiguratorPanel::CalculateThumbnailRequestRange(0.0f, 440.0f, 160);
+	TestEqual(TEXT("首帧只预取横向视口附近条目"), InitialRange.GetLowerBoundValue(), 0);
+	TestTrue(
+		TEXT("首帧不会请求全部 160 张色卡"),
+		InitialRange.GetUpperBoundValue() <= 9);
+	const FInt32Range ScrolledRange =
+		UConfiguratorPanel::CalculateThumbnailRequestRange(
+			86.0f * 80.0f,
+			440.0f,
+			160);
+	TestTrue(TEXT("横向滚动后请求窗口随偏移移动"), ScrolledRange.GetLowerBoundValue() >= 77);
+	TestTrue(TEXT("滚动请求仍保持小批窗口"), ScrolledRange.GetUpperBoundValue() <= 89);
+
+	for (int32 Index = 0;
+		Index < UConfiguratorPanel::MaxVariantThumbnailCacheEntries + 8;
+		++Index)
+	{
+		Panel->StoreVariantThumbnail(
+			FString::Printf(TEXT("/sc01/thumbnails/cache-%d.webp"), Index),
+			NewObject<UTexture2D>());
+	}
+	TestEqual(
+		TEXT("成功纹理 LRU 缓存限制最大条目数"),
+		Panel->VariantThumbnailCache.Num(),
+		UConfiguratorPanel::MaxVariantThumbnailCacheEntries);
+	TestEqual(
+		TEXT("成功纹理 LRU 顺序表保持同样上限"),
+		Panel->VariantThumbnailCacheOrder.Num(),
+		UConfiguratorPanel::MaxVariantThumbnailCacheEntries);
+	TestFalse(
+		TEXT("最早且非可见的缓存纹理被淘汰"),
+		Panel->VariantThumbnailCache.Contains(TEXT("/sc01/thumbnails/cache-0.webp")));
+
+	for (int32 Index = 0;
+		Index < UConfiguratorPanel::MaxFailedThumbnailCacheEntries + 8;
+		++Index)
+	{
+		Panel->RememberFailedVariantThumbnail(FString::Printf(
+			TEXT("/sc01/thumbnails/missing-%d.webp"), Index));
+	}
+	TestEqual(
+		TEXT("失败 URL 缓存限制最大条目数"),
+		Panel->FailedVariantThumbnailUrls.Num(),
+		UConfiguratorPanel::MaxFailedThumbnailCacheEntries);
+	TestEqual(
+		TEXT("失败 URL 淘汰顺序与集合保持同样上限"),
+		Panel->FailedVariantThumbnailOrder.Num(),
+		UConfiguratorPanel::MaxFailedThumbnailCacheEntries);
+	TStrongObjectPtr<UImage> MissingImage(NewObject<UImage>());
+	const int32 DecodeCountBeforeCachedFailure = DecodeCount;
+	Panel->RequestVariantThumbnail(
+		FString::Printf(
+			TEXT("/sc01/thumbnails/missing-%d.webp"),
+			UConfiguratorPanel::MaxFailedThumbnailCacheEntries + 7),
+		MissingImage.Get());
+	Panel->PumpVariantThumbnailLoads();
+	TestEqual(TEXT("缓存的失败 URL 不重复解码"), DecodeCount, DecodeCountBeforeCachedFailure);
+	return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FConfiguratorCameraOrbitAutomationTest,
@@ -38,6 +162,58 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("轨迹终点稳定"),
 		AConfigShowroomPlayerController::InterpolateOrbitLocation(
 			Start, End, Pivot, 1.0f).Equals(End, 0.1));
+
+	FMinimalViewInfo StartPOV;
+	StartPOV.Location = Start;
+	StartPOV.Rotation = FRotator(-5.0, 0.0, 0.0);
+	StartPOV.FOV = 70.0f;
+	FMinimalViewInfo EndPOV;
+	EndPOV.Location = End;
+	EndPOV.Rotation = FRotator(-12.0, 90.0, 2.0);
+	EndPOV.FOV = 42.0f;
+	EndPOV.DesiredFOV = 44.0f;
+	EndPOV.FirstPersonFOV = 55.0f;
+	EndPOV.FirstPersonScale = 0.75f;
+	EndPOV.OrthoWidth = 768.0f;
+	EndPOV.bAutoCalculateOrthoPlanes = false;
+	EndPOV.AutoPlaneShift = 12.0f;
+	EndPOV.bUpdateOrthoPlanes = true;
+	EndPOV.bUseCameraHeightAsViewTarget = true;
+	EndPOV.OrthoNearClipPlane = 4.0f;
+	EndPOV.OrthoFarClipPlane = 4096.0f;
+	EndPOV.PerspectiveNearClipPlane = 7.0f;
+	EndPOV.AspectRatio = 2.39f;
+	EndPOV.AspectRatioAxisConstraint = EAspectRatioAxisConstraint::AspectRatio_MaintainYFOV;
+	EndPOV.bConstrainAspectRatio = true;
+	EndPOV.bUseFirstPersonParameters = true;
+	EndPOV.bUseFieldOfViewForLOD = false;
+	EndPOV.ProjectionMode = ECameraProjectionMode::Orthographic;
+	EndPOV.PostProcessBlendWeight = 0.65f;
+	EndPOV.OffCenterProjectionOffset = FVector2D(0.1, -0.2);
+	EndPOV.PreviousViewTransform = FTransform(
+		FRotator(1.0, 2.0, 3.0),
+		FVector(4.0, 5.0, 6.0));
+	EndPOV.ApplyOverscan(0.1f, true, true);
+	const FMinimalViewInfo FinalPOV =
+		AConfigShowroomPlayerController::InterpolateCameraPOV(
+			StartPOV,
+			EndPOV,
+			Pivot,
+			1.0f);
+	TestTrue(TEXT("过渡完成位置与目标 POV 一致"), FinalPOV.Location.Equals(EndPOV.Location, 0.01));
+	TestTrue(TEXT("过渡完成旋转与目标 POV 一致"), FinalPOV.Rotation.Equals(EndPOV.Rotation, 0.01));
+	TestTrue(TEXT("过渡完成 FOV 与目标一致"), FMath::IsNearlyEqual(FinalPOV.FOV, EndPOV.FOV));
+	AConfigTransitionCameraActor* Transition =
+		NewObject<AConfigTransitionCameraActor>(GetTransientPackage());
+	Transition->ApplyCameraPOV(FinalPOV);
+	FMinimalViewInfo AppliedPOV;
+	Transition->CalcCamera(0.0f, AppliedPOV);
+	TestTrue(TEXT("过渡视图目标完整保留 FMinimalViewInfo"), AppliedPOV.Equals(FinalPOV));
+	TestEqual(TEXT("过渡视图保留偏轴投影"), AppliedPOV.OffCenterProjectionOffset, EndPOV.OffCenterProjectionOffset);
+	TestEqual(TEXT("过渡视图保留透视近裁剪面"), AppliedPOV.PerspectiveNearClipPlane, EndPOV.PerspectiveNearClipPlane);
+	TestEqual(TEXT("过渡视图保留正交近裁剪面"), AppliedPOV.OrthoNearClipPlane, EndPOV.OrthoNearClipPlane);
+	TestEqual(TEXT("过渡视图保留正交远裁剪面"), AppliedPOV.OrthoFarClipPlane, EndPOV.OrthoFarClipPlane);
+	TestFalse(TEXT("过渡视图保留 FOV LOD 开关"), AppliedPOV.bUseFieldOfViewForLOD);
 	return true;
 }
 

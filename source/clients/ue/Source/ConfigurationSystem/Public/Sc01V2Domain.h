@@ -74,8 +74,17 @@ namespace Sc01V2
 		TOptional<FString> ColorCode;
 		TOptional<FString> Finish;
 		TOptional<FString> MaterialFamilyId;
+		TOptional<FString> ColorMode;
 		bool bRenderRelevant = false;
 		FPricing Pricing;
+
+		bool SupportsMaterialVariants() const
+		{
+			return ColorMode.IsSet()
+				&& ColorMode.GetValue() == TEXT("variant")
+				&& !Pricing.bIsStandard
+				&& Pricing.UnitPriceMinor.IsSet();
+		}
 	};
 
 	struct CONFIGURATIONSYSTEM_API FMaterialVariant
@@ -84,6 +93,7 @@ namespace Sc01V2
 		FString MaterialFamilyId;
 		FString DisplayName;
 		TOptional<FString> ColorCode;
+		FString ThumbnailUrl;
 	};
 
 	struct CONFIGURATIONSYSTEM_API FCatalog
@@ -94,10 +104,11 @@ namespace Sc01V2
 		FString Currency;
 		FString VehicleId;
 		FString VehicleDisplayName;
-		bool bBasePriceIsNull = false;
+		int64 BasePriceMinor = 0;
 		FString PriceStatus;
 		bool bQuotable = false;
 		TArray<FString> SelectionOrder;
+		TMap<FString, FString> DefaultSelections;
 		TArray<FRegion> Regions;
 		TArray<FCategory> Categories;
 		TArray<FComponent> Components;
@@ -123,10 +134,14 @@ namespace Sc01V2
 		const FMaterialVariant* FindMaterialVariant(const FString& VariantId) const;
 		const TArray<FString>* FindOptionIdsForSurface(const FString& SurfaceId) const;
 		const TArray<FString>* FindCategoryIdsForRegion(const FString& RegionId) const;
+		const TArray<FString>* FindComponentIdsForCategory(const FString& CategoryId) const;
+		const TArray<FString>* FindSurfaceIdsForComponent(const FString& ComponentId) const;
 		const TArray<FString>* FindSurfaceIdsForCategory(const FString& CategoryId) const;
 		const TArray<FString>* FindVariantIdsForMaterialFamily(const FString& MaterialFamilyId) const;
+		const FString* FindDefaultOptionIdForSurface(const FString& SurfaceId) const;
 		const FRegion* FindRegion(const FString& RegionId) const;
 		const FCategory* FindCategory(const FString& CategoryId) const;
+		const FComponent* FindComponent(const FString& ComponentId) const;
 		const FSurface* FindSurface(const FString& SurfaceId) const;
 		const FMaterialFamily* FindMaterialFamily(const FString& MaterialFamilyId) const;
 
@@ -137,15 +152,23 @@ namespace Sc01V2
 		TMap<FString, TArray<FString>> OptionIdsBySurface;
 		TMap<FString, int32> RegionIndexById;
 		TMap<FString, int32> CategoryIndexById;
+		TMap<FString, int32> ComponentIndexById;
 		TMap<FString, int32> SurfaceIndexById;
 		TMap<FString, int32> FamilyIndexById;
 		TMap<FString, TArray<FString>> CategoryIdsByRegion;
+		TMap<FString, TArray<FString>> ComponentIdsByCategory;
+		TMap<FString, TArray<FString>> SurfaceIdsByComponent;
 		TMap<FString, TArray<FString>> SurfaceIdsByCategory;
 		TMap<FString, TArray<FString>> VariantIdsByFamily;
+		TMap<FString, FString> DefaultOptionIdBySurface;
 		bool bValid = false;
 	};
 
 	using FSelections = TMap<FString, FString>;
+
+	CONFIGURATIONSYSTEM_API int64 CalculateOptionsPriceMinor(
+		const FSelections& Selections,
+		const FCatalogIndex& Catalog);
 
 	struct CONFIGURATIONSYSTEM_API FPaintCustomization
 	{

@@ -1,5 +1,7 @@
 import type {
   CatalogComponent,
+  CatalogMaterialFamily,
+  CatalogMaterialVariant,
   CatalogOption,
   CatalogSurface,
   CatalogV2,
@@ -9,24 +11,19 @@ import type {
 } from './types'
 
 function defaultOption(catalog: CatalogV2, surfaceId: string): CatalogOption | undefined {
-  const options = catalog.options.filter((item) => item.surfaceId === surfaceId)
-  return options.find((item) => item.pricing.isStandard)
-    ?? [...options].sort((left, right) => {
-      const reviewDelta = Number(left.reviewRequired) - Number(right.reviewRequired)
-      if (reviewDelta !== 0) return reviewDelta
-      return (left.pricing.unitPriceMinor ?? Number.MAX_SAFE_INTEGER)
-        - (right.pricing.unitPriceMinor ?? Number.MAX_SAFE_INTEGER)
-    })[0]
+  const optionId = catalog.defaultSelections[surfaceId]
+  return optionId
+    ? catalog.options.find(
+        (item) => item.surfaceId === surfaceId && item.optionId === optionId,
+      )
+    : undefined
 }
 
 export function createInitialSelections(catalog: CatalogV2): Selections {
   return Object.fromEntries(
-    catalog.selectionOrder.map((surfaceId) => {
+    catalog.selectionOrder.flatMap((surfaceId) => {
       const option = defaultOption(catalog, surfaceId)
-      if (!option) {
-        throw new Error(`表面 ${surfaceId} 没有可用选项`)
-      }
-      return [surfaceId, option.optionId]
+      return option ? [[surfaceId, option.optionId]] : []
     }),
   )
 }
@@ -36,13 +33,13 @@ export function normalizeSelections(
   selections: Selections,
 ): Selections {
   return Object.fromEntries(
-    catalog.selectionOrder.map((surfaceId) => {
+    catalog.selectionOrder.flatMap((surfaceId) => {
       const selected = catalog.options.find(
         (option) => option.surfaceId === surfaceId && option.optionId === selections[surfaceId],
       )
       const fallback = defaultOption(catalog, surfaceId)
-      if (!selected && !fallback) throw new Error(`表面 ${surfaceId} 没有可用选项`)
-      return [surfaceId, (selected ?? fallback)!.optionId]
+      const option = selected ?? fallback
+      return option ? [[surfaceId, option.optionId]] : []
     }),
   )
 }
@@ -70,7 +67,10 @@ export function normalizeCustomizations(
       const variant = catalog.materialVariants.find(
         (item) => item.variantId === customization.materialVariantId,
       )
-      if (variant?.materialFamilyId === option.materialFamilyId) {
+      if (
+        supportsMaterialVariants(option)
+        && variant?.materialFamilyId === option.materialFamilyId
+      ) {
         normalized[surfaceId] = { materialVariantId: variant.variantId }
       }
       continue
@@ -102,7 +102,9 @@ export function createCanonicalKey(
   customizations: Customizations = {},
 ): string {
   return [
-    ...catalog.selectionOrder.map((surfaceId) => `${surfaceId}=${selections[surfaceId]}`),
+    ...catalog.selectionOrder.flatMap((surfaceId) =>
+      selections[surfaceId] ? [`${surfaceId}=${selections[surfaceId]}`] : [],
+    ),
     ...customizationParts(catalog, customizations),
   ].join('__')
 }
@@ -111,7 +113,27 @@ export function componentsForCategory(
   catalog: CatalogV2,
   categoryId: string,
 ): CatalogComponent[] {
-  return catalog.components.filter((component) => component.categoryId === categoryId)
+  const order = [
+    'car-paint',
+    'chassis',
+    'wheel',
+    'caliper',
+    'steering-wheel',
+    'instrument-panel',
+    'a-pillar',
+    'seat',
+    'door-trim',
+    'storage-box',
+    'center-console',
+    'roof',
+    'underbody',
+    'personalization',
+  ]
+  return catalog.components
+    .filter((component) => component.categoryId === categoryId)
+    .sort((left, right) =>
+      order.indexOf(left.componentId) - order.indexOf(right.componentId),
+    )
 }
 
 export function surfacesForComponent(
@@ -121,16 +143,40 @@ export function surfacesForComponent(
   return catalog.surfaces.filter((surface) => componentId === 'all' || surface.componentId === componentId)
 }
 
-export function optionsForFilters(
+export interface MaterialOptionGroup {
+  materialFamily: CatalogMaterialFamily
+  options: CatalogOption[]
+}
+
+export function supportsMaterialVariants(option: CatalogOption): boolean {
+  return option.parameters.color?.mode === 'variant'
+    && !option.pricing.isStandard
+    && option.pricing.unitPriceMinor !== null
+}
+
+export function materialVariantsForOption(
+  catalog: CatalogV2,
+  option: CatalogOption,
+): CatalogMaterialVariant[] {
+  if (!supportsMaterialVariants(option) || option.materialFamilyId === null) return []
+  return catalog.materialVariants.filter(
+    (variant) => variant.materialFamilyId === option.materialFamilyId,
+  )
+}
+
+export function materialGroupsForSurface(
   catalog: CatalogV2,
   surfaceId: string,
-  materialFamilyId: string,
-): CatalogOption[] {
-  return catalog.options.filter(
-    (option) =>
-      option.surfaceId === surfaceId &&
-      (materialFamilyId === 'all' || option.materialFamilyId === materialFamilyId),
-  )
+): MaterialOptionGroup[] {
+  const options = catalog.options.filter((option) => option.surfaceId === surfaceId)
+  return catalog.materialFamilies.flatMap((materialFamily) => {
+    const familyOptions = options.filter(
+      (option) => option.materialFamilyId === materialFamily.materialFamilyId,
+    )
+    return familyOptions.length > 0
+      ? [{ materialFamily, options: familyOptions }]
+      : []
+  })
 }
 
 export function renderRelevantSelections(

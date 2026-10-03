@@ -31,7 +31,12 @@ const storedConfiguration = {
   selections,
   customizations: {},
   revision: 1,
-  priceResult: { totalPriceMinor: null, quoteAllowed: false, blockingReasons: ['PRICE_UNCONFIRMED'] },
+  priceResult: {
+    basePriceMinor: 22980000,
+    totalPriceMinor: 22980000,
+    quoteAllowed: false,
+    blockingReasons: ['PRICE_UNCONFIRMED'],
+  },
   createdAt: '2026-10-03T00:00:00.000Z',
   updatedAt: '2026-10-03T00:00:00.000Z',
 } as const

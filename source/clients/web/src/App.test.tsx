@@ -27,7 +27,8 @@ function configuration(selections = initialSelections, revision = 1, customizati
     customizations,
     revision,
     priceResult: {
-      totalPriceMinor: null,
+      basePriceMinor: 22980000,
+      totalPriceMinor: 22980000,
       quoteAllowed: false,
       blockingReasons: ['PRICE_UNCONFIRMED'],
     },
@@ -98,44 +99,93 @@ describe('App v2', () => {
     window.history.replaceState(null, '', '/')
   })
 
-  it('加载动态层级目录并明确展示 draft、价格待确认和 v1 代理图提示', async () => {
+  it('加载四阶段目录并展示基础价参考总价和 v1 代理图提示', async () => {
     mockApi()
     render(<App />)
 
     expect(screen.getByText('正在加载 SC01 草案目录…')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'SC01' })).toBeInTheDocument()
     expect(screen.getByText('DRAFT · 不可报价')).toBeInTheDocument()
-    expect(screen.getByText('价格待确认')).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: '类别筛选' })).toHaveTextContent('外观')
-    expect(screen.getByRole('region', { name: '组件筛选' })).toHaveTextContent('车身轮毂')
+    expect(screen.getByText('¥229,800')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '阶段筛选' }))
+      .toHaveTextContent('外饰内饰性能个性化')
+    expect(screen.getByRole('region', { name: '部件筛选' }))
+      .toHaveTextContent('车漆车架轮毂卡钳')
     expect(catalogFixture.selectionOrder).toHaveLength(38)
-    expect(catalogFixture.surfaces.every((surface) => surface.required)).toBe(true)
-    expect(Object.keys(initialSelections)).toEqual(catalogFixture.selectionOrder)
+    expect(catalogFixture.surfaces.filter((surface) => !surface.required)).toHaveLength(9)
+    expect(Object.keys(initialSelections)).toEqual(
+      catalogFixture.selectionOrder.filter((surfaceId) =>
+        catalogFixture.options.some(
+          (option) => option.surfaceId === surfaceId && option.pricing.isStandard,
+        ),
+      ),
+    )
 
     await loadProxy()
     expect(screen.getByAltText('SC01 代理车辆')).toHaveAttribute('src', '/assets/renders/v1-proxy.png')
     expect(screen.getByText('v2 暂无渲染图，当前保留 v1 代理图')).toBeInTheDocument()
   })
 
-  it('category/component/surface/materialFamily 联动筛选并选择选项', async () => {
+  it('阶段、部件、项目联动，并将材质作为同级分组展示', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01' })
     await loadProxy()
 
-    await user.click(within(screen.getByRole('region', { name: '组件筛选' }))
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '轮毂' }))
-    expect(screen.getByRole('region', { name: '表面筛选' })).toHaveTextContent('轮毂材质')
-    expect(screen.getByRole('region', { name: '材质系列筛选' })).toHaveTextContent('铝合金镁合金')
+    expect(screen.getByRole('region', { name: '项目筛选' })).toHaveTextContent('轮毂材质')
+    expect(screen.queryByRole('region', { name: '材质系列筛选' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '铝合金材质组' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '镁合金材质组' })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /镁合金 · 价格待确认/ }))
+    await user.click(screen.getByRole('button', { name: /镁合金.*价格待确认/ }))
     expect(screen.getByText(/wheel-material=wheel-magnesium-alloy/)).toBeInTheDocument()
 
-    await user.click(within(screen.getByRole('region', { name: '类别筛选' }))
+    await user.click(within(screen.getByRole('region', { name: '阶段筛选' }))
+      .getByRole('button', { name: '内饰' }))
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
     expect(await screen.findByText('Ultrasuede（黑）')).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'PDF 512 色卡' })).toHaveTextContent('SF4')
+    expect(screen.getByRole('region', { name: 'Ultrasuede PDF 色卡' })).toHaveTextContent('SF4')
+    await user.click(screen.getByRole('button', { name: /SF4，PDF 色卡定制，¥1,180/ }))
+    expect(screen.getByText(/steering-wheel-skin=steering-skin-ultrasuede-custom/))
+      .toBeInTheDocument()
+  })
+
+  it('不为未声明 variant 色彩能力的付费材质选项展示色卡', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01' })
+
+    await user.click(within(screen.getByRole('region', { name: '阶段筛选' }))
+      .getByRole('button', { name: '内饰' }))
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
+      .getByRole('button', { name: '座椅' }))
+
+    expect(await screen.findByRole('heading', { name: '选择座椅接触面' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Ultrasuede PDF 色卡' }))
+      .not.toBeInTheDocument()
+  })
+
+  it('点击色卡保持其显式关联的 option，而不是同材料族首项', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01' })
+
+    await user.click(within(screen.getByRole('region', { name: '阶段筛选' }))
+      .getByRole('button', { name: '内饰' }))
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
+      .getByRole('button', { name: '方向盘' }))
+    await user.click(screen.getByRole('button', { name: /真皮用户定制.*¥1,280/ }))
+    await user.click(within(screen.getByRole('region', { name: '真皮用户定制 PDF 色卡' }))
+      .getByRole('button', { name: /1217，PDF 色卡定制/ }))
+
+    expect(screen.getByText(/steering-wheel-skin=steering-skin-leather-user/))
+      .toBeInTheDocument()
   })
 
   it('自定义车漆显示调色盘和受限参数，并随配置保存', async () => {

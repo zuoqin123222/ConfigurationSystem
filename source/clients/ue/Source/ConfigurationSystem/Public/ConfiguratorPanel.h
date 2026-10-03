@@ -12,8 +12,11 @@ class UEditableTextBox;
 class USlider;
 class UVerticalBox;
 class UWrapBox;
+class UScrollBox;
 class UProgressBar;
 class UTextBlock;
+class UTexture2D;
+class UImage;
 
 DECLARE_MULTICAST_DELEGATE_ThreeParams(
 	FConfiguratorDataButtonClicked,
@@ -62,6 +65,27 @@ protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 private:
+	friend class FConfiguratorThumbnailCacheAutomationTest;
+
+	struct FThumbnailTarget
+	{
+		TWeakObjectPtr<UImage> Image;
+		uint32 Generation = 0;
+	};
+
+	struct FThumbnailStrip
+	{
+		TWeakObjectPtr<UScrollBox> ScrollBox;
+		TArray<TPair<FString, TWeakObjectPtr<UImage>>> Items;
+	};
+
+	static constexpr int32 ThumbnailPreviewSize = 64;
+	static constexpr int32 MaxVariantThumbnailCacheEntries = 24;
+	static constexpr int32 MaxFailedThumbnailCacheEntries = 64;
+	static constexpr int32 MaxConcurrentThumbnailLoads = 2;
+	static constexpr int32 ThumbnailPrefetchItems = 3;
+	static constexpr float ThumbnailItemExtent = 86.0f;
+
 	void BuildWidgetTree();
 	void BuildSc01V2Controls(UVerticalBox* Parent);
 	void AddHeading(UVerticalBox* Parent, const FText& Text);
@@ -71,11 +95,30 @@ private:
 		const FString& Action,
 		const FString& PrimaryId,
 		const FString& SecondaryId = FString());
+	UConfiguratorDataButton* MakeVariantButton(
+		const Sc01V2::FMaterialVariant& Variant,
+		const FString& OptionId,
+		bool bSelected,
+		UImage*& OutSwatch);
+	void RegisterThumbnailStrip(
+		UScrollBox* ScrollBox,
+		TArray<TPair<FString, TWeakObjectPtr<UImage>>>&& Items);
+	void ResetThumbnailViewState();
+	void UpdateVisibleThumbnailRequests();
+	void RequestVariantThumbnail(const FString& ThumbnailUrl, UImage* TargetImage);
+	void PumpVariantThumbnailLoads();
+	void HandleVariantThumbnailDecoded(const FString& ThumbnailUrl, struct FImage&& Preview);
+	void StoreVariantThumbnail(const FString& ThumbnailUrl, UTexture2D* Texture);
+	void TouchVariantThumbnail(const FString& ThumbnailUrl);
+	void RememberFailedVariantThumbnail(const FString& ThumbnailUrl);
+	static FInt32Range CalculateThumbnailRequestRange(
+		float ScrollOffset,
+		float ViewportWidth,
+		int32 ItemCount);
 	void RefreshV2Navigation();
-	void RefreshCategoryButtons();
+	void RefreshComponentButtons();
 	void RefreshSurfaceButtons();
 	void RefreshOptionButtons();
-	void RefreshVariantButtons();
 	void RefreshPaintEditor();
 	void QueueV2NavigationRefresh();
 	void HandleDeferredV2NavigationRefresh();
@@ -124,7 +167,11 @@ private:
 	TObjectPtr<UTextBlock> CanonicalKeyText;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> PriceText;
+	TObjectPtr<UTextBlock> BasePriceText;
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> OptionsPriceText;
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> ReferenceTotalText;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> ExperienceStatusText;
@@ -139,15 +186,13 @@ private:
 	TObjectPtr<USc01V2ConfigurationState> Sc01V2State;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UWrapBox> RegionButtons;
+	TObjectPtr<UWrapBox> StageButtons;
 	UPROPERTY(Transient)
-	TObjectPtr<UWrapBox> CategoryButtons;
+	TObjectPtr<UWrapBox> ComponentButtons;
 	UPROPERTY(Transient)
 	TObjectPtr<UVerticalBox> SurfaceButtons;
 	UPROPERTY(Transient)
 	TObjectPtr<UVerticalBox> OptionButtons;
-	UPROPERTY(Transient)
-	TObjectPtr<UVerticalBox> VariantButtons;
 	UPROPERTY(Transient)
 	TObjectPtr<UVerticalBox> PaintEditor;
 	UPROPERTY(Transient)
@@ -155,14 +200,38 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> V2StatusText;
 
+	UPROPERTY(Transient)
+	TMap<FString, TObjectPtr<UTexture2D>> VariantThumbnailCache;
+
+	UPROPERTY(Transient)
+	TArray<FString> VariantThumbnailCacheOrder;
+
+	UPROPERTY(Transient)
+	TSet<FString> FailedVariantThumbnailUrls;
+
+	UPROPERTY(Transient)
+	TArray<FString> FailedVariantThumbnailOrder;
+
+	TFunction<UTexture2D*(const FString&)> VariantThumbnailLoaderOverride;
+	TArray<FThumbnailStrip> VariantThumbnailStrips;
+	TArray<FString> PendingVariantThumbnailUrls;
+	TSet<FString> PendingVariantThumbnailUrlSet;
+	TSet<FString> ActiveVariantThumbnailUrls;
+	TMap<FString, TArray<FThumbnailTarget>> VariantThumbnailWaiters;
+	TSet<TWeakObjectPtr<UImage>> VisibleVariantThumbnailImages;
+	uint32 ThumbnailViewGeneration = 1;
+	uint32 ThumbnailLifetimeSerial = 0;
+	int32 ActiveVariantThumbnailLoadCount = 0;
+	bool bAcceptThumbnailResults = false;
+
 	UPROPERTY(Transient) TObjectPtr<USlider> MetallicSlider;
 	UPROPERTY(Transient) TObjectPtr<USlider> RoughnessSlider;
 	UPROPERTY(Transient) TObjectPtr<USlider> ClearCoatSlider;
 	UPROPERTY(Transient) TObjectPtr<USlider> OrangePeelSlider;
 	UPROPERTY(Transient) TObjectPtr<USlider> FlakeIntensitySlider;
 
-	FString SelectedRegionId;
 	FString SelectedCategoryId;
+	FString SelectedComponentId;
 	FString SelectedSurfaceId;
 	FSc01V2PaintCustomization PendingPaint;
 	FTimerHandle V2NavigationRefreshTimer;

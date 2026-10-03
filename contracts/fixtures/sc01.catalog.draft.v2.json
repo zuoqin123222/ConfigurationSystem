@@ -6,22 +6,28 @@
   "vehicle": {
     "vehicleId": "sc01",
     "displayName": "SC01",
-    "basePriceMinor": null,
-    "priceStatus": "unconfirmed",
+    "basePriceMinor": 22980000,
+    "priceStatus": "confirmed",
     "quotable": false
   },
   "selectionOrder": [
     "exterior-body-cover",
+    "engine-bay-cover",
     "wheel-material",
     "wheel-style",
     "wheel-color",
-    "lower-skirt",
     "front-caliper-color",
     "rear-caliper-color",
-    "engine-bay-cover",
     "steering-wheel-skin",
     "steering-wheel-addon",
     "steering-center-mark",
+    "ip-wings",
+    "ip-middle",
+    "ip-instrument-cover",
+    "ip-upper-trim",
+    "ip-lower-trim",
+    "ip-center-mark",
+    "a-pillar-surface",
     "seat-backrest",
     "seat-bolster",
     "seat-shell-back",
@@ -30,18 +36,12 @@
     "door-middle",
     "door-armrest",
     "door-armrest-skin",
-    "ip-wings",
-    "ip-middle",
-    "ip-instrument-cover",
-    "ip-upper-trim",
-    "ip-lower-trim",
-    "ip-center-mark",
     "storage-soft-bag",
     "console-armrest-cover",
     "console-armrest-side",
     "handbrake",
     "roof-surface",
-    "a-pillar-surface",
+    "lower-skirt",
     "interior-painted-parts",
     "door-sill",
     "embroidered-logo",
@@ -50,6 +50,37 @@
     "brake-handle",
     "pedal"
   ],
+  "defaultSelections": {
+    "exterior-body-cover": "body-cover-red",
+    "wheel-material": "wheel-aluminum-alloy",
+    "wheel-style": "wheel-style-multispoke",
+    "wheel-color": "wheel-color-bright-silver",
+    "front-caliper-color": "front-caliper-black",
+    "rear-caliper-color": "rear-caliper-black",
+    "steering-wheel-skin": "steering-skin-ultrasuede-black",
+    "steering-center-mark": "steering-center-standard",
+    "ip-wings": "ip-wings-microfiber-black",
+    "ip-middle": "ip-middle-microfiber-black",
+    "ip-instrument-cover": "ip-instrument-cover-microfiber-black",
+    "ip-upper-trim": "ip-upper-trim-microfiber-black",
+    "ip-lower-trim": "ip-lower-trim-microfiber-black",
+    "ip-center-mark": "ip-center-mark-black-paint",
+    "a-pillar-surface": "a-pillar-woven",
+    "seat-backrest": "seat-back-ultrasuede-black",
+    "seat-bolster": "seat-bolster-microfiber-black",
+    "seat-shell-back": "seat-shell-black",
+    "seat-headrest-mark": "seat-headrest-standard",
+    "door-upper": "door-upper-microfiber-black",
+    "door-middle": "door-middle-ultrasuede-black",
+    "door-armrest": "door-armrest-microfiber-black",
+    "door-armrest-skin": "door-armrest-skin-microfiber-black",
+    "storage-soft-bag": "storage-soft-bag-microfiber-black",
+    "console-armrest-cover": "console-armrest-cover-microfiber-black",
+    "console-armrest-side": "console-armrest-side-microfiber-black",
+    "handbrake": "handbrake-microfiber-black",
+    "roof-surface": "roof-woven-standard",
+    "embroidered-logo": "embroidered-logo-standard"
+  },
   "regions": [
     {
       "regionId": "exterior",
@@ -74,6 +105,17 @@
       ]
     },
     {
+      "regionId": "performance",
+      "displayName": "性能",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "车辆下护板"
+        }
+      ]
+    },
+    {
       "regionId": "personalization",
       "displayName": "其他个性化配置",
       "sourceRefs": [
@@ -89,7 +131,7 @@
     {
       "categoryId": "exterior",
       "regionId": "exterior",
-      "displayName": "外观",
+      "displayName": "外饰",
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -99,105 +141,33 @@
       ]
     },
     {
-      "categoryId": "steering-wheel",
+      "categoryId": "interior",
       "regionId": "interior",
-      "displayName": "方向盘",
+      "displayName": "内饰",
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "方向盘"
+          "locator": "内饰部件"
         }
       ]
     },
     {
-      "categoryId": "seat",
-      "regionId": "interior",
-      "displayName": "座椅",
+      "categoryId": "performance",
+      "regionId": "performance",
+      "displayName": "性能",
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "座椅"
-        }
-      ]
-    },
-    {
-      "categoryId": "door-trim",
-      "regionId": "interior",
-      "displayName": "门板",
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 2,
-          "locator": "门板"
-        }
-      ]
-    },
-    {
-      "categoryId": "instrument-panel",
-      "regionId": "interior",
-      "displayName": "IP仪表台",
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 2,
-          "locator": "IP仪表台"
-        }
-      ]
-    },
-    {
-      "categoryId": "storage-box",
-      "regionId": "interior",
-      "displayName": "储物盒盖",
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 3,
-          "locator": "储物盒盖"
-        }
-      ]
-    },
-    {
-      "categoryId": "center-console",
-      "regionId": "interior",
-      "displayName": "副仪表台",
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 3,
-          "locator": "副仪表台"
-        }
-      ]
-    },
-    {
-      "categoryId": "roof",
-      "regionId": "interior",
-      "displayName": "车顶",
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 3,
-          "locator": "车顶"
-        }
-      ]
-    },
-    {
-      "categoryId": "a-pillar",
-      "regionId": "interior",
-      "displayName": "A柱",
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 4,
-          "locator": "A柱"
+          "locator": "车辆下护板"
         }
       ]
     },
     {
       "categoryId": "personalization",
       "regionId": "personalization",
-      "displayName": "其他个性化配置",
+      "displayName": "个性化",
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -209,20 +179,56 @@
   ],
   "components": [
     {
-      "componentId": "exterior",
+      "componentId": "car-paint",
       "categoryId": "exterior",
-      "displayName": "外观",
+      "displayName": "车漆",
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "外观"
+          "locator": "全车身覆盖件"
+        }
+      ]
+    },
+    {
+      "componentId": "chassis",
+      "categoryId": "exterior",
+      "displayName": "车架",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "机舱盖板"
+        }
+      ]
+    },
+    {
+      "componentId": "wheel",
+      "categoryId": "exterior",
+      "displayName": "轮毂",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂"
+        }
+      ]
+    },
+    {
+      "componentId": "caliper",
+      "categoryId": "exterior",
+      "displayName": "卡钳",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "卡钳"
         }
       ]
     },
     {
       "componentId": "steering-wheel",
-      "categoryId": "steering-wheel",
+      "categoryId": "interior",
       "displayName": "方向盘",
       "sourceRefs": [
         {
@@ -234,7 +240,7 @@
     },
     {
       "componentId": "seat",
-      "categoryId": "seat",
+      "categoryId": "interior",
       "displayName": "座椅",
       "sourceRefs": [
         {
@@ -246,7 +252,7 @@
     },
     {
       "componentId": "door-trim",
-      "categoryId": "door-trim",
+      "categoryId": "interior",
       "displayName": "门板",
       "sourceRefs": [
         {
@@ -258,8 +264,8 @@
     },
     {
       "componentId": "instrument-panel",
-      "categoryId": "instrument-panel",
-      "displayName": "IP仪表台",
+      "categoryId": "interior",
+      "displayName": "IP",
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -270,7 +276,7 @@
     },
     {
       "componentId": "storage-box",
-      "categoryId": "storage-box",
+      "categoryId": "interior",
       "displayName": "储物盒盖",
       "sourceRefs": [
         {
@@ -282,7 +288,7 @@
     },
     {
       "componentId": "center-console",
-      "categoryId": "center-console",
+      "categoryId": "interior",
       "displayName": "副仪表台",
       "sourceRefs": [
         {
@@ -294,7 +300,7 @@
     },
     {
       "componentId": "roof",
-      "categoryId": "roof",
+      "categoryId": "interior",
       "displayName": "车顶",
       "sourceRefs": [
         {
@@ -306,7 +312,7 @@
     },
     {
       "componentId": "a-pillar",
-      "categoryId": "a-pillar",
+      "categoryId": "interior",
       "displayName": "A柱",
       "sourceRefs": [
         {
@@ -317,9 +323,21 @@
       ]
     },
     {
+      "componentId": "underbody",
+      "categoryId": "performance",
+      "displayName": "下护板",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "车辆下护板"
+        }
+      ]
+    },
+    {
       "componentId": "personalization",
       "categoryId": "personalization",
-      "displayName": "其他个性化配置",
+      "displayName": "个性化",
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -332,8 +350,8 @@
   "surfaces": [
     {
       "surfaceId": "exterior-body-cover",
-      "componentId": "exterior",
-      "displayName": "全车身覆盖件",
+      "componentId": "car-paint",
+      "displayName": "车漆",
       "required": true,
       "reviewRequired": false,
       "sourceRefs": [
@@ -346,7 +364,7 @@
     },
     {
       "surfaceId": "wheel-material",
-      "componentId": "exterior",
+      "componentId": "wheel",
       "displayName": "轮毂材质",
       "required": true,
       "reviewRequired": false,
@@ -360,7 +378,7 @@
     },
     {
       "surfaceId": "wheel-style",
-      "componentId": "exterior",
+      "componentId": "wheel",
       "displayName": "轮毂造型",
       "required": true,
       "reviewRequired": false,
@@ -374,7 +392,7 @@
     },
     {
       "surfaceId": "wheel-color",
-      "componentId": "exterior",
+      "componentId": "wheel",
       "displayName": "轮毂颜色",
       "required": true,
       "reviewRequired": false,
@@ -388,9 +406,9 @@
     },
     {
       "surfaceId": "lower-skirt",
-      "componentId": "exterior",
+      "componentId": "underbody",
       "displayName": "车辆下护板",
-      "required": true,
+      "required": false,
       "reviewRequired": false,
       "sourceRefs": [
         {
@@ -402,7 +420,7 @@
     },
     {
       "surfaceId": "front-caliper-color",
-      "componentId": "exterior",
+      "componentId": "caliper",
       "displayName": "前卡钳",
       "required": true,
       "reviewRequired": false,
@@ -416,7 +434,7 @@
     },
     {
       "surfaceId": "rear-caliper-color",
-      "componentId": "exterior",
+      "componentId": "caliper",
       "displayName": "后卡钳",
       "required": true,
       "reviewRequired": false,
@@ -430,9 +448,9 @@
     },
     {
       "surfaceId": "engine-bay-cover",
-      "componentId": "exterior",
+      "componentId": "chassis",
       "displayName": "机舱盖板",
-      "required": true,
+      "required": false,
       "reviewRequired": false,
       "sourceRefs": [
         {
@@ -460,7 +478,7 @@
       "surfaceId": "steering-wheel-addon",
       "componentId": "steering-wheel",
       "displayName": "加粗",
-      "required": true,
+      "required": false,
       "reviewRequired": true,
       "sourceRefs": [
         {
@@ -768,7 +786,7 @@
       "surfaceId": "interior-painted-parts",
       "componentId": "personalization",
       "displayName": "内饰全车黑色喷漆件",
-      "required": true,
+      "required": false,
       "reviewRequired": false,
       "sourceRefs": [
         {
@@ -782,7 +800,7 @@
       "surfaceId": "door-sill",
       "componentId": "personalization",
       "displayName": "门板口袋",
-      "required": true,
+      "required": false,
       "reviewRequired": true,
       "sourceRefs": [
         {
@@ -810,7 +828,7 @@
       "surfaceId": "center-panel-trim",
       "componentId": "personalization",
       "displayName": "中面板横饰板",
-      "required": true,
+      "required": false,
       "reviewRequired": true,
       "sourceRefs": [
         {
@@ -824,7 +842,7 @@
       "surfaceId": "shift-knob",
       "componentId": "personalization",
       "displayName": "换挡",
-      "required": true,
+      "required": false,
       "reviewRequired": false,
       "sourceRefs": [
         {
@@ -838,7 +856,7 @@
       "surfaceId": "brake-handle",
       "componentId": "personalization",
       "displayName": "刹车",
-      "required": true,
+      "required": false,
       "reviewRequired": true,
       "sourceRefs": [
         {
@@ -852,7 +870,7 @@
       "surfaceId": "pedal",
       "componentId": "personalization",
       "displayName": "脚垫",
-      "required": true,
+      "required": false,
       "reviewRequired": false,
       "sourceRefs": [
         {

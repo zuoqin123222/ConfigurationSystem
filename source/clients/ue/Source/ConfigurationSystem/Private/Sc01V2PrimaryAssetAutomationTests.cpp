@@ -43,7 +43,14 @@ bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 	USc01V2ConfigurationState* State =
 		NewObject<USc01V2ConfigurationState>(GetTransientPackage());
 	TestTrue(TEXT("从 Primary Asset 初始化 v2 状态"), State->Initialize(CatalogAsset));
-	TestEqual(TEXT("动态 selections 恰好为 38 项"), State->GetSelections().Num(), 38);
+	TestEqual(TEXT("默认状态仅包含 29 个显式标配项目"), State->GetSelections().Num(), 29);
+	TestEqual(
+		TEXT("车漆读取首个显式标配项"),
+		State->GetSelections().FindRef(TEXT("exterior-body-cover")),
+		FString(TEXT("body-cover-red")));
+	TestFalse(
+		TEXT("可选机舱盖板默认不选装"),
+		State->GetSelections().Contains(TEXT("engine-bay-cover")));
 	TestFalse(TEXT("初始化已派生 configurationId"), State->GetConfigurationId().IsEmpty());
 	TestFalse(TEXT("初始化已派生 renderKey"), State->GetRenderKey().IsEmpty());
 
@@ -60,7 +67,7 @@ bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("无变化事务不广播"), BroadcastCount, 0);
 
 	TMap<FString, FString> Invalid = Defaults;
-	Invalid.Remove(TEXT("pedal"));
+	Invalid.Remove(TEXT("seat-backrest"));
 	const FString IdBeforeInvalid = State->GetConfigurationId();
 	TestFalse(
 		TEXT("非法事务被拒绝"),
@@ -103,7 +110,7 @@ bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("切换 option 仅广播一次"), BroadcastCount, 2);
 
 	TMap<FString, FString> InvalidForPreflight = State->GetSelections();
-	InvalidForPreflight.Remove(TEXT("pedal"));
+	InvalidForPreflight.Remove(TEXT("seat-backrest"));
 	const FString IdBeforePreflight = State->GetConfigurationId();
 	TestFalse(
 		TEXT("只读事务预检拒绝非法状态"),
@@ -112,6 +119,15 @@ bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 		TEXT("只读事务预检不修改状态"),
 		State->GetConfigurationId(),
 		IdBeforePreflight);
+	TestTrue(
+		TEXT("可选项目可显式选择"),
+		State->SelectOption(TEXT("pedal"), TEXT("pedal-racing")));
+	TestTrue(
+		TEXT("可选项目可恢复为不选装"),
+		State->ClearOptionalSelection(TEXT("pedal")));
+	TestFalse(
+		TEXT("不允许清除必选项目"),
+		State->ClearOptionalSelection(TEXT("seat-backrest")));
 	return true;
 }
 

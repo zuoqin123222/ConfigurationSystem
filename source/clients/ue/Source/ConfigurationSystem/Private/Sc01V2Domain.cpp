@@ -124,7 +124,18 @@ namespace Sc01V2
 				SetError(OutError, TEXT("INVALID_CATALOG"), TEXT("vehicle 结构非法"));
 				return false;
 			}
-			Out.bBasePriceIsNull = IsNullField(*Vehicle, TEXT("basePriceMinor"));
+			TOptional<int64> BasePriceMinor;
+			if (!ReadNullableInteger(
+				*Vehicle,
+				TEXT("basePriceMinor"),
+				BasePriceMinor,
+				OutError)
+				|| !BasePriceMinor.IsSet())
+			{
+				SetError(OutError, TEXT("INVALID_CATALOG"), TEXT("vehicle.basePriceMinor 必须是非负整数"));
+				return false;
+			}
+			Out.BasePriceMinor = BasePriceMinor.GetValue();
 
 			const TArray<TSharedPtr<FJsonValue>>* SelectionOrder = nullptr;
 			if (!Root->TryGetArrayField(TEXT("selectionOrder"), SelectionOrder))
@@ -141,6 +152,26 @@ namespace Sc01V2
 					return false;
 				}
 				Out.SelectionOrder.Add(MoveTemp(SurfaceId));
+			}
+			const TSharedPtr<FJsonObject>* DefaultSelections = nullptr;
+			if (!Root->TryGetObjectField(TEXT("defaultSelections"), DefaultSelections))
+			{
+				SetError(OutError, TEXT("INVALID_CATALOG"),
+					TEXT("defaultSelections 必须是 object"));
+				return false;
+			}
+			for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : (*DefaultSelections)->Values)
+			{
+				FString OptionId;
+				if (!Pair.Value.IsValid()
+					|| !Pair.Value->TryGetString(OptionId)
+					|| OptionId.IsEmpty())
+				{
+					SetError(OutError, TEXT("INVALID_CATALOG"),
+						TEXT("defaultSelections 包含非法 optionId"));
+					return false;
+				}
+				Out.DefaultSelections.Add(Pair.Key, MoveTemp(OptionId));
 			}
 
 			const TArray<TSharedPtr<FJsonValue>>* Regions = nullptr;
@@ -256,7 +287,8 @@ namespace Sc01V2
 					|| !ReadString(*Object, TEXT("variantId"), Variant.VariantId, OutError)
 					|| !ReadString(*Object, TEXT("materialFamilyId"), Variant.MaterialFamilyId, OutError)
 					|| !ReadString(*Object, TEXT("displayName"), Variant.DisplayName, OutError)
-					|| !ReadNullableString(*Object, TEXT("colorCode"), Variant.ColorCode, OutError))
+					|| !ReadNullableString(*Object, TEXT("colorCode"), Variant.ColorCode, OutError)
+					|| !ReadString(*Object, TEXT("thumbnailUrl"), Variant.ThumbnailUrl, OutError))
 				{
 					return false;
 				}
@@ -291,6 +323,24 @@ namespace Sc01V2
 						return false;
 					}
 					Option.MaterialFamilyId = MoveTemp(FamilyId);
+				}
+				const TSharedPtr<FJsonObject>* Parameters = nullptr;
+				if (!(*Object)->TryGetObjectField(TEXT("parameters"), Parameters))
+				{
+					SetError(OutError, TEXT("INVALID_CATALOG"),
+						FString::Printf(TEXT("%s 缺少 parameters"), *Option.OptionId));
+					return false;
+				}
+				if (!IsNullField(*Parameters, TEXT("color")))
+				{
+					const TSharedPtr<FJsonObject>* Color = nullptr;
+					FString ColorMode;
+					if (!(*Parameters)->TryGetObjectField(TEXT("color"), Color)
+						|| !ReadString(*Color, TEXT("mode"), ColorMode, OutError))
+					{
+						return false;
+					}
+					Option.ColorMode = MoveTemp(ColorMode);
 				}
 
 				const TSharedPtr<FJsonObject>* Pricing = nullptr;
@@ -502,11 +552,15 @@ namespace Sc01V2
 		TMap<FString, TArray<FString>> CandidateOptionsBySurface;
 		TMap<FString, int32> CandidateRegions;
 		TMap<FString, int32> CandidateCategories;
+		TMap<FString, int32> CandidateComponents;
 		TMap<FString, int32> CandidateSurfaces;
 		TMap<FString, int32> CandidateFamilies;
 		TMap<FString, TArray<FString>> CandidateCategoriesByRegion;
+		TMap<FString, TArray<FString>> CandidateComponentsByCategory;
+		TMap<FString, TArray<FString>> CandidateSurfacesByComponent;
 		TMap<FString, TArray<FString>> CandidateSurfacesByCategory;
 		TMap<FString, TArray<FString>> CandidateVariantsByFamily;
+		TMap<FString, FString> CandidateDefaultsBySurface;
 		TSet<FString> SurfaceIds;
 		TSet<FString> FamilyIds;
 
@@ -519,14 +573,14 @@ namespace Sc01V2
 			|| Candidate.Regions.IsEmpty()
 			|| Candidate.Categories.IsEmpty()
 			|| Candidate.Components.IsEmpty()
-			|| !Candidate.bBasePriceIsNull
-			|| Candidate.PriceStatus != TEXT("unconfirmed")
+			|| Candidate.BasePriceMinor != 22980000
+			|| Candidate.PriceStatus != TEXT("confirmed")
 			|| Candidate.bQuotable
 			|| Candidate.SelectionOrder.Num() != RequiredSelectionCount
 			|| Candidate.Surfaces.Num() != RequiredSelectionCount)
 		{
 			Private::SetError(OutError, TEXT("INVALID_CATALOG"),
-				TEXT("SC01 v2 catalog 必须是禁止报价、38 表面必选且顺序完整的 2.0.0 draft"));
+				TEXT("SC01 v2 catalog 必须包含 22980000 基础价、38 个有序表面且保持 2.0.0 draft 不可报价"));
 			return false;
 		}
 
@@ -554,11 +608,13 @@ namespace Sc01V2
 			}
 			CandidateCategories.Add(Category.CategoryId, Index);
 			CandidateCategoriesByRegion.FindChecked(Category.RegionId).Add(Category.CategoryId);
+			CandidateComponentsByCategory.Add(Category.CategoryId);
 			CandidateSurfacesByCategory.Add(Category.CategoryId);
 		}
 		TMap<FString, FString> CategoryByComponent;
-		for (const FComponent& Component : Candidate.Components)
+		for (int32 Index = 0; Index < Candidate.Components.Num(); ++Index)
 		{
+			const FComponent& Component = Candidate.Components[Index];
 			if (Component.ComponentId.IsEmpty() || Component.DisplayName.IsEmpty()
 				|| CategoryByComponent.Contains(Component.ComponentId)
 				|| !CandidateCategories.Contains(Component.CategoryId))
@@ -567,28 +623,44 @@ namespace Sc01V2
 				return false;
 			}
 			CategoryByComponent.Add(Component.ComponentId, Component.CategoryId);
+			CandidateComponents.Add(Component.ComponentId, Index);
+			CandidateComponentsByCategory.FindChecked(Component.CategoryId).Add(
+				Component.ComponentId);
+			CandidateSurfacesByComponent.Add(Component.ComponentId);
 		}
 
-		for (int32 Index = 0; Index < Candidate.SelectionOrder.Num(); ++Index)
+		for (int32 Index = 0; Index < Candidate.Surfaces.Num(); ++Index)
 		{
-			const FString& SurfaceId = Candidate.SelectionOrder[Index];
 			const FSurface& Surface = Candidate.Surfaces[Index];
 			const FString* CategoryId = CategoryByComponent.Find(Surface.ComponentId);
-			if (SurfaceId.IsEmpty()
-				|| SurfaceIds.Contains(SurfaceId)
-				|| !Surface.bRequired
-				|| Surface.SurfaceId != SurfaceId
+			if (Surface.SurfaceId.IsEmpty()
+				|| SurfaceIds.Contains(Surface.SurfaceId)
 				|| Surface.DisplayName.IsEmpty()
 				|| CategoryId == nullptr)
 			{
 				Private::SetError(OutError, TEXT("INVALID_CATALOG"),
-					TEXT("selectionOrder 必须与 38 个唯一必选 surface 完全同序"));
+					TEXT("surfaces 必须包含 38 个唯一且组件有效的表面"));
 				return false;
 			}
-			SurfaceIds.Add(SurfaceId);
-			CandidateSurfaces.Add(SurfaceId, Index);
-			CandidateSurfacesByCategory.FindChecked(*CategoryId).Add(SurfaceId);
-			CandidateOptionsBySurface.Add(SurfaceId);
+			SurfaceIds.Add(Surface.SurfaceId);
+			CandidateSurfaces.Add(Surface.SurfaceId, Index);
+			CandidateOptionsBySurface.Add(Surface.SurfaceId);
+		}
+		TSet<FString> OrderedSurfaceIds;
+		for (const FString& SurfaceId : Candidate.SelectionOrder)
+		{
+			const int32* SurfaceIndex = CandidateSurfaces.Find(SurfaceId);
+			if (SurfaceIndex == nullptr || OrderedSurfaceIds.Contains(SurfaceId))
+			{
+				Private::SetError(OutError, TEXT("INVALID_CATALOG"),
+					TEXT("selectionOrder 必须覆盖 38 个唯一 surface"));
+				return false;
+			}
+			OrderedSurfaceIds.Add(SurfaceId);
+			const FSurface& Surface = Candidate.Surfaces[*SurfaceIndex];
+			const FString& CategoryId = CategoryByComponent.FindChecked(Surface.ComponentId);
+			CandidateSurfacesByComponent.FindChecked(Surface.ComponentId).Add(SurfaceId);
+			CandidateSurfacesByCategory.FindChecked(CategoryId).Add(SurfaceId);
 		}
 
 		for (int32 Index = 0; Index < Candidate.MaterialFamilies.Num(); ++Index)
@@ -607,7 +679,10 @@ namespace Sc01V2
 		for (int32 Index = 0; Index < Candidate.MaterialVariants.Num(); ++Index)
 		{
 			const FMaterialVariant& Variant = Candidate.MaterialVariants[Index];
-			if (Variant.VariantId.IsEmpty() || CandidateVariants.Contains(Variant.VariantId))
+			if (Variant.VariantId.IsEmpty()
+				|| Variant.ThumbnailUrl.IsEmpty()
+				|| !Variant.ThumbnailUrl.StartsWith(TEXT("/"))
+				|| CandidateVariants.Contains(Variant.VariantId))
 			{
 				Private::SetError(OutError, TEXT("DUPLICATE_VARIANT_ID"), Variant.VariantId);
 				return false;
@@ -641,7 +716,12 @@ namespace Sc01V2
 			}
 			if (Option.Pricing.bQuotable
 				|| (Option.Pricing.UnitPriceMinor.IsSet() != Option.Pricing.bConfirmed)
-				|| (Option.Pricing.Quantity.IsSet() && Option.Pricing.Quantity.GetValue() < 1))
+				|| (Option.Pricing.Quantity.IsSet() && Option.Pricing.Quantity.GetValue() < 1)
+				|| (Option.ColorMode.IsSet()
+					&& Option.ColorMode.GetValue() == TEXT("variant")
+					&& (!Option.MaterialFamilyId.IsSet()
+						|| Option.Pricing.bIsStandard
+						|| !Option.Pricing.UnitPriceMinor.IsSet())))
 			{
 				Private::SetError(OutError, TEXT("INVALID_PRICING"), Option.OptionId);
 				return false;
@@ -656,6 +736,43 @@ namespace Sc01V2
 				Private::SetError(OutError, TEXT("SURFACE_WITHOUT_OPTIONS"), SurfaceId);
 				return false;
 			}
+			const FSurface& Surface = Candidate.Surfaces[
+				CandidateSurfaces.FindChecked(SurfaceId)];
+			const FString* DefaultOptionId = Candidate.DefaultSelections.Find(SurfaceId);
+			if (Surface.bRequired != (DefaultOptionId != nullptr))
+			{
+				Private::SetError(OutError, TEXT("REQUIRED_SURFACE_WITHOUT_DEFAULT"), SurfaceId);
+				return false;
+			}
+			if (DefaultOptionId != nullptr)
+			{
+				const int32* DefaultOptionIndex = CandidateOptions.Find(*DefaultOptionId);
+				const FOption* DefaultOption = DefaultOptionIndex != nullptr
+					? &Candidate.Options[*DefaultOptionIndex]
+					: nullptr;
+				if (DefaultOption == nullptr
+					|| DefaultOption->SurfaceId != SurfaceId
+					|| !DefaultOption->Pricing.bIsStandard)
+				{
+					Private::SetError(
+						OutError,
+						TEXT("INVALID_DEFAULT_SELECTION"),
+						SurfaceId);
+					return false;
+				}
+				CandidateDefaultsBySurface.Add(SurfaceId, *DefaultOptionId);
+			}
+		}
+		for (const TPair<FString, FString>& Pair : Candidate.DefaultSelections)
+		{
+			if (!SurfaceIds.Contains(Pair.Key))
+			{
+				Private::SetError(
+					OutError,
+					TEXT("INVALID_DEFAULT_SELECTION"),
+					Pair.Key);
+				return false;
+			}
 		}
 
 		Catalog = MoveTemp(Candidate);
@@ -664,11 +781,15 @@ namespace Sc01V2
 		OptionIdsBySurface = MoveTemp(CandidateOptionsBySurface);
 		RegionIndexById = MoveTemp(CandidateRegions);
 		CategoryIndexById = MoveTemp(CandidateCategories);
+		ComponentIndexById = MoveTemp(CandidateComponents);
 		SurfaceIndexById = MoveTemp(CandidateSurfaces);
 		FamilyIndexById = MoveTemp(CandidateFamilies);
 		CategoryIdsByRegion = MoveTemp(CandidateCategoriesByRegion);
+		ComponentIdsByCategory = MoveTemp(CandidateComponentsByCategory);
+		SurfaceIdsByComponent = MoveTemp(CandidateSurfacesByComponent);
 		SurfaceIdsByCategory = MoveTemp(CandidateSurfacesByCategory);
 		VariantIdsByFamily = MoveTemp(CandidateVariantsByFamily);
+		DefaultOptionIdBySurface = MoveTemp(CandidateDefaultsBySurface);
 		bValid = true;
 		return true;
 	}
@@ -695,6 +816,18 @@ namespace Sc01V2
 		return bValid ? CategoryIdsByRegion.Find(RegionId) : nullptr;
 	}
 
+	const TArray<FString>* FCatalogIndex::FindComponentIdsForCategory(
+		const FString& CategoryId) const
+	{
+		return bValid ? ComponentIdsByCategory.Find(CategoryId) : nullptr;
+	}
+
+	const TArray<FString>* FCatalogIndex::FindSurfaceIdsForComponent(
+		const FString& ComponentId) const
+	{
+		return bValid ? SurfaceIdsByComponent.Find(ComponentId) : nullptr;
+	}
+
 	const TArray<FString>* FCatalogIndex::FindSurfaceIdsForCategory(const FString& CategoryId) const
 	{
 		return bValid ? SurfaceIdsByCategory.Find(CategoryId) : nullptr;
@@ -703,6 +836,12 @@ namespace Sc01V2
 	const TArray<FString>* FCatalogIndex::FindVariantIdsForMaterialFamily(const FString& MaterialFamilyId) const
 	{
 		return bValid ? VariantIdsByFamily.Find(MaterialFamilyId) : nullptr;
+	}
+
+	const FString* FCatalogIndex::FindDefaultOptionIdForSurface(
+		const FString& SurfaceId) const
+	{
+		return bValid ? DefaultOptionIdBySurface.Find(SurfaceId) : nullptr;
 	}
 
 	const FRegion* FCatalogIndex::FindRegion(const FString& RegionId) const
@@ -717,6 +856,12 @@ namespace Sc01V2
 		return bValid && Index != nullptr ? &Catalog.Categories[*Index] : nullptr;
 	}
 
+	const FComponent* FCatalogIndex::FindComponent(const FString& ComponentId) const
+	{
+		const int32* Index = ComponentIndexById.Find(ComponentId);
+		return bValid && Index != nullptr ? &Catalog.Components[*Index] : nullptr;
+	}
+
 	const FSurface* FCatalogIndex::FindSurface(const FString& SurfaceId) const
 	{
 		const int32* Index = SurfaceIndexById.Find(SurfaceId);
@@ -727,6 +872,27 @@ namespace Sc01V2
 	{
 		const int32* Index = FamilyIndexById.Find(MaterialFamilyId);
 		return bValid && Index != nullptr ? &Catalog.MaterialFamilies[*Index] : nullptr;
+	}
+
+	int64 CalculateOptionsPriceMinor(
+		const FSelections& Selections,
+		const FCatalogIndex& Catalog)
+	{
+		int64 Result = 0;
+		for (const TPair<FString, FString>& Pair : Selections)
+		{
+			const FOption* Option = Catalog.FindOption(Pair.Value);
+			if (Option == nullptr
+				|| Option->SurfaceId != Pair.Key
+				|| !Option->Pricing.bConfirmed
+				|| !Option->Pricing.UnitPriceMinor.IsSet())
+			{
+				continue;
+			}
+			const int64 Quantity = Option->Pricing.Quantity.Get(1);
+			Result += Option->Pricing.UnitPriceMinor.GetValue() * Quantity;
+		}
+		return Result;
 	}
 
 	FCustomization FCustomization::ForMaterialVariant(const FString& VariantId)
@@ -752,15 +918,29 @@ namespace Sc01V2
 		FError& OutError)
 	{
 		OutError.Reset();
-		if (!Catalog.IsValid() || Selections.Num() != RequiredSelectionCount)
+		if (!Catalog.IsValid())
 		{
 			Private::SetError(OutError, TEXT("INVALID_SELECTIONS"),
-				TEXT("selections 必须恰好包含 selectionOrder 中的全部 38 个表面"));
+				TEXT("catalog 未初始化"));
 			return false;
+		}
+		for (const TPair<FString, FString>& Pair : Selections)
+		{
+			if (Catalog.FindSurface(Pair.Key) == nullptr)
+			{
+				Private::SetError(OutError, TEXT("INVALID_SELECTIONS"),
+					TEXT("selections 包含未知表面"));
+				return false;
+			}
 		}
 		for (const FString& SurfaceId : Catalog.GetCatalog().SelectionOrder)
 		{
 			const FString* OptionId = Selections.Find(SurfaceId);
+			const FSurface* Surface = Catalog.FindSurface(SurfaceId);
+			if (OptionId == nullptr && Surface != nullptr && !Surface->bRequired)
+			{
+				continue;
+			}
 			const FOption* Option = OptionId != nullptr ? Catalog.FindOption(*OptionId) : nullptr;
 			if (Option == nullptr || Option->SurfaceId != SurfaceId)
 			{
@@ -796,6 +976,14 @@ namespace Sc01V2
 				{
 					Private::SetError(OutError, TEXT("INVALID_MATERIAL_VARIANT"),
 						FString::Printf(TEXT("%s 引用了未知 materialVariantId"), *Pair.Key));
+					return false;
+				}
+				if (!Option->SupportsMaterialVariants())
+				{
+					Private::SetError(
+						OutError,
+						TEXT("MATERIAL_VARIANT_NOT_SUPPORTED"),
+						FString::Printf(TEXT("%s 所选 option 不支持材料色卡"), *Pair.Key));
 					return false;
 				}
 				if (!Option->MaterialFamilyId.IsSet()
@@ -838,10 +1026,14 @@ namespace Sc01V2
 		TSet<FString> RenderRelevant;
 		for (const FString& SurfaceId : Data.SelectionOrder)
 		{
-			const FString& OptionId = Selections.FindChecked(SurfaceId);
-			const FString Line = SurfaceId + TEXT("=") + OptionId;
+			const FString* OptionId = Selections.Find(SurfaceId);
+			if (OptionId == nullptr)
+			{
+				continue;
+			}
+			const FString Line = SurfaceId + TEXT("=") + *OptionId;
 			CanonicalLines.Add(Line);
-			if (Catalog.FindOption(OptionId)->bRenderRelevant)
+			if (Catalog.FindOption(*OptionId)->bRenderRelevant)
 			{
 				RenderRelevant.Add(SurfaceId);
 				RenderLines.Add(Line);

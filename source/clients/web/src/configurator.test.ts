@@ -4,9 +4,9 @@ import {
   createCanonicalKey,
   createInitialSelections,
   createRenderCanonicalKey,
+  materialGroupsForSurface,
   normalizeCustomizations,
   normalizeSelections,
-  optionsForFilters,
   renderRelevantSelections,
   surfacesForComponent,
 } from './configurator'
@@ -17,36 +17,56 @@ describe('v2 动态选配逻辑', () => {
     const selections = createInitialSelections(catalogFixture)
 
     expect(selections).toEqual(initialSelections)
-    expect(Object.keys(selections)).toEqual(catalogFixture.selectionOrder)
-    expect(createCanonicalKey(catalogFixture, selections).split('__')).toHaveLength(38)
+    expect(Object.keys(selections)).toEqual(
+      catalogFixture.selectionOrder.filter((surfaceId) =>
+        catalogFixture.options.some(
+          (option) => option.surfaceId === surfaceId && option.pricing.isStandard,
+        ),
+      ),
+    )
+    expect(selections).not.toHaveProperty('lower-skirt')
+    expect(createCanonicalKey(catalogFixture, selections)).not.toContain('lower-skirt=')
   })
 
-  it('分享配置存在无效选项时按对应表面的首项修复', () => {
+  it('初始选择严格使用 defaultSelections，不受多标配 option 数组顺序影响', () => {
+    const reorderedCatalog = {
+      ...catalogFixture,
+      options: [...catalogFixture.options].reverse(),
+    }
+
+    expect(createInitialSelections(reorderedCatalog)).toEqual(catalogFixture.defaultSelections)
+    expect(createInitialSelections(reorderedCatalog)['exterior-body-cover']).toBe('body-cover-red')
+  })
+
+  it('分享配置存在无效选项时仅回退到显式标配，无标配表面保持不选装', () => {
     expect(normalizeSelections(catalogFixture, {
       'exterior-body-cover': 'unknown',
       'wheel-material': 'wheel-magnesium-alloy',
+      'lower-skirt': 'unknown',
     })).toEqual({
       ...initialSelections,
       'wheel-material': 'wheel-magnesium-alloy',
     })
   })
 
-  it('按 category、component、surface 与 materialFamily 联动筛选', () => {
+  it('按四阶段 category、component、surface 联动并输出同级材质组', () => {
     expect(componentsForCategory(catalogFixture, 'exterior').map((item) => item.componentId))
-      .toEqual(['body', 'wheel'])
+      .toEqual(['car-paint', 'chassis', 'wheel', 'caliper'])
+    expect(componentsForCategory(catalogFixture, 'interior').map((item) => item.displayName))
+      .toEqual(['方向盘', 'IP', 'A柱', '座椅', '门板', '储物盒盖', '副仪表台', '车顶'])
     expect(surfacesForComponent(catalogFixture, 'wheel').map((item) => item.surfaceId))
       .toEqual([
         'wheel-material',
         'wheel-style',
         'wheel-color',
-        'lower-skirt',
-        'front-caliper-color',
-        'rear-caliper-color',
-        'engine-bay-cover',
       ])
-    expect(optionsForFilters(catalogFixture, 'wheel-material', 'magnesium-alloy')
-      .map((item) => item.optionId))
-      .toEqual(['wheel-magnesium-alloy'])
+    expect(materialGroupsForSurface(catalogFixture, 'wheel-material').map((group) => ({
+      materialFamilyId: group.materialFamily.materialFamilyId,
+      optionIds: group.options.map((item) => item.optionId),
+    }))).toEqual([
+      { materialFamilyId: 'aluminum-alloy', optionIds: ['wheel-aluminum-alloy'] },
+      { materialFamilyId: 'magnesium-alloy', optionIds: ['wheel-magnesium-alloy'] },
+    ])
   })
 
   it('只把 renderRelevant 选项纳入渲染选择', () => {
@@ -92,7 +112,10 @@ describe('v2 动态选配逻辑', () => {
     expect(normalizeCustomizations(catalogFixture, initialSelections, {
       'steering-wheel-skin': { materialVariantId: 'alcantara-p2-2911' },
     })).toEqual({})
-    expect(normalizeCustomizations(catalogFixture, initialSelections, {
+    expect(normalizeCustomizations(catalogFixture, {
+      ...initialSelections,
+      'steering-wheel-skin': 'steering-skin-ultrasuede-custom',
+    }, {
       'steering-wheel-skin': { materialVariantId: 'ultrasuede-p6-sf4' },
     })).toEqual({
       'steering-wheel-skin': { materialVariantId: 'ultrasuede-p6-sf4' },

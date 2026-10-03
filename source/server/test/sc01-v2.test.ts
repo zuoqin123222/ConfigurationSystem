@@ -73,9 +73,12 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   assert.equal(response.json().options.length, 136);
   assert.equal(response.json().surfaces.length, 38);
   assert.equal(response.json().selectionOrder.length, 38);
-  assert.ok(response.json().surfaces.every(
-    (surface: { required: boolean }) => surface.required,
-  ));
+  assert.equal(response.json().categories.map(
+    (category: { displayName: string }) => category.displayName,
+  ).join(" > "), "外饰 > 内饰 > 性能 > 个性化");
+  assert.equal(response.json().surfaces.filter(
+    (surface: { required: boolean }) => !surface.required,
+  ).length, 9);
   assert.equal(response.json().materialVariants.length, 352);
 });
 
@@ -96,7 +99,42 @@ test("创建配置返回稳定身份、revision 与禁止报价价格明细", as
   assert.match(body.renderKey, /__render-[a-f0-9]{24}$/);
   assert.equal(body.revision, 1);
   assert.equal(body.priceResult.quoteAllowed, false);
-  assert.equal(body.priceResult.totalPriceMinor, null);
+  assert.equal(body.priceResult.basePriceMinor, 22_980_000);
+  assert.equal(body.priceResult.totalPriceMinor, 24_552_800);
+});
+
+test("无显式标配的表面默认不选装，Server 计算参考总价", () => {
+  const data = loadSc01V2();
+  const standardSelections = Object.fromEntries(
+    data.catalog.selectionOrder.flatMap((surfaceId) => {
+      const standard = data.catalog.options.find(
+        (option) => option.surfaceId === surfaceId && option.pricing.isStandard,
+      );
+      return standard ? [[surfaceId, standard.optionId]] : [];
+    }),
+  );
+
+  assert.equal(data.catalog.vehicle.basePriceMinor, 22_980_000);
+  assert.equal(data.catalog.surfaces.find(
+    (surface) => surface.surfaceId === "lower-skirt",
+  )?.required, false);
+  assert.equal(Object.hasOwn(standardSelections, "lower-skirt"), false);
+
+  const baseline = deriveSc01Configuration(standardSelections, data);
+  const baselinePrice = buildSc01PriceResult(baseline, data);
+  assert.equal(baselinePrice.totalPriceMinor, 22_980_000);
+  assert.equal(baselinePrice.lineItems.some(
+    (item) => item.surfaceId === "lower-skirt",
+  ), false);
+
+  const configured = deriveSc01Configuration({
+    ...standardSelections,
+    "lower-skirt": "lower-skirt-aluminum",
+  }, data);
+  assert.equal(
+    buildSc01PriceResult(configured, data).totalPriceMinor,
+    23_280_000,
+  );
 });
 
 test("Idempotency-Key 支持重放并拒绝不同请求复用", async (t) => {
@@ -210,6 +248,7 @@ test("customizations 按 surface 与字段固定排序并进入 configurationId/
   const paintSelections = {
     ...selections,
     "exterior-body-cover": "body-cover-custom",
+    "steering-wheel-skin": "steering-skin-ultrasuede-custom",
   };
   const paint = {
     colorHex: "#123456",
@@ -254,6 +293,10 @@ test("Server 拒绝材料族不匹配的 materialVariantId 与越界车漆参数
     url: "/api/v2/configurations",
     payload: {
       ...request,
+      selections: {
+        ...selections,
+        "steering-wheel-skin": "steering-skin-ultrasuede-custom",
+      },
       customizations: {
         "steering-wheel-skin": { materialVariantId: alcantara.variantId },
       },
@@ -285,6 +328,55 @@ test("Server 拒绝材料族不匹配的 materialVariantId 与越界车漆参数
   });
   assert.equal(invalidPaint.statusCode, 400);
   assert.equal(invalidPaint.json().code, "INVALID_PAINT_CUSTOMIZATION");
+});
+
+test("Server 将未选可选 surface 的 customization 识别为 400 客户端错误", async (t) => {
+  const app = buildApp();
+  t.after(() => app.close());
+  const data = loadSc01V2();
+  const leather = data.catalog.materialVariants.find(
+    (item) => item.materialFamilyId === "leather",
+  )!;
+  const optionalOmitted = { ...selections };
+  delete optionalOmitted["door-sill"];
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v2/configurations",
+    payload: {
+      ...request,
+      selections: optionalOmitted,
+      customizations: {
+        "door-sill": { materialVariantId: leather.variantId },
+      },
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().code, "INVALID_CUSTOMIZATION");
+});
+
+test("Server 拒绝不具备 variant 色彩能力的同材料族 option", async (t) => {
+  const app = buildApp();
+  t.after(() => app.close());
+  const data = loadSc01V2();
+  const ultrasuede = data.catalog.materialVariants.find(
+    (item) => item.materialFamilyId === "ultrasuede",
+  )!;
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v2/configurations",
+    payload: {
+      ...request,
+      customizations: {
+        "seat-backrest": { materialVariantId: ultrasuede.variantId },
+      },
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().code, "MATERIAL_VARIANT_NOT_SUPPORTED");
 });
 
 test("customizations 可随配置保存并恢复", async (t) => {

@@ -53,10 +53,21 @@ export interface CatalogPricing {
 export interface CatalogOption extends CatalogNode {
   optionId: string
   surfaceId: string
-  materialFamilyId: string
+  materialFamilyId: string | null
   renderRelevant: boolean
   colorCode: string | null
   finish: string | null
+  parameters: {
+    color: {
+      mode: 'fixed' | 'custom' | 'choice' | 'variant'
+      value: string | null
+      required: boolean
+    } | null
+    material: {
+      materialFamilyId: string
+      variantId: string | null
+    } | null
+  }
   pricing: CatalogPricing
   reviewRequired: boolean
   thumbnailUrl: string | null
@@ -78,11 +89,12 @@ export interface CatalogV2 {
   vehicle: {
     vehicleId: string
     displayName: string
-    basePriceMinor: null
-    priceStatus: 'unconfirmed'
+    basePriceMinor: number
+    priceStatus: 'confirmed'
     quotable: false
   }
   selectionOrder: string[]
+  defaultSelections: Selections
   regions: Array<CatalogNode & { regionId: string }>
   categories: CatalogCategory[]
   components: CatalogComponent[]
@@ -94,7 +106,8 @@ export interface CatalogV2 {
 }
 
 export interface PriceResultV2 {
-  totalPriceMinor: null
+  basePriceMinor: number
+  totalPriceMinor: number
   quoteAllowed: false
   blockingReasons: string[]
 }

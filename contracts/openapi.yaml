@@ -534,7 +534,7 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     PriceBlocked:
-      description: SC01 draft 金额未确认，quoteAllowed=false，禁止报价
+      description: SC01 draft 仅返回参考总价，quoteAllowed=false，不构成正式报价
       content:
         application/json:
           schema:

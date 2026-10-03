@@ -58,17 +58,17 @@ bool USc01V2ConfigurationState::Initialize(USc01V2CatalogData* InCatalogAsset)
 		return false;
 	}
 
-	TMap<FString, FString> Defaults;
+	TMap<FString, FString> Defaults = CandidateCatalog.GetCatalog().DefaultSelections;
 	for (const FString& SurfaceId : CandidateCatalog.GetCatalog().SelectionOrder)
 	{
-		const TArray<FString>* OptionIds =
-			CandidateCatalog.FindOptionIdsForSurface(SurfaceId);
-		if (OptionIds == nullptr || OptionIds->IsEmpty())
+		const Sc01V2::FSurface* Surface = CandidateCatalog.FindSurface(SurfaceId);
+		const FString* DefaultOptionId =
+			CandidateCatalog.FindDefaultOptionIdForSurface(SurfaceId);
+		if (Surface == nullptr || (Surface->bRequired && DefaultOptionId == nullptr))
 		{
-			LastErrorCode = TEXT("SURFACE_WITHOUT_OPTIONS");
+			LastErrorCode = TEXT("REQUIRED_SURFACE_WITHOUT_DEFAULT");
 			return false;
 		}
-		Defaults.Add(SurfaceId, (*OptionIds)[0]);
 	}
 
 	Sc01V2::FConfiguration Derived;
@@ -147,6 +147,26 @@ bool USc01V2ConfigurationState::SelectOption(
 		// 避免旧 variant 或 custom paint 令新的合法 option 无法被选中。
 		CandidateCustomizations.Remove(SurfaceId);
 	}
+	return TryCommit(Candidate, CandidateCustomizations, true);
+}
+
+bool USc01V2ConfigurationState::ClearOptionalSelection(const FString& SurfaceId)
+{
+	if (!bInitialized)
+	{
+		LastErrorCode = TEXT("STATE_NOT_INITIALIZED");
+		return false;
+	}
+	const Sc01V2::FSurface* Surface = CatalogIndex.FindSurface(SurfaceId);
+	if (Surface == nullptr || Surface->bRequired)
+	{
+		LastErrorCode = TEXT("REQUIRED_SELECTION");
+		return false;
+	}
+	TMap<FString, FString> Candidate = Selections;
+	TMap<FString, FSc01V2Customization> CandidateCustomizations = Customizations;
+	Candidate.Remove(SurfaceId);
+	CandidateCustomizations.Remove(SurfaceId);
 	return TryCommit(Candidate, CandidateCustomizations, true);
 }
 

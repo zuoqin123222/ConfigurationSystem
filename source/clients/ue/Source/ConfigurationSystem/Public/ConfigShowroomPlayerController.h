@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraTypes.h"
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
 #include "ConfigShowroomPlayerController.generated.h"
@@ -10,7 +12,25 @@ class ACameraActor;
 class AConfiguratorVehicleActor;
 class AShowroomEnvironmentActor;
 
-/** 纯 C++ 展厅控制器：五机位平滑切换、双环境、交互部件与原子快照。 */
+/** 过渡专用视图目标，直接输出完整 FMinimalViewInfo，避免 UCameraComponent 字段丢失。 */
+UCLASS(NotBlueprintable, Transient)
+class CONFIGURATIONSYSTEM_API AConfigTransitionCameraActor final : public ACameraActor
+{
+	GENERATED_BODY()
+
+public:
+	void ApplyCameraPOV(const FMinimalViewInfo& InPOV) { CameraPOV = InPOV; }
+	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override
+	{
+		(void)DeltaTime;
+		OutResult = CameraPOV;
+	}
+
+private:
+	FMinimalViewInfo CameraPOV;
+};
+
+/** 纯 C++展厅控制器：五机位平滑切换、双环境、交互部件与原子快照。 */
 UCLASS()
 class CONFIGURATIONSYSTEM_API AConfigShowroomPlayerController final
 	: public APlayerController
@@ -34,6 +54,13 @@ public:
 	static FVector InterpolateOrbitLocation(
 		const FVector& Start,
 		const FVector& End,
+		const FVector& Pivot,
+		float Alpha);
+
+	/** 插值完整镜头 POV，外部机位的位置仍沿绕车圆弧运动。 */
+	static FMinimalViewInfo InterpolateCameraPOV(
+		const FMinimalViewInfo& Start,
+		const FMinimalViewInfo& End,
 		const FVector& Pivot,
 		float Alpha);
 
@@ -94,12 +121,12 @@ private:
 	TObjectPtr<AConfiguratorVehicleActor> Vehicle;
 
 	UPROPERTY(Transient)
-	TObjectPtr<ACameraActor> TransitionCamera;
+	TObjectPtr<AConfigTransitionCameraActor> TransitionCamera;
 
 	int32 CurrentCameraIndex = 0;
 	int32 PendingCameraIndex = INDEX_NONE;
-	FVector CameraTransitionStart = FVector::ZeroVector;
-	FVector CameraTransitionEnd = FVector::ZeroVector;
+	FMinimalViewInfo CameraTransitionStartPOV;
+	FMinimalViewInfo CameraTransitionEndPOV;
 	FVector CameraTransitionPivot = FVector::ZeroVector;
 	float CameraTransitionElapsed = 0.0f;
 	float CameraTransitionDuration = 0.85f;

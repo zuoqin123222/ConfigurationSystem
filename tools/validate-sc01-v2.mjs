@@ -106,8 +106,8 @@ export function canonicalConfigurationInput(catalog, selections, customizations 
     "schemaVersion=2.0.0",
     `catalogVersion=${catalog.catalogVersion}`,
     `vehicleId=${catalog.vehicle.vehicleId}`,
-    ...catalog.selectionOrder.map(
-      (surfaceId) => `${surfaceId}=${selections[surfaceId]}`
+    ...catalog.selectionOrder.flatMap(
+      (surfaceId) => selections[surfaceId] ? [`${surfaceId}=${selections[surfaceId]}`] : []
     ),
     ...canonicalCustomizationLines(catalog, customizations)
   ].join("\n");
@@ -154,6 +154,7 @@ export function validateCatalog(catalog) {
     "currency",
     "vehicle",
     "selectionOrder",
+    "defaultSelections",
     "regions",
     "categories",
     "components",
@@ -176,8 +177,8 @@ export function validateCatalog(catalog) {
       && catalog.vehicle.displayName === "SC01",
     "vehicle 必须标识 SC01"
   );
-  check(catalog.vehicle.basePriceMinor === null, "未确认基础价必须为 null");
-  check(catalog.vehicle.priceStatus === "unconfirmed", "基础价状态必须为 unconfirmed");
+  check(catalog.vehicle.basePriceMinor === 22980000, "SC01 基础价必须为 22980000 分");
+  check(catalog.vehicle.priceStatus === "confirmed", "基础价状态必须为 confirmed");
   check(catalog.vehicle.quotable === false, "草案车型必须禁止报价");
 
   const regions = uniqueIndex(catalog.regions, "regionId", "regions");
@@ -202,19 +203,10 @@ export function validateCatalog(catalog) {
       && new Set(catalog.selectionOrder).size === catalog.selectionOrder.length,
     "selectionOrder 必须按文档顺序完整覆盖所有 surfaceId"
   );
-  check(
-    catalog.selectionOrder.every(
-      (surfaceId, index) => surfaceId === catalog.surfaces[index].surfaceId
-    ),
-    "selectionOrder 必须与 surfaces 文档顺序一致"
-  );
-  check(
-    catalog.surfaces.every((surface) => surface.required === true),
-    "所有 surface 都必须为 required"
-  );
   for (const surfaceId of catalog.selectionOrder) {
-    check(surfaces.get(surfaceId)?.required === true, `${surfaceId} 必须存在且为必选面`);
+    check(surfaces.has(surfaceId), `${surfaceId} 必须存在`);
   }
+  check(isRecord(catalog.defaultSelections), "defaultSelections 必须是 object");
   for (const component of components.values()) {
     check(categories.has(component.categoryId), `${component.componentId} 引用了未知 categoryId`);
   }
@@ -257,6 +249,14 @@ export function validateCatalog(catalog) {
       `${option.optionId} pricingUnit 非法`
     );
     check(typeof option.renderRelevant === "boolean", `${option.optionId} renderRelevant 必须为 boolean`);
+    if (option.parameters?.color?.mode === "variant") {
+      check(
+        option.materialFamilyId !== null
+          && option.pricing.isStandard === false
+          && option.pricing.unitPriceMinor !== null,
+        `${option.optionId} 色卡能力只允许用于已定价的非标配材料 option`
+      );
+    }
     check(
       option.pricing.status === (option.pricing.unitPriceMinor === null ? "unconfirmed" : "confirmed"),
       `${option.optionId} 价格状态与金额不一致`
@@ -277,7 +277,30 @@ export function validateCatalog(catalog) {
   }
   for (const surfaceId of catalog.selectionOrder) {
     check(optionIdsBySurface.get(surfaceId)?.size > 0, `${surfaceId} 至少需要一个选项`);
+    const hasStandard = catalog.options.some(
+      (option) => option.surfaceId === surfaceId && option.pricing.isStandard
+    );
+    check(
+      surfaces.get(surfaceId).required === hasStandard,
+      `${surfaceId} 的 required 必须与显式标配一致`
+    );
+    const hasDefault = Object.hasOwn(catalog.defaultSelections, surfaceId);
+    check(
+      hasDefault === surfaces.get(surfaceId).required,
+      "defaultSelections 必须恰好覆盖全部必选 surface"
+    );
+    if (hasDefault) {
+      const defaultOption = options.get(catalog.defaultSelections[surfaceId]);
+      check(
+        defaultOption?.surfaceId === surfaceId && defaultOption.pricing.isStandard,
+        `${surfaceId} 的 defaultSelections 必须引用同 surface 的标配 option`
+      );
+    }
   }
+  check(
+    Object.keys(catalog.defaultSelections).every((surfaceId) => surfaces.has(surfaceId)),
+    "defaultSelections 包含未知 surfaceId"
+  );
 
   return {
     regions,
@@ -306,10 +329,15 @@ export function validateConfiguration(configuration, catalog) {
   check(configuration.schemaVersion === "2.0.0", "configuration.schemaVersion 必须为 2.0.0");
   check(configuration.catalogVersion === catalog.catalogVersion, "catalogVersion 不匹配");
   check(configuration.vehicleId === catalog.vehicle.vehicleId, "vehicleId 不匹配");
-  assertExactKeys(configuration.selections, catalog.selectionOrder, "selections");
+  check(isRecord(configuration.selections), "selections 必须是 object");
+  check(
+    Object.keys(configuration.selections).every((surfaceId) => indexes.surfaces.has(surfaceId)),
+    "selections 包含未知 surfaceId"
+  );
 
   for (const surfaceId of catalog.selectionOrder) {
     const optionId = configuration.selections[surfaceId];
+    if (optionId === undefined && indexes.surfaces.get(surfaceId).required === false) continue;
     check(
       indexes.optionIdsBySurface.get(surfaceId)?.has(optionId),
       `${surfaceId} 引用了未知或跨面的 optionId：${optionId}`
@@ -325,6 +353,12 @@ export function validateConfiguration(configuration, catalog) {
       assertExactKeys(customization, ["materialVariantId"], `${surfaceId} customization`);
       const variant = indexes.materialVariants.get(customization.materialVariantId);
       check(variant, `${surfaceId} 引用了未知 materialVariantId`);
+      check(
+        option?.parameters?.color?.mode === "variant"
+          && option.pricing.isStandard === false
+          && option.pricing.unitPriceMinor !== null,
+        `${surfaceId} 所选 option 不支持材料色卡`
+      );
       check(
         option.materialFamilyId === variant.materialFamilyId,
         `${surfaceId} 的材料色卡与所选选项材料族不匹配`
@@ -371,10 +405,12 @@ export function buildPriceResult(configuration, catalog) {
     vehicleId: catalog.vehicle.vehicleId,
     configurationId: configuration.configurationId,
     currency: catalog.currency,
-    basePriceMinor: null,
-    lineItems: catalog.selectionOrder.map((surfaceId) => {
-      const option = options.get(configuration.selections[surfaceId]);
-      return {
+    basePriceMinor: catalog.vehicle.basePriceMinor,
+    lineItems: catalog.surfaces.flatMap(({ surfaceId }) => {
+      const optionId = configuration.selections[surfaceId];
+      if (!optionId) return [];
+      const option = options.get(optionId);
+      return [{
         surfaceId,
         optionId: option.optionId,
         unitPriceMinor: option.pricing.unitPriceMinor,
@@ -383,14 +419,19 @@ export function buildPriceResult(configuration, catalog) {
           ? null
           : option.pricing.unitPriceMinor * option.pricing.quantity,
         priceStatus: option.pricing.status
-      };
+      }];
     }),
-    totalPriceMinor: null,
+    totalPriceMinor: catalog.vehicle.basePriceMinor
+      + catalog.selectionOrder.reduce((total, surfaceId) => {
+        const option = options.get(configuration.selections[surfaceId]);
+        return total + (
+          option?.pricing.unitPriceMinor === null || option?.pricing.unitPriceMinor === undefined
+            ? 0
+            : option.pricing.unitPriceMinor * (option.pricing.quantity ?? 1)
+        );
+      }, 0),
     quoteAllowed: false,
-    blockingReasons: [
-      "BASE_PRICE_UNCONFIRMED",
-      "PRICE_UNCONFIRMED"
-    ]
+    blockingReasons: ["PRICE_UNCONFIRMED"]
   };
 }
 
@@ -398,7 +439,7 @@ export function validatePriceResult(result, configuration, catalog) {
   const expected = buildPriceResult(configuration, catalog);
   check(
     JSON.stringify(result) === JSON.stringify(expected),
-    "price-result 必须保留已确认选项金额、保持未知总价为 null，并明确禁止报价"
+    "price-result 必须包含基础价、选装明细、参考总价并明确禁止报价"
   );
   return result;
 }

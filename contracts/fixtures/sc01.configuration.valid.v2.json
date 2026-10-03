@@ -2,8 +2,8 @@
   "schemaVersion": "2.0.0",
   "catalogVersion": "sc01-draft-20260121",
   "vehicleId": "sc01",
-  "configurationId": "cfg-ad25824327ecb6e53be912c0",
-  "renderKey": "sc01__sc01-draft-20260121__render-ad25824327ecb6e53be912c0",
+  "configurationId": "cfg-f18d00c50d8fd21d99e524b0",
+  "renderKey": "sc01__sc01-draft-20260121__render-f18d00c50d8fd21d99e524b0",
   "selections": {
     "exterior-body-cover": "body-cover-red",
     "wheel-material": "wheel-aluminum-alloy",

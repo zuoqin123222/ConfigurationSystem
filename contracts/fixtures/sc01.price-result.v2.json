@@ -2,9 +2,9 @@
   "schemaVersion": "2.0.0",
   "catalogVersion": "sc01-draft-20260121",
   "vehicleId": "sc01",
-  "configurationId": "cfg-ad25824327ecb6e53be912c0",
+  "configurationId": "cfg-f18d00c50d8fd21d99e524b0",
   "currency": "CNY",
-  "basePriceMinor": null,
+  "basePriceMinor": 22980000,
   "lineItems": [
     {
       "surfaceId": "exterior-body-cover",
@@ -311,10 +311,9 @@
       "priceStatus": "confirmed"
     }
   ],
-  "totalPriceMinor": null,
+  "totalPriceMinor": 24552800,
   "quoteAllowed": false,
   "blockingReasons": [
-    "BASE_PRICE_UNCONFIRMED",
     "PRICE_UNCONFIRMED"
   ]
 }

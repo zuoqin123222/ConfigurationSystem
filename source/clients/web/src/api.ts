@@ -31,7 +31,8 @@ function isCatalogV2(value: unknown): value is CatalogV2 {
     data.currency === 'CNY' &&
     typeof data.catalogVersion === 'string' &&
     !!data.vehicle &&
-    data.vehicle.basePriceMinor === null &&
+    typeof data.vehicle.basePriceMinor === 'number' &&
+    data.vehicle.priceStatus === 'confirmed' &&
     data.vehicle.quotable === false &&
     Array.isArray(data.selectionOrder) &&
     data.selectionOrder.length > 0 &&
@@ -140,7 +141,8 @@ function isConfiguration(value: unknown): value is ConfigurationV2 {
     !!data.selections &&
     !!data.customizations &&
     !!data.priceResult &&
-    data.priceResult.totalPriceMinor === null &&
+    typeof data.priceResult.basePriceMinor === 'number' &&
+    typeof data.priceResult.totalPriceMinor === 'number' &&
     data.priceResult.quoteAllowed === false
   )
 }

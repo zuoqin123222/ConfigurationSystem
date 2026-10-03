@@ -3,6 +3,7 @@
 #include "Sc01V2Domain.h"
 #include "ConfiguratorPanel.h"
 
+#include "Algo/Reverse.h"
 #include "Dom/JsonObject.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
@@ -90,6 +91,15 @@ bool FSc01V2DataButtonAutomationTest::RunTest(const FString& Parameters)
 		TEXT("通用按钮 secondary payload"),
 		SecondaryId,
 		FString(TEXT("body-cover-custom")));
+	Button->InitializeBinding(
+		TEXT("variant"),
+		TEXT("steering-skin-leather-user"),
+		TEXT("leather-p10-1217"));
+	Button->OnClicked.Broadcast();
+	TestEqual(TEXT("色卡按钮保留显式关联 option"), PrimaryId,
+		FString(TEXT("steering-skin-leather-user")));
+	TestEqual(TEXT("色卡按钮保留 variant"), SecondaryId,
+		FString(TEXT("leather-p10-1217")));
 	return true;
 }
 
@@ -117,16 +127,65 @@ bool FSc01V2GoldenVectorsAutomationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("选项索引覆盖 catalog"), Catalog.GetCatalog().Options.Num(), 136);
 	TestEqual(TEXT("色卡索引覆盖 catalog"), Catalog.GetCatalog().MaterialVariants.Num(), 352);
 	TestEqual(TEXT("车辆 displayName"), Catalog.GetCatalog().VehicleDisplayName, FString(TEXT("SC01")));
-	TestEqual(TEXT("region 数"), Catalog.GetCatalog().Regions.Num(), 3);
-	TestEqual(TEXT("category 数"), Catalog.GetCatalog().Categories.Num(), 10);
-	TestEqual(TEXT("component 数"), Catalog.GetCatalog().Components.Num(), 10);
+	TestEqual(TEXT("基础价读取为 22980000 分"), Catalog.GetCatalog().BasePriceMinor, int64(22980000));
+	TestEqual(TEXT("region 数"), Catalog.GetCatalog().Regions.Num(), 4);
+	TestEqual(TEXT("四阶段 category 数"), Catalog.GetCatalog().Categories.Num(), 4);
+	TestEqual(TEXT("component 数"), Catalog.GetCatalog().Components.Num(), 14);
+	TestEqual(
+		TEXT("四阶段按契约顺序"),
+		FString::JoinBy(
+			Catalog.GetCatalog().Categories,
+			TEXT(","),
+			[](const Sc01V2::FCategory& Value) { return Value.CategoryId; }),
+		FString(TEXT("exterior,interior,performance,personalization")));
 	const Sc01V2::FSurface* BodySurface =
 		Catalog.FindSurface(TEXT("exterior-body-cover"));
 	TestNotNull(TEXT("可按 id 查询 surface 元数据"), BodySurface);
 	if (BodySurface != nullptr)
 	{
-		TestEqual(TEXT("surface displayName"), BodySurface->DisplayName, FString(TEXT("全车身覆盖件")));
+		TestEqual(TEXT("surface displayName"), BodySurface->DisplayName, FString(TEXT("车漆")));
 	}
+	TestEqual(
+		TEXT("车漆显式默认项来自 defaultSelections"),
+		Catalog.FindDefaultOptionIdForSurface(TEXT("exterior-body-cover")) != nullptr
+			? *Catalog.FindDefaultOptionIdForSurface(TEXT("exterior-body-cover"))
+			: FString(),
+		FString(TEXT("body-cover-red")));
+	Sc01V2::FCatalog ReorderedCatalog = Catalog.GetCatalog();
+	Algo::Reverse(ReorderedCatalog.Options);
+	Sc01V2::FCatalogIndex ReorderedIndex;
+	TestTrue(
+		TEXT("多标配项重排后仍使用显式 defaultSelections"),
+		ReorderedIndex.Initialize(ReorderedCatalog, Error));
+	const FString* ReorderedDefault =
+		ReorderedIndex.FindDefaultOptionIdForSurface(TEXT("exterior-body-cover"));
+	TestEqual(
+		TEXT("多标配项重排不改变默认车漆"),
+		ReorderedDefault != nullptr ? *ReorderedDefault : FString(),
+		FString(TEXT("body-cover-red")));
+	Sc01V2::FCatalog MissingDefaultCatalog = Catalog.GetCatalog();
+	MissingDefaultCatalog.DefaultSelections.Remove(TEXT("wheel-material"));
+	Sc01V2::FCatalogIndex MissingDefaultIndex;
+	TestFalse(
+		TEXT("拒绝缺少必选 surface 显式默认项的 catalog"),
+		MissingDefaultIndex.Initialize(MissingDefaultCatalog, Error));
+	TestNull(
+		TEXT("可选机舱盖板无隐式默认项"),
+		Catalog.FindDefaultOptionIdForSurface(TEXT("engine-bay-cover")));
+	const TArray<FString>* ExteriorComponents =
+		Catalog.FindComponentIdsForCategory(TEXT("exterior"));
+	TestTrue(
+		TEXT("外饰组件按契约顺序"),
+		ExteriorComponents != nullptr
+			&& *ExteriorComponents == TArray<FString>({
+				TEXT("car-paint"), TEXT("chassis"), TEXT("wheel"), TEXT("caliper")}));
+	const TArray<FString>* WheelSurfaces =
+		Catalog.FindSurfaceIdsForComponent(TEXT("wheel"));
+	TestTrue(
+		TEXT("轮毂项目按 selectionOrder 顺序"),
+		WheelSurfaces != nullptr
+			&& *WheelSurfaces == TArray<FString>({
+				TEXT("wheel-material"), TEXT("wheel-style"), TEXT("wheel-color")}));
 	const TArray<FString>* ExteriorCategories =
 		Catalog.FindCategoryIdsForRegion(TEXT("exterior"));
 	TestTrue(
@@ -138,6 +197,9 @@ bool FSc01V2GoldenVectorsAutomationTest::RunTest(const FString& Parameters)
 	if (Variant != nullptr)
 	{
 		TestFalse(TEXT("variant displayName 非空"), Variant->DisplayName.IsEmpty());
+		TestTrue(
+			TEXT("variant 保留真实 thumbnailUrl"),
+			Variant->ThumbnailUrl == TEXT("/sc01/thumbnails/ultrasuede-p6-uf7.webp"));
 	}
 
 	TSharedPtr<FJsonObject> Golden;
@@ -211,6 +273,7 @@ bool FSc01V2CustomizationAutomationTest::RunTest(const FString& Parameters)
 	Sc01V2::FSelections Selections;
 	Sc01V2Automation::ReadSelections(Valid, Selections);
 	Selections[TEXT("exterior-body-cover")] = Sc01V2::CustomPaintOptionId;
+	Selections[TEXT("steering-wheel-skin")] = TEXT("steering-skin-ultrasuede-custom");
 
 	Sc01V2::FPaintCustomization Paint;
 	Paint.ColorHex = TEXT("#336699");
@@ -235,11 +298,11 @@ bool FSc01V2CustomizationAutomationTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("定制 configurationId 与 server sc01-v2.ts 一致"),
 		Configuration.ConfigurationId,
-		FString(TEXT("cfg-0b2ccc3006fc11d503863d2f")));
+		FString(TEXT("cfg-3c1f9dd4444802a20100a1d2")));
 	TestEqual(
 		TEXT("定制 renderKey 与 server sc01-v2.ts 一致"),
 		Configuration.RenderKey,
-		FString(TEXT("sc01__sc01-draft-20260121__render-0b2ccc3006fc11d503863d2f")));
+		FString(TEXT("sc01__sc01-draft-20260121__render-3c1f9dd4444802a20100a1d2")));
 
 	Sc01V2::FCustomizations Mismatch = Customizations;
 	Mismatch[TEXT("steering-wheel-skin")] =
@@ -252,6 +315,18 @@ bool FSc01V2CustomizationAutomationTest::RunTest(const FString& Parameters)
 		Error.Code,
 		FString(TEXT("MATERIAL_VARIANT_FAMILY_MISMATCH")));
 
+	Sc01V2::FCustomizations Unsupported;
+	Unsupported.Add(
+		TEXT("seat-backrest"),
+		Sc01V2::FCustomization::ForMaterialVariant(TEXT("ultrasuede-p6-uf7")));
+	TestFalse(
+		TEXT("不支持 variant 色彩能力的同材料族 option 拒绝色卡"),
+		Sc01V2::ValidateCustomizations(Unsupported, Selections, Catalog, Error));
+	TestEqual(
+		TEXT("材料色卡能力错误码"),
+		Error.Code,
+		FString(TEXT("MATERIAL_VARIANT_NOT_SUPPORTED")));
+
 	Sc01V2::FCustomizations InvalidPaint = Customizations;
 	InvalidPaint[TEXT("exterior-body-cover")].Paint.Metallic = 1.1;
 	TestFalse(
@@ -262,10 +337,16 @@ bool FSc01V2CustomizationAutomationTest::RunTest(const FString& Parameters)
 		Error.Code,
 		FString(TEXT("INVALID_PAINT_CUSTOMIZATION")));
 
+	Sc01V2::FSelections OptionalOmitted = Selections;
+	OptionalOmitted.Remove(TEXT("pedal"));
+	TestTrue(
+		TEXT("允许可选项目保持不选装"),
+		Sc01V2::ValidateSelections(OptionalOmitted, Catalog, Error));
+
 	Sc01V2::FSelections MissingSelection = Selections;
-	MissingSelection.Remove(TEXT("pedal"));
+	MissingSelection.Remove(TEXT("seat-backrest"));
 	TestFalse(
-		TEXT("拒绝不足 38 项的选择"),
+		TEXT("拒绝缺少必选项目的选择"),
 		Sc01V2::ValidateSelections(MissingSelection, Catalog, Error));
 
 	Sc01V2::FSelections CrossSurface = Selections;

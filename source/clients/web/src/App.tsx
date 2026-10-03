@@ -12,9 +12,10 @@ import {
   createCanonicalKey,
   createInitialSelections,
   createRenderCanonicalKey,
+  materialGroupsForSurface,
+  materialVariantsForOption,
   normalizeCustomizations,
   normalizeSelections,
-  optionsForFilters,
   surfacesForComponent,
 } from './configurator'
 import type {
@@ -221,7 +222,6 @@ function Configurator({
   const [categoryId, setCategoryId] = useState(catalog.categories[0]?.categoryId ?? '')
   const [componentId, setComponentId] = useState('all')
   const [surfaceId, setSurfaceId] = useState(catalog.selectionOrder[0] ?? '')
-  const [materialFamilyId, setMaterialFamilyId] = useState('all')
   const [activeView, setActiveView] = useState<RenderViewId>('front-left')
   const [render, setRender] = useState<LegacyRender | null>(null)
   const [pendingRender, setPendingRender] = useState<LegacyRender | null>(null)
@@ -246,23 +246,11 @@ function Configurator({
   const currentSurface = catalog.surfaces.find((surface) => surface.surfaceId === surfaceId)
     ?? surfaces[0]
     ?? catalog.surfaces[0]
-  const materialFamilies = useMemo(() => {
-    const ids = new Set(
-      catalog.options
-        .filter((option) => option.surfaceId === currentSurface.surfaceId)
-        .map((option) => option.materialFamilyId),
-    )
-    return catalog.materialFamilies.filter((family) => ids.has(family.materialFamilyId))
-  }, [catalog, currentSurface.surfaceId])
-  const options = optionsForFilters(catalog, currentSurface.surfaceId, materialFamilyId)
+  const materialGroups = materialGroupsForSurface(catalog, currentSurface.surfaceId)
+  const options = materialGroups.flatMap((group) => group.options)
   const selectedOption = catalog.options.find(
     (option) => option.optionId === selections[currentSurface.surfaceId],
   )
-  const materialVariants = selectedOption
-    ? catalog.materialVariants.filter(
-        (variant) => variant.materialFamilyId === selectedOption.materialFamilyId,
-      )
-    : []
   const currentCustomization = customizations[currentSurface.surfaceId]
   const canonicalKey = createCanonicalKey(catalog, selections, customizations)
   const savedKey = savedConfiguration
@@ -275,6 +263,17 @@ function Configurator({
   const dirty = canonicalKey !== savedKey
   const views = legacyCatalog?.renderViews.length ? legacyCatalog.renderViews : DEFAULT_VIEWS
   const renderSelectionKey = createRenderCanonicalKey(catalog, selections, customizations)
+  const referenceTotal = catalog.vehicle.basePriceMinor + catalog.selectionOrder.reduce(
+    (total, id) => {
+      const option = catalog.options.find((item) => item.optionId === selections[id])
+      return total + (
+        option?.pricing.unitPriceMinor === null || option?.pricing.unitPriceMinor === undefined
+          ? 0
+          : option.pricing.unitPriceMinor * (option.pricing.quantity ?? 1)
+      )
+    },
+    0,
+  )
 
   useEffect(() => {
     const firstComponent = components[0]?.componentId
@@ -286,8 +285,6 @@ function Configurator({
       setSurfaceId(surfaces[0]?.surfaceId ?? catalog.selectionOrder[0])
     }
   }, [catalog.selectionOrder, surfaceId, surfaces])
-
-  useEffect(() => setMaterialFamilyId('all'), [surfaceId])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -338,8 +335,10 @@ function Configurator({
   // activeView 会触发解析，但只有 renderKey 变化时才替换图片。
   }, [activeView, catalog.catalogVersion, catalog.vehicle.vehicleId, legacyCatalog, renderSelectionKey])
 
-  const selectOption = (optionId: string) => {
-    const nextSelections = { ...selections, [currentSurface.surfaceId]: optionId }
+  const selectOption = (optionId?: string) => {
+    const nextSelections = { ...selections }
+    if (optionId) nextSelections[currentSurface.surfaceId] = optionId
+    else delete nextSelections[currentSurface.surfaceId]
     setSelections(nextSelections)
     const option = catalog.options.find((item) => item.optionId === optionId)
     const existing = customizations[currentSurface.surfaceId]
@@ -362,11 +361,13 @@ function Configurator({
     setSyncMessage('')
   }
 
-  const setMaterialVariant = (materialVariantId: string) => {
-    setCustomizations({
+  const setMaterialVariant = (materialVariantId: string, optionId: string) => {
+    const nextSelections = { ...selections, [currentSurface.surfaceId]: optionId }
+    setSelections(nextSelections)
+    setCustomizations(normalizeCustomizations(catalog, nextSelections, {
       ...customizations,
       [currentSurface.surfaceId]: { materialVariantId },
-    })
+    }))
     setSyncState('idle')
     setSyncMessage('')
   }
@@ -502,7 +503,7 @@ function Configurator({
             <span className="eyebrow">SC01 动态配置</span>
             <h2>打造你的座驾</h2>
           </div>
-          <span className="step">{catalog.selectionOrder.length} 项必选</span>
+          <span className="step">4 阶段顺序选配</span>
         </div>
 
         <div className="save-bar">
@@ -513,35 +514,52 @@ function Configurator({
           <button onClick={() => void share()} disabled={syncState === 'saving'}>分享配置</button>
         </div>
 
-        <FilterGroup label="类别" items={catalog.categories.map((item) => ({
+        <FilterGroup label="阶段" items={catalog.categories.map((item) => ({
           id: item.categoryId,
           name: item.displayName,
         }))} value={categoryId} onChange={setCategoryId} />
-        <FilterGroup label="组件" items={components.map((item) => ({
+        <FilterGroup label="部件" items={components.map((item) => ({
           id: item.componentId,
           name: item.displayName,
         }))} value={componentId} onChange={setComponentId} />
-        <FilterGroup label="表面" items={surfaces.map((item) => ({
+        <FilterGroup label="项目" items={surfaces.map((item) => ({
           id: item.surfaceId,
           name: item.displayName,
         }))} value={currentSurface.surfaceId} onChange={setSurfaceId} />
-        <FilterGroup label="材质系列" items={[
-          { id: 'all', name: '全部' },
-          ...materialFamilies.map((item) => ({ id: item.materialFamilyId, name: item.displayName })),
-        ]} value={materialFamilyId} onChange={setMaterialFamilyId} />
-
         <section className="options" aria-live="polite">
           <div className="section-title">
             <h3>选择{currentSurface.displayName}</h3>
-            <span>{options.length} 款可选</span>
+            <span>{currentSurface.required ? `${options.length} 款可选` : '默认不选装'}</span>
           </div>
-          <div className="option-grid">
-            {options.map((option) => {
-              const selected = selections[currentSurface.surfaceId] === option.optionId
-              const family = catalog.materialFamilies.find(
-                (item) => item.materialFamilyId === option.materialFamilyId,
+          {!currentSurface.required && (
+            <button
+              className={`none-option ${selections[currentSurface.surfaceId] ? '' : 'selected'}`}
+              onClick={() => selectOption()}
+              aria-pressed={!selections[currentSurface.surfaceId]}
+            >
+              不选装 <small>默认 · ¥0</small>
+            </button>
+          )}
+          <div className="material-groups">
+            {materialGroups.map(({ materialFamily, options: familyOptions }) => {
+              const active = selectedOption?.materialFamilyId === materialFamily.materialFamilyId
+              const colorCardOptions = familyOptions.filter(
+                (option) => materialVariantsForOption(catalog, option).length > 0,
               )
               return (
+                <section
+                  className={`material-group ${active ? 'active' : ''}`}
+                  key={materialFamily.materialFamilyId}
+                  aria-label={`${materialFamily.displayName}材质组`}
+                >
+                  <div className="material-group-title">
+                    <strong>{materialFamily.displayName}</strong>
+                    <span>{active ? '当前材质' : '可选材质'}</span>
+                  </div>
+                  <div className="option-grid">
+                    {familyOptions.map((option) => {
+                      const selected = selections[currentSurface.surfaceId] === option.optionId
+                      return (
                 <button
                   key={option.optionId}
                   className={`option-card ${selected ? 'selected' : ''}`}
@@ -553,49 +571,53 @@ function Configurator({
                   </span>
                   <span className="option-info">
                     <strong>{option.displayName}</strong>
-                    <small>{family?.displayName} · {optionPrice(option)}</small>
+                    <small>
+                      {option.pricing.isStandard ? '默认色 · 免费' : optionPrice(option)}
+                    </small>
                   </span>
                   <span className="check" aria-hidden="true">{selected ? '✓' : ''}</span>
                 </button>
+                      )
+                    })}
+                  </div>
+                  {colorCardOptions.map((colorCardOption) => (
+                    <div
+                      className="variant-strip"
+                      role="region"
+                      key={colorCardOption.optionId}
+                      aria-label={colorCardOptions.length === 1
+                        ? `${materialFamily.displayName} PDF 色卡`
+                        : `${colorCardOption.displayName} PDF 色卡`}
+                    >
+                      {materialVariantsForOption(catalog, colorCardOption).map((variant) => {
+                        const selected = selections[currentSurface.surfaceId] === colorCardOption.optionId
+                          && currentCustomization
+                          && 'materialVariantId' in currentCustomization
+                          && currentCustomization.materialVariantId === variant.variantId
+                        return (
+                          <button
+                            key={variant.variantId}
+                            className={selected ? 'selected' : ''}
+                            onClick={() => setMaterialVariant(
+                              variant.variantId,
+                              colorCardOption.optionId,
+                            )}
+                            aria-pressed={Boolean(selected)}
+                            aria-label={`${variant.displayName}，PDF 色卡定制，${optionPrice(colorCardOption)}`}
+                            title={`${variant.displayName} · PDF 色卡定制`}
+                          >
+                            <img src={variant.thumbnailUrl} alt="" loading="lazy" />
+                            <span>{variant.displayName}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </section>
               )
             })}
           </div>
         </section>
-
-        {materialVariants.length > 0 && (
-          <section className="material-variants" aria-label="PDF 512 色卡">
-            <div className="section-title">
-              <h3>PDF 512 色卡</h3>
-              <span>{materialVariants.length} 色 · 512 × 512</span>
-            </div>
-            <div className="variant-grid">
-              {materialVariants.map((variant) => {
-                const selected = currentCustomization
-                  && 'materialVariantId' in currentCustomization
-                  && currentCustomization.materialVariantId === variant.variantId
-                return (
-                  <button
-                    key={variant.variantId}
-                    className={selected ? 'selected' : ''}
-                    onClick={() => setMaterialVariant(variant.variantId)}
-                    aria-pressed={selected}
-                    aria-label={`${variant.displayName}${selected ? '，已选择' : ''}`}
-                    title={variant.displayName}
-                  >
-                    <img
-                      src={variant.thumbnailUrl}
-                      alt=""
-                      width="512"
-                      height="512"
-                      loading="lazy"
-                    />
-                    <span>{variant.displayName}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-        )}
 
         {selectedOption?.optionId === 'body-cover-custom'
           && currentCustomization
@@ -645,8 +667,8 @@ function Configurator({
             <code>{canonicalKey}</code>
           </div>
           <div className="total">
-            <span>车辆总价<small>草案目录暂不支持报价</small></span>
-            <strong>价格待确认</strong>
+            <span>参考总价<small>基础价 ¥229,800 · 草案不构成报价</small></span>
+            <strong>¥{(referenceTotal / 100).toLocaleString('zh-CN')}</strong>
           </div>
         </footer>
       </aside>

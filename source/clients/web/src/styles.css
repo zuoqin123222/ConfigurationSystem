@@ -141,6 +141,23 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .filter-group button.active { border-color: #282b26; color: #fff; background: #282b26; }
 
+.none-option {
+  width: 100%; margin-bottom: 8px; padding: 9px 12px; border: 1px solid #d8d6ce;
+  border-radius: 6px; color: #666a62; text-align: left; background: #fff; cursor: pointer;
+}
+.none-option small { float: right; color: #8b8e86; }
+.none-option.selected { border-color: #8c9086; background: #deded8; color: var(--ink); }
+.material-groups { display: grid; gap: 9px; }
+.material-group {
+  padding: 10px; border: 1px solid #dcdbd3; border-radius: 8px; background: #faf9f5;
+}
+.material-group.active { border-color: #b8bbb2; background: #e1e1dc; }
+.material-group-title {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+.material-group-title strong { font-size: 11px; }
+.material-group-title span { color: #8b8e86; font-size: 9px; }
+
 .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .template-grid button {
   display: grid; grid-template-columns: 38px 1fr auto; gap: 9px; align-items: center;
@@ -173,17 +190,18 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .part-tabs button.active::after { background: var(--ink); }
 .part-tabs button span { display: block; margin-bottom: 3px; color: #a5a89e; font-size: 8px; }
 
-.option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .option-card {
-  position: relative; overflow: hidden; border: 1px solid #d9d7cf; border-radius: 7px;
+  position: relative; display: grid; grid-template-columns: 38px 1fr 20px; align-items: center;
+  min-height: 50px; overflow: hidden; border: 1px solid #d9d7cf; border-radius: 7px;
   padding: 0; color: var(--ink); text-align: left; background: #ebe9e2; cursor: pointer;
 }
 .option-card.selected { border: 2px solid #292c27; background: #fff; }
 .option-preview { display: block; width: 100%; height: 86px; object-fit: cover; background: #deddd6; }
 .option-swatch {
-  display: grid; place-items: center; width: 100%; height: 72px;
+  display: grid; place-items: center; width: 38px; height: 100%;
   color: rgba(255,255,255,.8); background: linear-gradient(135deg, #6d2520, #ba5143);
-  font-size: 22px; font-weight: 600;
+  font-size: 14px; font-weight: 600;
 }
 .swatch-body-cover-yellow { color: #464114; background: linear-gradient(135deg, #ccb63a, #f4df69); }
 .swatch-wheel-aluminum-alloy { background: linear-gradient(135deg, #8d918e, #d8dbd8); }
@@ -193,28 +211,32 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .swatch-steering-skin-alcantara { background: linear-gradient(135deg, #39342e, #827569); }
 .swatch-steering-skin-leather { background: linear-gradient(135deg, #663b27, #b77954); }
 .option-card .image-placeholder { height: 86px; color: #8a8d85; background: #e3e1da; }
-.option-info { display: block; padding: 10px 11px; }
+.option-info { display: block; min-width: 0; padding: 7px 8px; }
 .option-info strong, .option-info small { display: block; }
 .option-info strong { font-size: 12px; }
 .option-info small { margin-top: 3px; color: #777b72; font-size: 10px; }
 .check {
-  position: absolute; top: 7px; right: 7px; display: grid; place-items: center;
-  width: 20px; height: 20px; border-radius: 50%; color: var(--ink); background: var(--lime);
+  display: grid; place-items: center; width: 18px; height: 18px;
+  border-radius: 50%; color: var(--ink); background: var(--lime);
   font-size: 12px; font-weight: 700;
 }
 .option-card:not(.selected) .check { border: 1px solid rgba(0,0,0,.18); background: rgba(255,255,255,.75); }
 
-.variant-grid {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px;
-  max-height: 250px; overflow-y: auto; padding: 2px;
+.variant-strip {
+  display: flex; gap: 6px; margin-top: 8px; padding: 2px 1px 5px;
+  overflow-x: auto; scrollbar-width: thin;
 }
-.variant-grid button {
-  min-width: 0; overflow: hidden; padding: 0; border: 1px solid #d5d3ca; border-radius: 5px;
+.variant-strip button {
+  flex: 0 0 54px; min-width: 0; overflow: hidden; padding: 0;
+  border: 1px solid #d5d3ca; border-radius: 5px;
   color: var(--ink); background: #fff; cursor: pointer;
 }
-.variant-grid button.selected { border: 2px solid #292c27; box-shadow: 0 0 0 2px var(--lime); }
-.variant-grid img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
-.variant-grid span {
+.variant-strip button.selected { border: 2px solid #292c27; box-shadow: 0 0 0 2px var(--lime); }
+.variant-strip img {
+  display: block; width: 100%; aspect-ratio: 1.45; object-fit: cover;
+  background: repeating-linear-gradient(135deg, #cbc8c0 0 2px, #b8b5ad 2px 4px);
+}
+.variant-strip span {
   display: block; overflow: hidden; padding: 5px; text-overflow: ellipsis; white-space: nowrap;
   font-size: 8px;
 }
