@@ -39,6 +39,12 @@ bool UConfiguratorWebBridge::IsSupportedConfiguratorCategory(
 		|| CategoryId == TEXT("personalization");
 }
 
+bool UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(
+	const FString& Action)
+{
+	return Action == TEXT("save") || Action == TEXT("share");
+}
+
 void UConfiguratorWebBridge::ApplyConfigurationJson(
 	const FString& ConfigurationJson)
 {
@@ -103,4 +109,26 @@ bool UConfiguratorWebBridge::SetConfiguratorCategory(const FString& CategoryId)
 	return Owner != nullptr
 		&& IsSupportedConfiguratorCategory(CategoryId)
 		&& Owner->SetConfiguratorCategory(CategoryId);
+}
+
+bool UConfiguratorWebBridge::SetConfiguratorHeaderStateJson(
+	const FString& StateJson)
+{
+	return Owner != nullptr
+		&& Owner->SetConfiguratorHeaderStateJson(StateJson);
+}
+
+bool UConfiguratorWebBridge::TriggerConfiguratorHeaderAction(
+	const FString& Action)
+{
+	return Owner != nullptr
+		&& IsSupportedConfiguratorHeaderAction(Action)
+		&& Owner->TriggerConfiguratorHeaderAction(Action);
+}
+
+FString UConfiguratorWebBridge::GetConfiguratorHeaderStateJson() const
+{
+	return Owner != nullptr
+		? Owner->GetConfiguratorHeaderStateJson()
+		: FString();
 }

@@ -12,6 +12,7 @@ class UConfiguratorBrowserWidget;
 class USizeBox;
 class UCanvasPanelSlot;
 class UConfiguratorWebBridge;
+class UWidget;
 
 /** 承载顶部 Web 导航、右侧 480px 选配面板和透明底部体验控制层。 */
 UCLASS()
@@ -30,6 +31,9 @@ public:
 		TMap<FString, FString>& OutSelections,
 		TMap<FString, FSc01V2Customization>& OutCustomizations,
 		FString& OutError);
+	static bool IsValidConfiguratorHeaderStateJson(
+		const FString& StateJson,
+		FString& OutError);
 	static constexpr int32 MaxHealthProbeAttempts = 5;
 
 	void ApplyWebConfigurationJson(const FString& ConfigurationJson);
@@ -41,6 +45,9 @@ public:
 	bool ResetExperiencePresentation();
 	bool SetExperienceFullscreen(bool bEnabled);
 	bool SetConfiguratorCategory(const FString& CategoryId);
+	bool SetConfiguratorHeaderStateJson(const FString& StateJson);
+	bool TriggerConfiguratorHeaderAction(const FString& Action);
+	FString GetConfiguratorHeaderStateJson() const;
 	FString GetExperienceStateJson();
 
 protected:
@@ -75,7 +82,7 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UCanvasPanelSlot> ControlsCanvasSlot;
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UBorder>> PageMasks;
+	TArray<TObjectPtr<UWidget>> PageMasks;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UConfiguratorWebBridge> WebBridge;
@@ -86,4 +93,5 @@ private:
 	int32 HealthProbeAttemptCount = 0;
 	float PendingRetryDelaySeconds = 0.0f;
 	bool bWebFullscreen = false;
+	FString LatestConfiguratorHeaderStateJson;
 };

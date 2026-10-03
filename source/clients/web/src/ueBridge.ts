@@ -3,6 +3,9 @@ import type { Customizations, Selections } from './types'
 export interface ReflectedUeBridge {
   applyconfigurationjson?: (configurationJson: string) => void
   setconfiguratorcategory?: (categoryId: string) => Promise<boolean>
+  setconfiguratorheaderstatejson?: (stateJson: string) => Promise<boolean>
+  triggerconfiguratorheaderaction?: (action: string) => Promise<boolean>
+  getconfiguratorheaderstatejson?: () => Promise<string>
   getpresentationstatejson?: () => Promise<string>
   setcamera?: (cameraIndex: number) => Promise<boolean>
   setanimationenabled?: (enabled: boolean) => Promise<boolean>
@@ -17,6 +20,8 @@ export type UeCameraIndex = 0 | 1 | 2 | 3 | 4 | 5
 export type UeConfiguratorCategory = 'exterior' | 'interior' | 'performance' | 'personalization'
 
 export const CONFIGURATOR_CATEGORY_EVENT = 'ue-configurator-category'
+export const CONFIGURATOR_HEADER_STATE_EVENT = 'ue-configurator-header-state'
+export const CONFIGURATOR_HEADER_ACTION_EVENT = 'ue-configurator-header-action'
 export const CONFIGURATOR_CATEGORIES: Array<{
   id: UeConfiguratorCategory
   label: string
@@ -37,6 +42,17 @@ export type UeControlCommand =
   | { type: 'fullscreen'; enabled: boolean }
 
 export type UeQualityLevel = 'low' | 'medium' | 'high' | 'epic'
+export type UeConfiguratorHeaderAction = 'save' | 'share'
+export type UeConfiguratorSyncState = 'idle' | 'saving' | 'saved' | 'error'
+
+export interface UeConfiguratorHeaderState {
+  categoryId: UeConfiguratorCategory
+  referenceTotalMinor: number
+  syncState: UeConfiguratorSyncState
+  syncMessage: string
+  dirty: boolean
+  online: boolean
+}
 
 export interface UePresentationState {
   cameraIndex: UeCameraIndex
@@ -89,6 +105,77 @@ export async function syncUeConfiguratorCategory(
     || typeof bridge?.setconfiguratorcategory !== 'function') return false
   try {
     return await bridge.setconfiguratorcategory(categoryId)
+  } catch {
+    return false
+  }
+}
+
+export function createUeConfiguratorHeaderStateJson(
+  state: UeConfiguratorHeaderState,
+): string {
+  return JSON.stringify(state)
+}
+
+export function isUeConfiguratorHeaderState(
+  value: unknown,
+): value is UeConfiguratorHeaderState {
+  if (!value || typeof value !== 'object') return false
+  const state = value as Record<string, unknown>
+  const allowedFields = [
+    'categoryId',
+    'referenceTotalMinor',
+    'syncState',
+    'syncMessage',
+    'dirty',
+    'online',
+  ]
+  return Object.keys(state).length === allowedFields.length
+    && Object.keys(state).every((field) => allowedFields.includes(field))
+    && CONFIGURATOR_CATEGORIES.some((category) => category.id === state.categoryId)
+    && Number.isSafeInteger(state.referenceTotalMinor)
+    && Number(state.referenceTotalMinor) >= 0
+    && ['idle', 'saving', 'saved', 'error'].includes(String(state.syncState))
+    && typeof state.syncMessage === 'string'
+    && state.syncMessage.length <= 256
+    && typeof state.dirty === 'boolean'
+    && typeof state.online === 'boolean'
+}
+
+export async function syncUeConfiguratorHeaderState(
+  bridge: ReflectedUeBridge | null,
+  state: UeConfiguratorHeaderState,
+): Promise<boolean> {
+  if (!isUeConfiguratorHeaderState(state)
+    || typeof bridge?.setconfiguratorheaderstatejson !== 'function') return false
+  try {
+    return await bridge.setconfiguratorheaderstatejson(
+      createUeConfiguratorHeaderStateJson(state),
+    )
+  } catch {
+    return false
+  }
+}
+
+export async function getUeConfiguratorHeaderState(
+  bridge: ReflectedUeBridge | null,
+): Promise<UeConfiguratorHeaderState | null> {
+  if (typeof bridge?.getconfiguratorheaderstatejson !== 'function') return null
+  try {
+    const state: unknown = JSON.parse(await bridge.getconfiguratorheaderstatejson())
+    return isUeConfiguratorHeaderState(state) ? state : null
+  } catch {
+    return null
+  }
+}
+
+export async function triggerUeConfiguratorHeaderAction(
+  bridge: ReflectedUeBridge | null,
+  action: UeConfiguratorHeaderAction,
+): Promise<boolean> {
+  if (!['save', 'share'].includes(action)
+    || typeof bridge?.triggerconfiguratorheaderaction !== 'function') return false
+  try {
+    return await bridge.triggerconfiguratorheaderaction(action)
   } catch {
     return false
   }

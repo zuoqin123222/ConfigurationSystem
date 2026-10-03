@@ -4,6 +4,7 @@
 #include "CarConfiguratorSubsystem.h"
 #include "ConfiguratorBrowserWidget.h"
 #include "ConfiguratorWebBridge.h"
+#include "StageCornerMask.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/CanvasPanel.h"
@@ -30,6 +31,7 @@ namespace
 	constexpr float ExpandedPanelWidth = 480.0f;
 	constexpr float HeaderHeight = 76.0f;
 	constexpr float StageMargin = 18.0f;
+	constexpr float StageCornerRadius = 24.0f;
 	constexpr float ControlsLayerWidth = 620.0f;
 	constexpr float ControlsLayerHeight = 190.0f;
 	constexpr float ControlsBottomInset = 32.0f;
@@ -353,11 +355,11 @@ void UConfiguratorPanel::BuildWidgetTree()
 		return Mask;
 	};
 
-	// 以实心白色页面遮住舞台外部，而不是给渲染画面套一圈描边。
+	// 四条实心白边定义舞台窗口，避免透明 Web 与场景之间出现黑缝。
 	AddWhiteMask(
-		TEXT("PageTopMask"),
+		TEXT("PageStageTopMask"),
 		FAnchors(0.0f, 0.0f, 1.0f, 0.0f),
-		FMargin(0.0f, 0.0f, ExpandedPanelWidth, HeaderHeight),
+		FMargin(0.0f, HeaderHeight, ExpandedPanelWidth, StageMargin),
 		1);
 	AddWhiteMask(
 		TEXT("PageLeftMask"),
@@ -374,29 +376,70 @@ void UConfiguratorPanel::BuildWidgetTree()
 		FAnchors(1.0f, 0.0f, 1.0f, 1.0f),
 		FMargin(-ExpandedPanelWidth, 0.0f, ExpandedPanelWidth, 0.0f),
 		1);
+	AddWhiteMask(
+		TEXT("PageStageRightMask"),
+		FAnchors(1.0f, 0.0f, 1.0f, 1.0f),
+		FMargin(
+			-(ExpandedPanelWidth + StageMargin),
+			HeaderHeight,
+			StageMargin,
+			StageMargin),
+		2);
 
-	// 仅在窗口转角覆盖圆角像素；直边由上面的实心遮罩承担。
-	UBorder* VehicleStageCornerMask = WidgetTree->ConstructWidget<UBorder>(
-		UBorder::StaticClass(), TEXT("VehicleStageCornerCutout"));
-	FSlateBrush CornerMaskBrush;
-	CornerMaskBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
-	CornerMaskBrush.TintColor = FLinearColor::Transparent;
-	CornerMaskBrush.OutlineSettings.CornerRadii = FVector4(24.0f);
-	CornerMaskBrush.OutlineSettings.Color = FSlateColor(FLinearColor::White);
-	CornerMaskBrush.OutlineSettings.Width = StageMargin;
-	CornerMaskBrush.OutlineSettings.RoundingType =
-		ESlateBrushRoundingType::FixedRadius;
-	VehicleStageCornerMask->SetBrush(CornerMaskBrush);
-	VehicleStageCornerMask->SetVisibility(ESlateVisibility::HitTestInvisible);
-	PageMasks.Add(VehicleStageCornerMask);
-	UCanvasPanelSlot* VehicleStageSlot = Root->AddChildToCanvas(VehicleStageCornerMask);
-	VehicleStageSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
-	VehicleStageSlot->SetOffsets(FMargin(
-		StageMargin,
-		HeaderHeight,
-		ExpandedPanelWidth + StageMargin,
-		StageMargin));
-	VehicleStageSlot->SetZOrder(2);
+	// 四角分别使用同一原生反向圆角遮罩，不再绘制 RoundedBox 白色描边。
+	auto AddCornerMask = [this, Root](
+		const FName Name,
+		const EStageCorner Corner,
+		const FAnchors& Anchors,
+		const FMargin& Offsets)
+	{
+		UStageCornerMask* Mask = WidgetTree->ConstructWidget<UStageCornerMask>(
+			UStageCornerMask::StaticClass(), Name);
+		Mask->SetCorner(Corner);
+		Mask->SetRadius(StageCornerRadius);
+		Mask->SetVisibility(ESlateVisibility::HitTestInvisible);
+		PageMasks.Add(Mask);
+		UCanvasPanelSlot* Slot = Root->AddChildToCanvas(Mask);
+		Slot->SetAnchors(Anchors);
+		Slot->SetOffsets(Offsets);
+		Slot->SetZOrder(3);
+	};
+	AddCornerMask(
+		TEXT("StageTopLeftInverseCorner"),
+		EStageCorner::TopLeft,
+		FAnchors(0.0f, 0.0f),
+		FMargin(
+			StageMargin,
+			HeaderHeight + StageMargin,
+			StageCornerRadius,
+			StageCornerRadius));
+	AddCornerMask(
+		TEXT("StageTopRightInverseCorner"),
+		EStageCorner::TopRight,
+		FAnchors(1.0f, 0.0f),
+		FMargin(
+			-(ExpandedPanelWidth + StageMargin + StageCornerRadius),
+			HeaderHeight + StageMargin,
+			StageCornerRadius,
+			StageCornerRadius));
+	AddCornerMask(
+		TEXT("StageBottomLeftInverseCorner"),
+		EStageCorner::BottomLeft,
+		FAnchors(0.0f, 1.0f),
+		FMargin(
+			StageMargin,
+			-(StageMargin + StageCornerRadius),
+			StageCornerRadius,
+			StageCornerRadius));
+	AddCornerMask(
+		TEXT("StageBottomRightInverseCorner"),
+		EStageCorner::BottomRight,
+		FAnchors(1.0f, 1.0f),
+		FMargin(
+			-(ExpandedPanelWidth + StageMargin + StageCornerRadius),
+			-(StageMargin + StageCornerRadius),
+			StageCornerRadius,
+			StageCornerRadius));
 
 	WebBrowser = WidgetTree->ConstructWidget<UConfiguratorBrowserWidget>(
 		UConfiguratorBrowserWidget::StaticClass(), TEXT("EmbeddedWebConfigurator"));
@@ -406,7 +449,11 @@ void UConfiguratorPanel::BuildWidgetTree()
 	UCanvasPanelSlot* BrowserSlot = Root->AddChildToCanvas(WebBrowser);
 	BrowserSlot->SetAnchors(FAnchors(1.0f, 0.0f, 1.0f, 1.0f));
 	BrowserSlot->SetAlignment(FVector2D(1.0f, 0.0f));
-	BrowserSlot->SetOffsets(FMargin(0.0f, 0.0f, ExpandedPanelWidth, 0.0f));
+	BrowserSlot->SetOffsets(FMargin(
+		0.0f,
+		HeaderHeight,
+		ExpandedPanelWidth,
+		0.0f));
 	BrowserSlot->SetZOrder(4);
 
 	HeaderBrowser = WidgetTree->ConstructWidget<UConfiguratorBrowserWidget>(
@@ -414,8 +461,8 @@ void UConfiguratorPanel::BuildWidgetTree()
 	HeaderBrowser->SetBridge(WebBridge);
 	UCanvasPanelSlot* HeaderSlot = Root->AddChildToCanvas(HeaderBrowser);
 	HeaderSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 0.0f));
-	HeaderSlot->SetOffsets(FMargin(0.0f, 0.0f, ExpandedPanelWidth, HeaderHeight));
-	HeaderSlot->SetZOrder(4);
+	HeaderSlot->SetOffsets(FMargin(0.0f, 0.0f, 0.0f, HeaderHeight));
+	HeaderSlot->SetZOrder(6);
 
 	ControlsBrowser = WidgetTree->ConstructWidget<UConfiguratorBrowserWidget>(
 		UConfiguratorBrowserWidget::StaticClass(), TEXT("WebExperienceControls"));
@@ -632,6 +679,65 @@ bool UConfiguratorPanel::SetExperienceQualityLevel(const FString& Quality)
 	return true;
 }
 
+bool UConfiguratorPanel::IsValidConfiguratorHeaderStateJson(
+	const FString& StateJson,
+	FString& OutError)
+{
+	OutError.Reset();
+	if (StateJson.IsEmpty() || StateJson.Len() > 2048)
+	{
+		OutError = TEXT("Header 状态为空或超过 2 KiB 限制。");
+		return false;
+	}
+	TSharedPtr<FJsonObject> Root;
+	const TSharedRef<TJsonReader<>> Reader =
+		TJsonReaderFactory<>::Create(StateJson);
+	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
+	{
+		OutError = TEXT("Header 状态不是有效 JSON 对象。");
+		return false;
+	}
+	const TSet<FString> AllowedFields = {
+		TEXT("categoryId"),
+		TEXT("referenceTotalMinor"),
+		TEXT("syncState"),
+		TEXT("syncMessage"),
+		TEXT("dirty"),
+		TEXT("online")
+	};
+	FString CategoryId;
+	FString SyncState;
+	FString SyncMessage;
+	double ReferenceTotalMinor = -1.0;
+	bool bDirty = false;
+	bool bOnline = false;
+	if (!HasOnlyFields(Root, AllowedFields)
+		|| Root->Values.Num() != AllowedFields.Num()
+		|| !Root->TryGetStringField(TEXT("categoryId"), CategoryId)
+		|| !UConfiguratorWebBridge::IsSupportedConfiguratorCategory(CategoryId)
+		|| !Root->TryGetNumberField(
+			TEXT("referenceTotalMinor"), ReferenceTotalMinor)
+		|| ReferenceTotalMinor < 0.0
+		|| ReferenceTotalMinor > 1000000000000.0
+		|| !FMath::IsNearlyEqual(
+			ReferenceTotalMinor,
+			FMath::RoundToDouble(ReferenceTotalMinor))
+		|| !Root->TryGetStringField(TEXT("syncState"), SyncState)
+		|| !(SyncState == TEXT("idle")
+			|| SyncState == TEXT("saving")
+			|| SyncState == TEXT("saved")
+			|| SyncState == TEXT("error"))
+		|| !Root->TryGetStringField(TEXT("syncMessage"), SyncMessage)
+		|| SyncMessage.Len() > 256
+		|| !Root->TryGetBoolField(TEXT("dirty"), bDirty)
+		|| !Root->TryGetBoolField(TEXT("online"), bOnline))
+	{
+		OutError = TEXT("Header 状态包含非白名单字段或非法值。");
+		return false;
+	}
+	return true;
+}
+
 bool UConfiguratorPanel::ResetExperiencePresentation()
 {
 	AConfigShowroomPlayerController* Controller =
@@ -657,7 +763,7 @@ bool UConfiguratorPanel::SetExperienceFullscreen(const bool bEnabled)
 	{
 		HeaderBrowser->SetVisibility(WebVisibility);
 	}
-	for (UBorder* Mask : PageMasks)
+	for (UWidget* Mask : PageMasks)
 	{
 		if (Mask != nullptr)
 		{
@@ -695,6 +801,49 @@ bool UConfiguratorPanel::SetConfiguratorCategory(const FString& CategoryId)
 		HeaderBrowser->ExecuteJavascript(Script);
 	}
 	return WebBrowser != nullptr || HeaderBrowser != nullptr;
+}
+
+bool UConfiguratorPanel::SetConfiguratorHeaderStateJson(
+	const FString& StateJson)
+{
+	FString Error;
+	if (!IsValidConfiguratorHeaderStateJson(StateJson, Error)
+		|| HeaderBrowser == nullptr)
+	{
+		if (!Error.IsEmpty())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("拒绝 Web Header 状态：%s"), *Error);
+		}
+		return false;
+	}
+	LatestConfiguratorHeaderStateJson = StateJson;
+	const FString Script = FString::Printf(
+		TEXT("window.dispatchEvent(new CustomEvent("
+			"'ue-configurator-header-state',{detail:%s}));"),
+		*StateJson);
+	HeaderBrowser->ExecuteJavascript(Script);
+	return true;
+}
+
+bool UConfiguratorPanel::TriggerConfiguratorHeaderAction(
+	const FString& Action)
+{
+	if (!UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(Action)
+		|| WebBrowser == nullptr)
+	{
+		return false;
+	}
+	const FString Script = FString::Printf(
+		TEXT("window.dispatchEvent(new CustomEvent("
+			"'ue-configurator-header-action',{detail:'%s'}));"),
+		*Action);
+	WebBrowser->ExecuteJavascript(Script);
+	return true;
+}
+
+FString UConfiguratorPanel::GetConfiguratorHeaderStateJson() const
+{
+	return LatestConfiguratorHeaderStateJson;
 }
 
 FString UConfiguratorPanel::GetExperienceStateJson()

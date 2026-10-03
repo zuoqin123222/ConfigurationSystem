@@ -22,6 +22,7 @@ public:
 	static bool IsSupportedRenderMode(const FString& Mode);
 	static bool IsSupportedQualityLevel(const FString& Quality);
 	static bool IsSupportedConfiguratorCategory(const FString& CategoryId);
+	static bool IsSupportedConfiguratorHeaderAction(const FString& Action);
 
 	UFUNCTION()
 	void ApplyConfigurationJson(const FString& ConfigurationJson);
@@ -43,6 +44,12 @@ public:
 	bool SetFullscreen(bool bEnabled);
 	UFUNCTION()
 	bool SetConfiguratorCategory(const FString& CategoryId);
+	UFUNCTION()
+	bool SetConfiguratorHeaderStateJson(const FString& StateJson);
+	UFUNCTION()
+	bool TriggerConfiguratorHeaderAction(const FString& Action);
+	UFUNCTION()
+	FString GetConfiguratorHeaderStateJson() const;
 
 private:
 	UPROPERTY(Transient)

@@ -33,9 +33,16 @@ import {
   applyUeConfiguration,
   CONFIGURATOR_CATEGORIES,
   CONFIGURATOR_CATEGORY_EVENT,
+  CONFIGURATOR_HEADER_ACTION_EVENT,
+  CONFIGURATOR_HEADER_STATE_EVENT,
+  getUeConfiguratorHeaderState,
   getUeBridge,
+  isUeConfiguratorHeaderState,
   syncUeConfiguratorCategory,
+  syncUeConfiguratorHeaderState,
+  triggerUeConfiguratorHeaderAction,
   type UeConfiguratorCategory,
+  type UeConfiguratorHeaderState,
 } from './ueBridge'
 import ExperienceControls from './ExperienceControls'
 
@@ -110,6 +117,14 @@ export default function App() {
 
 function ConfiguratorHeader() {
   const [categoryId, setCategoryId] = useState<UeConfiguratorCategory>('exterior')
+  const [headerState, setHeaderState] = useState<UeConfiguratorHeaderState>({
+    categoryId: 'exterior',
+    referenceTotalMinor: 22980000,
+    syncState: 'idle',
+    syncMessage: '',
+    dirty: true,
+    online: true,
+  })
 
   useEffect(() => {
     document.documentElement.classList.add('header-document')
@@ -120,9 +135,24 @@ function ConfiguratorHeader() {
         setCategoryId(nextCategory as UeConfiguratorCategory)
       }
     }
+    const handleHeaderState = (event: Event) => {
+      const nextState = (event as CustomEvent<unknown>).detail
+      if (isUeConfiguratorHeaderState(nextState)) {
+        setHeaderState(nextState)
+        setCategoryId(nextState.categoryId)
+      }
+    }
     window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+    window.addEventListener(CONFIGURATOR_HEADER_STATE_EVENT, handleHeaderState)
+    void getUeConfiguratorHeaderState(getUeBridge(true)).then((state) => {
+      if (state) {
+        setHeaderState(state)
+        setCategoryId(state.categoryId)
+      }
+    })
     return () => {
       window.removeEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+      window.removeEventListener(CONFIGURATOR_HEADER_STATE_EVENT, handleHeaderState)
       document.documentElement.classList.remove('header-document')
       document.body.classList.remove('header-document')
     }
@@ -133,23 +163,51 @@ function ConfiguratorHeader() {
     void syncUeConfiguratorCategory(getUeBridge(true), nextCategory)
   }
 
+  const triggerAction = (action: 'save' | 'share') => {
+    void triggerUeConfiguratorHeaderAction(getUeBridge(true), action)
+  }
+
   return (
     <header className="configurator-header">
       <h1>打造你的座驾</h1>
       <nav aria-label="选配阶段">
         {CONFIGURATOR_CATEGORIES.map((category, index) => (
-          <button
-            key={category.id}
-            className={categoryId === category.id ? 'active' : ''}
-            aria-current={categoryId === category.id ? 'step' : undefined}
-            onClick={() => selectCategory(category.id)}
-          >
-            <span>{String(index + 1).padStart(2, '0')}</span>
-            {category.label}
-          </button>
+          <div className="header-stage" key={category.id}>
+            {index > 0 && <span className="header-stage-separator" aria-hidden="true">&gt;&gt;</span>}
+            <button
+              className={categoryId === category.id ? 'active' : ''}
+              aria-current={categoryId === category.id ? 'step' : undefined}
+              onClick={() => selectCategory(category.id)}
+            >
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              {category.label}
+            </button>
+          </div>
         ))}
       </nav>
-      <span className="header-model">SC01</span>
+      <div className="header-actions">
+        <span className={`header-sync ${headerState.syncState}`}>
+          {headerState.syncMessage || (headerState.dirty ? '未同步更改' : '已同步')}
+        </span>
+        <span className="header-total">
+          <small>参考总价</small>
+          <strong>¥{(headerState.referenceTotalMinor / 100).toLocaleString('zh-CN')}</strong>
+        </span>
+        <button
+          className="header-save"
+          onClick={() => triggerAction('save')}
+          disabled={!headerState.online || headerState.syncState === 'saving' || !headerState.dirty}
+        >
+          {headerState.syncState === 'saving' ? '保存中…' : '保存'}
+        </button>
+        <button
+          className="header-share"
+          onClick={() => triggerAction('share')}
+          disabled={!headerState.online || headerState.syncState === 'saving'}
+        >
+          分享
+        </button>
+      </div>
     </header>
   )
 }
@@ -569,6 +627,29 @@ function Configurator({
     }
   }
 
+  useEffect(() => {
+    if (!embedded) return
+    void syncUeConfiguratorHeaderState(getUeBridge(true), {
+      categoryId: categoryId as UeConfiguratorCategory,
+      referenceTotalMinor: referenceTotal,
+      syncState,
+      syncMessage,
+      dirty,
+      online,
+    })
+  }, [categoryId, dirty, embedded, online, referenceTotal, syncMessage, syncState])
+
+  useEffect(() => {
+    if (!embedded) return
+    const handleHeaderAction = (event: Event) => {
+      const action = (event as CustomEvent<unknown>).detail
+      if (action === 'save') void persist()
+      if (action === 'share') void share()
+    }
+    window.addEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
+    return () => window.removeEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
+  })
+
   return (
     <main className={`app-shell ${embedded ? 'embedded' : ''}`}>
       {!embedded && <section className="stage" aria-label="车辆展示区">
@@ -627,14 +708,6 @@ function Configurator({
             <h2>打造你的座驾</h2>
           </div>
           <span className="step">4 阶段顺序选配</span>
-        </div>
-
-        <div className="save-bar">
-          <span className={`sync-state ${syncState}`}>{syncMessage || (dirty ? '未同步更改' : '已同步')}</span>
-          <button onClick={() => void persist()} disabled={syncState === 'saving' || !dirty}>
-            {syncState === 'saving' ? '保存中…' : '保存配置'}
-          </button>
-          <button onClick={() => void share()} disabled={syncState === 'saving'}>分享配置</button>
         </div>
 
         <div className="panel-scroll">
@@ -792,16 +865,6 @@ function Configurator({
           )}
         </div>
 
-        <footer className="summary">
-          <div className="canonical">
-            <span>配置标识 · {savedConfiguration?.configurationId ?? '尚未保存'}</span>
-            <code>{canonicalKey}</code>
-          </div>
-          <div className="total">
-            <span>参考总价<small>基础价 ¥229,800 · 草案不构成报价</small></span>
-            <strong>¥{(referenceTotal / 100).toLocaleString('zh-CN')}</strong>
-          </div>
-        </footer>
       </aside>
     </main>
   )

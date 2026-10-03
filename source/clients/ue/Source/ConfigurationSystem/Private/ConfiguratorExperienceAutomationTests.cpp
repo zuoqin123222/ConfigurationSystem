@@ -88,6 +88,40 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("interior")));
 	TestFalse(TEXT("bridge 拒绝任意选配阶段"),
 		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("admin")));
+	TestTrue(TEXT("bridge 接受 Header 保存动作"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("save")));
+	TestTrue(TEXT("bridge 接受 Header 分享动作"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("share")));
+	TestFalse(TEXT("bridge 拒绝 Header 调试动作"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("debug")));
+	FString HeaderStateError;
+	TestTrue(
+		TEXT("bridge 接受完整的 Header 白名单状态"),
+		UConfiguratorPanel::IsValidConfiguratorHeaderStateJson(
+			TEXT("{\"categoryId\":\"interior\","
+				"\"referenceTotalMinor\":23940000,"
+				"\"syncState\":\"saved\","
+				"\"syncMessage\":\"已同步\","
+				"\"dirty\":false,\"online\":true}"),
+			HeaderStateError));
+	TestFalse(
+		TEXT("bridge 拒绝 Header 状态中的额外 debug 字段"),
+		UConfiguratorPanel::IsValidConfiguratorHeaderStateJson(
+			TEXT("{\"categoryId\":\"interior\","
+				"\"referenceTotalMinor\":23940000,"
+				"\"syncState\":\"saved\","
+				"\"syncMessage\":\"已同步\","
+				"\"dirty\":false,\"online\":true,\"debug\":true}"),
+			HeaderStateError));
+	TestFalse(
+		TEXT("bridge 拒绝 Header 状态中的负总价"),
+		UConfiguratorPanel::IsValidConfiguratorHeaderStateJson(
+			TEXT("{\"categoryId\":\"interior\","
+				"\"referenceTotalMinor\":-1,"
+				"\"syncState\":\"saved\","
+				"\"syncMessage\":\"已同步\","
+				"\"dirty\":false,\"online\":true}"),
+			HeaderStateError));
 
 	TMap<FString, FString> Selections;
 	TMap<FString, FSc01V2Customization> Customizations;

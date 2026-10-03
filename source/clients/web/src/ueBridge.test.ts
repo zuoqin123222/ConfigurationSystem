@@ -2,10 +2,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   applyUeConfiguration,
   createUeConfigurationJson,
+  createUeConfiguratorHeaderStateJson,
   executeUeControl,
+  getUeConfiguratorHeaderState,
   getUeBridge,
   getUePresentationState,
+  isUeConfiguratorHeaderState,
   syncUeConfiguratorCategory,
+  syncUeConfiguratorHeaderState,
+  triggerUeConfiguratorHeaderAction,
   type UeControlCommand,
 } from './ueBridge'
 
@@ -64,6 +69,63 @@ describe('受限 UE bridge', () => {
     await expect(syncUeConfiguratorCategory(bridge, 'unknown')).resolves.toBe(false)
     expect(setconfiguratorcategory).toHaveBeenCalledOnce()
     expect(setconfiguratorcategory).toHaveBeenCalledWith('interior')
+  })
+
+  it('只允许完整合法的 Header 状态通过 bridge 转发', async () => {
+    const setconfiguratorheaderstatejson = vi.fn().mockResolvedValue(true)
+    const bridge = { setconfiguratorheaderstatejson }
+    const state = {
+      categoryId: 'interior',
+      referenceTotalMinor: 23940000,
+      syncState: 'saved',
+      syncMessage: '已同步 · revision 2',
+      dirty: false,
+      online: true,
+    } as const
+
+    expect(isUeConfiguratorHeaderState(state)).toBe(true)
+    await expect(syncUeConfiguratorHeaderState(bridge, state)).resolves.toBe(true)
+    expect(setconfiguratorheaderstatejson).toHaveBeenCalledWith(
+      createUeConfiguratorHeaderStateJson(state),
+    )
+
+    await expect(syncUeConfiguratorHeaderState(bridge, {
+      ...state,
+      referenceTotalMinor: -1,
+    })).resolves.toBe(false)
+    expect(isUeConfiguratorHeaderState({ ...state, injected: 'console' })).toBe(false)
+    expect(setconfiguratorheaderstatejson).toHaveBeenCalledOnce()
+  })
+
+  it('Header 挂载后可回读最后一次合法状态', async () => {
+    const state = {
+      categoryId: 'performance',
+      referenceTotalMinor: 24610000,
+      syncState: 'idle',
+      syncMessage: '未同步更改',
+      dirty: true,
+      online: true,
+    } as const
+    const bridge = {
+      getconfiguratorheaderstatejson: vi.fn().mockResolvedValue(JSON.stringify(state)),
+    }
+
+    await expect(getUeConfiguratorHeaderState(bridge)).resolves.toEqual(state)
+    bridge.getconfiguratorheaderstatejson.mockResolvedValue('{"categoryId":"unknown"}')
+    await expect(getUeConfiguratorHeaderState(bridge)).resolves.toBeNull()
+  })
+
+  it('Header 动作只允许 save 和 share 两个固定值', async () => {
+    const triggerconfiguratorheaderaction = vi.fn().mockResolvedValue(true)
+    const bridge = { triggerconfiguratorheaderaction }
+
+    await expect(triggerUeConfiguratorHeaderAction(bridge, 'save')).resolves.toBe(true)
+    await expect(triggerUeConfiguratorHeaderAction(bridge, 'share')).resolves.toBe(true)
+    await expect(triggerUeConfiguratorHeaderAction(
+      bridge,
+      'debug' as 'save',
+    )).resolves.toBe(false)
+    expect(triggerconfiguratorheaderaction.mock.calls).toEqual([['save'], ['share']])
   })
 
   it('await CEF Promise 并只把七类显式命令路由到对应的 bridge 方法', async () => {
