@@ -248,25 +248,28 @@ void UConfiguratorPanel::BuildWidgetTree()
 		NSLOCTEXT("Configurator", "Wheels", "车轮"),
 		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, ToggleWheels)));
 
-	UHorizontalBox* Cameras = WidgetTree->ConstructWidget<UHorizontalBox>();
+	UWrapBox* Cameras = WidgetTree->ConstructWidget<UWrapBox>();
+	Cameras->SetInnerSlotPadding(FVector2D(4.0f, 4.0f));
 	Content->AddChildToVerticalBox(Cameras)->SetPadding(FMargin(0, 0, 0, 5));
 	const FText CameraLabels[] = {
 		NSLOCTEXT("Configurator", "CameraFront", "前"),
 		NSLOCTEXT("Configurator", "CameraRear", "后"),
 		NSLOCTEXT("Configurator", "CameraLeft", "左"),
 		NSLOCTEXT("Configurator", "CameraRight", "右"),
-		NSLOCTEXT("Configurator", "CameraInterior", "内")
+		NSLOCTEXT("Configurator", "CameraInteriorDriver", "主驾"),
+		NSLOCTEXT("Configurator", "CameraInteriorPassenger", "副驾")
 	};
 	const FName CameraHandlers[] = {
 		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraFront),
 		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraRear),
 		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraLeft),
 		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraRight),
-		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraInterior)
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraInterior),
+		GET_FUNCTION_NAME_CHECKED(UConfiguratorPanel, CameraInteriorPassenger)
 	};
-	for (int32 Index = 0; Index < 5; ++Index)
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(CameraLabels); ++Index)
 	{
-		Cameras->AddChildToHorizontalBox(MakeButton(CameraLabels[Index], CameraHandlers[Index]));
+		Cameras->AddChildToWrapBox(MakeButton(CameraLabels[Index], CameraHandlers[Index]));
 	}
 
 	UHorizontalBox* Runtime = WidgetTree->ConstructWidget<UHorizontalBox>();
@@ -1374,6 +1377,10 @@ void UConfiguratorPanel::CameraRight()
 void UConfiguratorPanel::CameraInterior()
 {
 	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer())) { PC->SwitchCamera(4); }
+}
+void UConfiguratorPanel::CameraInteriorPassenger()
+{
+	if (AConfigShowroomPlayerController* PC = Cast<AConfigShowroomPlayerController>(GetOwningPlayer())) { PC->SwitchCamera(5); }
 }
 void UConfiguratorPanel::ToggleEnvironment()
 {

@@ -163,6 +163,80 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 		AConfigShowroomPlayerController::InterpolateOrbitLocation(
 			Start, End, Pivot, 1.0f).Equals(End, 0.1));
 
+	const FVector Rotated =
+		AConfigShowroomPlayerController::RotateExteriorCameraLocation(
+			Start, Pivot, 90.0f, 10.0f);
+	TestTrue(TEXT("车外旋转保持到车辆 Pivot 的三维半径"),
+		FMath::IsNearlyEqual(
+			FVector::Distance(Start, Pivot),
+			FVector::Distance(Rotated, Pivot),
+			0.1f));
+	TestTrue(TEXT("车外旋转同时支持水平和俯仰"),
+		!FMath::IsNearlyEqual(Rotated.Y, Start.Y)
+			&& !FMath::IsNearlyEqual(Rotated.Z, Start.Z));
+
+	for (int32 From = 0; From < 4; ++From)
+	{
+		for (int32 To = 0; To < 4; ++To)
+		{
+			TestFalse(
+				*FString::Printf(TEXT("车外预设 %d 到 %d 使用绕车插值"), From, To),
+				AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(From, To));
+		}
+	}
+	TestTrue(TEXT("车外到驾驶位使用黑屏"),
+		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(0, 4));
+	TestTrue(TEXT("驾驶位到车外使用黑屏"),
+		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(4, 0));
+	TestTrue(TEXT("驾驶位到副驾位也使用黑屏"),
+		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(4, 5));
+	TestTrue(TEXT("副驾位属于车内预设"),
+		AConfigShowroomPlayerController::IsInteriorCameraPreset(5));
+	TestTrue(TEXT("车外允许平移"),
+		AConfigShowroomPlayerController::IsCameraPanAllowed(3));
+	TestFalse(TEXT("驾驶位车内禁止平移"),
+		AConfigShowroomPlayerController::IsCameraPanAllowed(4));
+	TestFalse(TEXT("副驾位车内禁止平移"),
+		AConfigShowroomPlayerController::IsCameraPanAllowed(5));
+	TestTrue(TEXT("淡黑期间重选当前机位会取消待切换机位"),
+		AConfigShowroomPlayerController::ShouldCancelPendingCameraTransition(0, 4, 0));
+	TestFalse(TEXT("淡黑期间重选目标机位不会误判为取消"),
+		AConfigShowroomPlayerController::ShouldCancelPendingCameraTransition(0, 4, 4));
+	TestFalse(TEXT("没有待切换机位时不需要取消"),
+		AConfigShowroomPlayerController::ShouldCancelPendingCameraTransition(
+			0, INDEX_NONE, 0));
+	TestTrue(TEXT("淡黑期间改选另一车外机位会替换旧目标"),
+		AConfigShowroomPlayerController::ShouldReplacePendingCameraTransition(
+			0, 4, 1));
+	TestTrue(TEXT("淡黑期间改选另一车内机位也会替换旧目标"),
+		AConfigShowroomPlayerController::ShouldReplacePendingCameraTransition(
+			0, 4, 5));
+	TestFalse(TEXT("没有待切换目标时无需替换"),
+		AConfigShowroomPlayerController::ShouldReplacePendingCameraTransition(
+			0, INDEX_NONE, 1));
+
+	const FVector InteriorPreset(10.0, 20.0, 30.0);
+	TestTrue(TEXT("车内推拉未超限时保留候选位置"),
+		AConfigShowroomPlayerController::ClampInteriorCameraLocation(
+			InteriorPreset,
+			InteriorPreset + FVector(60.0, 0.0, 0.0),
+			120.0f).Equals(InteriorPreset + FVector(60.0, 0.0, 0.0), 0.1));
+	const FVector ClampedInterior =
+		AConfigShowroomPlayerController::ClampInteriorCameraLocation(
+			InteriorPreset,
+			InteriorPreset + FVector(300.0, 400.0, 0.0),
+			120.0f);
+	TestTrue(TEXT("车内推拉始终以预设位置为基准限幅"),
+		FMath::IsNearlyEqual(
+			FVector::Distance(InteriorPreset, ClampedInterior),
+			120.0f,
+			0.1f));
+	TestTrue(TEXT("负限幅按零距离处理"),
+		AConfigShowroomPlayerController::ClampInteriorCameraLocation(
+			InteriorPreset,
+			InteriorPreset + FVector(1.0, 0.0, 0.0),
+			-1.0f).Equals(InteriorPreset, 0.1));
+
 	FMinimalViewInfo StartPOV;
 	StartPOV.Location = Start;
 	StartPOV.Rotation = FRotator(-5.0, 0.0, 0.0);
@@ -203,11 +277,21 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("过渡完成位置与目标 POV 一致"), FinalPOV.Location.Equals(EndPOV.Location, 0.01));
 	TestTrue(TEXT("过渡完成旋转与目标 POV 一致"), FinalPOV.Rotation.Equals(EndPOV.Rotation, 0.01));
 	TestTrue(TEXT("过渡完成 FOV 与目标一致"), FMath::IsNearlyEqual(FinalPOV.FOV, EndPOV.FOV));
-	AConfigTransitionCameraActor* Transition =
-		NewObject<AConfigTransitionCameraActor>(GetTransientPackage());
-	Transition->ApplyCameraPOV(FinalPOV);
+	const FMinimalViewInfo MidPOV =
+		AConfigShowroomPlayerController::InterpolateCameraPOV(
+			StartPOV, EndPOV, Pivot, 0.5f);
+	TestTrue(TEXT("完整 POV 插值保留绕车轨迹"),
+		FMath::IsNearlyEqual(
+			FVector2D(MidPOV.Location.X, MidPOV.Location.Y).Size(),
+			1000.0,
+			0.1));
+	TestTrue(TEXT("完整 POV 插值包含视场角"),
+		FMath::IsNearlyEqual(MidPOV.FOV, 56.0f, 0.1f));
+	AConfigRuntimeCameraActor* RuntimeCamera =
+		NewObject<AConfigRuntimeCameraActor>(GetTransientPackage());
+	RuntimeCamera->ApplyCameraPOV(FinalPOV);
 	FMinimalViewInfo AppliedPOV;
-	Transition->CalcCamera(0.0f, AppliedPOV);
+	RuntimeCamera->CalcCamera(0.0f, AppliedPOV);
 	TestTrue(TEXT("过渡视图目标完整保留 FMinimalViewInfo"), AppliedPOV.Equals(FinalPOV));
 	TestEqual(TEXT("过渡视图保留偏轴投影"), AppliedPOV.OffCenterProjectionOffset, EndPOV.OffCenterProjectionOffset);
 	TestEqual(TEXT("过渡视图保留透视近裁剪面"), AppliedPOV.PerspectiveNearClipPlane, EndPOV.PerspectiveNearClipPlane);

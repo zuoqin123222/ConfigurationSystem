@@ -155,6 +155,7 @@ private:
 	UFUNCTION() void CameraLeft();
 	UFUNCTION() void CameraRight();
 	UFUNCTION() void CameraInterior();
+	UFUNCTION() void CameraInteriorPassenger();
 	UFUNCTION() void ToggleEnvironment();
 	UFUNCTION() void TogglePathTracing();
 	UFUNCTION() void SaveExperience();

@@ -12,14 +12,15 @@ class ACameraActor;
 class AConfiguratorVehicleActor;
 class AShowroomEnvironmentActor;
 
-/** 过渡专用视图目标，直接输出完整 FMinimalViewInfo，避免 UCameraComponent 字段丢失。 */
+/** 独立运行时视图目标，直接输出完整 FMinimalViewInfo；自由操作不会回写预设 Actor。 */
 UCLASS(NotBlueprintable, Transient)
-class CONFIGURATIONSYSTEM_API AConfigTransitionCameraActor final : public ACameraActor
+class CONFIGURATIONSYSTEM_API AConfigRuntimeCameraActor final : public ACameraActor
 {
 	GENERATED_BODY()
 
 public:
 	void ApplyCameraPOV(const FMinimalViewInfo& InPOV) { CameraPOV = InPOV; }
+	const FMinimalViewInfo& GetCameraPOV() const { return CameraPOV; }
 	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override
 	{
 		(void)DeltaTime;
@@ -30,7 +31,7 @@ private:
 	FMinimalViewInfo CameraPOV;
 };
 
-/** 纯 C++展厅控制器：五机位平滑切换、双环境、交互部件与原子快照。 */
+/** 纯 C++ 展厅控制器：六机位切换、自由镜头、双环境、交互部件与原子快照。 */
 UCLASS()
 class CONFIGURATIONSYSTEM_API AConfigShowroomPlayerController final
 	: public APlayerController
@@ -63,6 +64,40 @@ public:
 		const FMinimalViewInfo& End,
 		const FVector& Pivot,
 		float Alpha);
+
+	/** 驾驶位和副驾位都属于车内预设。 */
+	static bool IsInteriorCameraPreset(int32 CameraIndex);
+
+	/** 只要切换任一端为车内预设，就必须使用黑屏切换。 */
+	static bool ShouldUseBlackCameraTransition(int32 FromCameraIndex, int32 ToCameraIndex);
+
+	/** 淡黑等待期间重选当前机位表示取消尚未完成的切换。 */
+	static bool ShouldCancelPendingCameraTransition(
+		int32 CurrentCameraIndex,
+		int32 PendingCameraIndex,
+		int32 RequestedCameraIndex);
+
+	/** 淡黑期间改选其他机位时替换旧目标，避免残留黑幕和交互锁。 */
+	static bool ShouldReplacePendingCameraTransition(
+		int32 CurrentCameraIndex,
+		int32 PendingCameraIndex,
+		int32 RequestedCameraIndex);
+
+	/** 平移仅对车外预设开放；车内仍可旋转和推拉。 */
+	static bool IsCameraPanAllowed(int32 CameraIndex);
+
+	/** 车外轨道旋转保持相机到车辆 Pivot 的距离。 */
+	static FVector RotateExteriorCameraLocation(
+		const FVector& Location,
+		const FVector& Pivot,
+		float YawDegrees,
+		float PitchDegrees);
+
+	/** 将车内运行时相机约束在预设基准位置周围，避免连续推拉穿出座舱。 */
+	static FVector ClampInteriorCameraLocation(
+		const FVector& PresetLocation,
+		const FVector& CandidateLocation,
+		float MaxDistance);
 
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	void ToggleEnvironment();
@@ -97,7 +132,15 @@ private:
 	UFUNCTION()
 	void FlushPersistentConfiguration();
 
-	void Camera0(); void Camera1(); void Camera2(); void Camera3(); void Camera4();
+	void Camera0(); void Camera1(); void Camera2(); void Camera3(); void Camera4(); void Camera5();
+	void HandleCameraHorizontal(float Value);
+	void HandleCameraVertical(float Value);
+	void HandleCameraZoom(float Value);
+	AConfigRuntimeCameraActor* GetInteractiveCamera() const;
+	bool GetCameraPresetPOV(int32 CameraIndex, FMinimalViewInfo& OutPOV) const;
+	void RotateInteractiveCamera(float YawDegrees, float PitchDegrees);
+	void PanInteractiveCamera(float Horizontal, float Vertical);
+	void DollyInteractiveCamera(float Amount);
 	void ToggleEnvironmentInput();
 	void TogglePathTracingInput();
 	void SaveInput();
@@ -105,7 +148,6 @@ private:
 	void ToggleLeftDoor(); void ToggleRightDoor(); void ToggleHood(); void ToggleTrunk();
 	void ToggleWheelsInput();
 	void FinishInteriorExteriorCameraSwitch();
-	bool IsInteriorCamera(int32 CameraIndex) const;
 	FVector GetVehicleCameraPivot() const;
 
 	UPROPERTY(Transient)
@@ -121,7 +163,7 @@ private:
 	TObjectPtr<AConfiguratorVehicleActor> Vehicle;
 
 	UPROPERTY(Transient)
-	TObjectPtr<AConfigTransitionCameraActor> TransitionCamera;
+	TObjectPtr<AConfigRuntimeCameraActor> RuntimeCamera;
 
 	int32 CurrentCameraIndex = 0;
 	int32 PendingCameraIndex = INDEX_NONE;
