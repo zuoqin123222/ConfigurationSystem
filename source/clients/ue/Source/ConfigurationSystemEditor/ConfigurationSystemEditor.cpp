@@ -515,7 +515,8 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 
 	const TCHAR* CameraLabels[] = {
 		TEXT("ShowroomCamera"), TEXT("ShowroomCameraRear"), TEXT("ShowroomCameraLeft"),
-		TEXT("ShowroomCameraRight"), TEXT("ShowroomCameraInterior")
+		TEXT("ShowroomCameraRight"), TEXT("ShowroomCameraInterior"),
+		TEXT("ShowroomCameraInteriorPassenger")
 	};
 	const FTransform CameraTransforms[] = {
 		FTransform(FRotator(-14.0, -150.0, 0.0), FVector(920.0, 520.0, 310.0)),
@@ -524,7 +525,9 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		FTransform(FRotator(-10.0, 90.0, 0.0), FVector(0.0, -880.0, 250.0)),
 		// 占位车没有真实中空座舱，临时内饰机位从右侧观察 Cabin，
 		// 避免把相机放进实体 Cube 导致近裁剪面被车身完全遮挡。
-		FTransform(FRotator(-7.0, 90.0, 0.0), FVector(-75.0, -360.0, 225.0))
+		FTransform(FRotator(-7.0, 90.0, 0.0), FVector(-75.0, -360.0, 225.0)),
+		// 副驾预设与驾驶位对称，后续替换真实座舱资产时保留索引与标签契约。
+		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(-75.0, 360.0, 225.0))
 	};
 	bool bAllCamerasCreated = true;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(CameraLabels); ++Index)
@@ -534,7 +537,7 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		bAllCamerasCreated &= Camera != nullptr;
 		if (Camera != nullptr)
 		{
-			Camera->GetCameraComponent()->SetFieldOfView(Index == 4 ? 64.0f : 42.0f);
+			Camera->GetCameraComponent()->SetFieldOfView(Index >= 4 ? 64.0f : 42.0f);
 			Camera->Tags.AddUnique(FName(
 				*FString::Printf(TEXT("Configurator.Camera.%d"), Index)));
 			Camera->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
