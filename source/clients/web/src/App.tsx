@@ -30,76 +30,20 @@ import type {
   Selections,
 } from './types'
 import { applyUeConfiguration, getUeBridge } from './ueBridge'
+import ExperienceControls from './ExperienceControls'
 
 const CACHE_KEY = 'sc01-v2-configurator'
-const DEFAULT_VIEWS: Array<{ renderViewId: RenderViewId; zhName: string }> = [
-  { renderViewId: 'front', zhName: '正前' },
-  { renderViewId: 'front-left', zhName: '左前' },
-  { renderViewId: 'side', zhName: '侧面' },
-  { renderViewId: 'rear-right', zhName: '右后' },
-]
 
 export function isEmbeddedView(search = window.location.search): boolean {
   return new URLSearchParams(search).get('view') === 'embedded'
 }
 
-const STATIC_VIEW_IDS: RenderViewId[] = ['front', 'front-left', 'side', 'rear-right']
+export type AppView = 'default' | 'embedded' | 'controls'
 
-function ExperienceControls({
-  activeView,
-  onStaticViewChange,
-}: {
-  activeView: RenderViewId
-  onStaticViewChange: (view: RenderViewId) => void
-}) {
-  const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
-  const [browserFullscreen, setBrowserFullscreen] = useState(Boolean(document.fullscreenElement))
-
-  useEffect(() => {
-    const handleFullscreen = () => setBrowserFullscreen(Boolean(document.fullscreenElement))
-    document.addEventListener('fullscreenchange', handleFullscreen)
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreen)
-    }
-  }, [])
-
-  const toggleBrowserFullscreen = async () => {
-    if (document.fullscreenElement) await document.exitFullscreen()
-    else await document.documentElement.requestFullscreen()
-  }
-
-  return (
-    <nav className="experience-toolbar" aria-label="体验控制">
-      <div className="toolbar-item">
-        <button
-          aria-expanded={cameraMenuOpen}
-          onClick={() => setCameraMenuOpen((open) => !open)}
-        >
-          <span>◉</span>镜头
-        </button>
-        {cameraMenuOpen && (
-          <div className="control-popover camera-popover" role="menu" aria-label="镜头预设">
-            {DEFAULT_VIEWS.map((view, index) => (
-              <button
-                key={view.renderViewId}
-                role="menuitemradio"
-                aria-checked={STATIC_VIEW_IDS[index] === activeView}
-                onClick={() => onStaticViewChange(STATIC_VIEW_IDS[index])}
-              >
-                {view.zhName}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <button
-        aria-pressed={browserFullscreen}
-        onClick={() => void toggleBrowserFullscreen()}
-      >
-        <span>□</span>全屏
-      </button>
-    </nav>
-  )
+export function getAppView(search = window.location.search): AppView {
+  const view = new URLSearchParams(search).get('view')
+  if (view === 'embedded' || view === 'controls') return view
+  return 'default'
 }
 
 function optionPrice(option: CatalogV2['options'][number]): string {
@@ -115,17 +59,17 @@ function Showroom() {
     <svg className="showroom" viewBox="0 0 1200 760" aria-hidden="true">
       <defs>
         <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#252823" />
-          <stop offset="1" stopColor="#11130f" />
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#ececea" />
         </linearGradient>
         <radialGradient id="floor">
-          <stop offset="0" stopColor="#5d6354" stopOpacity=".42" />
-          <stop offset="1" stopColor="#11130f" stopOpacity="0" />
+          <stop offset="0" stopColor="#b7b7b4" stopOpacity=".32" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
       </defs>
       <rect width="1200" height="760" fill="url(#wall)" />
-      <path d="M0 0h1200v70L0 250z" fill="#30332c" />
-      <path d="M0 760V455L1200 70v690z" fill="#151713" />
+      <path d="M0 0h1200v70L0 250z" fill="#f7f7f5" />
+      <path d="M0 760V455L1200 70v690z" fill="#efefed" />
       <ellipse cx="575" cy="605" rx="530" ry="145" fill="url(#floor)" />
     </svg>
   )
@@ -147,7 +91,14 @@ function readCachedDraft(): CachedDraft | null {
 }
 
 export default function App() {
-  const embedded = isEmbeddedView()
+  const view = getAppView()
+  if (view === 'controls') {
+    return <ExperienceControls ueEnabled />
+  }
+  return <ConfiguratorApp embedded={view === 'embedded'} />
+}
+
+function ConfiguratorApp({ embedded }: { embedded: boolean }) {
   const [catalog, setCatalog] = useState<CatalogV2 | null>(null)
   const [legacyCatalog, setLegacyCatalog] = useState<LegacyCatalog | null>(null)
   const [selections, setSelections] = useState<Selections | null>(null)
@@ -768,12 +719,6 @@ function Configurator({
           </div>
         </footer>
       </aside>
-      {!embedded && (
-        <ExperienceControls
-          activeView={activeView}
-          onStaticViewChange={setActiveView}
-        />
-      )}
     </main>
   )
 }

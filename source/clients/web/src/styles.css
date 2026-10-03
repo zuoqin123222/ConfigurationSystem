@@ -3,7 +3,7 @@
 :root {
   font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
   color: #f5f3ec;
-  background: #11130f;
+  background: #e9e9e7;
   font-synthesis: none;
   --lime: #d4f45c;
   --panel: #f5f3ed;
@@ -17,12 +17,16 @@ html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
 button { font: inherit; }
 button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 
-.app-shell { min-height: 100vh; background: #11130f; }
+.app-shell { min-height: 100vh; background: #e9e9e7; }
 .stage {
-  min-height: 100vh;
+  min-height: calc(100vh - 24px);
+  margin: 12px;
   position: relative;
   overflow: hidden;
-  background: #171915;
+  border-radius: 18px;
+  color: #171717;
+  background: #fff;
+  box-shadow: 0 12px 42px rgba(0,0,0,.08);
 }
 .showroom { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .brand {
@@ -32,10 +36,10 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .brand-mark {
   display: grid; place-items: center; width: 34px; height: 34px;
-  border: 1px solid rgba(255,255,255,.6); border-radius: 50%; color: var(--lime);
+  border: 1px solid rgba(0,0,0,.35); border-radius: 50%; color: var(--accent);
 }
 .vehicle-title { position: absolute; z-index: 2; top: 15%; left: 7%; }
-.vehicle-title p { margin: 0 0 5px; color: var(--lime); font-size: 12px; letter-spacing: .3em; }
+.vehicle-title p { margin: 0 0 5px; color: var(--accent); font-size: 12px; letter-spacing: .3em; }
 .vehicle-title h1 { margin: 0; font-size: clamp(32px, 4vw, 62px); font-weight: 500; letter-spacing: .08em; }
 .proxy-asset-notice {
   display: inline-block; margin-top: 12px; padding: 6px 9px;
@@ -45,8 +49,8 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .draft-badge {
   display: inline-block; margin-top: 12px; padding: 6px 9px;
-  border: 1px solid rgba(212,244,92,.45); border-radius: 3px;
-  color: var(--lime); background: rgba(16,18,15,.62);
+  border: 1px solid rgba(213,0,28,.35); border-radius: 3px;
+  color: var(--accent); background: rgba(255,255,255,.72);
   font-size: 10px; letter-spacing: .08em; backdrop-filter: blur(8px);
 }
 .connection {
@@ -262,14 +266,14 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 
 .experience-toolbar {
   position: fixed; z-index: 20; left: 50%; bottom: 24px; transform: translateX(-50%);
-  display: flex; align-items: stretch; gap: 1px; padding: 5px;
-  border: 1px solid rgba(255,255,255,.15); border-radius: 4px;
-  background: rgba(18,18,18,.94); box-shadow: 0 18px 50px rgba(0,0,0,.34);
-  backdrop-filter: blur(18px);
+  display: flex; align-items: stretch; gap: 2px; padding: 6px;
+  border: 1px solid rgba(255,255,255,.13); border-radius: 18px;
+  background: rgba(43,43,43,.82); box-shadow: 0 18px 50px rgba(0,0,0,.3);
+  backdrop-filter: blur(22px);
 }
 .experience-toolbar > button, .toolbar-item > button {
   display: grid; min-width: 72px; min-height: 52px; place-items: center; gap: 2px;
-  border: 0; border-radius: 2px; padding: 7px 12px;
+  border: 0; border-radius: 12px; padding: 7px 12px;
   color: #d5d5d2; background: transparent; cursor: pointer; font-size: 10px;
   letter-spacing: .08em;
 }
@@ -284,8 +288,8 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .toolbar-item { position: relative; }
 .control-popover {
   position: absolute; z-index: 25; bottom: calc(100% + 12px); left: 0;
-  display: grid; min-width: 156px; padding: 6px;
-  border: 1px solid #d8d8d5; border-radius: 3px;
+  display: grid; grid-template-columns: 1fr 1fr; min-width: 226px; padding: 6px;
+  border: 1px solid #d8d8d5; border-radius: 12px;
   color: #1d1d1b; background: rgba(250,250,248,.98);
   box-shadow: 0 16px 40px rgba(0,0,0,.22);
 }
@@ -302,9 +306,10 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   width: 38px; height: 38px; border: 1px solid #d5d5d2; border-radius: 50%;
   color: #1a1a18; background: rgba(250,250,248,.94); cursor: pointer; font-size: 16px;
 }
-.quality-popover { top: 48px; right: 0; bottom: auto; left: auto; }
+.quality-popover { right: 0; left: auto; }
 .bridge-error {
-  position: fixed; z-index: 24; right: 20px; bottom: 96px; max-width: 340px;
+  position: fixed; z-index: 24; left: 50%; bottom: 96px; max-width: 340px;
+  transform: translateX(-50%);
   padding: 9px 12px; border-left: 3px solid var(--accent);
   color: #fff; background: rgba(28,28,27,.94); font-size: 11px;
 }
@@ -323,7 +328,7 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (min-width: 960px) {
-  .app-shell { display: grid; grid-template-columns: minmax(0, 1fr) 390px; }
+  .app-shell { display: grid; grid-template-columns: minmax(0, 1fr) 480px; }
   .config-panel {
     position: relative; z-index: 5; display: flex; flex-direction: column;
     min-height: 100vh; padding: 32px 31px 112px; box-shadow: -24px 0 55px rgba(0,0,0,.22);
@@ -376,21 +381,54 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .app-shell.embedded {
   display: block;
   min-height: 100vh;
-  padding: 0;
+  padding: 12px;
   color: var(--ink);
-  background: var(--panel);
+  background: #e7e7e5;
+}
+.controls-document {
+  min-width: 0;
+  min-height: 0;
+  background: transparent !important;
+}
+.controls-view {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: transparent;
+}
+.controls-view .experience-toolbar {
+  bottom: 8px;
 }
 .app-shell.embedded .config-panel {
   position: relative;
   inset: auto;
-  min-height: 100vh;
+  min-height: calc(100vh - 24px);
   max-height: none;
   overflow: visible;
   padding: 24px 20px 104px;
-  border-radius: 0;
-  box-shadow: none;
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 14px 42px rgba(0,0,0,.09);
 }
 .app-shell.embedded .config-panel::before { display: none; }
+.app-shell.embedded .save-bar,
+.app-shell.embedded .filter-group,
+.app-shell.embedded .options,
+.app-shell.embedded .paint-editor,
+.app-shell.embedded .summary {
+  border: 1px solid #e4e4e1;
+  border-radius: 14px;
+  background: #f5f5f3;
+}
+.app-shell.embedded .save-bar { padding: 14px; }
+.app-shell.embedded .filter-group { padding: 10px 12px; }
+.app-shell.embedded .options { margin-top: 14px; padding: 0 14px 14px; }
+.app-shell.embedded .material-group { background: #fff; }
+.app-shell.embedded .paint-editor { margin-top: 14px; background: #fff; }
+.app-shell.embedded .summary { padding: 14px; }
+.app-shell.embedded .summary .canonical { background: #ececea; }
 .app-shell.embedded .experience-toolbar {
   right: 12px; left: auto; bottom: 12px; max-width: calc(100% - 24px);
   transform: none;
@@ -408,7 +446,12 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 
 @media (max-width: 520px) {
-  .app-shell.embedded .config-panel { padding: 20px 14px; }
+  .app-shell.embedded { padding: 8px; }
+  .app-shell.embedded .config-panel {
+    min-height: calc(100vh - 16px);
+    padding: 20px 14px;
+    border-radius: 16px;
+  }
   .app-shell.embedded .panel-head { gap: 10px; }
   .app-shell.embedded .panel-head h2 { font-size: 21px; }
   .app-shell.embedded .step { max-width: 92px; text-align: center; }

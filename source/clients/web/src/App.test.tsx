@@ -152,19 +152,43 @@ describe('App v2', () => {
     expect(fetchMock.mock.calls.some(([url]) => url === '/health')).toBe(false)
   })
 
-  it('静态 Web 预览隐藏 UE 专属能力，只保留可用的镜头和全屏', async () => {
+  it('普通 Web 页面不挂载只供 UE 使用的体验控制层', async () => {
     mockApi()
     render(<App />)
 
     await screen.findByRole('heading', { name: 'SC01' })
-    const toolbar = screen.getByRole('navigation', { name: '体验控制' })
-    expect(within(toolbar).getByRole('button', { name: /镜头/ })).toBeInTheDocument()
-    expect(within(toolbar).getByRole('button', { name: /全屏/ })).toBeInTheDocument()
-    expect(within(toolbar).queryByRole('button', { name: /动画/ })).not.toBeInTheDocument()
-    expect(within(toolbar).queryByRole('button', { name: /灯光/ })).not.toBeInTheDocument()
-    expect(within(toolbar).queryByRole('button', { name: /渲染/ })).not.toBeInTheDocument()
-    expect(within(toolbar).queryByRole('button', { name: /复位/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '画质设置' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
+  })
+
+  it('controls 视图只渲染透明体验控制层且不请求目录', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=controls')
+    const fetchMock = mockApi()
+    window.ue = {
+      uebridge: {
+        getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
+          cameraIndex: 1,
+          animationEnabled: false,
+          lightPreset: 'studio',
+          renderMode: 'realtime',
+          quality: 'high',
+          fullscreen: false,
+        })),
+        setcamera: vi.fn().mockResolvedValue(true),
+        setanimationenabled: vi.fn().mockResolvedValue(true),
+        setlightpreset: vi.fn().mockResolvedValue(true),
+        setrendermode: vi.fn().mockResolvedValue(true),
+        setqualitylevel: vi.fn().mockResolvedValue(true),
+        resetpresentation: vi.fn().mockResolvedValue(true),
+        setfullscreen: vi.fn().mockResolvedValue(true),
+      },
+    }
+    render(<App />)
+
+    expect(screen.getByRole('navigation', { name: '体验控制' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '画质' })).toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: '车辆选配' })).not.toBeInTheDocument()
+    expect(document.body).toHaveClass('controls-document')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('embedded bridge 仅把 Web 选配 JSON 同步给 UE v2 状态', async () => {
@@ -283,26 +307,18 @@ describe('App v2', () => {
     })
   })
 
-  it('视角变化会刷新对应代理图，配置中非渲染变化不会触发无意义替换', async () => {
+  it('渲染相关配置变化会刷新代理图并保留上一张直到新图就绪', async () => {
     const user = userEvent.setup()
     const fetchMock = mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01' })
     await loadProxy()
 
-    await user.click(screen.getByRole('button', { name: /镜头/ }))
-    await user.click(screen.getByRole('menuitemradio', { name: '侧面' }))
+    await user.click(screen.getByRole('button', { name: /银色/ }))
     await waitFor(() => {
       expect(fetchMock.mock.calls.filter(([url]) => url === '/api/v2/renders/resolve')).toHaveLength(2)
+      expect(document.querySelector('.vehicle-image-preload')).not.toBeNull()
     })
-    const viewPreload = document.querySelector('.vehicle-image-preload')
-    expect(viewPreload).not.toBeNull()
-    fireEvent.load(viewPreload!)
-    expect(screen.getByAltText('SC01 代理车辆')).toHaveAttribute('src', '/assets/renders/v1-proxy.png')
-    expect(screen.getByText('v2 暂无渲染图，当前保留 v1 代理图')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: /银色/ }))
-    await waitFor(() => expect(document.querySelector('.vehicle-image-preload')).not.toBeNull())
     expect(screen.getByAltText('SC01 代理车辆')).toBeInTheDocument()
   })
 
