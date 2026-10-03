@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ApiError,
+  fetchCatalog,
   fetchConfiguration,
   fetchInitialData,
   resolveLegacyProxy,
@@ -36,6 +37,10 @@ const DEFAULT_VIEWS: Array<{ renderViewId: RenderViewId; zhName: string }> = [
   { renderViewId: 'side', zhName: '侧面' },
   { renderViewId: 'rear-right', zhName: '右后' },
 ]
+
+export function isEmbeddedView(search = window.location.search): boolean {
+  return new URLSearchParams(search).get('view') === 'embedded'
+}
 
 function optionPrice(option: CatalogV2['options'][number]): string {
   if (option.pricing.unitPriceMinor === 0) return '免费'
@@ -82,6 +87,7 @@ function readCachedDraft(): CachedDraft | null {
 }
 
 export default function App() {
+  const embedded = isEmbeddedView()
   const [catalog, setCatalog] = useState<CatalogV2 | null>(null)
   const [legacyCatalog, setLegacyCatalog] = useState<LegacyCatalog | null>(null)
   const [selections, setSelections] = useState<Selections | null>(null)
@@ -111,7 +117,13 @@ export default function App() {
     setLoading(true)
     setError('')
     setOfflineDraft(false)
-    fetchInitialData(controller.signal)
+    const initialData = embedded
+      ? fetchCatalog(controller.signal).then((nextCatalog) => ({
+          catalog: nextCatalog,
+          legacyCatalog: null,
+        }))
+      : fetchInitialData(controller.signal)
+    initialData
       .then(async ({ catalog: nextCatalog, legacyCatalog: nextLegacyCatalog }) => {
         if (controller.signal.aborted) return
         const configurationId = new URLSearchParams(window.location.search).get('configuration')
@@ -165,7 +177,7 @@ export default function App() {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [reloadKey])
+  }, [embedded, reloadKey])
 
   useEffect(() => {
     if (catalog && selections) {
@@ -173,9 +185,24 @@ export default function App() {
     }
   }, [catalog, customizations, selections])
 
-  if (loading) return <StatusScreen title="正在准备您的专属座驾" detail="正在加载 SC01 草案目录…" />
+  if (loading) {
+    return (
+      <StatusScreen
+        title="正在准备您的专属座驾"
+        detail="正在加载 SC01 草案目录…"
+        embedded={embedded}
+      />
+    )
+  }
   if (error || !catalog || !selections) {
-    return <StatusScreen title="暂时无法进入展厅" detail={error || '目录数据不可用'} action={reload} />
+    return (
+      <StatusScreen
+        title="暂时无法进入展厅"
+        detail={error || '目录数据不可用'}
+        action={reload}
+        embedded={embedded}
+      />
+    )
   }
 
   return (
@@ -190,6 +217,7 @@ export default function App() {
       setSavedConfiguration={setSavedConfiguration}
       online={online}
       offlineDraft={offlineDraft}
+      embedded={embedded}
     />
   )
 }
@@ -205,6 +233,7 @@ interface ConfiguratorProps {
   setSavedConfiguration: (value: ConfigurationV2 | null) => void
   online: boolean
   offlineDraft: boolean
+  embedded: boolean
 }
 
 function Configurator({
@@ -218,6 +247,7 @@ function Configurator({
   setSavedConfiguration,
   online,
   offlineDraft,
+  embedded,
 }: ConfiguratorProps) {
   const [categoryId, setCategoryId] = useState(catalog.categories[0]?.categoryId ?? '')
   const [componentId, setComponentId] = useState('all')
@@ -227,7 +257,7 @@ function Configurator({
   const [pendingRender, setPendingRender] = useState<LegacyRender | null>(null)
   const [renderKey, setRenderKey] = useState('')
   const renderRequestRef = useRef('')
-  const [renderLoading, setRenderLoading] = useState(true)
+  const [renderLoading, setRenderLoading] = useState(!embedded)
   const [renderMessage, setRenderMessage] = useState('')
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     savedConfiguration ? 'saved' : 'idle',
@@ -287,6 +317,13 @@ function Configurator({
   }, [catalog.selectionOrder, surfaceId, surfaces])
 
   useEffect(() => {
+    if (embedded) {
+      setRenderLoading(false)
+      setRender(null)
+      setPendingRender(null)
+      setRenderMessage('')
+      return
+    }
     const controller = new AbortController()
     setRenderLoading(true)
     resolveRender({
@@ -333,7 +370,14 @@ function Configurator({
       })
     return () => controller.abort()
   // activeView 会触发解析，但只有 renderKey 变化时才替换图片。
-  }, [activeView, catalog.catalogVersion, catalog.vehicle.vehicleId, legacyCatalog, renderSelectionKey])
+  }, [
+    activeView,
+    catalog.catalogVersion,
+    catalog.vehicle.vehicleId,
+    embedded,
+    legacyCatalog,
+    renderSelectionKey,
+  ])
 
   const selectOption = (optionId?: string) => {
     const nextSelections = { ...selections }
@@ -435,8 +479,8 @@ function Configurator({
   }
 
   return (
-    <main className="app-shell">
-      <section className="stage" aria-label="车辆展示区">
+    <main className={`app-shell ${embedded ? 'embedded' : ''}`}>
+      {!embedded && <section className="stage" aria-label="车辆展示区">
         <Showroom />
         <header className="brand">
           <span className="brand-mark">S</span>
@@ -495,7 +539,7 @@ function Configurator({
           <strong>{renderMessage || 'v2 渲染图已就绪'}</strong>
           <code title={renderKey}>renderKey · {renderKey || '解析中'}</code>
         </div>
-      </section>
+      </section>}
 
       <aside className="config-panel" aria-label="车辆选配">
         <div className="panel-head">
@@ -710,14 +754,16 @@ function StatusScreen({
   title,
   detail,
   action,
+  embedded = false,
 }: {
   title: string
   detail: string
   action?: () => void
+  embedded?: boolean
 }) {
   return (
-    <main className="status-screen">
-      <Showroom />
+    <main className={`status-screen ${embedded ? 'embedded' : ''}`}>
+      {!embedded && <Showroom />}
       <div className="status-card" role={action ? 'alert' : 'status'}>
         <span className={action ? 'status-icon error' : 'status-icon'} aria-hidden="true">
           {action ? '!' : ''}

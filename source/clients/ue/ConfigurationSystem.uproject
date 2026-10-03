@@ -21,6 +21,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "WebBrowserWidget",
+			"Enabled": true
+		},
+		{
 			"Name": "AndroidFileServer",
 			"Enabled": false
 		}

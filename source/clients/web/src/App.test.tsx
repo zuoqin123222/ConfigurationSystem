@@ -126,6 +126,29 @@ describe('App v2', () => {
     expect(screen.getByText('v2 暂无渲染图，当前保留 v1 代理图')).toBeInTheDocument()
   })
 
+  it('embedded 模式只展示完整选配区且不请求车辆预览、视角或图片解析', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    const fetchMock = mockApi()
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: '打造你的座驾' })).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: '车辆选配' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: '车辆展示区' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: '车辆视角' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '阶段筛选' }))
+      .toHaveTextContent('外饰内饰性能个性化')
+    expect(screen.getByRole('region', { name: '部件筛选' }))
+      .toHaveTextContent('车漆车架轮毂卡钳')
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/catalog')).toBe(true)
+    })
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/catalog')).toBe(false)
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/renders/resolve')).toBe(false)
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/renders/resolve')).toBe(false)
+    expect(fetchMock.mock.calls.some(([url]) => url === '/health')).toBe(false)
+  })
+
   it('阶段、部件、项目联动，并将材质作为同级分组展示', async () => {
     const user = userEvent.setup()
     mockApi()

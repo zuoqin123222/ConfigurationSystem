@@ -1,7 +1,6 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Sc01V2Domain.h"
-#include "ConfiguratorPanel.h"
 
 #include "Algo/Reverse.h"
 #include "Dom/JsonObject.h"
@@ -52,55 +51,6 @@ namespace Sc01V2Automation
 		}
 		return true;
 	}
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSc01V2DataButtonAutomationTest,
-	"ConfigurationSystem.Runtime.SC01V2.DataButtonBinding",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FSc01V2DataButtonAutomationTest::RunTest(const FString& Parameters)
-{
-	(void)Parameters;
-	UConfiguratorDataButton* Button =
-		NewObject<UConfiguratorDataButton>(GetTransientPackage());
-	FString Action;
-	FString PrimaryId;
-	FString SecondaryId;
-	Button->OnDataClicked.AddLambda(
-		[&Action, &PrimaryId, &SecondaryId](
-			const FString& InAction,
-			const FString& InPrimaryId,
-			const FString& InSecondaryId)
-		{
-			Action = InAction;
-			PrimaryId = InPrimaryId;
-			SecondaryId = InSecondaryId;
-		});
-	Button->InitializeBinding(
-		TEXT("option"),
-		TEXT("exterior-body-cover"),
-		TEXT("body-cover-custom"));
-	Button->OnClicked.Broadcast();
-	TestEqual(TEXT("通用按钮 action payload"), Action, FString(TEXT("option")));
-	TestEqual(
-		TEXT("通用按钮 primary payload"),
-		PrimaryId,
-		FString(TEXT("exterior-body-cover")));
-	TestEqual(
-		TEXT("通用按钮 secondary payload"),
-		SecondaryId,
-		FString(TEXT("body-cover-custom")));
-	Button->InitializeBinding(
-		TEXT("variant"),
-		TEXT("steering-skin-leather-user"),
-		TEXT("leather-p10-1217"));
-	Button->OnClicked.Broadcast();
-	TestEqual(TEXT("色卡按钮保留显式关联 option"), PrimaryId,
-		FString(TEXT("steering-skin-leather-user")));
-	TestEqual(TEXT("色卡按钮保留 variant"), SecondaryId,
-		FString(TEXT("leather-p10-1217")));
-	return true;
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(

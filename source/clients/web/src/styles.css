@@ -321,6 +321,48 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   .option-grid { gap: 7px; }
 }
 
+.app-shell.embedded {
+  display: block;
+  min-height: 100vh;
+  padding: 0;
+  color: var(--ink);
+  background: var(--panel);
+}
+.app-shell.embedded .config-panel {
+  position: relative;
+  inset: auto;
+  min-height: 100vh;
+  max-height: none;
+  overflow: visible;
+  padding: 24px 20px;
+  border-radius: 0;
+  box-shadow: none;
+}
+.app-shell.embedded .config-panel::before { display: none; }
+.status-screen.embedded {
+  min-height: 100vh;
+  color: var(--ink);
+  background: var(--panel);
+}
+.status-screen.embedded .status-card {
+  border-color: #d7d5cd;
+  color: var(--ink);
+  background: #fff;
+  backdrop-filter: none;
+}
+
+@media (max-width: 520px) {
+  .app-shell.embedded .config-panel { padding: 20px 14px; }
+  .app-shell.embedded .panel-head { gap: 10px; }
+  .app-shell.embedded .panel-head h2 { font-size: 21px; }
+  .app-shell.embedded .step { max-width: 92px; text-align: center; }
+  .app-shell.embedded .save-bar { grid-template-columns: 1fr 1fr; }
+  .app-shell.embedded .save-bar .sync-state { grid-column: 1 / -1; }
+  .app-shell.embedded .save-bar button { width: 100%; }
+  .app-shell.embedded .filter-group { grid-template-columns: 42px minmax(0, 1fr); }
+  .app-shell.embedded .option-grid { grid-template-columns: 1fr; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; }
 }

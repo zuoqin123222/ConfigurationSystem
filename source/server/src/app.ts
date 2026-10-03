@@ -1,8 +1,18 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { realpath, stat } from "node:fs/promises";
-import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
+import {
+  basename,
+  dirname,
+  extname,
+  isAbsolute,
+  relative,
+  resolve,
+} from "node:path";
 import { fileURLToPath } from "node:url";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+} from "fastify";
 import {
   findReadyRender,
   validateBakeManifest,
@@ -34,6 +44,7 @@ export interface BuildAppOptions {
   data?: ContractData;
   sc01V2?: Sc01V2Data;
   configurationStoreV2?: ConfigurationStoreV2;
+  webRoot?: string | false;
 }
 
 const STABLE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -106,6 +117,55 @@ function defaultBakeRoot(publicationVersion: string): string {
   return candidates[0]!;
 }
 
+function defaultWebRoot(): string {
+  const moduleDirectory = dirname(fileURLToPath(import.meta.url));
+  const serverRoot =
+    basename(dirname(moduleDirectory)) === "dist"
+      ? resolve(moduleDirectory, "../..")
+      : resolve(moduleDirectory, "..");
+  return resolve(serverRoot, "../../package/clients/web");
+}
+
+async function safeStaticPath(
+  staticRoot: string,
+  requestedPath: string,
+): Promise<string | undefined> {
+  try {
+    const root = await realpath(staticRoot);
+    const candidate = await realpath(resolve(root, requestedPath));
+    const pathFromRoot = relative(root, candidate);
+    if (
+      pathFromRoot === "" ||
+      pathFromRoot === ".." ||
+      pathFromRoot.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) ||
+      isAbsolute(pathFromRoot)
+    ) {
+      return undefined;
+    }
+    return (await stat(candidate)).isFile() ? candidate : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function staticContentType(filePath: string): string {
+  switch (extname(filePath).toLowerCase()) {
+    case ".html": return "text/html; charset=utf-8";
+    case ".js": return "text/javascript; charset=utf-8";
+    case ".css": return "text/css; charset=utf-8";
+    case ".json": return "application/json; charset=utf-8";
+    case ".svg": return "image/svg+xml";
+    case ".png": return "image/png";
+    case ".jpg":
+    case ".jpeg": return "image/jpeg";
+    case ".webp": return "image/webp";
+    case ".ico": return "image/x-icon";
+    case ".woff": return "font/woff";
+    case ".woff2": return "font/woff2";
+    default: return "application/octet-stream";
+  }
+}
+
 async function safeRenderPath(
   renderRoot: string,
   publicationVersion: string,
@@ -173,6 +233,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     throw new Error("bake manifest 与 catalog/publication 版本不一致");
   }
   const renderRoot = resolve(bake.assetRoot, "renders");
+  const webRoot = options.webRoot === false
+    ? undefined
+    : resolve(options.webRoot ?? defaultWebRoot());
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof RequestError) {
@@ -519,6 +582,59 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         .send(createReadStream(filePath));
     },
   );
+
+  if (webRoot && existsSync(resolve(webRoot, "index.html"))) {
+    const sendStaticFile = async (
+      filePath: string,
+      reply: FastifyReply,
+    ) => {
+      const extension = extname(filePath).toLowerCase();
+      const immutableBundle = (extension === ".js" || extension === ".css")
+        && /-[A-Za-z0-9_-]{8,}\.(?:js|css)$/.test(basename(filePath));
+      return reply
+        .header("X-Content-Type-Options", "nosniff")
+        .header(
+          "Cache-Control",
+          immutableBundle
+            ? "public, max-age=31536000, immutable"
+            : "no-cache",
+        )
+        .type(staticContentType(filePath))
+        .send(createReadStream(filePath));
+    };
+
+    app.get("/", async (_request, reply) => {
+      const indexPath = await safeStaticPath(webRoot, "index.html");
+      if (!indexPath) {
+        throw new RequestError(404, "WEB_NOT_FOUND", "Web 客户端不可用");
+      }
+      return sendStaticFile(indexPath, reply);
+    });
+
+    app.get<{ Params: { "*": string } }>("/*", async (request, reply) => {
+      const requestedPath = request.params["*"];
+      const firstSegment = requestedPath.split("/", 1)[0]?.toLowerCase();
+      if (firstSegment === "api" || firstSegment === "health") {
+        return reply.status(404).send({
+          code: "NOT_FOUND",
+          message: "接口不存在",
+        });
+      }
+
+      const filePath = await safeStaticPath(webRoot, requestedPath);
+      if (filePath) return sendStaticFile(filePath, reply);
+
+      // 仅无扩展名的前端路由回退到 SPA，静态文件缺失保持 404。
+      if (extname(requestedPath) === "") {
+        const indexPath = await safeStaticPath(webRoot, "index.html");
+        if (indexPath) return sendStaticFile(indexPath, reply);
+      }
+      return reply.status(404).send({
+        code: "WEB_NOT_FOUND",
+        message: "静态文件不存在",
+      });
+    });
+  }
 
   return app;
 }

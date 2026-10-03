@@ -20,6 +20,10 @@ public class ConfigurationSystem : ModuleRules
 				"UMG",
 				"Slate",
 				"SlateCore",
+				// 右侧选配面板由 UE5.8 WebBrowserWidget 内嵌承载。
+				"WebBrowserWidget",
+				// 内嵌浏览器加载前异步探测同源 /health。
+				"HTTP",
 				// Runtime Path Tracing 探针只依赖公开的 RHI/RenderCore 接口。
 				"RHI",
 				"RenderCore",

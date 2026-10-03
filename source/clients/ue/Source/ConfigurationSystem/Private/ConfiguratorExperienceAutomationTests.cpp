@@ -6,133 +6,57 @@
 #include "ReversiblePartActuatorComponent.h"
 #include "SmoothWheelControllerComponent.h"
 
-#include "Components/Image.h"
 #include "Components/SceneComponent.h"
 #include "Engine/GameInstance.h"
-#include "Engine/Texture2D.h"
 #include "HAL/FileManager.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
-#include "UObject/GarbageCollection.h"
-#include "UObject/StrongObjectPtr.h"
-#include "UObject/UnrealType.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FConfiguratorThumbnailCacheAutomationTest,
-	"ConfigurationSystem.Runtime.ConfiguratorPanel.ThumbnailCache",
+	FWebConfiguratorDirectionAutomationTest,
+	"ConfigurationSystem.Runtime.ConfiguratorPanel.WebDirection",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
 
-bool FConfiguratorThumbnailCacheAutomationTest::RunTest(const FString& Parameters)
+bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 {
 	(void)Parameters;
-	const FMapProperty* CacheProperty = FindFProperty<FMapProperty>(
-		UConfiguratorPanel::StaticClass(),
-		TEXT("VariantThumbnailCache"));
-	TestNotNull(TEXT("ConfiguratorPanel 使用 UPROPERTY 持有缩略图缓存"), CacheProperty);
-	if (CacheProperty != nullptr)
-	{
-		TestTrue(TEXT("缩略图缓存仅为瞬态生命周期"), CacheProperty->HasAnyPropertyFlags(CPF_Transient));
-		const FObjectPropertyBase* ValueProperty =
-			CastField<FObjectPropertyBase>(CacheProperty->ValueProp);
-		TestTrue(
-			TEXT("缩略图缓存值由反射系统作为 UTexture2D 强引用追踪"),
-			ValueProperty != nullptr
-				&& ValueProperty->PropertyClass == UTexture2D::StaticClass());
-	}
-
-	TStrongObjectPtr<UConfiguratorPanel> Panel(NewObject<UConfiguratorPanel>());
-	Panel->bAcceptThumbnailResults = true;
-	int32 DecodeCount = 0;
-	Panel->VariantThumbnailLoaderOverride =
-		[&DecodeCount](const FString& ThumbnailUrl) -> UTexture2D*
-		{
-			++DecodeCount;
-			return ThumbnailUrl.Contains(TEXT("missing-"))
-				? nullptr
-				: NewObject<UTexture2D>();
-		};
-	const FString ThumbnailUrl(TEXT("/sc01/thumbnails/alcantara-p2-1045.webp"));
-	TStrongObjectPtr<UImage> FirstImage(NewObject<UImage>());
-	Panel->RequestVariantThumbnail(ThumbnailUrl, FirstImage.Get());
-	TestEqual(TEXT("请求阶段不在游戏线程同步解码"), DecodeCount, 0);
-	TestEqual(TEXT("请求阶段只登记一个待加载 URL"), Panel->PendingVariantThumbnailUrls.Num(), 1);
-	Panel->PumpVariantThumbnailLoads();
-	TestEqual(TEXT("分批泵送后执行一次加载"), DecodeCount, 1);
-	TestEqual(TEXT("有效缩略图进入受 GC 追踪的缓存"), Panel->VariantThumbnailCache.Num(), 1);
-	UTexture2D* FirstTexture = Cast<UTexture2D>(
-		FirstImage->GetBrush().GetResourceObject());
-	TestNotNull(TEXT("完成加载后真实纹理绑定到色卡 Image"), FirstTexture);
-
-	TWeakObjectPtr<UTexture2D> TextureAfterGc(FirstTexture);
-	FirstTexture = nullptr;
-	CollectGarbage(RF_NoFlags);
-	TestTrue(TEXT("UPROPERTY 缓存在 GC 后仍持有纹理"), TextureAfterGc.IsValid());
-	TStrongObjectPtr<UImage> SecondImage(NewObject<UImage>());
-	Panel->RequestVariantThumbnail(ThumbnailUrl, SecondImage.Get());
+	const FString Url = UConfiguratorPanel::GetConfiguredWebUrl();
+	TestTrue(TEXT("网页选配 URL 使用 HTTP(S)"), Url.StartsWith(TEXT("http://"))
+		|| Url.StartsWith(TEXT("https://")));
+	TestTrue(TEXT("UE 入口包含 source=ue"), Url.Contains(TEXT("source=ue")));
+	TestTrue(TEXT("UE 入口启用 embedded 视图"), Url.Contains(TEXT("view=embedded")));
+	TestEqual(
+		TEXT("健康检查使用网页 URL 的同一 scheme 与 authority"),
+		UConfiguratorPanel::BuildHealthUrl(
+			TEXT("https://localhost:9443/configurator?source=ue#panel")),
+		FString(TEXT("https://localhost:9443/health")));
+	TestEqual(
+		TEXT("默认网页入口映射到同 Endpoint 的 /health"),
+		UConfiguratorPanel::BuildHealthUrl(Url),
+		FString(TEXT("http://127.0.0.1:8080/health")));
 	TestTrue(
-		TEXT("同一 thumbnailUrl 刷新时复用同一纹理"),
-		SecondImage->GetBrush().GetResourceObject() == TextureAfterGc.Get());
-	TestEqual(TEXT("重复加载不增加缓存项"), Panel->VariantThumbnailCache.Num(), 1);
-	TestEqual(TEXT("重复加载不再次解码"), DecodeCount, 1);
+		TEXT("非 HTTP(S) URL 不生成健康检查地址"),
+		UConfiguratorPanel::BuildHealthUrl(TEXT("file:///index.html")).IsEmpty());
 
-	const FInt32Range InitialRange =
-		UConfiguratorPanel::CalculateThumbnailRequestRange(0.0f, 440.0f, 160);
-	TestEqual(TEXT("首帧只预取横向视口附近条目"), InitialRange.GetLowerBoundValue(), 0);
-	TestTrue(
-		TEXT("首帧不会请求全部 160 张色卡"),
-		InitialRange.GetUpperBoundValue() <= 9);
-	const FInt32Range ScrolledRange =
-		UConfiguratorPanel::CalculateThumbnailRequestRange(
-			86.0f * 80.0f,
-			440.0f,
-			160);
-	TestTrue(TEXT("横向滚动后请求窗口随偏移移动"), ScrolledRange.GetLowerBoundValue() >= 77);
-	TestTrue(TEXT("滚动请求仍保持小批窗口"), ScrolledRange.GetUpperBoundValue() <= 89);
-
-	for (int32 Index = 0;
-		Index < UConfiguratorPanel::MaxVariantThumbnailCacheEntries + 8;
-		++Index)
+	const TArray<float> ExpectedBackoff = {1.0f, 2.0f, 4.0f, 8.0f};
+	for (int32 CompletedAttempt = 1;
+		CompletedAttempt < UConfiguratorPanel::MaxHealthProbeAttempts;
+		++CompletedAttempt)
 	{
-		Panel->StoreVariantThumbnail(
-			FString::Printf(TEXT("/sc01/thumbnails/cache-%d.webp"), Index),
-			NewObject<UTexture2D>());
+		TestEqual(
+			*FString::Printf(TEXT("第 %d 次失败后的退避"), CompletedAttempt),
+			UConfiguratorPanel::GetHealthRetryDelaySeconds(CompletedAttempt),
+			ExpectedBackoff[CompletedAttempt - 1]);
 	}
 	TestEqual(
-		TEXT("成功纹理 LRU 缓存限制最大条目数"),
-		Panel->VariantThumbnailCache.Num(),
-		UConfiguratorPanel::MaxVariantThumbnailCacheEntries);
+		TEXT("最多五次后停止重试"),
+		UConfiguratorPanel::GetHealthRetryDelaySeconds(
+			UConfiguratorPanel::MaxHealthProbeAttempts),
+		0.0f);
 	TestEqual(
-		TEXT("成功纹理 LRU 顺序表保持同样上限"),
-		Panel->VariantThumbnailCacheOrder.Num(),
-		UConfiguratorPanel::MaxVariantThumbnailCacheEntries);
-	TestFalse(
-		TEXT("最早且非可见的缓存纹理被淘汰"),
-		Panel->VariantThumbnailCache.Contains(TEXT("/sc01/thumbnails/cache-0.webp")));
-
-	for (int32 Index = 0;
-		Index < UConfiguratorPanel::MaxFailedThumbnailCacheEntries + 8;
-		++Index)
-	{
-		Panel->RememberFailedVariantThumbnail(FString::Printf(
-			TEXT("/sc01/thumbnails/missing-%d.webp"), Index));
-	}
-	TestEqual(
-		TEXT("失败 URL 缓存限制最大条目数"),
-		Panel->FailedVariantThumbnailUrls.Num(),
-		UConfiguratorPanel::MaxFailedThumbnailCacheEntries);
-	TestEqual(
-		TEXT("失败 URL 淘汰顺序与集合保持同样上限"),
-		Panel->FailedVariantThumbnailOrder.Num(),
-		UConfiguratorPanel::MaxFailedThumbnailCacheEntries);
-	TStrongObjectPtr<UImage> MissingImage(NewObject<UImage>());
-	const int32 DecodeCountBeforeCachedFailure = DecodeCount;
-	Panel->RequestVariantThumbnail(
-		FString::Printf(
-			TEXT("/sc01/thumbnails/missing-%d.webp"),
-			UConfiguratorPanel::MaxFailedThumbnailCacheEntries + 7),
-		MissingImage.Get());
-	Panel->PumpVariantThumbnailLoads();
-	TestEqual(TEXT("缓存的失败 URL 不重复解码"), DecodeCount, DecodeCountBeforeCachedFailure);
+		TEXT("无已完成请求时不安排退避"),
+		UConfiguratorPanel::GetHealthRetryDelaySeconds(0),
+		0.0f);
 	return true;
 }
 

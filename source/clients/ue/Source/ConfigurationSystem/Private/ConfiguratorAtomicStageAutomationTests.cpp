@@ -67,9 +67,8 @@ bool FConfiguratorAtomicStageAutomationTest::RunTest(const FString& Parameters)
 		AddError(Error);
 	}
 
-	TestEqual(TEXT("UMG 分区数量"), UConfiguratorPanel::PartCount, 4);
-	TestEqual(TEXT("UMG 选项按钮数量"), UConfiguratorPanel::OptionButtonCount, 8);
-	TestEqual(TEXT("UMG 模板按钮数量"), UConfiguratorPanel::TemplateButtonCount, 2);
+	const FString WebUrl = UConfiguratorPanel::GetConfiguredWebUrl();
+	TestTrue(TEXT("UE 选配改由内嵌 Web 完整承载"), WebUrl.Contains(TEXT("view=embedded")));
 
 	const AConfigShowroomGameMode* GameMode = GetDefault<AConfigShowroomGameMode>();
 	TestTrue(

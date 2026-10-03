@@ -21,6 +21,7 @@ const validKey =
   "paint-silver__wheel-forged__interior-ivory__frame-red";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const validBakeRoot = resolve(repositoryRoot, "contracts/fixtures/bake.valid");
+const webRoot = resolve(repositoryRoot, "package/clients/web");
 const validResolveRequest = {
   catalogVersion: "mvp-v1",
   publicationVersion: "mvp-v1",
@@ -65,6 +66,53 @@ test("GET /api/v1/catalog 返回根目录 catalog fixture", async (t) => {
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().vehicle.vehicleId, "demo-car");
   assert.equal(response.json().parts.length, 4);
+});
+
+test("安全托管 Web 构建产物并保持 API 路由优先", async (t) => {
+  const app = buildApp({ webRoot });
+  t.after(() => app.close());
+
+  const index = await app.inject({ method: "GET", url: "/" });
+  const bundlePath = index.body.match(/src="(\/assets\/[^"]+\.js)"/)?.[1];
+  assert.ok(bundlePath, "index.html 必须引用生产 JS bundle");
+  const bundle = await app.inject({ method: "GET", url: bundlePath });
+  const manifest = await app.inject({
+    method: "GET",
+    url: "/sc01/crop-manifest.json",
+  });
+  const catalog = await app.inject({ method: "GET", url: "/api/v2/catalog" });
+  const missingApi = await app.inject({ method: "GET", url: "/api/not-found" });
+
+  assert.equal(index.statusCode, 200);
+  assert.match(index.headers["content-type"] ?? "", /^text\/html/);
+  assert.equal(index.headers["x-content-type-options"], "nosniff");
+  assert.match(index.body, /<div id="root"><\/div>/);
+  assert.equal(bundle.statusCode, 200);
+  assert.match(bundle.headers["content-type"] ?? "", /^text\/javascript/);
+  assert.match(bundle.headers["cache-control"] ?? "", /immutable/);
+  assert.equal(manifest.statusCode, 200);
+  assert.match(manifest.headers["content-type"] ?? "", /^application\/json/);
+  assert.equal(manifest.headers["cache-control"], "no-cache");
+  assert.equal(catalog.statusCode, 200);
+  assert.equal(catalog.json().vehicle.vehicleId, "sc01");
+  assert.equal(missingApi.statusCode, 404);
+  assert.equal(missingApi.json().code, "NOT_FOUND");
+  assert.doesNotMatch(missingApi.body, /<div id="root">/);
+});
+
+test("Web 静态托管拒绝路径穿越且不把缺失资源回退为 HTML", async (t) => {
+  const app = buildApp({ webRoot });
+  t.after(() => app.close());
+
+  for (const url of [
+    "/%2e%2e/contracts/openapi.yaml",
+    "/assets/%2e%2e/%2e%2e/contracts/openapi.yaml",
+    "/missing.js",
+  ]) {
+    const response = await app.inject({ method: "GET", url });
+    assert.notEqual(response.statusCode, 200);
+    assert.doesNotMatch(response.body, /<div id="root">/);
+  }
 });
 
 test("resolve 校验完整请求并返回 canonical key、视角和图片 URL", async (t) => {
