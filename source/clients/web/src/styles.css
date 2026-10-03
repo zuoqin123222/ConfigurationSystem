@@ -23,6 +23,39 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   overflow: hidden;
   pointer-events: none;
 }
+.configurator-header.standalone-header {
+  flex: 0 0 88px;
+  height: 88px;
+  border-bottom: 1px solid #e7e6e1;
+}
+.configurator-header.standalone-header::after { display: none; }
+@media (max-width: 840px) {
+  .configurator-header.standalone-header {
+    position: sticky;
+    z-index: 20;
+    top: 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: 52px 48px;
+    gap: 0 10px;
+    height: 100px;
+    padding: 0 14px;
+  }
+  .standalone-header h1 { font-size: 17px; }
+  .standalone-header nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+  .standalone-header .header-stage { flex: 0 0 auto; gap: 6px; }
+  .standalone-header .header-stage-separator { display: none; }
+  .standalone-header .header-actions { grid-column: 2; grid-row: 1; gap: 6px; }
+  .standalone-header .header-sync,
+  .standalone-header .header-total small { display: none; }
+  .standalone-header .header-total { min-width: auto; }
+  .standalone-header .header-actions button { min-width: 48px; padding-inline: 9px; }
+}
 .ue-color-corrected {
   width: 100%;
   min-height: 100vh;
@@ -39,8 +72,22 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   left: 22px;
 }
 .app-shell { min-height: 100vh; background: #fff; }
+.app-shell.standalone {
+  display: flex;
+  height: 100vh;
+  min-height: 640px;
+  flex-direction: column;
+  overflow: hidden;
+}
+.configurator-workspace { min-width: 0; min-height: 0; }
+.app-shell.standalone .configurator-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  flex: 1 1 auto;
+}
 .stage {
-  min-height: calc(100vh - 24px);
+  min-width: 0;
+  min-height: 0;
   margin: 12px;
   position: relative;
   overflow: hidden;
@@ -127,6 +174,15 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   color: #b9bdb4; background: transparent; cursor: pointer; font-size: 12px;
 }
 .view-switcher button.active { color: #171914; background: var(--lime); font-weight: 700; }
+.render-message {
+  position: absolute;
+  z-index: 3;
+  left: 28px;
+  bottom: 24px;
+  margin: 0;
+  color: #6e716b;
+  font-size: 11px;
+}
 .image-meta {
   position: absolute; z-index: 3; left: 36px; bottom: 25px; width: min(520px, 55%);
   color: #858a80; font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
@@ -344,6 +400,26 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   overflow-y: auto;
   padding-right: 6px;
   scrollbar-gutter: stable;
+  scrollbar-color: #aaaca5 #efefeb;
+  scrollbar-width: thin;
+}
+.panel-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.panel-scroll::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #efefeb;
+}
+.panel-scroll::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border: 2px solid #efefeb;
+  border-radius: 999px;
+  background: #aaaca5;
+  background-clip: padding-box;
+}
+.panel-scroll::-webkit-scrollbar-thumb:hover {
+  background: #858880;
+  background-clip: padding-box;
 }
 .experience-toolbar {
   position: fixed; z-index: 20; left: 50%; bottom: 24px; transform: translateX(-50%);
@@ -409,18 +485,27 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (min-width: 960px) {
-  .app-shell { display: grid; grid-template-columns: minmax(0, 1fr) 480px; }
+  .app-shell:not(.standalone):not(.embedded) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 420px;
+  }
   .config-panel {
     position: relative; z-index: 5; display: flex; flex-direction: column;
-    height: 100vh; min-height: 0; overflow: hidden;
-    padding: 32px 31px 0; box-shadow: -24px 0 55px rgba(0,0,0,.14);
+    height: 100%; min-height: 0; overflow: hidden;
+    padding: 20px 22px 0; box-shadow: -18px 0 44px rgba(0,0,0,.1);
   }
+  .app-shell.standalone .option-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 959px) {
   body { background: var(--panel); }
-  .app-shell { min-height: 100svh; padding-bottom: 55vh; }
-  .stage { position: fixed; inset: 0; min-height: 0; height: 52vh; }
+  .app-shell.standalone {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+  .app-shell.standalone .configurator-workspace { display: block; }
+  .app-shell.standalone .stage { position: relative; height: 48vh; min-height: 360px; }
   .brand { top: 20px; left: 20px; font-size: 12px; }
   .brand-mark { width: 29px; height: 29px; }
   .vehicle-title { top: 13%; left: 22px; }
@@ -430,18 +515,21 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   .view-switcher { bottom: 43px; }
   .view-switcher button { min-width: 48px; padding: 8px 10px; }
   .image-meta { display: none; }
-  .config-panel {
-    position: fixed; z-index: 6; right: 0; bottom: 0; left: 0;
-    max-height: 55vh; overflow-y: auto; padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
-    border-radius: 20px 20px 0 0; box-shadow: 0 -18px 44px rgba(0,0,0,.3);
+  .app-shell.standalone .config-panel {
+    position: relative; z-index: 6;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -18px 44px rgba(0,0,0,.16);
   }
-  .config-panel::before {
+  .app-shell.standalone .config-panel::before {
     content: ""; display: block; width: 38px; height: 4px; margin: -10px auto 12px;
     border-radius: 99px; background: #cbc9c1;
   }
   .panel-head h2 { font-size: 23px; }
   .templates { display: none; }
-  .connection { top: 18px; right: 16px; }
   .filter-group { grid-template-columns: 48px 1fr; }
   .part-tabs { position: sticky; z-index: 4; top: -22px; margin-top: 17px; background: var(--panel); }
   .section-title { margin-top: 18px; }
@@ -639,6 +727,10 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .controls-view .experience-toolbar {
   bottom: 8px;
+  scrollbar-width: none;
+}
+.controls-view .experience-toolbar::-webkit-scrollbar {
+  display: none;
 }
 .app-shell.embedded .config-panel {
   position: relative;

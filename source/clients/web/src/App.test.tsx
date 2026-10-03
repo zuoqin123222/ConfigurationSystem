@@ -100,17 +100,29 @@ describe('App v2', () => {
     window.history.replaceState(null, '', '/')
   })
 
-  it('加载四阶段目录并展示 v1 代理图提示', async () => {
+  it('默认独立页使用现代顶栏、紧凑侧栏和烘焙车辆视角', async () => {
     mockApi()
     render(<App />)
 
     expect(screen.getByText('正在加载 SC01 草案目录…')).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'SC01' })).toBeInTheDocument()
-    expect(screen.getByText('DRAFT · 不可报价')).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: '阶段筛选' }))
-      .toHaveTextContent('外饰内饰性能个性化')
+    expect(await screen.findByRole('heading', { name: '打造你的座驾' })).toBeInTheDocument()
+    const stages = screen.getByRole('navigation', { name: '选配阶段' })
+    expect(within(stages).getAllByRole('button')).toHaveLength(4)
+    expect(within(stages).getByRole('button', { name: '外饰' })).toHaveAttribute('aria-current', 'step')
+    expect(within(stages).getByRole('button', { name: '其他个性化' })).toBeInTheDocument()
+    expect(screen.getByText('参考总价')).toBeInTheDocument()
+    expect(screen.getByText('¥229,800')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '保存' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '分享' })).toBeInTheDocument()
+    expect(screen.getByText('未同步更改')).toBeInTheDocument()
+    expect(screen.queryByText('DRAFT · 不可报价')).not.toBeInTheDocument()
+    expect(document.querySelector('.brand')).toBeNull()
+    expect(document.querySelector('.vehicle-title')).toBeNull()
+    expect(screen.queryByRole('region', { name: '阶段筛选' })).not.toBeInTheDocument()
     expect(screen.getByRole('region', { name: '部件筛选' }))
       .toHaveTextContent('车漆车架轮毂卡钳')
+    expect(within(screen.getByRole('group', { name: '车辆视角' }))
+      .getAllByRole('button')).toHaveLength(4)
     expect(catalogFixture.selectionOrder).toHaveLength(38)
     expect(catalogFixture.surfaces.filter((surface) => !surface.required)).toHaveLength(9)
     expect(Object.keys(initialSelections)).toEqual(
@@ -122,8 +134,28 @@ describe('App v2', () => {
     )
 
     await loadProxy()
-    expect(screen.getByAltText('SC01 代理车辆')).toHaveAttribute('src', '/assets/renders/v1-proxy.png')
-    expect(screen.getByText('v2 暂无渲染图，当前保留 v1 代理图')).toBeInTheDocument()
+    expect(screen.getByAltText('SC01 车辆预览')).toHaveAttribute('src', '/assets/renders/v1-proxy.png')
+    expect(screen.getByText('当前展示烘焙车辆预览')).toBeInTheDocument()
+  })
+
+  it('默认独立页顶栏直接保存、分享并反馈同步状态', async () => {
+    const user = userEvent.setup()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    const fetchMock = mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: '打造你的座驾' })
+
+    await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
+    await user.click(screen.getByRole('button', { name: '保存' }))
+    expect(await screen.findByText('已同步 · revision 1')).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(true)
+
+    await user.click(screen.getByRole('button', { name: '分享' }))
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('configuration=cfg-body-cover-silver'))
+    })
+    expect(screen.getByText('分享链接已复制')).toBeInTheDocument()
   })
 
   it('embedded 模式只展示完整选配区且不请求车辆预览、视角或图片解析', async () => {
@@ -155,7 +187,7 @@ describe('App v2', () => {
     mockApi()
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'SC01' })
+    await screen.findByRole('heading', { name: '打造你的座驾' })
     expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
   })
 
@@ -294,7 +326,7 @@ describe('App v2', () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: 'SC01' })
+    await screen.findByRole('heading', { name: '打造你的座驾' })
     await loadProxy()
 
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
@@ -308,7 +340,7 @@ describe('App v2', () => {
     expect(screen.getByRole('button', { name: /镁合金.*价格待确认/ }))
       .toHaveAttribute('aria-pressed', 'true')
 
-    await user.click(within(screen.getByRole('region', { name: '阶段筛选' }))
+    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
@@ -323,9 +355,9 @@ describe('App v2', () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: 'SC01' })
+    await screen.findByRole('heading', { name: '打造你的座驾' })
 
-    await user.click(within(screen.getByRole('region', { name: '阶段筛选' }))
+    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '座椅' }))
@@ -339,9 +371,9 @@ describe('App v2', () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: 'SC01' })
+    await screen.findByRole('heading', { name: '打造你的座驾' })
 
-    await user.click(within(screen.getByRole('region', { name: '阶段筛选' }))
+    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
@@ -386,7 +418,7 @@ describe('App v2', () => {
     const user = userEvent.setup()
     const fetchMock = mockApi()
     render(<App />)
-    await screen.findByRole('heading', { name: 'SC01' })
+    await screen.findByRole('heading', { name: '打造你的座驾' })
     await loadProxy()
 
     await user.click(screen.getByRole('button', { name: /银色/ }))
@@ -394,7 +426,7 @@ describe('App v2', () => {
       expect(fetchMock.mock.calls.filter(([url]) => url === '/api/v2/renders/resolve')).toHaveLength(2)
       expect(document.querySelector('.vehicle-image-preload')).not.toBeNull()
     })
-    expect(screen.getByAltText('SC01 代理车辆')).toBeInTheDocument()
+    expect(screen.getByAltText('SC01 车辆预览')).toBeInTheDocument()
   })
 
   it('保存配置并生成可分享链接', async () => {

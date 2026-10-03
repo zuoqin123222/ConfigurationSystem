@@ -39,7 +39,13 @@ public class ConfigurationSystem : ModuleRules
 
 		// UE5.8 的 PreparePathTracingRTPSO 未导出；Shipping 目标为单体链接，
 		// 显式依赖 Renderer 后可从产品模块安全触发该预热入口。
-		PrivateDependencyModuleNames.Add("Renderer");
+		PrivateDependencyModuleNames.AddRange(
+			new[]
+			{
+				"Renderer",
+				"ApplicationCore"
+			}
+		);
 
 		// catalog.thumbnailUrl 指向 Web 公共色卡；把同一份经校验的 WebP 以 NonUFS
 		// 资源随桌面端分发，运行时可按 URL 路径直接加载，避免 Editor-only 资产导入。

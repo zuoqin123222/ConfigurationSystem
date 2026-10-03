@@ -8,13 +8,54 @@
 #include "ConfiguratorPanel.h"
 #include "ConfiguratorVehicleActor.h"
 #include "Blueprint/UserWidget.h"
+#include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
+#include "Engine/GameViewportClient.h"
 #include "EngineUtils.h"
+#include "GameFramework/GameUserSettings.h"
+#include "GenericPlatform/GenericApplicationMessageHandler.h"
 #include "InputCoreTypes.h"
 #include "PathTracingExperienceSubsystem.h"
 #include "Sc01V2ConfigurationState.h"
 #include "ShowroomEnvironmentActor.h"
 #include "TimerManager.h"
+#include "Widgets/SWindow.h"
+
+namespace
+{
+	constexpr int32 RequiredWindowWidth = 1600;
+	constexpr int32 RequiredWindowHeight = 900;
+
+	void ApplyMainWindowPolicy()
+	{
+		if (GEngine == nullptr || GEngine->GameViewport == nullptr)
+		{
+			return;
+		}
+
+		if (const TSharedPtr<SWindow> MainWindow = GEngine->GameViewport->GetWindow();
+			MainWindow.IsValid())
+		{
+			const FVector2D NonClientSize = MainWindow->GetSizeInScreen()
+				- MainWindow->GetClientSizeInScreen();
+			FWindowSizeLimits SizeLimits = MainWindow->GetSizeLimits();
+			SizeLimits
+				.SetMinWidth(RequiredWindowWidth + FMath::Max(NonClientSize.X, 0.0))
+				.SetMinHeight(RequiredWindowHeight + FMath::Max(NonClientSize.Y, 0.0));
+			MainWindow->SetSizeLimits(SizeLimits);
+		}
+
+		if (UGameUserSettings* UserSettings = GEngine->GetGameUserSettings())
+		{
+			UserSettings->SetFullscreenMode(EWindowMode::Windowed);
+			UserSettings->SetScreenResolution(
+				FIntPoint(RequiredWindowWidth, RequiredWindowHeight));
+			UserSettings->ApplyResolutionSettings(false);
+			UserSettings->ConfirmVideoMode();
+			UserSettings->SaveSettings();
+		}
+	}
+}
 
 AConfigShowroomPlayerController::AConfigShowroomPlayerController()
 {
@@ -119,8 +160,9 @@ bool AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(
 	const int32 FromCameraIndex,
 	const int32 ToCameraIndex)
 {
-	return IsInteriorCameraPreset(FromCameraIndex)
-		|| IsInteriorCameraPreset(ToCameraIndex);
+	return FromCameraIndex != ToCameraIndex
+		&& (IsInteriorCameraPreset(FromCameraIndex)
+			|| IsInteriorCameraPreset(ToCameraIndex));
 }
 
 bool AConfigShowroomPlayerController::ShouldCancelPendingCameraTransition(
@@ -235,6 +277,10 @@ void AConfigShowroomPlayerController::BeginPlay()
 	if (!IsLocalController())
 	{
 		return;
+	}
+	if (GetWorld() != nullptr && GetWorld()->WorldType == EWorldType::Game)
+	{
+		ApplyMainWindowPolicy();
 	}
 
 	ShowroomCameras.SetNum(6);
@@ -395,14 +441,34 @@ bool AConfigShowroomPlayerController::SwitchCamera(const int32 CameraIndex)
 			PlayerCameraManager->StartCameraFade(
 				1.0f, 0.0f, 0.22f, FLinearColor::Black, false, false);
 		}
-		return true;
+return true;
 	}
 	if (CameraIndex == CurrentCameraIndex
 		&& PendingCameraIndex == INDEX_NONE
 		&& IsValid(RuntimeCamera)
 		&& GetViewTarget() == RuntimeCamera)
 	{
-		return true;
+		FMinimalViewInfo PresetPOV;
+		if (!GetCameraPresetPOV(CameraIndex, PresetPOV))
+		{
+			return false;
+		}
+		const FMinimalViewInfo CurrentPOV = RuntimeCamera->GetCameraPOV();
+		const bool bAlreadyAtPreset =
+			!bInteractiveSmoothingActive
+			&& CurrentPOV.Location.Equals(PresetPOV.Location, 0.05)
+			&& CurrentPOV.Rotation.Equals(PresetPOV.Rotation, 0.02)
+			&& FMath::IsNearlyEqual(CurrentPOV.FOV, PresetPOV.FOV, 0.01f);
+		if (bAlreadyAtPreset)
+		{
+			return true;
+		}
+		if (IsInteriorCameraPreset(CameraIndex))
+		{
+			RuntimeCamera->ApplyCameraPOV(PresetPOV);
+			ResetInteractiveOrbit(PresetPOV, false);
+			return true;
+		}
 	}
 
 	const bool bReplacingPendingBlackTransition =

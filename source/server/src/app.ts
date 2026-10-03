@@ -15,6 +15,7 @@ import Fastify, {
 } from "fastify";
 import {
   findReadyRender,
+  resolveActivePublicationVersion,
   validateBakeManifest,
   type ValidatedBakeManifest,
 } from "./bake.js";
@@ -206,23 +207,48 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     bodyLimit: 16 * 1024,
     logger: false,
   });
-  const data = options.data ?? loadContracts(options.contractRoot);
+  const legacyData = options.data ?? loadContracts(options.contractRoot);
   const sc01V2 = options.sc01V2 ?? loadSc01V2(options.contractRoot);
   const configurationStoreV2 =
     options.configurationStoreV2 ?? new ConfigurationStoreV2();
   const bakeRoot = resolve(
-    options.bakeRoot ?? defaultBakeRoot(data.publication.publicationVersion),
+    options.bakeRoot ??
+      defaultBakeRoot(legacyData.publication.publicationVersion),
+  );
+  const usesInjectedPublication =
+    options.data !== undefined ||
+    options.bake !== undefined ||
+    options.manifestPath !== undefined;
+  const publicationVersion = usesInjectedPublication
+    ? legacyData.publication.publicationVersion
+    : resolveActivePublicationVersion(
+        bakeRoot,
+        legacyData.publication.publicationVersion,
+      );
+  const data: ContractData = {
+    ...legacyData,
+    publication: {
+      ...legacyData.publication,
+      publicationVersion,
+    },
+  };
+  if (
+    data.publication.catalogVersion !== data.catalog.catalogVersion ||
+    data.publication.vehicleId !== data.catalog.vehicle.vehicleId
+  ) {
+    throw new Error("publication 与 catalog 版本或车型不一致");
+  }
+  const versionedManifestPath = resolve(
+    bakeRoot,
+    "renders",
+    data.publication.publicationVersion,
+    "bake-manifest.json",
   );
   const manifestPath = resolve(
     options.manifestPath ??
-      (existsSync(resolve(bakeRoot, "bake-manifest.json"))
-        ? resolve(bakeRoot, "bake-manifest.json")
-        : resolve(
-            bakeRoot,
-            "renders",
-            data.publication.publicationVersion,
-            "bake-manifest.json",
-          )),
+      (existsSync(versionedManifestPath)
+        ? versionedManifestPath
+        : resolve(bakeRoot, "bake-manifest.json")),
   );
   const bake = options.bake ?? validateBakeManifest(manifestPath, bakeRoot);
   if (

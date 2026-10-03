@@ -353,6 +353,8 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(4, 0));
 	TestTrue(TEXT("驾驶位到副驾位也使用黑屏"),
 		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(4, 5));
+	TestFalse(TEXT("重复选择同一车内机位不触发黑屏"),
+		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(4, 4));
 	TestTrue(TEXT("副驾位属于车内预设"),
 		AConfigShowroomPlayerController::IsInteriorCameraPreset(5));
 	TestTrue(TEXT("车外允许平移"),

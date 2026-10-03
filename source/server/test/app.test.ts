@@ -1,10 +1,22 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import {
+  cp,
+  mkdtemp,
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { buildApp } from "../src/app.js";
-import { validateBakeManifest } from "../src/bake.js";
+import { buildApp, type BuildAppOptions } from "../src/app.js";
+import {
+  publishBakeAtomically,
+  validateBakeManifest,
+} from "../src/bake.js";
 import {
   loadContracts,
   type ContractData,
@@ -29,6 +41,20 @@ const validResolveRequest = {
   selections: validSelections,
   renderViewId: "front",
 };
+const fixtureData = loadContracts();
+const fixtureBake = validateBakeManifest(
+  resolve(validBakeRoot, "bake-manifest.json"),
+  validBakeRoot,
+);
+
+function buildFixtureApp(options: BuildAppOptions = {}) {
+  return buildApp({
+    data: fixtureData,
+    bake: fixtureBake,
+    bakeRoot: validBakeRoot,
+    ...options,
+  });
+}
 
 function copyData(
   transform?: (configuration: PublishedConfiguration) => PublishedConfiguration,
@@ -43,8 +69,30 @@ function copyData(
   return { ...source, configurations };
 }
 
+async function createVersionedBakeSource(
+  publicationVersion: string,
+): Promise<string> {
+  const sourceRoot = await mkdtemp(join(tmpdir(), "active-publication-source-"));
+  await cp(validBakeRoot, sourceRoot, { recursive: true });
+  await rename(
+    resolve(sourceRoot, "renders/mvp-v1"),
+    resolve(sourceRoot, `renders/${publicationVersion}`),
+  );
+  const manifestPath = resolve(sourceRoot, "bake-manifest.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  manifest.publicationVersion = publicationVersion;
+  for (const render of manifest.renders) {
+    render.path = render.path.replace(
+      "renders/mvp-v1/",
+      `renders/${publicationVersion}/`,
+    );
+  }
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  return sourceRoot;
+}
+
 test("GET /health 返回 fixture 版本", async (t) => {
-  const app = buildApp();
+  const app = buildFixtureApp();
   t.after(() => app.close());
 
   const response = await app.inject({ method: "GET", url: "/health" });
@@ -57,8 +105,41 @@ test("GET /health 返回 fixture 版本", async (t) => {
   });
 });
 
+test("发布激活后重启会从指针读取活动 publicationVersion", async (t) => {
+  const publicationVersion = "mvp-v2";
+  const sourceRoot = await createVersionedBakeSource(publicationVersion);
+  const packageRoot = await mkdtemp(join(tmpdir(), "active-publication-package-"));
+  t.after(() => rm(sourceRoot, { recursive: true, force: true }));
+  t.after(() => rm(packageRoot, { recursive: true, force: true }));
+
+  await publishBakeAtomically(sourceRoot, packageRoot);
+
+  for (let restart = 0; restart < 2; restart += 1) {
+    const app = buildApp({ bakeRoot: packageRoot, webRoot: false });
+    const response = await app.inject({ method: "GET", url: "/health" });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().publicationVersion, publicationVersion);
+    await app.close();
+  }
+});
+
+test("活动发布指针损坏时启动安全失败", async (t) => {
+  const packageRoot = await mkdtemp(join(tmpdir(), "broken-publication-pointer-"));
+  t.after(() => rm(packageRoot, { recursive: true, force: true }));
+  await mkdir(resolve(packageRoot, "renders"), { recursive: true });
+  await writeFile(
+    resolve(packageRoot, "renders/active-publication.json"),
+    "{not-json",
+  );
+
+  assert.throws(
+    () => buildApp({ bakeRoot: packageRoot, webRoot: false }),
+    /活动发布指针损坏/,
+  );
+});
+
 test("GET /api/v1/catalog 返回根目录 catalog fixture", async (t) => {
-  const app = buildApp();
+  const app = buildFixtureApp();
   t.after(() => app.close());
 
   const response = await app.inject({ method: "GET", url: "/api/v1/catalog" });
@@ -69,7 +150,7 @@ test("GET /api/v1/catalog 返回根目录 catalog fixture", async (t) => {
 });
 
 test("安全托管 Web 构建产物并保持 API 路由优先", async (t) => {
-  const app = buildApp({ webRoot });
+  const app = buildFixtureApp({ webRoot });
   t.after(() => app.close());
 
   const index = await app.inject({ method: "GET", url: "/" });
@@ -101,7 +182,7 @@ test("安全托管 Web 构建产物并保持 API 路由优先", async (t) => {
 });
 
 test("Web 静态托管拒绝路径穿越且不把缺失资源回退为 HTML", async (t) => {
-  const app = buildApp({ webRoot });
+  const app = buildFixtureApp({ webRoot });
   t.after(() => app.close());
 
   for (const url of [
@@ -116,7 +197,7 @@ test("Web 静态托管拒绝路径穿越且不把缺失资源回退为 HTML", as
 });
 
 test("resolve 校验完整请求并返回 canonical key、视角和图片 URL", async (t) => {
-  const app = buildApp();
+  const app = buildFixtureApp();
   t.after(() => app.close());
 
   const response = await app.inject({
@@ -145,7 +226,7 @@ test("resolve 校验完整请求并返回 canonical key、视角和图片 URL", 
 });
 
 test("resolve 拒绝缺少分区、额外分区及跨分区选项", async (t) => {
-  const app = buildApp();
+  const app = buildFixtureApp();
   t.after(() => app.close());
 
   const invalidSelections = [
@@ -169,7 +250,7 @@ test("resolve 拒绝缺少分区、额外分区及跨分区选项", async (t) =>
 });
 
 test("resolve 拒绝未知顶层字段和非法 JSON", async (t) => {
-  const app = buildApp();
+  const app = buildFixtureApp();
   t.after(() => app.close());
 
   const extra = await app.inject({
@@ -189,7 +270,7 @@ test("resolve 拒绝未知顶层字段和非法 JSON", async (t) => {
 });
 
 test("resolve 对 catalog 或 publication 版本不一致返回 409", async (t) => {
-  const app = buildApp();
+  const app = buildFixtureApp();
   t.after(() => app.close());
 
   for (const changed of [
@@ -207,7 +288,7 @@ test("resolve 对 catalog 或 publication 版本不一致返回 409", async (t) 
 });
 
 test("resolve 拒绝未知车型、非法视角和缺失字段", async (t) => {
-  const app = buildApp();
+  const app = buildFixtureApp();
   t.after(() => app.close());
 
   const unknownVehicle = await app.inject({
@@ -233,7 +314,7 @@ test("resolve 拒绝未知车型、非法视角和缺失字段", async (t) => {
 });
 
 test("resolve 按 StableId 契约拒绝非法版本和车型 ID", async (t) => {
-  const app = buildApp();
+  const app = buildFixtureApp();
   t.after(() => app.close());
 
   for (const changed of [
@@ -298,7 +379,7 @@ test("render 只返回 manifest 已校验的 PNG", async (t) => {
     "front.png",
   );
   const png = await readFile(pngPath);
-  const app = buildApp({ bakeRoot: validBakeRoot });
+  const app = buildFixtureApp();
   t.after(() => app.close());
   const found = await app.inject({
     method: "GET",
@@ -311,7 +392,7 @@ test("render 只返回 manifest 已校验的 PNG", async (t) => {
 });
 
 test("render 拒绝未知配置、未知视角和路径穿越", async (t) => {
-  const app = buildApp({ bakeRoot: validBakeRoot });
+  const app = buildFixtureApp();
   t.after(() => app.close());
 
   const urls = [

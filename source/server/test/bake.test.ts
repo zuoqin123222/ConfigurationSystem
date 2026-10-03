@@ -117,6 +117,15 @@ test("原子发布成功后拒绝覆盖同一 publicationVersion", async (t) => 
 
   const published = await publishBakeAtomically(validRoot, destinationRoot);
   assert.equal(published, resolve(destinationRoot, "renders/mvp-v1"));
+  assert.deepEqual(
+    JSON.parse(
+      await readFile(
+        resolve(destinationRoot, "renders/active-publication.json"),
+        "utf8",
+      ),
+    ),
+    { publicationVersion: "mvp-v1" },
+  );
 
   await assert.rejects(
     publishBakeAtomically(validRoot, destinationRoot),

@@ -199,7 +199,30 @@ function ConfiguratorHeader() {
   }
 
   return (
-    <header className="configurator-header">
+    <ConfiguratorTopBar
+      categoryId={categoryId}
+      headerState={headerState}
+      onSelectCategory={selectCategory}
+      onAction={triggerAction}
+    />
+  )
+}
+
+function ConfiguratorTopBar({
+  categoryId,
+  headerState,
+  onSelectCategory,
+  onAction,
+  standalone = false,
+}: {
+  categoryId: string
+  headerState: UeConfiguratorHeaderState
+  onSelectCategory: (categoryId: UeConfiguratorCategory) => void
+  onAction: (action: 'save' | 'share') => void
+  standalone?: boolean
+}) {
+  return (
+    <header className={`configurator-header ${standalone ? 'standalone-header' : ''}`}>
       <h1>打造你的座驾</h1>
       <nav aria-label="选配阶段">
         {CONFIGURATOR_CATEGORIES.map((category, index) => (
@@ -207,8 +230,9 @@ function ConfiguratorHeader() {
             {index > 0 && <span className="header-stage-separator" aria-hidden="true">&gt;&gt;</span>}
             <button
               className={categoryId === category.id ? 'active' : ''}
+              aria-label={category.label}
               aria-current={categoryId === category.id ? 'step' : undefined}
-              onClick={() => selectCategory(category.id)}
+              onClick={() => onSelectCategory(category.id)}
             >
               <span>{String(index + 1).padStart(2, '0')}</span>
               {category.label}
@@ -226,14 +250,14 @@ function ConfiguratorHeader() {
         </span>
         <button
           className="header-save"
-          onClick={() => triggerAction('save')}
+          onClick={() => onAction('save')}
           disabled={!headerState.online || headerState.syncState === 'saving' || !headerState.dirty}
         >
           {headerState.syncState === 'saving' ? '保存中…' : '保存'}
         </button>
         <button
           className="header-share"
-          onClick={() => triggerAction('share')}
+          onClick={() => onAction('share')}
           disabled={!headerState.online || headerState.syncState === 'saving'}
         >
           分享
@@ -411,7 +435,6 @@ function Configurator({
   const [activeView, setActiveView] = useState<RenderViewId>('front-left')
   const [render, setRender] = useState<LegacyRender | null>(null)
   const [pendingRender, setPendingRender] = useState<LegacyRender | null>(null)
-  const [renderKey, setRenderKey] = useState('')
   const renderRequestRef = useRef('')
   const [renderLoading, setRenderLoading] = useState(!embedded)
   const [renderMessage, setRenderMessage] = useState('')
@@ -510,7 +533,6 @@ function Configurator({
     }, controller.signal)
       .then(async (result) => {
         if (controller.signal.aborted) return
-        setRenderKey(result.renderKey)
         const requestKey = `${result.renderKey}::${activeView}`
         if (requestKey === renderRequestRef.current) {
           setRenderLoading(false)
@@ -533,14 +555,14 @@ function Configurator({
         if (proxy) setPendingRender(proxy)
         setRenderMessage(
           proxy || render
-            ? 'v2 暂无渲染图，当前保留 v1 代理图'
-            : 'v2 暂无渲染图，且 v1 代理图不可用',
+            ? '当前展示烘焙车辆预览'
+            : '车辆预览暂时不可用',
         )
         if (!proxy) setRenderLoading(false)
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return
-        setRenderMessage(reason instanceof ApiError ? reason.message : '渲染状态同步失败，已保留当前图片')
+        setRenderMessage(reason instanceof ApiError ? reason.message : '车辆预览暂时无法更新，已保留当前图片')
         setRenderLoading(false)
       })
     return () => controller.abort()
@@ -682,76 +704,98 @@ function Configurator({
   })
 
   return (
-    <main className={`app-shell ${embedded ? 'embedded' : ''}`}>
-      {!embedded && <section className="stage" aria-label="车辆展示区">
-        <Showroom />
-        <header className="brand">
-          <span className="brand-mark">S</span>
-          <span>SC01</span>
-        </header>
-        <div className="connection" role="status">
-          <span className={online ? 'online-dot' : 'offline-dot'} />
-          {online ? (offlineDraft ? '已联网 · 本地草稿' : '在线') : '离线 · 本地草稿'}
-        </div>
-        <div className="vehicle-title">
-          <p>高定制纯电跑车 · 技术预览</p>
-          <h1>{catalog.vehicle.displayName}</h1>
-          <span className="draft-badge">DRAFT · 不可报价</span>
-        </div>
-        <div className="vehicle-frame">
-          {renderLoading && <div className="render-status" role="status">正在同步渲染标识…</div>}
-          {render && (
-            <img
-              className="vehicle-image vehicle-image-visible"
-              src={render.imageUrl}
-              alt={`${catalog.vehicle.displayName} 代理车辆`}
-            />
-          )}
-          {pendingRender && (
-            <img
-              className="vehicle-image vehicle-image-preload"
-              src={pendingRender.imageUrl}
-              alt=""
-              aria-hidden="true"
-              onLoad={() => {
-                setRender(pendingRender)
-                setPendingRender(null)
-                setRenderLoading(false)
-              }}
-              onError={() => {
-                setPendingRender(null)
-                setRenderLoading(false)
-                setRenderMessage('v2 暂无渲染图，v1 代理图加载失败，已保留上一张图片')
-              }}
-            />
-          )}
-        </div>
-        <div className="image-meta">
-          <strong>{renderMessage || 'v2 渲染图已就绪'}</strong>
-          <code title={renderKey}>renderKey · {renderKey || '解析中'}</code>
-        </div>
-      </section>}
-
-      <aside className="config-panel" aria-label="车辆选配">
-        <div className="panel-head">
-          <div>
-            <span className="eyebrow">SC01 / CONFIGURATOR</span>
-            <h2>打造你的座驾</h2>
+    <main className={`app-shell ${embedded ? 'embedded' : 'standalone'}`}>
+      {!embedded && (
+        <ConfiguratorTopBar
+          standalone
+          categoryId={categoryId}
+          headerState={{
+            categoryId: categoryId as UeConfiguratorCategory,
+            referenceTotalMinor: referenceTotal,
+            syncState,
+            syncMessage: syncMessage || (
+              online
+                ? (offlineDraft ? '本地草稿待同步' : (dirty ? '未同步更改' : '已同步'))
+                : '离线 · 已保存本地'
+            ),
+            dirty,
+            online,
+          }}
+          onSelectCategory={selectCategory}
+          onAction={(action) => {
+            if (action === 'save') void persist()
+            if (action === 'share') void share()
+          }}
+        />
+      )}
+      <div className="configurator-workspace">
+        {!embedded && <section className="stage" aria-label="车辆展示区">
+          <Showroom />
+          <div className="vehicle-frame">
+            {renderLoading && <div className="render-status" role="status">正在加载车辆预览…</div>}
+            {render && (
+              <img
+                className="vehicle-image vehicle-image-visible"
+                src={render.imageUrl}
+                alt={`${catalog.vehicle.displayName} 车辆预览`}
+              />
+            )}
+            {pendingRender && (
+              <img
+                className="vehicle-image vehicle-image-preload"
+                src={pendingRender.imageUrl}
+                alt=""
+                aria-hidden="true"
+                onLoad={() => {
+                  setRender(pendingRender)
+                  setPendingRender(null)
+                  setRenderLoading(false)
+                }}
+                onError={() => {
+                  setPendingRender(null)
+                  setRenderLoading(false)
+                  setRenderMessage('车辆预览暂时无法更新，已保留上一张图片')
+                }}
+              />
+            )}
           </div>
-          <span className="step">4 阶段顺序选配</span>
-        </div>
+          {legacyCatalog && (
+            <div className="view-switcher" role="group" aria-label="车辆视角">
+              {legacyCatalog.renderViews.map((view) => (
+                <button
+                  key={view.renderViewId}
+                  className={activeView === view.renderViewId ? 'active' : ''}
+                  aria-pressed={activeView === view.renderViewId}
+                  onClick={() => setActiveView(view.renderViewId)}
+                >
+                  {view.zhName}
+                </button>
+              ))}
+            </div>
+          )}
+          {renderMessage && <p className="render-message" role="status">{renderMessage}</p>}
+        </section>}
 
-        <div className="panel-scroll">
-          <FilterGroup
-            className="filter-group-stage"
-            label="阶段"
-            items={catalog.categories.map((item) => ({
-              id: item.categoryId,
-              name: item.displayName,
-            }))}
-            value={categoryId}
-            onChange={selectCategory}
-          />
+        <aside className="config-panel" aria-label="车辆选配">
+          {embedded && <div className="panel-head">
+            <div>
+              <span className="eyebrow">SC01 / CONFIGURATOR</span>
+              <h2>打造你的座驾</h2>
+            </div>
+            <span className="step">4 阶段顺序选配</span>
+          </div>}
+
+          <div className="panel-scroll">
+          {embedded && <FilterGroup
+              className="filter-group-stage"
+              label="阶段"
+              items={catalog.categories.map((item) => ({
+                id: item.categoryId,
+                name: item.displayName,
+              }))}
+              value={categoryId}
+              onChange={selectCategory}
+            />}
           <FilterGroup label="部件" items={components.map((item) => ({
             id: item.componentId,
             name: item.displayName,
@@ -906,9 +950,10 @@ function Configurator({
             ))}
             </section>
           )}
-        </div>
+          </div>
 
-      </aside>
+        </aside>
+      </div>
     </main>
   )
 }

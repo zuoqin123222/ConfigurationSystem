@@ -64,6 +64,7 @@ const CONFIGURATION_KEY =
   /^paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+$/;
 const VIEWS = new Set(["front", "front-left", "side", "rear-right"]);
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+const ACTIVE_PUBLICATION_FILE = "active-publication.json";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`bake manifest 校验失败：${message}`);
@@ -71,6 +72,73 @@ function assert(condition: unknown, message: string): asserts condition {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function assertPublicationVersion(value: unknown, source: string): string {
+  if (typeof value !== "string" || !ID.test(value)) {
+    throw new Error(`${source} 中的 publicationVersion 非法`);
+  }
+  return value;
+}
+
+export function resolveActivePublicationVersion(
+  packageRoot: string,
+  fallbackVersion = "mvp-v1",
+  environmentVersion = process.env.PUBLICATION_VERSION,
+): string {
+  if (environmentVersion !== undefined) {
+    return assertPublicationVersion(environmentVersion, "环境变量 PUBLICATION_VERSION");
+  }
+
+  const pointerPath = resolve(
+    packageRoot,
+    "renders",
+    ACTIVE_PUBLICATION_FILE,
+  );
+  if (!existsSync(pointerPath)) {
+    return assertPublicationVersion(fallbackVersion, "legacy publication");
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(pointerPath, "utf8"));
+  } catch (error) {
+    throw new Error(`活动发布指针损坏：${pointerPath}`, { cause: error });
+  }
+  if (
+    !isRecord(parsed) ||
+    Object.keys(parsed).length !== 1 ||
+    !Object.hasOwn(parsed, "publicationVersion")
+  ) {
+    throw new Error(`活动发布指针格式非法：${pointerPath}`);
+  }
+  return assertPublicationVersion(
+    parsed.publicationVersion,
+    `活动发布指针 ${pointerPath}`,
+  );
+}
+
+async function activatePublicationAtomically(
+  packageRoot: string,
+  publicationVersion: string,
+): Promise<void> {
+  const rendersRoot = resolve(packageRoot, "renders");
+  const pointerPath = resolve(rendersRoot, ACTIVE_PUBLICATION_FILE);
+  const temporaryPath = resolve(
+    rendersRoot,
+    `.${ACTIVE_PUBLICATION_FILE}.${process.pid}.${Date.now()}.tmp`,
+  );
+  try {
+    await writeFile(
+      temporaryPath,
+      `${JSON.stringify({ publicationVersion }, null, 2)}\n`,
+      { flag: "wx" },
+    );
+    await rename(temporaryPath, pointerPath);
+  } catch (error) {
+    await rm(temporaryPath, { force: true });
+    throw error;
+  }
 }
 
 function renderKey(configurationKey: string, renderViewId: string): string {
@@ -247,6 +315,7 @@ export async function publishBakeAtomically(
 
   await mkdir(resolve(destinationRoot, "renders"), { recursive: true });
   const staging = resolve(destinationRoot, "renders", `.${version}.${process.pid}.${Date.now()}.tmp`);
+  let publicationMoved = false;
   try {
     await mkdir(staging);
     await cp(
@@ -260,9 +329,14 @@ export async function publishBakeAtomically(
       { flag: "wx" },
     );
     await rename(staging, destination);
+    publicationMoved = true;
+    await activatePublicationAtomically(destinationRoot, version);
     return destination;
   } catch (error) {
     await rm(staging, { recursive: true, force: true });
+    if (publicationMoved) {
+      await rm(destination, { recursive: true, force: true });
+    }
     throw error;
   }
 }
