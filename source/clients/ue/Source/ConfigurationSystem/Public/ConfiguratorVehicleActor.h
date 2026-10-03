@@ -48,6 +48,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "车辆体验")
 	bool ToggleWheelSpin();
 
+	static FRotator GetHoodOpenRotation();
+	static FRotator GetTrunkOpenRotation();
+
 	/** 自动化探针使用：验证真实几何或代理回退、分区标签及可逆执行器绑定。 */
 	bool HasStablePlaceholderBindings(TArray<FString>& OutErrors) const;
 
@@ -75,6 +78,10 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TObjectPtr<USceneComponent> VehicleRoot;
 
+	/** 把源模型的水平几何中心对齐 Actor 原点，并把轮胎最低点抬到 Z=0。 */
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
+	TObjectPtr<USceneComponent> ContentRoot;
+
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TObjectPtr<UStaticMeshComponent> PaintBody;
 
@@ -89,6 +96,18 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TArray<TObjectPtr<UStaticMeshComponent>> Wheels;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
+	TArray<TObjectPtr<UStaticMeshComponent>> WheelTires;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
+	TArray<TObjectPtr<UStaticMeshComponent>> WheelRotors;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
+	TArray<TObjectPtr<UStaticMeshComponent>> BrakeCalipers;
+
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
+	TArray<TObjectPtr<UStaticMeshComponent>> DoorMirrorParts;
 
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TArray<TObjectPtr<USceneComponent>> WheelSteeringPivots;

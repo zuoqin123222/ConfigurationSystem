@@ -8,10 +8,13 @@
 #include "SmoothWheelControllerComponent.h"
 
 #include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
+#include "Engine/StaticMesh.h"
 #include "HAL/FileManager.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
+#include "UObject/UObjectGlobals.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FWebConfiguratorDirectionAutomationTest,
@@ -141,6 +144,31 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 		AConfigShowroomPlayerController::InterpolateOrbitLocation(
 			Start, End, Pivot, 1.0f).Equals(End, 0.1));
 
+	FMinimalViewInfo RevealTarget;
+	RevealTarget.Location = Start;
+	RevealTarget.Rotation = (Pivot - Start).Rotation();
+	RevealTarget.FOV = 42.0f;
+	const FMinimalViewInfo RevealStart =
+		AConfigShowroomPlayerController::BuildRevealStartPOV(RevealTarget, Pivot);
+	TestTrue(TEXT("首次 Reveal 从更远处开始拉近"),
+		FVector::Distance(RevealStart.Location, Pivot)
+			> FVector::Distance(RevealTarget.Location, Pivot));
+	TestTrue(TEXT("首次 Reveal 起点绕开默认机位而非直线后退"),
+		!FMath::IsNearlyEqual(
+			(RevealStart.Location - Pivot).Rotation().Yaw,
+			(RevealTarget.Location - Pivot).Rotation().Yaw,
+			0.1f));
+	TestTrue(TEXT("首次 Reveal 始终看向车辆 Pivot"),
+		RevealStart.Rotation.Equals((Pivot - RevealStart.Location).Rotation(), 0.1f));
+	FMinimalViewInfo OffAxisPOV = RevealTarget;
+	OffAxisPOV.Rotation += FRotator(3.0f, -2.0f, 0.0f);
+	const FVector ViewAlignedPivot =
+		AConfigShowroomPlayerController::CalculateViewAlignedOrbitPivot(
+			OffAxisPOV, Pivot);
+	TestTrue(TEXT("交互轨道中心沿当前视线建立，首次旋转不会重构构图"),
+		(ViewAlignedPivot - OffAxisPOV.Location).GetSafeNormal().Equals(
+			OffAxisPOV.Rotation.Vector().GetSafeNormal(), 0.001f));
+
 	const FVector Rotated =
 		AConfigShowroomPlayerController::RotateExteriorCameraLocation(
 			Start, Pivot, 90.0f, 10.0f);
@@ -152,6 +180,22 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("车外旋转同时支持水平和俯仰"),
 		!FMath::IsNearlyEqual(Rotated.Y, Start.Y)
 			&& !FMath::IsNearlyEqual(Rotated.Z, Start.Z));
+	const FRotator PanRotation(-10.0, 35.0, 0.0);
+	const FVector PanDelta =
+		AConfigShowroomPlayerController::CalculateOrbitPanDelta(
+			PanRotation, 25.0f, -12.0f);
+	const FVector PannedCamera = Start + PanDelta;
+	const FVector PannedPivot = Pivot + PanDelta;
+	TestTrue(TEXT("右键平移对相机与独立 OrbitPivot 应用同一位移"),
+		(PannedCamera - PannedPivot).Equals(Start - Pivot, 0.01f));
+	const FVector RotatedAfterPan =
+		AConfigShowroomPlayerController::RotateExteriorCameraLocation(
+			PannedCamera, PannedPivot, 15.0f, 0.0f);
+	TestTrue(TEXT("平移后左键旋转仍围绕平移后的 Pivot，不回拽到车辆中心"),
+		FMath::IsNearlyEqual(
+			FVector::Distance(RotatedAfterPan, PannedPivot),
+			FVector::Distance(PannedCamera, PannedPivot),
+			0.1f));
 
 	for (int32 From = 0; From < 4; ++From)
 	{
@@ -319,7 +363,7 @@ bool FReversiblePartActuatorAutomationTest::RunTest(const FString& Parameters)
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSmoothWheelControllerAutomationTest,
 	"ConfigurationSystem.Runtime.Experience.SmoothWheels",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
 
 bool FSmoothWheelControllerAutomationTest::RunTest(const FString& Parameters)
 {
@@ -330,7 +374,6 @@ bool FSmoothWheelControllerAutomationTest::RunTest(const FString& Parameters)
 	{
 		Wheels.Add(NewObject<USceneComponent>());
 		USceneComponent* SpinPivot = NewObject<USceneComponent>();
-		SpinPivot->SetRelativeRotation(FRotator(0.0, 0.0, 90.0));
 		SpinPivots.Add(SpinPivot);
 	}
 	USmoothWheelControllerComponent* Controller =
@@ -345,9 +388,16 @@ bool FSmoothWheelControllerAutomationTest::RunTest(const FString& Parameters)
 			&& Controller->GetSmoothedSteeringDegrees() < 30.0f);
 	TestTrue(TEXT("前轮转向 Pivot 获得偏转"), !Wheels[0]->GetRelativeRotation().IsZero());
 	TestTrue(TEXT("后轮转向 Pivot 保持不偏转"), Wheels[2]->GetRelativeRotation().IsZero());
-	TestTrue(TEXT("四轮独立 Spin Pivot 均绕已校正轮轴滚动"),
-		!SpinPivots[0]->GetRelativeRotation().Equals(FRotator(0.0, 0.0, 90.0))
-			&& !SpinPivots[3]->GetRelativeRotation().Equals(FRotator(0.0, 0.0, 90.0)));
+	const FQuat SpinRotation = SpinPivots[0]->GetRelativeRotation().Quaternion();
+	TestTrue(TEXT("Spin Pivot 滚动保持本地 Y 轮轴不变"),
+		SpinRotation.RotateVector(FVector::YAxisVector).Equals(
+			FVector::YAxisVector, 0.001));
+	TestFalse(TEXT("Spin Pivot 确实绕本地 Y 推进而非保持零旋转"),
+		SpinRotation.RotateVector(FVector::ForwardVector).Equals(
+			FVector::ForwardVector, 0.001));
+	TestTrue(TEXT("四轮独立 Spin Pivot 均发生滚动"),
+		!SpinPivots[0]->GetRelativeRotation().IsZero()
+			&& !SpinPivots[3]->GetRelativeRotation().IsZero());
 
 	AConfiguratorVehicleActor* Vehicle =
 		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
@@ -355,6 +405,118 @@ bool FSmoothWheelControllerAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("显式 Set 开启动画并返回真实状态"), Vehicle->IsWheelAnimationEnabled());
 	Vehicle->SetWheelAnimationEnabled(false);
 	TestFalse(TEXT("显式 Set 关闭动画并返回真实状态"), Vehicle->IsWheelAnimationEnabled());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FVehiclePresentationHierarchyAutomationTest,
+	"ConfigurationSystem.Runtime.Experience.VehiclePresentationHierarchy",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
+bool FVehiclePresentationHierarchyAutomationTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	AConfiguratorVehicleActor* Vehicle =
+		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+	const auto FindScene = [Vehicle](const TCHAR* Name)
+	{
+		return FindObjectFast<USceneComponent>(Vehicle, FName(Name));
+	};
+	const auto FindMesh = [Vehicle](const TCHAR* Name)
+	{
+		return FindObjectFast<UStaticMeshComponent>(Vehicle, FName(Name));
+	};
+
+	USceneComponent* ContentRoot = FindScene(TEXT("VehicleContentRoot"));
+	TestNotNull(TEXT("车辆包含独立内容根"), ContentRoot);
+	if (ContentRoot != nullptr)
+	{
+		const FVector Offset = ContentRoot->GetRelativeLocation();
+		TestTrue(TEXT("内容根使整车 X 几何中心归零"),
+			FMath::IsNearlyZero(
+				Offset.X + (-358.6124268 + 109.1891403) * 0.5,
+				0.01));
+		TestTrue(TEXT("内容根把轮胎最低点抬到地面 Z=0"),
+			FMath::IsNearlyZero(Offset.Z - 32.3401680, 0.01));
+	}
+
+	const TCHAR* WheelNames[] = {
+		TEXT("WheelFrontLeft"), TEXT("WheelFrontRight"),
+		TEXT("WheelRearLeft"), TEXT("WheelRearRight")
+	};
+	for (const TCHAR* WheelName : WheelNames)
+	{
+		USceneComponent* SteeringPivot = FindScene(
+			*FString::Printf(TEXT("%sSteeringPivot"), WheelName));
+		USceneComponent* SpinPivot = FindScene(
+			*FString::Printf(TEXT("%sSpinPivot"), WheelName));
+		UStaticMeshComponent* Rim = FindMesh(WheelName);
+		UStaticMeshComponent* Tire = FindMesh(
+			*FString::Printf(TEXT("%sTire"), WheelName));
+		UStaticMeshComponent* Rotor = FindMesh(
+			*FString::Printf(TEXT("%sRotor"), WheelName));
+		UStaticMeshComponent* Caliper = FindMesh(
+			*FString::Printf(TEXT("%sCaliper"), WheelName));
+		TestTrue(TEXT("轮毂独立网格可加载"),
+			Rim != nullptr && Rim->GetStaticMesh() != nullptr
+				&& Rim->GetStaticMesh()->GetPathName().Contains(
+					TEXT("/_ImportStaging/")));
+		TestTrue(TEXT("轮胎独立网格可加载"),
+			Tire != nullptr && Tire->GetStaticMesh() != nullptr);
+		TestTrue(TEXT("制动盘独立网格可加载"),
+			Rotor != nullptr && Rotor->GetStaticMesh() != nullptr);
+		TestTrue(TEXT("卡钳独立网格可加载"),
+			Caliper != nullptr && Caliper->GetStaticMesh() != nullptr);
+		TestTrue(TEXT("轮毂挂在滚动 Pivot"),
+			Rim != nullptr && Rim->GetAttachParent() == SpinPivot);
+		TestTrue(TEXT("轮胎挂在滚动 Pivot"),
+			Tire != nullptr && Tire->GetAttachParent() == SpinPivot);
+		TestTrue(TEXT("制动盘随轮胎滚动"),
+			Rotor != nullptr && Rotor->GetAttachParent() == SpinPivot);
+		TestTrue(TEXT("卡钳只随 Steering Pivot，不随滚动"),
+			Caliper != nullptr && Caliper->GetAttachParent() == SteeringPivot
+				&& Caliper->GetAttachParent() != SpinPivot);
+	}
+
+	USceneComponent* LeftDoorPivot = FindScene(TEXT("LeftDoorHingePivot"));
+	USceneComponent* RightDoorPivot = FindScene(TEXT("RightDoorHingePivot"));
+	const TCHAR* MirrorNames[] = {
+		TEXT("LeftDoorMirrorBase"), TEXT("LeftDoorMirrorBody"),
+		TEXT("LeftDoorMirrorGlass"), TEXT("RightDoorMirrorBase"),
+		TEXT("RightDoorMirrorBody"), TEXT("RightDoorMirrorGlass")
+	};
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(MirrorNames); ++Index)
+	{
+		UStaticMeshComponent* Mirror = FindMesh(MirrorNames[Index]);
+		const USceneComponent* ExpectedDoor =
+			Index < 3 ? LeftDoorPivot : RightDoorPivot;
+		TestTrue(
+			*FString::Printf(TEXT("%s 随对应车门"), MirrorNames[Index]),
+			Mirror != nullptr && Mirror->GetAttachParent() == ExpectedDoor);
+	}
+
+	const FVector OpenHoodPoint =
+		AConfiguratorVehicleActor::GetHoodOpenRotation().RotateVector(
+			FVector(135.0, 0.0, 0.0));
+	const FVector OpenTrunkPoint =
+		AConfiguratorVehicleActor::GetTrunkOpenRotation().RotateVector(
+			FVector(-105.0, 0.0, 0.0));
+	TestTrue(TEXT("机盖自由端开启时向上"), OpenHoodPoint.Z > 0.0);
+	TestTrue(TEXT("后盖自由端开启时向上"), OpenTrunkPoint.Z > 0.0);
+
+	UStaticMeshComponent* Trunk = FindMesh(TEXT("Trunk"));
+	TestTrue(TEXT("后盖仅引用语义 TrunkMesh，不携带敞篷收纳机构"),
+		Trunk != nullptr && Trunk->GetStaticMesh() != nullptr
+			&& Trunk->GetStaticMesh()->GetPathName().Contains(
+				TEXT("/_ImportStaging/"))
+			&& Trunk->GetStaticMesh()->GetFName() == TEXT("TrunkMesh"));
+
+	TArray<FString> Errors;
+	TestTrue(TEXT("车辆展示层级审计通过"), Vehicle->HasStablePlaceholderBindings(Errors));
+	for (const FString& Error : Errors)
+	{
+		AddError(Error);
+	}
 	return true;
 }
 

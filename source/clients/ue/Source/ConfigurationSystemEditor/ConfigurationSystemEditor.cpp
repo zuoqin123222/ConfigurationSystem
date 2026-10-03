@@ -502,7 +502,9 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 	AStaticMeshActor* Floor = FindOrSpawnActor<AStaticMeshActor>(
 		World,
 		TEXT("ShowroomFloor_TEMP"),
-		FTransform(FRotator::ZeroRotator, FVector(0.0, 0.0, -20.0), FVector(18.0, 18.0, 0.2)));
+		// Engine Cube 半高 50 cm，Z 缩放 0.2 后半高 10 cm；
+		// 中心放在 -10，使展厅地面顶面精确位于世界 Z=0。
+		FTransform(FRotator::ZeroRotator, FVector(0.0, 0.0, -10.0), FVector(18.0, 18.0, 0.2)));
 	if (Floor != nullptr)
 	{
 		UStaticMesh* Cube = LoadObject<UStaticMesh>(
@@ -523,11 +525,9 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		FTransform(FRotator(-12.0, 28.0, 0.0), FVector(-900.0, -470.0, 285.0)),
 		FTransform(FRotator(-10.0, -90.0, 0.0), FVector(0.0, 880.0, 250.0)),
 		FTransform(FRotator(-10.0, 90.0, 0.0), FVector(0.0, -880.0, 250.0)),
-		// 占位车没有真实中空座舱，临时内饰机位从右侧观察 Cabin，
-		// 避免把相机放进实体 Cube 导致近裁剪面被车身完全遮挡。
-		FTransform(FRotator(-7.0, 90.0, 0.0), FVector(-75.0, -360.0, 225.0)),
-		// 副驾预设与驾驶位对称，后续替换真实座舱资产时保留索引与标签契约。
-		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(-75.0, 360.0, 225.0))
+		// Audi 资产约定 +X 为车头、左驾位于 Y<0；机位放在真实眼点并朝前。
+		FTransform(FRotator(-4.0, 0.0, 0.0), FVector(-15.0, -42.0, 122.0)),
+		FTransform(FRotator(-4.0, 0.0, 0.0), FVector(-15.0, 42.0, 122.0))
 	};
 	bool bAllCamerasCreated = true;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(CameraLabels); ++Index)

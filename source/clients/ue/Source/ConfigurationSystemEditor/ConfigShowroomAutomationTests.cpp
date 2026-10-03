@@ -34,6 +34,19 @@ namespace ConfigShowroomAutomation
 	}
 
 	template <typename ActorType>
+	ActorType* FindByLabel(UWorld* World, const TCHAR* Label)
+	{
+		for (TActorIterator<ActorType> It(World); It; ++It)
+		{
+			if (It->GetActorLabel() == Label)
+			{
+				return *It;
+			}
+		}
+		return nullptr;
+	}
+
+	template <typename ActorType>
 	int32 CountByTag(UWorld* World, const FName Tag, TSet<const AActor*>& OutActors)
 	{
 		int32 Count = 0;
@@ -122,8 +135,8 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 		FTransform(FRotator(-12.0, 28.0, 0.0), FVector(-900.0, -470.0, 285.0)),
 		FTransform(FRotator(-10.0, -90.0, 0.0), FVector(0.0, 880.0, 250.0)),
 		FTransform(FRotator(-10.0, 90.0, 0.0), FVector(0.0, -880.0, 250.0)),
-		FTransform(FRotator(-7.0, 90.0, 0.0), FVector(-75.0, -360.0, 225.0)),
-		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(-75.0, 360.0, 225.0))
+		FTransform(FRotator(-4.0, 0.0, 0.0), FVector(-15.0, -42.0, 122.0)),
+		FTransform(FRotator(-4.0, 0.0, 0.0), FVector(-15.0, 42.0, 122.0))
 	};
 	for (int32 CameraIndex = 0; CameraIndex < UE_ARRAY_COUNT(ExpectedCameraLabels);
 		++CameraIndex)
@@ -154,6 +167,20 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 				CameraIndex >= 4 ? 64.0f : 42.0f,
 				0.1f));
 	}
+	ACameraActor* DriverCamera = ConfigShowroomAutomation::FindCameraByTag(
+		World, TEXT("Configurator.Camera.4"));
+	ACameraActor* PassengerCamera = ConfigShowroomAutomation::FindCameraByTag(
+		World, TEXT("Configurator.Camera.5"));
+	if (DriverCamera != nullptr && PassengerCamera != nullptr)
+	{
+		TestTrue(TEXT("Audi 驾驶位位于左侧 Y<0"),
+			DriverCamera->GetActorLocation().Y < 0.0);
+		TestTrue(TEXT("副驾位位于右侧 Y>0"),
+			PassengerCamera->GetActorLocation().Y > 0.0);
+		TestTrue(TEXT("主副驾目视方向均朝 Audi +X 车头"),
+			DriverCamera->GetActorForwardVector().X > 0.99
+				&& PassengerCamera->GetActorForwardVector().X > 0.99);
+	}
 	TestEqual(
 		TEXT("双环境控制器唯一"),
 		ConfigShowroomAutomation::CountByLabel<AShowroomEnvironmentActor>(
@@ -164,6 +191,14 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 		ConfigShowroomAutomation::CountByLabel<AStaticMeshActor>(
 			World, TEXT("ShowroomFloor_TEMP")),
 		1);
+	if (const AStaticMeshActor* Floor =
+		ConfigShowroomAutomation::FindByLabel<AStaticMeshActor>(
+			World, TEXT("ShowroomFloor_TEMP")))
+	{
+		TestTrue(TEXT("地台顶面与车辆轮胎落地点同为 Z=0"),
+			FMath::IsNearlyEqual(Floor->GetActorLocation().Z, -10.0, 0.01)
+				&& FMath::IsNearlyEqual(Floor->GetActorScale3D().Z, 0.2, 0.001));
+	}
 	TestEqual(
 		TEXT("补光唯一"),
 		ConfigShowroomAutomation::CountByLabel<APointLight>(

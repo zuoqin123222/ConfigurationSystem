@@ -25,6 +25,11 @@ const FName AConfiguratorVehicleActor::AuthorizedResourceTag(TEXT("Configurator.
 
 namespace ConfiguratorVehicle
 {
+	// CDF1A166 审计边界：X[-358.6124268, 109.1891403]，
+	// Y[-102.7749023, 102.7748260]，轮胎最低点 Z=-32.3401680。
+	// 展厅地面顶面统一为 Z=0，因此内容根把轮胎最低点精确抬到零平面。
+	const FVector ContentRootOffset(124.7116432, 0.0000381, 32.3401680);
+
 	UStaticMesh* LoadOptionalStaticMesh(const TCHAR* ObjectPath)
 	{
 		return Cast<UStaticMesh>(StaticLoadObject(
@@ -33,6 +38,35 @@ namespace ConfiguratorVehicle
 			ObjectPath,
 			nullptr,
 			LOAD_NoWarn));
+	}
+
+	UStaticMesh* LoadIndependentStaticMesh(const TCHAR* AssetName)
+	{
+		const FString AuthorizedPath = FString::Printf(
+			TEXT("/Game/Configurator/AuthorizedAudiA5/%s.%s"),
+			AssetName,
+			AssetName);
+		if (UStaticMesh* Mesh = LoadOptionalStaticMesh(*AuthorizedPath))
+		{
+			return Mesh;
+		}
+
+		// 暂存资产会在 Actor CDO 的默认子组件上形成硬引用，Shipping Cook
+		// 可沿组件的 StaticMesh 属性收集依赖，不依赖编辑器目录扫描。
+		const FString StagingPath = FString::Printf(
+			TEXT("/Game/Configurator/_ImportStaging/CDF1A16663CD47AF963602DE04499D19/%s.%s"),
+			AssetName,
+			AssetName);
+		return LoadOptionalStaticMesh(*StagingPath);
+	}
+
+	UStaticMesh* LoadStagingStaticMesh(const TCHAR* AssetName)
+	{
+		const FString StagingPath = FString::Printf(
+			TEXT("/Game/Configurator/_ImportStaging/CDF1A16663CD47AF963602DE04499D19/%s.%s"),
+			AssetName,
+			AssetName);
+		return LoadOptionalStaticMesh(*StagingPath);
 	}
 
 	void MarkPartition(
@@ -57,6 +91,11 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	VehicleRoot->ComponentTags.Add(TEXT("Vehicle.Root"));
 	SetRootComponent(VehicleRoot);
 
+	ContentRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VehicleContentRoot"));
+	ContentRoot->SetupAttachment(VehicleRoot);
+	ContentRoot->SetRelativeLocation(ConfiguratorVehicle::ContentRootOffset);
+	ContentRoot->ComponentTags.Add(TEXT("Vehicle.ContentRoot"));
+
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(
 		TEXT("/Engine/BasicShapes/Cube.Cube"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderMesh(
@@ -75,8 +114,9 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 		TEXT("/Game/Configurator/AuthorizedAudiA5/DoorMesh_FR.DoorMesh_FR"));
 	UStaticMesh* AuthorizedHood = ConfiguratorVehicle::LoadOptionalStaticMesh(
 		TEXT("/Game/Configurator/AuthorizedAudiA5/HoodMesh.HoodMesh"));
-	UStaticMesh* AuthorizedTrunk = ConfiguratorVehicle::LoadOptionalStaticMesh(
-		TEXT("/Game/Configurator/AuthorizedAudiA5/TrunkMesh.TrunkMesh"));
+	// 正式语义 TrunkMesh 合并了敞篷收纳机构；优先使用暂存中的纯后盖分件。
+	UStaticMesh* AuthorizedTrunk =
+		ConfiguratorVehicle::LoadStagingStaticMesh(TEXT("TrunkMesh"));
 	UStaticMesh* AuthorizedWheelFL = ConfiguratorVehicle::LoadOptionalStaticMesh(
 		TEXT("/Game/Configurator/AuthorizedAudiA5/WheelMesh_FL.WheelMesh_FL"));
 	UStaticMesh* AuthorizedWheelFR = ConfiguratorVehicle::LoadOptionalStaticMesh(
@@ -89,7 +129,7 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	Tags.Add(bAuthorizedBody ? AuthorizedResourceTag : TemporaryResourceTag);
 
 	PaintBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PaintBody"));
-	PaintBody->SetupAttachment(VehicleRoot);
+	PaintBody->SetupAttachment(ContentRoot);
 	PaintBody->SetStaticMesh(bAuthorizedBody ? AuthorizedBody : CubeMesh.Object.Get());
 	if (!bAuthorizedBody)
 	{
@@ -100,7 +140,7 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	ConfiguratorVehicle::MarkPartition(PaintBody, PaintPartTag, PaintSlotTag, bAuthorizedBody);
 
 	InteriorCabin = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InteriorCabin"));
-	InteriorCabin->SetupAttachment(VehicleRoot);
+	InteriorCabin->SetupAttachment(ContentRoot);
 	const bool bAuthorizedInterior = AuthorizedInterior != nullptr;
 	InteriorCabin->SetStaticMesh(
 		bAuthorizedInterior ? AuthorizedInterior : CubeMesh.Object.Get());
@@ -117,7 +157,7 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	InteriorCabin->ComponentTags.Add(USc01MaterialBinder::InteriorProxySlotTag);
 
 	Frame = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InternalFrame"));
-	Frame->SetupAttachment(VehicleRoot);
+	Frame->SetupAttachment(ContentRoot);
 	const bool bAuthorizedFrame = AuthorizedFrame != nullptr;
 	Frame->SetStaticMesh(bAuthorizedFrame ? AuthorizedFrame : CubeMesh.Object.Get());
 	if (!bAuthorizedFrame)
@@ -129,7 +169,7 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	ConfiguratorVehicle::MarkPartition(Frame, FramePartTag, FrameSlotTag, bAuthorizedFrame);
 
 	WheelGroup = CreateDefaultSubobject<USceneComponent>(TEXT("WheelGroup"));
-	WheelGroup->SetupAttachment(VehicleRoot);
+	WheelGroup->SetupAttachment(ContentRoot);
 	WheelGroup->ComponentTags.Add(WheelPartTag);
 	WheelGroup->ComponentTags.Add(WheelSlotTag);
 	WheelGroup->ComponentTags.Add(
@@ -146,6 +186,22 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	UStaticMesh* AuthorizedWheelMeshes[] = {
 		AuthorizedWheelFL, AuthorizedWheelFR,
 		AuthorizedWheelRL, AuthorizedWheelRR
+	};
+	const TCHAR* TireAssetNames[] = {
+		TEXT("SM_tireAFrontLeft"), TEXT("SM_tireAFrontRight"),
+		TEXT("SM_tireARearLeft"), TEXT("SM_tireARearRight")
+	};
+	const TCHAR* RimAssetNames[] = {
+		TEXT("WheelMesh_FL"), TEXT("WheelMesh_FR"),
+		TEXT("WheelMesh_RL"), TEXT("WheelMesh_RR")
+	};
+	const TCHAR* RotorAssetNames[] = {
+		TEXT("SM_brakeRotorFrontLeft"), TEXT("SM_brakeRotorFrontRight"),
+		TEXT("SM_brakeRotorRearLeft"), TEXT("SM_brakeRotorRearRight")
+	};
+	const TCHAR* CaliperAssetNames[] = {
+		TEXT("SM_brakeCaliperFrontLeft"), TEXT("SM_brakeCaliperFrontRight"),
+		TEXT("SM_brakeCaliperRearleft"), TEXT("SM_brakeCaliperRearRight")
 	};
 	const TCHAR* WheelNames[] = {
 		TEXT("WheelFrontLeft"),
@@ -170,23 +226,31 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 		USceneComponent* SpinPivot = CreateDefaultSubobject<USceneComponent>(
 			*FString::Printf(TEXT("%sSpinPivot"), WheelNames[Index]));
 		SpinPivot->SetupAttachment(SteeringPivot);
-		if (AuthorizedWheelMeshes[Index] == nullptr)
-		{
-			// Engine Cylinder 的轴为本地 Z；Roll 90° 将轮轴对齐车辆横向 Y。
-			SpinPivot->SetRelativeRotation(FRotator(0.0, 0.0, 90.0));
-		}
 		WheelSpinPivots.Add(SpinPivot);
 
+		UStaticMesh* RimMesh =
+			ConfiguratorVehicle::LoadStagingStaticMesh(RimAssetNames[Index]);
+		UStaticMesh* TireMesh =
+			ConfiguratorVehicle::LoadStagingStaticMesh(TireAssetNames[Index]);
+		UStaticMesh* RotorMesh =
+			ConfiguratorVehicle::LoadStagingStaticMesh(RotorAssetNames[Index]);
+		UStaticMesh* CaliperMesh =
+			ConfiguratorVehicle::LoadStagingStaticMesh(CaliperAssetNames[Index]);
 		UStaticMeshComponent* Wheel =
 			CreateDefaultSubobject<UStaticMeshComponent>(WheelNames[Index]);
 		Wheel->SetupAttachment(SpinPivot);
-		const bool bAuthorizedWheel = AuthorizedWheelMeshes[Index] != nullptr;
+		const bool bAuthorizedWheel =
+			RimMesh != nullptr || AuthorizedWheelMeshes[Index] != nullptr;
 		Wheel->SetStaticMesh(
-			bAuthorizedWheel ? AuthorizedWheelMeshes[Index] : CylinderMesh.Object.Get());
+			RimMesh != nullptr
+				? RimMesh
+				: (bAuthorizedWheel ? AuthorizedWheelMeshes[Index] : CylinderMesh.Object.Get()));
 		if (!bAuthorizedWheel)
 		{
 			Wheel->SetMaterial(0, BasicMaterial.Object);
 			Wheel->SetRelativeScale3D(FVector(0.72, 0.72, 0.38));
+			// Engine Cylinder 的轴为本地 Z；只旋转视觉网格，使控制轴保持本地 Y。
+			Wheel->SetRelativeRotation(FRotator(0.0, 0.0, 90.0));
 		}
 		else
 		{
@@ -196,6 +260,31 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 			Wheel, WheelPartTag, WheelSlotTag, bAuthorizedWheel);
 		Wheel->ComponentTags.Add(WheelControlTags[Index]);
 		Wheels.Add(Wheel);
+
+		UStaticMeshComponent* Tire = CreateDefaultSubobject<UStaticMeshComponent>(
+			*FString::Printf(TEXT("%sTire"), WheelNames[Index]));
+		Tire->SetupAttachment(SpinPivot);
+		Tire->SetStaticMesh(TireMesh);
+		Tire->SetRelativeLocation(-WheelLocations[Index]);
+		Tire->ComponentTags.Add(TEXT("Vehicle.Part.Tire"));
+		WheelTires.Add(Tire);
+
+		UStaticMeshComponent* Rotor = CreateDefaultSubobject<UStaticMeshComponent>(
+			*FString::Printf(TEXT("%sRotor"), WheelNames[Index]));
+		Rotor->SetupAttachment(SpinPivot);
+		Rotor->SetStaticMesh(RotorMesh);
+		Rotor->SetRelativeLocation(-WheelLocations[Index]);
+		Rotor->ComponentTags.Add(TEXT("Vehicle.Part.BrakeRotor"));
+		WheelRotors.Add(Rotor);
+
+		UStaticMeshComponent* Caliper = CreateDefaultSubobject<UStaticMeshComponent>(
+			*FString::Printf(TEXT("%sCaliper"), WheelNames[Index]));
+		// 卡钳跟随前轮转向，但不能挂在 Spin Pivot 下随轮胎滚动。
+		Caliper->SetupAttachment(SteeringPivot);
+		Caliper->SetStaticMesh(CaliperMesh);
+		Caliper->SetRelativeLocation(-WheelLocations[Index]);
+		Caliper->ComponentTags.Add(TEXT("Vehicle.Part.BrakeCaliper"));
+		BrakeCalipers.Add(Caliper);
 	}
 
 	const auto CreateActuatedPanel = [this](
@@ -207,7 +296,7 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 		UStaticMesh* AuthorizedMesh)
 	{
 		USceneComponent* Pivot = CreateDefaultSubobject<USceneComponent>(PivotName);
-		Pivot->SetupAttachment(VehicleRoot);
+		Pivot->SetupAttachment(ContentRoot);
 		Pivot->SetRelativeLocation(PivotLocation);
 		UStaticMeshComponent* Panel = CreateDefaultSubobject<UStaticMeshComponent>(Name);
 		Panel->SetupAttachment(Pivot);
@@ -254,6 +343,36 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	TrunkPivot = TrunkParts.Key;
 	Trunk = TrunkParts.Value;
 
+	const auto CreateDoorMirrorPart = [this](
+		const TCHAR* ComponentName,
+		const TCHAR* AssetName,
+		USceneComponent* DoorPivot)
+	{
+		UStaticMeshComponent* Mirror =
+			CreateDefaultSubobject<UStaticMeshComponent>(ComponentName);
+		Mirror->SetupAttachment(DoorPivot);
+		UStaticMesh* MirrorMesh =
+			ConfiguratorVehicle::LoadIndependentStaticMesh(AssetName);
+		Mirror->SetStaticMesh(MirrorMesh);
+		Mirror->SetRelativeLocation(-DoorPivot->GetRelativeLocation());
+		Mirror->ComponentTags.Add(
+			MirrorMesh != nullptr ? AuthorizedResourceTag : TemporaryResourceTag);
+		Mirror->ComponentTags.Add(TEXT("Vehicle.Part.DoorMirror"));
+		DoorMirrorParts.Add(Mirror);
+	};
+	CreateDoorMirrorPart(
+		TEXT("LeftDoorMirrorBase"), TEXT("SM_doorMirrorBaseLeft"), LeftDoorPivot);
+	CreateDoorMirrorPart(
+		TEXT("LeftDoorMirrorBody"), TEXT("SM_mirrorBodyLeft"), LeftDoorPivot);
+	CreateDoorMirrorPart(
+		TEXT("LeftDoorMirrorGlass"), TEXT("SM_mirrorLeft"), LeftDoorPivot);
+	CreateDoorMirrorPart(
+		TEXT("RightDoorMirrorBase"), TEXT("SM_doorMirrorBaseRight"), RightDoorPivot);
+	CreateDoorMirrorPart(
+		TEXT("RightDoorMirrorBody"), TEXT("SM_mirrorBodyRight"), RightDoorPivot);
+	CreateDoorMirrorPart(
+		TEXT("RightDoorMirrorGlass"), TEXT("SM_mirrorRight"), RightDoorPivot);
+
 	LeftDoorActuator = CreateDefaultSubobject<UReversiblePartActuatorComponent>(
 		TEXT("LeftDoorActuator"));
 	RightDoorActuator = CreateDefaultSubobject<UReversiblePartActuatorComponent>(
@@ -280,11 +399,11 @@ void AConfiguratorVehicleActor::BeginPlay()
 	HoodActuator->BindPart(
 		HoodPivot,
 		HoodPivot->GetRelativeTransform(),
-		FTransform(FRotator(-32.0, 0.0, 0.0), HoodPivot->GetRelativeLocation()));
+		FTransform(GetHoodOpenRotation(), HoodPivot->GetRelativeLocation()));
 	TrunkActuator->BindPart(
 		TrunkPivot,
 		TrunkPivot->GetRelativeTransform(),
-		FTransform(FRotator(35.0, 0.0, 0.0), TrunkPivot->GetRelativeLocation()));
+		FTransform(GetTrunkOpenRotation(), TrunkPivot->GetRelativeLocation()));
 	TArray<USceneComponent*> SteeringPivots;
 	TArray<USceneComponent*> SpinPivots;
 	for (USceneComponent* Pivot : WheelSteeringPivots) { SteeringPivots.Add(Pivot); }
@@ -365,6 +484,16 @@ bool AConfiguratorVehicleActor::ToggleWheelSpin()
 {
 	SetWheelAnimationEnabled(!bWheelsSpinning);
 	return bWheelsSpinning;
+}
+
+FRotator AConfiguratorVehicleActor::GetHoodOpenRotation()
+{
+	return FRotator(32.0, 0.0, 0.0);
+}
+
+FRotator AConfiguratorVehicleActor::GetTrunkOpenRotation()
+{
+	return FRotator(-35.0, 0.0, 0.0);
 }
 
 void AConfiguratorVehicleActor::ApplyConfiguration(
@@ -500,6 +629,13 @@ bool AConfiguratorVehicleActor::HasStablePlaceholderBindings(
 	}
 	Validate(Frame, FramePartTag, FrameSlotTag, TEXT("frame"));
 	Validate(WheelGroup, WheelPartTag, WheelSlotTag, TEXT("wheel"));
+	if (ContentRoot == nullptr
+		|| ContentRoot->GetAttachParent() != VehicleRoot
+		|| !ContentRoot->GetRelativeLocation().Equals(
+			ConfiguratorVehicle::ContentRootOffset, 0.01))
+	{
+		OutErrors.Add(TEXT("车辆内容根未按审计边界归中并落地。"));
+	}
 	for (const UStaticMeshComponent* Panel : { LeftDoor, RightDoor, Hood, Trunk })
 	{
 		if (Panel == nullptr
@@ -532,6 +668,10 @@ bool AConfiguratorVehicleActor::HasStablePlaceholderBindings(
 	{
 		OutErrors.Add(TEXT("车轮必须固定包含四组独立转向/滚动层级。"));
 	}
+	if (WheelTires.Num() != 4 || WheelRotors.Num() != 4 || BrakeCalipers.Num() != 4)
+	{
+		OutErrors.Add(TEXT("四轮必须分别包含独立轮胎、制动盘与不滚动卡钳。"));
+	}
 	for (int32 Index = 0; Index < Wheels.Num(); ++Index)
 	{
 		const UStaticMeshComponent* Wheel = Wheels[Index];
@@ -543,13 +683,39 @@ bool AConfiguratorVehicleActor::HasStablePlaceholderBindings(
 			|| Wheel == nullptr
 			|| Wheel->GetAttachParent() != WheelSpinPivots[Index]
 			|| WheelSpinPivots[Index]->GetAttachParent() != WheelSteeringPivots[Index]
-			|| (!Wheel->ComponentHasTag(AuthorizedResourceTag)
-				&& !FMath::IsNearlyEqual(
-					FMath::Abs(WheelSpinPivots[Index]->GetRelativeRotation().Roll),
-					90.0f)))
+			|| !WheelTires.IsValidIndex(Index)
+			|| !WheelRotors.IsValidIndex(Index)
+			|| !BrakeCalipers.IsValidIndex(Index)
+			|| !IsValid(WheelTires[Index])
+			|| !IsValid(WheelRotors[Index])
+			|| !IsValid(BrakeCalipers[Index])
+			|| WheelTires[Index]->GetAttachParent() != WheelSpinPivots[Index]
+			|| WheelRotors[Index]->GetAttachParent() != WheelSpinPivots[Index]
+			|| BrakeCalipers[Index]->GetAttachParent() != WheelSteeringPivots[Index])
 		{
 			OutErrors.Add(TEXT("车轮轴向或 Steering/Spin/Mesh 层级不正确。"));
 		}
+	}
+	if (DoorMirrorParts.Num() != 6)
+	{
+		OutErrors.Add(TEXT("左右门必须各包含镜座、镜壳与镜片。"));
+	}
+	for (int32 Index = 0; Index < DoorMirrorParts.Num(); ++Index)
+	{
+		const UStaticMeshComponent* Mirror = DoorMirrorParts[Index];
+		const USceneComponent* ExpectedDoor = Index < 3 ? LeftDoorPivot : RightDoorPivot;
+		if (!IsValid(Mirror)
+			|| Mirror->GetStaticMesh() == nullptr
+			|| Mirror->GetAttachParent() != ExpectedDoor)
+		{
+			OutErrors.Add(TEXT("后视镜必须使用可 Cook 独立网格并随对应车门运动。"));
+		}
+	}
+	if (Trunk == nullptr
+		|| Trunk->GetStaticMesh() == nullptr
+		|| Trunk->GetStaticMesh()->GetFName() != TEXT("TrunkMesh"))
+	{
+		OutErrors.Add(TEXT("后盖必须仅使用语义 TrunkMesh，不得携带敞篷收纳机构。"));
 	}
 	return OutErrors.IsEmpty()
 		&& (Tags.Contains(TemporaryResourceTag) || Tags.Contains(AuthorizedResourceTag));

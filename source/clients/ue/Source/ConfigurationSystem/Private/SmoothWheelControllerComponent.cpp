@@ -70,7 +70,7 @@ void USmoothWheelControllerComponent::AdvanceWheels(const float DeltaTime)
 		SteeringPivots[Index]->SetRelativeRotation(SteeringRotation);
 		const FQuat SpinRotation =
 			BaseSpinRotations[Index]
-			* FQuat(FVector::UpVector, FMath::DegreesToRadians(AccumulatedSpinDegrees));
+			* FQuat(FVector::YAxisVector, FMath::DegreesToRadians(AccumulatedSpinDegrees));
 		SpinPivots[Index]->SetRelativeRotation(SpinRotation);
 	}
 }

@@ -74,6 +74,42 @@ FMinimalViewInfo AConfigShowroomPlayerController::InterpolateCameraPOV(
 	return Result;
 }
 
+FMinimalViewInfo AConfigShowroomPlayerController::BuildRevealStartPOV(
+	const FMinimalViewInfo& Target,
+	const FVector& Pivot)
+{
+	FMinimalViewInfo Result = Target;
+	const FVector TargetRelative = Target.Location - Pivot;
+	const FVector OrbitedRelative =
+		TargetRelative.RotateAngleAxis(-32.0f, FVector::UpVector) * 1.45f;
+	Result.Location = Pivot + OrbitedRelative + FVector(0.0, 0.0, 90.0);
+	Result.Rotation = (Pivot - Result.Location).Rotation();
+	Result.FOV = FMath::Max(Target.FOV, 48.0f);
+	return Result;
+}
+
+FVector AConfigShowroomPlayerController::CalculateOrbitPanDelta(
+	const FRotator& CameraRotation,
+	const float Horizontal,
+	const float Vertical)
+{
+	return CameraRotation.RotateVector(FVector::RightVector) * Horizontal
+		+ CameraRotation.RotateVector(FVector::UpVector) * Vertical;
+}
+
+FVector AConfigShowroomPlayerController::CalculateViewAlignedOrbitPivot(
+	const FMinimalViewInfo& POV,
+	const FVector& ReferencePivot)
+{
+	const FVector Forward = POV.Rotation.Vector().GetSafeNormal();
+	const float ReferenceDistance = FVector::Distance(POV.Location, ReferencePivot);
+	const float ForwardDepth = FVector::DotProduct(
+		ReferencePivot - POV.Location, Forward);
+	return POV.Location + Forward * FMath::Max(
+		ForwardDepth,
+		FMath::Max(ReferenceDistance, 180.0f));
+}
+
 bool AConfigShowroomPlayerController::IsInteriorCameraPreset(const int32 CameraIndex)
 {
 	return CameraIndex == 4 || CameraIndex == 5;
@@ -144,27 +180,52 @@ FVector AConfigShowroomPlayerController::ClampInteriorCameraLocation(
 void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	if (!bOrbitTransitionActive || !IsValid(RuntimeCamera))
+	if (!IsValid(RuntimeCamera))
 	{
 		return;
 	}
 
-	CameraTransitionElapsed += DeltaSeconds;
-	const float Alpha = FMath::Clamp(
-		CameraTransitionElapsed / FMath::Max(CameraTransitionDuration, KINDA_SMALL_NUMBER),
-		0.0f,
-		1.0f);
-	const FMinimalViewInfo POV = InterpolateCameraPOV(
-		CameraTransitionStartPOV,
-		CameraTransitionEndPOV,
-		CameraTransitionPivot,
-		Alpha);
-	RuntimeCamera->ApplyCameraPOV(POV);
-
-	if (Alpha >= 1.0f)
+	if (bOrbitTransitionActive)
 	{
-		bOrbitTransitionActive = false;
-		RuntimeCamera->ApplyCameraPOV(CameraTransitionEndPOV);
+		CameraTransitionElapsed += DeltaSeconds;
+		const float Alpha = FMath::Clamp(
+			CameraTransitionElapsed / FMath::Max(CameraTransitionDuration, KINDA_SMALL_NUMBER),
+			0.0f,
+			1.0f);
+		const FMinimalViewInfo POV = InterpolateCameraPOV(
+			CameraTransitionStartPOV,
+			CameraTransitionEndPOV,
+			CameraTransitionPivot,
+			Alpha);
+		RuntimeCamera->ApplyCameraPOV(POV);
+
+		if (Alpha >= 1.0f)
+		{
+			bOrbitTransitionActive = false;
+			bInitialRevealActive = false;
+			RuntimeCamera->ApplyCameraPOV(CameraTransitionEndPOV);
+			ResetInteractiveOrbit(
+				CameraTransitionEndPOV,
+				!IsInteriorCameraPreset(CurrentCameraIndex));
+		}
+		return;
+	}
+
+	if (bInteractiveSmoothingActive)
+	{
+		const FMinimalViewInfo Current = RuntimeCamera->GetCameraPOV();
+		FMinimalViewInfo Smoothed = InteractiveTargetPOV;
+		Smoothed.Location = FMath::VInterpTo(
+			Current.Location, InteractiveTargetPOV.Location, DeltaSeconds, 12.0f);
+		Smoothed.Rotation = FMath::RInterpTo(
+			Current.Rotation, InteractiveTargetPOV.Rotation, DeltaSeconds, 12.0f);
+		if (Smoothed.Location.Equals(InteractiveTargetPOV.Location, 0.05)
+			&& Smoothed.Rotation.Equals(InteractiveTargetPOV.Rotation, 0.02))
+		{
+			Smoothed = InteractiveTargetPOV;
+			bInteractiveSmoothingActive = false;
+		}
+		RuntimeCamera->ApplyCameraPOV(Smoothed);
 	}
 }
 
@@ -208,8 +269,21 @@ void AConfigShowroomPlayerController::BeginPlay()
 	if (IsValid(RuntimeCamera) && GetCameraPresetPOV(0, InitialCameraPOV))
 	{
 		CurrentCameraIndex = 0;
-		RuntimeCamera->ApplyCameraPOV(InitialCameraPOV);
+		OrbitPivot = GetVehicleCameraPivot();
+		CameraTransitionStartPOV = BuildRevealStartPOV(InitialCameraPOV, OrbitPivot);
+		CameraTransitionEndPOV = InitialCameraPOV;
+		CameraTransitionPivot = OrbitPivot;
+		CameraTransitionElapsed = 0.0f;
+		CameraTransitionDuration = 2.0f;
+		RuntimeCamera->ApplyCameraPOV(CameraTransitionStartPOV);
 		SetViewTarget(RuntimeCamera);
+		bInitialRevealPending = true;
+		GetWorldTimerManager().SetTimer(
+			InitialRevealTimer,
+			this,
+			&AConfigShowroomPlayerController::StartInitialCameraReveal,
+			1.2f,
+			false);
 	}
 
 	ConfiguratorPanel = CreateWidget<UConfiguratorPanel>(
@@ -266,6 +340,7 @@ void AConfigShowroomPlayerController::EndPlay(
 	{
 		FlushPersistentConfiguration();
 	}
+	GetWorldTimerManager().ClearTimer(InitialRevealTimer);
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -284,6 +359,9 @@ void AConfigShowroomPlayerController::SetupInputComponent()
 		EKeys::MouseY, this, &AConfigShowroomPlayerController::HandleCameraVertical);
 	InputComponent->BindAxisKey(
 		EKeys::MouseWheelAxis, this, &AConfigShowroomPlayerController::HandleCameraZoom);
+	InputComponent->BindKey(
+		EKeys::LeftMouseButton, IE_Pressed, this,
+		&AConfigShowroomPlayerController::HandleOrbitPressed);
 	InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AConfigShowroomPlayerController::ToggleEnvironmentInput);
 	InputComponent->BindKey(EKeys::P, IE_Pressed, this, &AConfigShowroomPlayerController::TogglePathTracingInput);
 	InputComponent->BindKey(EKeys::F5, IE_Pressed, this, &AConfigShowroomPlayerController::SaveInput);
@@ -300,6 +378,12 @@ bool AConfigShowroomPlayerController::SwitchCamera(const int32 CameraIndex)
 	if (!ShowroomCameras.IsValidIndex(CameraIndex) || !IsValid(ShowroomCameras[CameraIndex]))
 	{
 		return false;
+	}
+	if ((bInitialRevealPending || bInitialRevealActive)
+		&& CameraIndex == CurrentCameraIndex)
+	{
+		CancelInitialCameraReveal(true);
+		return true;
 	}
 	if (ShouldCancelPendingCameraTransition(
 		CurrentCameraIndex, PendingCameraIndex, CameraIndex))
@@ -324,7 +408,10 @@ bool AConfigShowroomPlayerController::SwitchCamera(const int32 CameraIndex)
 	const bool bReplacingPendingBlackTransition =
 		ShouldReplacePendingCameraTransition(
 			CurrentCameraIndex, PendingCameraIndex, CameraIndex);
+	GetWorldTimerManager().ClearTimer(InitialRevealTimer);
+	bInitialRevealPending = false;
 	bOrbitTransitionActive = false;
+	bInteractiveSmoothingActive = false;
 	GetWorldTimerManager().ClearTimer(CameraZoneTransitionTimer);
 	PendingCameraIndex = INDEX_NONE;
 
@@ -361,8 +448,10 @@ bool AConfigShowroomPlayerController::SwitchCamera(const int32 CameraIndex)
 		return false;
 	}
 	CameraTransitionStartPOV = PlayerCameraManager->GetCameraCacheView();
-	CameraTransitionPivot = GetVehicleCameraPivot();
+	OrbitPivot = GetVehicleCameraPivot();
+	CameraTransitionPivot = OrbitPivot;
 	CameraTransitionElapsed = 0.0f;
+	CameraTransitionDuration = 0.85f;
 	CurrentCameraIndex = CameraIndex;
 	RuntimeCamera->ApplyCameraPOV(CameraTransitionStartPOV);
 	SetViewTarget(RuntimeCamera);
@@ -402,6 +491,7 @@ void AConfigShowroomPlayerController::FinishInteriorExteriorCameraSwitch()
 	CurrentCameraIndex = PendingCameraIndex;
 	PendingCameraIndex = INDEX_NONE;
 	RuntimeCamera->ApplyCameraPOV(PresetPOV);
+	ResetInteractiveOrbit(PresetPOV, !IsInteriorCameraPreset(CurrentCameraIndex));
 	SetViewTarget(RuntimeCamera);
 	if (PlayerCameraManager != nullptr)
 	{
@@ -433,7 +523,8 @@ bool AConfigShowroomPlayerController::GetCameraPresetPOV(
 
 AConfigRuntimeCameraActor* AConfigShowroomPlayerController::GetInteractiveCamera() const
 {
-	if (bOrbitTransitionActive
+	if (bInitialRevealPending
+		|| bOrbitTransitionActive
 		|| PendingCameraIndex != INDEX_NONE
 		|| !ShowroomCameras.IsValidIndex(CurrentCameraIndex)
 		|| !IsValid(RuntimeCamera)
@@ -442,6 +533,58 @@ AConfigRuntimeCameraActor* AConfigShowroomPlayerController::GetInteractiveCamera
 		return nullptr;
 	}
 	return RuntimeCamera;
+}
+
+void AConfigShowroomPlayerController::StartInitialCameraReveal()
+{
+	bInitialRevealPending = false;
+	if (!IsValid(RuntimeCamera) || CurrentCameraIndex != 0)
+	{
+		return;
+	}
+	CameraTransitionElapsed = 0.0f;
+	CameraTransitionDuration = 2.0f;
+	bInitialRevealActive = true;
+	bOrbitTransitionActive = true;
+}
+
+void AConfigShowroomPlayerController::CancelInitialCameraReveal(
+	const bool bSnapToPreset)
+{
+	GetWorldTimerManager().ClearTimer(InitialRevealTimer);
+	bInitialRevealPending = false;
+	bInitialRevealActive = false;
+	bOrbitTransitionActive = false;
+	bOrbitTransitionActive = false;
+	if (!bSnapToPreset || !IsValid(RuntimeCamera))
+	{
+		return;
+	}
+	FMinimalViewInfo PresetPOV;
+	if (GetCameraPresetPOV(CurrentCameraIndex, PresetPOV))
+	{
+		RuntimeCamera->ApplyCameraPOV(PresetPOV);
+		ResetInteractiveOrbit(PresetPOV, !IsInteriorCameraPreset(CurrentCameraIndex));
+	}
+}
+
+void AConfigShowroomPlayerController::SetInteractiveTargetPOV(
+	const FMinimalViewInfo& POV)
+{
+	InteractiveTargetPOV = POV;
+	bInteractiveSmoothingActive = true;
+}
+
+void AConfigShowroomPlayerController::ResetInteractiveOrbit(
+	const FMinimalViewInfo& POV,
+	const bool bResetPivot)
+{
+	InteractiveTargetPOV = POV;
+	bInteractiveSmoothingActive = false;
+	if (bResetPivot)
+	{
+		OrbitPivot = CalculateViewAlignedOrbitPivot(POV, GetVehicleCameraPivot());
+	}
 }
 
 void AConfigShowroomPlayerController::RotateInteractiveCamera(
@@ -454,26 +597,27 @@ void AConfigShowroomPlayerController::RotateInteractiveCamera(
 		return;
 	}
 
-	FMinimalViewInfo POV = Camera->GetCameraPOV();
+	FMinimalViewInfo POV = bInteractiveSmoothingActive
+		? InteractiveTargetPOV
+		: Camera->GetCameraPOV();
 	if (IsInteriorCameraPreset(CurrentCameraIndex))
 	{
 		POV.Rotation.Yaw = FRotator::NormalizeAxis(POV.Rotation.Yaw + YawDegrees);
 		POV.Rotation.Pitch = FMath::Clamp(
 			POV.Rotation.Pitch + PitchDegrees, -80.0f, 80.0f);
 		POV.Rotation.Roll = 0.0f;
-		Camera->ApplyCameraPOV(POV);
+		SetInteractiveTargetPOV(POV);
 		return;
 	}
 
-	const FVector Pivot = GetVehicleCameraPivot();
 	const FVector Location = RotateExteriorCameraLocation(
 		POV.Location,
-		Pivot,
+		OrbitPivot,
 		YawDegrees,
 		PitchDegrees);
 	POV.Location = Location;
-	POV.Rotation = (Pivot - Location).Rotation();
-	Camera->ApplyCameraPOV(POV);
+	POV.Rotation = (OrbitPivot - Location).Rotation();
+	SetInteractiveTargetPOV(POV);
 }
 
 void AConfigShowroomPlayerController::PanInteractiveCamera(
@@ -485,10 +629,14 @@ void AConfigShowroomPlayerController::PanInteractiveCamera(
 	{
 		return;
 	}
-	FMinimalViewInfo POV = Camera->GetCameraPOV();
-	POV.Location += POV.Rotation.RotateVector(FVector::RightVector) * Horizontal
-		+ POV.Rotation.RotateVector(FVector::UpVector) * Vertical;
-	Camera->ApplyCameraPOV(POV);
+	FMinimalViewInfo POV = bInteractiveSmoothingActive
+		? InteractiveTargetPOV
+		: Camera->GetCameraPOV();
+	const FVector PanDelta = CalculateOrbitPanDelta(
+		POV.Rotation, Horizontal, Vertical);
+	POV.Location += PanDelta;
+	OrbitPivot += PanDelta;
+	SetInteractiveTargetPOV(POV);
 }
 
 void AConfigShowroomPlayerController::DollyInteractiveCamera(const float Amount)
@@ -499,7 +647,9 @@ void AConfigShowroomPlayerController::DollyInteractiveCamera(const float Amount)
 		return;
 	}
 
-	FMinimalViewInfo POV = Camera->GetCameraPOV();
+	FMinimalViewInfo POV = bInteractiveSmoothingActive
+		? InteractiveTargetPOV
+		: Camera->GetCameraPOV();
 	const FVector Candidate =
 		POV.Location + POV.Rotation.RotateVector(FVector::ForwardVector) * Amount;
 	if (IsInteriorCameraPreset(CurrentCameraIndex))
@@ -509,16 +659,16 @@ void AConfigShowroomPlayerController::DollyInteractiveCamera(const float Amount)
 		{
 			POV.Location = ClampInteriorCameraLocation(
 				PresetPOV.Location, Candidate, 120.0f);
-			Camera->ApplyCameraPOV(POV);
+			SetInteractiveTargetPOV(POV);
 		}
 		return;
 	}
 
-	const float CandidateRadius = FVector::Distance(Candidate, GetVehicleCameraPivot());
+	const float CandidateRadius = FVector::Distance(Candidate, OrbitPivot);
 	if (CandidateRadius >= 180.0f && CandidateRadius <= 3000.0f)
 	{
 		POV.Location = Candidate;
-		Camera->ApplyCameraPOV(POV);
+		SetInteractiveTargetPOV(POV);
 	}
 }
 
@@ -528,9 +678,13 @@ void AConfigShowroomPlayerController::HandleCameraHorizontal(const float Value)
 	{
 		return;
 	}
+	if (bInitialRevealPending || bInitialRevealActive)
+	{
+		CancelInitialCameraReveal(true);
+	}
 	if (IsInputKeyDown(EKeys::LeftMouseButton))
 	{
-		RotateInteractiveCamera(Value * 0.35f, 0.0f);
+		RotateInteractiveCamera(FMath::Clamp(Value, -12.0f, 12.0f) * 0.35f, 0.0f);
 	}
 	else if (IsInputKeyDown(EKeys::RightMouseButton)
 		|| IsInputKeyDown(EKeys::MiddleMouseButton))
@@ -545,9 +699,14 @@ void AConfigShowroomPlayerController::HandleCameraVertical(const float Value)
 	{
 		return;
 	}
+	if (bInitialRevealPending || bInitialRevealActive)
+	{
+		CancelInitialCameraReveal(true);
+	}
 	if (IsInputKeyDown(EKeys::LeftMouseButton))
 	{
-		RotateInteractiveCamera(0.0f, -Value * 0.35f);
+		RotateInteractiveCamera(
+			0.0f, -FMath::Clamp(Value, -12.0f, 12.0f) * 0.35f);
 	}
 	else if (IsInputKeyDown(EKeys::RightMouseButton)
 		|| IsInputKeyDown(EKeys::MiddleMouseButton))
@@ -560,8 +719,31 @@ void AConfigShowroomPlayerController::HandleCameraZoom(const float Value)
 {
 	if (!FMath::IsNearlyZero(Value))
 	{
+		if (bInitialRevealPending || bInitialRevealActive)
+		{
+			CancelInitialCameraReveal(true);
+		}
 		DollyInteractiveCamera(Value * 35.0f);
 	}
+}
+
+void AConfigShowroomPlayerController::HandleOrbitPressed()
+{
+	if (bInitialRevealPending || bInitialRevealActive)
+	{
+		CancelInitialCameraReveal(true);
+	}
+	AConfigRuntimeCameraActor* Camera = GetInteractiveCamera();
+	if (!IsValid(Camera))
+	{
+		return;
+	}
+
+	// 以当前画面为交互起点。ResetInteractiveOrbit 已建立视线对齐的
+	// 初始 Pivot；后续右键平移会
+	// 同步移动该 Pivot，因此这里不能再次使用车辆中心覆盖它。
+	InteractiveTargetPOV = Camera->GetCameraPOV();
+	bInteractiveSmoothingActive = false;
 }
 
 void AConfigShowroomPlayerController::ToggleEnvironment()

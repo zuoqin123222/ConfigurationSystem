@@ -73,6 +73,22 @@ public:
 		const FVector& Pivot,
 		float Alpha);
 
+	/** 从默认外景机位生成首屏远景，用约两秒绕车拉近到目标。 */
+	static FMinimalViewInfo BuildRevealStartPOV(
+		const FMinimalViewInfo& Target,
+		const FVector& Pivot);
+
+	/** 右键平移相机和独立轨道 Pivot 时使用同一个世界空间位移。 */
+	static FVector CalculateOrbitPanDelta(
+		const FRotator& CameraRotation,
+		float Horizontal,
+		float Vertical);
+
+	/** 沿当前视线建立轨道中心，确保第一次旋转不改变现有构图。 */
+	static FVector CalculateViewAlignedOrbitPivot(
+		const FMinimalViewInfo& POV,
+		const FVector& ReferencePivot);
+
 	/** 驾驶位和副驾位都属于车内预设。 */
 	static bool IsInteriorCameraPreset(int32 CameraIndex);
 
@@ -165,17 +181,22 @@ private:
 	void HandleCameraHorizontal(float Value);
 	void HandleCameraVertical(float Value);
 	void HandleCameraZoom(float Value);
+	void HandleOrbitPressed();
 	AConfigRuntimeCameraActor* GetInteractiveCamera() const;
 	bool GetCameraPresetPOV(int32 CameraIndex, FMinimalViewInfo& OutPOV) const;
 	void RotateInteractiveCamera(float YawDegrees, float PitchDegrees);
 	void PanInteractiveCamera(float Horizontal, float Vertical);
 	void DollyInteractiveCamera(float Amount);
+	void SetInteractiveTargetPOV(const FMinimalViewInfo& POV);
+	void ResetInteractiveOrbit(const FMinimalViewInfo& POV, bool bResetPivot);
 	void ToggleEnvironmentInput();
 	void TogglePathTracingInput();
 	void SaveInput();
 	void LoadInput();
 	void ToggleLeftDoor(); void ToggleRightDoor(); void ToggleHood(); void ToggleTrunk();
 	void ToggleWheelsInput();
+	void CancelInitialCameraReveal(bool bSnapToPreset);
+	void StartInitialCameraReveal();
 	void FinishInteriorExteriorCameraSwitch();
 	FVector GetVehicleCameraPivot() const;
 
@@ -199,10 +220,16 @@ private:
 	FMinimalViewInfo CameraTransitionStartPOV;
 	FMinimalViewInfo CameraTransitionEndPOV;
 	FVector CameraTransitionPivot = FVector::ZeroVector;
+	FVector OrbitPivot = FVector::ZeroVector;
+	FMinimalViewInfo InteractiveTargetPOV;
 	float CameraTransitionElapsed = 0.0f;
 	float CameraTransitionDuration = 0.85f;
+	FTimerHandle InitialRevealTimer;
 	FTimerHandle CameraZoneTransitionTimer;
 	FTimerHandle PersistenceDebounceTimer;
 	bool bOrbitTransitionActive = false;
+	bool bInitialRevealPending = false;
+	bool bInitialRevealActive = false;
+	bool bInteractiveSmoothingActive = false;
 	bool bApplyingLoadedSnapshot = false;
 };
