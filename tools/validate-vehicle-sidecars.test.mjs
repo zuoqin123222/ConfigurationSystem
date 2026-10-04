@@ -149,15 +149,13 @@ test("动画 sidecar 拒绝重复的 artifact clipId", () => {
   assert.ok(errors.some((error) => error.includes("artifact clipId 必须唯一")));
 });
 
-test("骨骼车辆拒绝循环、越界片段和未知目标骨骼", () => {
+test("骨骼车辆拒绝完整序列循环、越界片段和未知目标骨骼", () => {
   const riggedVehicle = clone(validRiggedVehicle);
   riggedVehicle.sequence.loop = true;
-  riggedVehicle.clips[0].loop = true;
   riggedVehicle.clips[0].targetBone = "Missing_Bone";
   riggedVehicle.clips[0].endFrame = riggedVehicle.sequence.endFrame + 1;
   const errors = validateRiggedVehicle(riggedVehicle, riggedVehicleSchema);
   assert.ok(errors.some((error) => error.includes("$.sequence.loop")));
-  assert.ok(errors.some((error) => error.includes("$.clips[0].loop")));
   assert.ok(errors.some((error) => error.includes("骨骼中不存在 Missing_Bone")));
   assert.ok(errors.some((error) => error.includes("帧范围必须位于完整 sequence 内")));
 });

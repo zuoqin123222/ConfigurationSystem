@@ -102,7 +102,19 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
     [...new Set(response.json().animations.map(
       (animation: { loopMode: string }) => animation.loopMode,
     ))],
-    ["none", "ping-pong", "forward"],
+    ["none", "forward"],
+  );
+  assert.deepEqual(
+    response.json().animations.map(
+      (animation: { frameRate: number }) => animation.frameRate,
+    ),
+    [30, 30, 30, 30, 30],
+  );
+  assert.deepEqual(
+    response.json().animations.slice(3).map(
+      (animation: { closeMode: string }) => animation.closeMode,
+    ),
+    ["reverse", "stop"],
   );
   assert.equal(
     response.json().skeletalMeshPath,

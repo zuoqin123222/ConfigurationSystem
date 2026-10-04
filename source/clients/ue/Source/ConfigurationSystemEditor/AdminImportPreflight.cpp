@@ -763,8 +763,16 @@ namespace AdminImport
 						AddError(Item, Context + TEXT(" 帧范围必须位于完整 sequence 内。"));
 					}
 				}
-				RequireBoolValue(Clip, TEXT("reversible"), true, Item, Context);
-				RequireBoolValue(Clip, TEXT("loop"), false, Item, Context);
+				bool bReversible = false;
+				if (!Clip->TryGetBoolField(TEXT("reversible"), bReversible))
+				{
+					AddError(Item, Context + TEXT(".reversible 必须是布尔值。"));
+				}
+				bool bLoop = false;
+				if (!Clip->TryGetBoolField(TEXT("loop"), bLoop))
+				{
+					AddError(Item, Context + TEXT(".loop 必须是布尔值。"));
+				}
 			}
 		}
 		SelectModelArtifact(Root, Item);

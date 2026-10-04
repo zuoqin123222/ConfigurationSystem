@@ -175,8 +175,8 @@ export const catalogFixture: CatalogV2 = {
       frameRate: 30,
       startFrame: 93,
       endFrame: 123,
-      loopMode: 'ping-pong',
-      closeMode: 'stop',
+      loopMode: 'none',
+      closeMode: 'reverse',
     },
     {
       animationId: 'wheel-spin',
@@ -185,7 +185,7 @@ export const catalogFixture: CatalogV2 = {
       startFrame: 124,
       endFrame: 184,
       loopMode: 'forward',
-      closeMode: 'reset-to-start',
+      closeMode: 'stop',
     },
   ],
   regions: [

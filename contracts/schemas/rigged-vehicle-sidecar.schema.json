@@ -158,8 +158,8 @@
         "action": { "enum": ["open", "close", "rotate", "translate", "custom"] },
         "startFrame": { "type": "integer", "minimum": 0 },
         "endFrame": { "type": "integer", "minimum": 1 },
-        "reversible": { "const": true },
-        "loop": { "const": false }
+        "reversible": { "type": "boolean" },
+        "loop": { "type": "boolean" }
       }
     },
     "authorization": {
