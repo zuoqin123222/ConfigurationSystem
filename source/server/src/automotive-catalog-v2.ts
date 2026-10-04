@@ -14,6 +14,17 @@ export interface CatalogNodeUi {
   cameraId?: CatalogCameraId | null;
   navigationMode?: "tabs" | "list" | "none" | "surfaces-as-components";
   layout?: "single" | "stack" | "grid";
+  animationId?: string | null;
+}
+
+export interface CatalogAnimation {
+  animationId: string;
+  displayName: string;
+  frameRate: number;
+  startFrame: number;
+  endFrame: number;
+  loopMode: "none" | "forward" | "ping-pong";
+  closeMode: "reverse" | "reset-to-start" | "stop";
 }
 
 export interface CatalogInteractionCamera {
@@ -79,6 +90,9 @@ export interface AutomotiveCatalog {
   defaultSelections: Record<string, string>;
   optionIdAliases: Record<string, string>;
   interactionCameras?: CatalogInteractionCamera[];
+  skeletalMeshPath: string;
+  sequencePath: string;
+  animations: CatalogAnimation[];
   categories: Array<{ categoryId: string; ui?: CatalogNodeUi; [key: string]: unknown }>;
   components: Array<{ componentId: string; ui?: CatalogNodeUi; [key: string]: unknown }>;
   surfaces: Array<{
@@ -173,6 +187,11 @@ function cameraKey(cameraId: CatalogCameraId): string {
   return `${typeof cameraId}:${cameraId}`;
 }
 
+function isGameObjectPath(value: unknown): value is string {
+  return typeof value === "string"
+    && /^\/Game\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value);
+}
+
 export interface CatalogMaterialFamily {
   materialFamilyId: string;
   ui?: {
@@ -209,6 +228,47 @@ function validateCatalogUi(catalog: AutomotiveCatalog): void {
     }
     cameraIds.add(key);
   }
+  if (!isGameObjectPath(catalog.skeletalMeshPath)) {
+    throw new Error("车型目录 v2 skeletalMeshPath 必须是 /Game/ 下的完整对象路径");
+  }
+  if (!isGameObjectPath(catalog.sequencePath)) {
+    throw new Error("车型目录 v2 sequencePath 必须是 /Game/ 下的完整对象路径");
+  }
+  if (!Array.isArray(catalog.animations) || catalog.animations.length === 0) {
+    throw new Error("车型目录 v2 animations 必须是非空数组");
+  }
+  const animationIds = new Set<string>();
+  const animationKeys = new Set([
+    "animationId",
+    "displayName",
+    "frameRate",
+    "startFrame",
+    "endFrame",
+    "loopMode",
+    "closeMode",
+  ]);
+  for (const animation of catalog.animations) {
+    if (!isRecord(animation)
+      || Object.keys(animation).some((key) => !animationKeys.has(key))
+      || Object.keys(animation).length !== animationKeys.size
+      || typeof animation.animationId !== "string"
+      || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(animation.animationId)
+      || animationIds.has(animation.animationId)
+      || typeof animation.displayName !== "string"
+      || animation.displayName.length === 0
+      || typeof animation.frameRate !== "number"
+      || !Number.isFinite(animation.frameRate)
+      || animation.frameRate <= 0
+      || !Number.isInteger(animation.startFrame)
+      || !Number.isInteger(animation.endFrame)
+      || animation.startFrame < 0
+      || animation.endFrame <= animation.startFrame
+      || !["none", "forward", "ping-pong"].includes(animation.loopMode)
+      || !["reverse", "reset-to-start", "stop"].includes(animation.closeMode)) {
+      throw new Error("车型目录 v2 animation 字段非法");
+    }
+    animationIds.add(animation.animationId);
+  }
   for (const item of [
     ...catalog.categories,
     ...catalog.components,
@@ -239,6 +299,11 @@ function validateCatalogUi(catalog: AutomotiveCatalog): void {
         || !cameraIds.has(cameraKey(cameraId as CatalogCameraId))) {
         throw new Error(`车型目录 v2 ui.cameraId 不存在：${String(cameraId)}`);
       }
+    }
+    const animationId = item.ui?.animationId;
+    if (animationId !== undefined && animationId !== null
+      && (typeof animationId !== "string" || !animationIds.has(animationId))) {
+      throw new Error(`车型目录 v2 ui.animationId 不存在：${String(animationId)}`);
     }
   }
   for (const family of catalog.materialFamilies) {

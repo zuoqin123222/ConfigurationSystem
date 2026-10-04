@@ -92,6 +92,38 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
     ),
     [0, 2, 4, null, 5],
   );
+  assert.deepEqual(
+    response.json().animations.map(
+      (animation: { displayName: string }) => animation.displayName,
+    ),
+    ["开启机舱盖", "开启左车门", "开启右车门", "后盖往复", "车轮旋转"],
+  );
+  assert.deepEqual(
+    [...new Set(response.json().animations.map(
+      (animation: { loopMode: string }) => animation.loopMode,
+    ))],
+    ["none", "ping-pong", "forward"],
+  );
+  assert.equal(
+    response.json().skeletalMeshPath,
+    "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2.automotive-configurator-audi-a5-rigged-v2",
+  );
+  assert.equal(
+    response.json().sequencePath,
+    "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2_Anim.automotive-configurator-audi-a5-rigged-v2_Anim",
+  );
+  assert.equal(
+    response.json().animations.some(
+      (animation: Record<string, unknown>) => Object.hasOwn(animation, "sequencePath"),
+    ),
+    false,
+  );
+  assert.equal(
+    response.json().components.find(
+      (component: { componentId: string }) => component.componentId === "chassis",
+    ).ui.animationId,
+    "hood",
+  );
   assert.equal(
     response.json().components.find(
       (component: { componentId: string }) => component.componentId === "wheel",
@@ -111,6 +143,41 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
       .map((family: { materialFamilyId: string }) => family.materialFamilyId),
     ["ultrasuede", "alcantara", "leather", "microfiber"],
   );
+});
+
+test("Server 只接受顶层完整骨骼网格和 AnimSequence 对象路径并拒绝 clip 私有路径", async (t) => {
+  const directory = await mkdtemp(resolve(tmpdir(), "automotive-v2-animation-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const fixtures = resolve(directory, "fixtures");
+  await mkdir(fixtures);
+  const catalog = structuredClone(loadAutomotiveCatalog().catalog);
+  const firstClip = catalog.animations[0] as unknown as Record<string, unknown>;
+  firstClip.sequencePath = "/Game/Invalid/PerClip.PerClip";
+  await writeFile(
+    resolve(fixtures, "sc01.catalog.draft.v2.json"),
+    JSON.stringify(catalog),
+    "utf8",
+  );
+  assert.throws(() => loadAutomotiveCatalog(directory), /animation 字段非法/);
+
+  delete firstClip.sequencePath;
+  catalog.sequencePath = "Invalid/FullSequence";
+  await writeFile(
+    resolve(fixtures, "sc01.catalog.draft.v2.json"),
+    JSON.stringify(catalog),
+    "utf8",
+  );
+  assert.throws(() => loadAutomotiveCatalog(directory), /sequencePath/);
+
+  catalog.sequencePath =
+    "/Game/Configurator/AuthorizedAudiA5/Animations/A_A5_FullVehicle.A_A5_FullVehicle";
+  catalog.skeletalMeshPath = "/Game/Invalid/SK_Car";
+  await writeFile(
+    resolve(fixtures, "sc01.catalog.draft.v2.json"),
+    JSON.stringify(catalog),
+    "utf8",
+  );
+  assert.throws(() => loadAutomotiveCatalog(directory), /skeletalMeshPath/);
 });
 
 test("Server 拒绝启用色相排序但缺少 sortColorHex 的材料 variant", async (t) => {

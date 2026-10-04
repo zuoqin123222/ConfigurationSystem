@@ -255,7 +255,7 @@ void FConfigurationSystemEditorModule::StartupModule()
 
 	AdminImportProbeCommand = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("ConfigurationSystem.AdminImport.Preflight"),
-		TEXT("按 -AdminModelFbx/-AdminModelSidecar/-AdminAnimationFbx/-AdminAnimationSidecar 运行预检并写 JSON。"),
+		TEXT("首选 -AdminRiggedVehicleFbx/-AdminRiggedVehicleSidecar；兼容旧模型/动画参数。"),
 		FConsoleCommandDelegate::CreateRaw(this, &FConfigurationSystemEditorModule::RunAdminImportProbe),
 		ECVF_Default);
 
@@ -266,7 +266,8 @@ void FConfigurationSystemEditorModule::StartupModule()
 			this, &FConfigurationSystemEditorModule::StartConfigurationBatchBake),
 		ECVF_Default);
 
-	if (FParse::Param(FCommandLine::Get(), TEXT("AdminImportPreflightProbe")))
+	if (FParse::Param(FCommandLine::Get(), TEXT("AdminImportPreflightProbe"))
+		|| FParse::Param(FCommandLine::Get(), TEXT("AdminImportApprovedProbe")))
 	{
 		// Defer exit until the engine loop is live; requesting it from module startup
 		// is not honored consistently by the desktop editor bootstrap.
@@ -383,6 +384,20 @@ void FConfigurationSystemEditorModule::RunAdminImportProbe()
 	TArray<FAdminImportSelection> Selections;
 	FString Fbx;
 	FString Sidecar;
+	const bool bHasRiggedVehicleFbx =
+		FParse::Value(FCommandLine::Get(), TEXT("AdminRiggedVehicleFbx="), Fbx);
+	const bool bHasRiggedVehicleSidecar =
+		FParse::Value(FCommandLine::Get(), TEXT("AdminRiggedVehicleSidecar="), Sidecar);
+	if (bHasRiggedVehicleFbx || bHasRiggedVehicleSidecar)
+	{
+		FAdminImportSelection& Selection = Selections.AddDefaulted_GetRef();
+		Selection.Kind = EAdminImportAssetKind::RiggedVehicle;
+		Selection.FbxFile = Fbx;
+		Selection.SidecarFile = Sidecar;
+	}
+
+	Fbx.Reset();
+	Sidecar.Reset();
 	const bool bHasModelFbx =
 		FParse::Value(FCommandLine::Get(), TEXT("AdminModelFbx="), Fbx);
 	const bool bHasModelSidecar =
@@ -409,7 +424,9 @@ void FConfigurationSystemEditorModule::RunAdminImportProbe()
 		Selection.SidecarFile = Sidecar;
 	}
 
-	FAdminImportPreflightResult Result = FAdminImportPreflight::Run(Selections);
+	FString SessionId;
+	FParse::Value(FCommandLine::Get(), TEXT("AdminImportSession="), SessionId);
+	FAdminImportPreflightResult Result = FAdminImportPreflight::Run(Selections, SessionId);
 	if (Result.bPassed)
 	{
 		UE_LOG(
@@ -426,9 +443,17 @@ void FConfigurationSystemEditorModule::RunAdminImportProbe()
 			TEXT("管理员导入预检失败：%s"),
 			*Result.ReportPath);
 	}
-	if (FParse::Param(FCommandLine::Get(), TEXT("AdminImportPreflightProbe")))
+	const bool bApprovedProbe =
+		FParse::Param(FCommandLine::Get(), TEXT("AdminImportApprovedProbe"));
+	if (bApprovedProbe && Result.bPassed)
 	{
-		FPlatformMisc::RequestExitWithStatus(false, Result.bPassed ? 0 : 7);
+		FAdminImportService::ImportApproved(Result);
+	}
+	if (FParse::Param(FCommandLine::Get(), TEXT("AdminImportPreflightProbe"))
+		|| bApprovedProbe)
+	{
+		const bool bSucceeded = bApprovedProbe ? Result.bImportSucceeded : Result.bPassed;
+		FPlatformMisc::RequestExitWithStatus(false, bSucceeded ? 0 : 7);
 	}
 }
 

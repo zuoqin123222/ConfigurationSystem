@@ -1,13 +1,22 @@
 #include "AdminImportPreflight.h"
 
 #include "AssetImportTask.h"
+#include "Animation/AnimSequence.h"
+#include "Animation/Skeleton.h"
+#include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetToolsModule.h"
 #include "Dom/JsonObject.h"
+#include "Engine/SkeletalMesh.h"
+#include "Factories/FbxAnimSequenceImportData.h"
+#include "Factories/FbxImportUI.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
 #include "Misc/EngineVersion.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Modules/ModuleManager.h"
+#include "ObjectTools.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
@@ -132,7 +141,17 @@ namespace AdminImport
 
 	const TCHAR* KindToString(const EAdminImportAssetKind Kind)
 	{
-		return Kind == EAdminImportAssetKind::Model ? TEXT("model") : TEXT("animation");
+		switch (Kind)
+		{
+		case EAdminImportAssetKind::RiggedVehicle:
+			return TEXT("rigged-vehicle");
+		case EAdminImportAssetKind::Model:
+			return TEXT("model");
+		case EAdminImportAssetKind::Animation:
+			return TEXT("animation");
+		default:
+			return TEXT("unknown");
+		}
 	}
 
 	bool IsLowerHexSha256(const FString& Value)
@@ -267,6 +286,26 @@ namespace AdminImport
 		return true;
 	}
 
+	bool ReadRequiredInteger(
+		const TSharedPtr<FJsonObject>& Object,
+		const TCHAR* Field,
+		int32& OutValue,
+		FAdminImportItemResult& Item,
+		const FString& Context)
+	{
+		double Value = 0.0;
+		if (!Object.IsValid() || !Object->TryGetNumberField(Field, Value)
+			|| Value < static_cast<double>(MIN_int32)
+			|| Value > static_cast<double>(MAX_int32)
+			|| FMath::FloorToDouble(Value) != Value)
+		{
+			AddError(Item, FString::Printf(TEXT("%s.%s 必须是整数。"), *Context, Field));
+			return false;
+		}
+		OutValue = static_cast<int32>(Value);
+		return true;
+	}
+
 	void ValidateCoordinateSystem(
 		const TSharedPtr<FJsonObject>& Root,
 		FAdminImportItemResult& Item)
@@ -327,15 +366,21 @@ namespace AdminImport
 		RequireStringValue(Export, TEXT("format"), TEXT("FBX"), Item, TEXT("$.export"));
 		RequireStringValue(Export, TEXT("fbxVersion"), TEXT("2020.2"), Item, TEXT("$.export"));
 		RequireBoolValue(Export, TEXT("binary"), true, Item, TEXT("$.export"));
-		RequireBoolValue(
-			Export,
-			Kind == EAdminImportAssetKind::Model ? TEXT("bakeTransforms") : TEXT("bakeAnimation"),
-			true,
-			Item,
-			TEXT("$.export"));
-		if (Kind == EAdminImportAssetKind::Animation)
+		if (Kind == EAdminImportAssetKind::Model)
 		{
+			RequireBoolValue(Export, TEXT("bakeTransforms"), true, Item, TEXT("$.export"));
+		}
+		else
+		{
+			RequireBoolValue(Export, TEXT("bakeAnimation"), true, Item, TEXT("$.export"));
 			RequireBoolValue(Export, TEXT("resampleAll"), true, Item, TEXT("$.export"));
+		}
+		if (Kind == EAdminImportAssetKind::RiggedVehicle)
+		{
+			RequireBoolValue(Export, TEXT("skeletalMesh"), true, Item, TEXT("$.export"));
+			RequireBoolValue(Export, TEXT("importAnimations"), true, Item, TEXT("$.export"));
+			RequireStringValue(
+				Export, TEXT("animationLength"), TEXT("exported-time"), Item, TEXT("$.export"));
 		}
 	}
 
@@ -524,6 +569,207 @@ namespace AdminImport
 		SelectAnimationArtifact(Root, Item);
 	}
 
+	void ValidateRiggedVehicle(
+		const TSharedPtr<FJsonObject>& Root,
+		FAdminImportItemResult& Item)
+	{
+		FString Id;
+		for (const TCHAR* Field : {TEXT("vehicleId"), TEXT("modelVersion"), TEXT("animationVersion")})
+		{
+			if (ReadRequiredString(Root, Field, Id, Item, TEXT("$")) && !IsStableId(Id))
+			{
+				AddError(Item, FString::Printf(TEXT("$.%s 不是合法稳定 ID。"), Field));
+			}
+		}
+
+		TSharedPtr<FJsonObject> Source;
+		if (ReadRequiredObject(Root, TEXT("source"), Source, Item))
+		{
+			ReadRequiredString(Source, TEXT("dcc"), Id, Item, TEXT("$.source"));
+			ReadRequiredString(Source, TEXT("dccVersion"), Id, Item, TEXT("$.source"));
+			TSharedPtr<FJsonObject> SourceFile;
+			if (ReadRequiredObject(Source, TEXT("file"), SourceFile, Item, TEXT("$.source")))
+			{
+				FString IgnoredPath;
+				FString SourceHash;
+				ReadRequiredString(SourceFile, TEXT("path"), IgnoredPath, Item, TEXT("$.source.file"));
+				if (ReadRequiredString(
+					SourceFile, TEXT("sha256"), SourceHash, Item, TEXT("$.source.file"))
+					&& !IsLowerHexSha256(SourceHash))
+				{
+					AddError(Item, TEXT("$.source.file.sha256 必须是 64 位小写十六进制。"));
+				}
+				double SourceBytes = 0.0;
+				if (!SourceFile->TryGetNumberField(TEXT("bytes"), SourceBytes)
+					|| SourceBytes < 1.0 || FMath::FloorToDouble(SourceBytes) != SourceBytes)
+				{
+					AddError(Item, TEXT("$.source.file.bytes 必须是正整数。"));
+				}
+			}
+		}
+
+		TSet<FString> Bones;
+		FString RootBone;
+		TSharedPtr<FJsonObject> Skeleton;
+		if (ReadRequiredObject(Root, TEXT("skeleton"), Skeleton, Item))
+		{
+			ReadRequiredString(Skeleton, TEXT("rootBone"), RootBone, Item, TEXT("$.skeleton"));
+			const TArray<TSharedPtr<FJsonValue>>* BoneValues = nullptr;
+			if (RequireNonEmptyArray(
+				Skeleton, TEXT("bones"), BoneValues, Item, TEXT("$.skeleton")))
+			{
+				for (int32 Index = 0; Index < BoneValues->Num(); ++Index)
+				{
+					FString Bone;
+					if (!(*BoneValues)[Index].IsValid()
+						|| !(*BoneValues)[Index]->TryGetString(Bone)
+						|| Bone.IsEmpty())
+					{
+						AddError(Item, FString::Printf(
+							TEXT("$.skeleton.bones[%d] 必须是非空字符串。"), Index));
+						continue;
+					}
+					if (Bones.Contains(Bone))
+					{
+						AddError(Item, FString::Printf(
+							TEXT("$.skeleton.bones[%d] 骨骼名重复。"), Index));
+					}
+					Bones.Add(Bone);
+				}
+				if (!RootBone.IsEmpty() && !Bones.Contains(RootBone))
+				{
+					AddError(Item, TEXT("$.skeleton.rootBone 必须存在于 skeleton.bones。"));
+				}
+			}
+		}
+
+		TSharedPtr<FJsonObject> Sequence;
+		if (ReadRequiredObject(Root, TEXT("sequence"), Sequence, Item))
+		{
+			if (ReadRequiredString(
+				Sequence, TEXT("sequenceId"), Item.SequenceId, Item, TEXT("$.sequence"))
+				&& !IsStableId(Item.SequenceId))
+			{
+				AddError(Item, TEXT("$.sequence.sequenceId 不是合法稳定 ID。"));
+			}
+			ReadRequiredInteger(
+				Sequence, TEXT("startFrame"), Item.SequenceStartFrame, Item, TEXT("$.sequence"));
+			ReadRequiredInteger(
+				Sequence, TEXT("endFrame"), Item.SequenceEndFrame, Item, TEXT("$.sequence"));
+			if (Item.SequenceEndFrame <= Item.SequenceStartFrame)
+			{
+				AddError(Item, TEXT("$.sequence.endFrame 必须大于 startFrame。"));
+			}
+			if (Item.SequenceStartFrame < 0)
+			{
+				AddError(Item, TEXT("$.sequence.startFrame 不得小于 0。"));
+			}
+			double FrameRate = 0.0;
+			if (!Sequence->TryGetNumberField(TEXT("frameRate"), FrameRate) || FrameRate < 1.0)
+			{
+				AddError(Item, TEXT("$.sequence.frameRate 必须大于等于 1。"));
+			}
+			else
+			{
+				Item.SequenceFrameRate = FrameRate;
+			}
+			RequireBoolValue(Sequence, TEXT("loop"), false, Item, TEXT("$.sequence"));
+			RequireBoolValue(Sequence, TEXT("rootMotion"), false, Item, TEXT("$.sequence"));
+		}
+
+		const TArray<TSharedPtr<FJsonValue>>* Clips = nullptr;
+		if (RequireNonEmptyArray(Root, TEXT("clips"), Clips, Item))
+		{
+			TSet<FString> ClipIds;
+			for (int32 Index = 0; Index < Clips->Num(); ++Index)
+			{
+				const FString Context = FString::Printf(TEXT("$.clips[%d]"), Index);
+				const TSharedPtr<FJsonObject> Clip =
+					(*Clips)[Index].IsValid() ? (*Clips)[Index]->AsObject() : nullptr;
+				if (!Clip.IsValid())
+				{
+					AddError(Item, Context + TEXT(" 必须是对象。"));
+					continue;
+				}
+				FString ClipId;
+				FString TargetBone;
+				if (ReadRequiredString(Clip, TEXT("clipId"), ClipId, Item, Context))
+				{
+					if (!IsStableId(ClipId))
+					{
+						AddError(Item, Context + TEXT(".clipId 不是合法稳定 ID。"));
+					}
+					if (ClipIds.Contains(ClipId))
+					{
+						AddError(Item, Context + TEXT(".clipId 必须唯一。"));
+					}
+					ClipIds.Add(ClipId);
+				}
+				if (ReadRequiredString(Clip, TEXT("targetBone"), TargetBone, Item, Context)
+					&& !Bones.Contains(TargetBone))
+				{
+					AddError(Item, Context + TEXT(".targetBone 必须引用 skeleton.bones。"));
+				}
+				FString PrimaryBone;
+				if (Clip->TryGetStringField(TEXT("primaryBone"), PrimaryBone))
+				{
+					if (PrimaryBone.IsEmpty() || !Bones.Contains(PrimaryBone))
+					{
+						AddError(Item, Context + TEXT(".primaryBone 必须引用 skeleton.bones。"));
+					}
+					else if (ClipId == TEXT("wheel-spin"))
+					{
+						Item.PrimaryBone = PrimaryBone;
+					}
+				}
+				if (ClipId == TEXT("wheel-spin"))
+				{
+					for (const TCHAR* WheelBone : {
+						TEXT("Wheel_FL"), TEXT("Wheel_FR"), TEXT("Wheel_RL"), TEXT("Wheel_RR")})
+					{
+						if (!Bones.Contains(WheelBone))
+						{
+							AddError(Item, Context + FString::Printf(
+								TEXT(" 缺少四轮曲线骨骼 %s。"), WheelBone));
+						}
+						else
+						{
+							Item.WheelCurveBones.AddUnique(WheelBone);
+						}
+					}
+				}
+				FString Action;
+				if (ReadRequiredString(Clip, TEXT("action"), Action, Item, Context)
+					&& Action != TEXT("open") && Action != TEXT("close")
+					&& Action != TEXT("rotate") && Action != TEXT("translate")
+					&& Action != TEXT("custom"))
+				{
+					AddError(Item, Context + TEXT(".action 不是支持的动作。"));
+				}
+				int32 StartFrame = 0;
+				int32 EndFrame = 0;
+				const bool bHasStart =
+					ReadRequiredInteger(Clip, TEXT("startFrame"), StartFrame, Item, Context);
+				const bool bHasEnd =
+					ReadRequiredInteger(Clip, TEXT("endFrame"), EndFrame, Item, Context);
+				if (bHasStart && bHasEnd)
+				{
+					if (EndFrame <= StartFrame)
+					{
+						AddError(Item, Context + TEXT(".endFrame 必须大于 startFrame。"));
+					}
+					if (StartFrame < Item.SequenceStartFrame || EndFrame > Item.SequenceEndFrame)
+					{
+						AddError(Item, Context + TEXT(" 帧范围必须位于完整 sequence 内。"));
+					}
+				}
+				RequireBoolValue(Clip, TEXT("reversible"), true, Item, Context);
+				RequireBoolValue(Clip, TEXT("loop"), false, Item, Context);
+			}
+		}
+		SelectModelArtifact(Root, Item);
+	}
+
 	void ValidateSelection(const FAdminImportSelection& Selection, FAdminImportItemResult& Item)
 	{
 		Item.Kind = Selection.Kind;
@@ -579,19 +825,37 @@ namespace AdminImport
 			return;
 		}
 
-		RequireStringValue(Root, TEXT("schemaVersion"), TEXT("1.0.0"), Item, TEXT("$"));
+		RequireStringValue(
+			Root,
+			TEXT("schemaVersion"),
+			Selection.Kind == EAdminImportAssetKind::RiggedVehicle
+				? TEXT("2.0.0")
+				: TEXT("1.0.0"),
+			Item,
+			TEXT("$"));
+		const TCHAR* ExpectedKind = TEXT("vehicle-animation");
+		if (Selection.Kind == EAdminImportAssetKind::RiggedVehicle)
+		{
+			ExpectedKind = TEXT("rigged-vehicle");
+		}
+		else if (Selection.Kind == EAdminImportAssetKind::Model)
+		{
+			ExpectedKind = TEXT("vehicle-model");
+		}
 		RequireStringValue(
 			Root,
 			TEXT("kind"),
-			Selection.Kind == EAdminImportAssetKind::Model
-				? TEXT("vehicle-model")
-				: TEXT("vehicle-animation"),
+			ExpectedKind,
 			Item,
 			TEXT("$"));
 		ValidateCoordinateSystem(Root, Item);
 		ValidateExport(Root, Selection.Kind, Item);
 		ValidateAuthorization(Root, Item);
-		if (Selection.Kind == EAdminImportAssetKind::Model)
+		if (Selection.Kind == EAdminImportAssetKind::RiggedVehicle)
+		{
+			ValidateRiggedVehicle(Root, Item);
+		}
+		else if (Selection.Kind == EAdminImportAssetKind::Model)
 		{
 			ValidateModel(Root, Item);
 		}
@@ -650,6 +914,20 @@ namespace AdminImport
 		Json->SetStringField(TEXT("actualSha256"), Item.ActualSha256);
 		Json->SetNumberField(TEXT("expectedBytes"), static_cast<double>(Item.ExpectedBytes));
 		Json->SetNumberField(TEXT("actualBytes"), static_cast<double>(Item.ActualBytes));
+		if (Item.Kind == EAdminImportAssetKind::RiggedVehicle)
+		{
+			Json->SetStringField(TEXT("sequenceId"), Item.SequenceId);
+			Json->SetNumberField(TEXT("sequenceFrameRate"), Item.SequenceFrameRate);
+			Json->SetNumberField(TEXT("sequenceStartFrame"), Item.SequenceStartFrame);
+			Json->SetNumberField(TEXT("sequenceEndFrame"), Item.SequenceEndFrame);
+			Json->SetStringField(TEXT("primaryBone"), Item.PrimaryBone);
+			TArray<TSharedPtr<FJsonValue>> WheelCurveValues;
+			for (const FString& Bone : Item.WheelCurveBones)
+			{
+				WheelCurveValues.Add(MakeShared<FJsonValueString>(Bone));
+			}
+			Json->SetArrayField(TEXT("wheelCurveBones"), WheelCurveValues);
+		}
 		Json->SetBoolField(TEXT("passed"), Item.bPassed);
 
 		TArray<TSharedPtr<FJsonValue>> Errors;
@@ -781,6 +1059,16 @@ bool FAdminImportPreflight::WriteJsonReport(FAdminImportPreflightResult& Result)
 	{
 		ImportedValues.Add(MakeShared<FJsonValueString>(ObjectPath));
 	}
+	TArray<TSharedPtr<FJsonValue>> ImportedAssetValues;
+	for (const FAdminImportedAssetResult& Asset : Result.ImportedAssets)
+	{
+		TSharedRef<FJsonObject> Json = MakeShared<FJsonObject>();
+		Json->SetStringField(TEXT("objectPath"), Asset.ObjectPath);
+		Json->SetStringField(TEXT("assetType"), Asset.AssetType);
+		Json->SetStringField(TEXT("skeletonPath"), Asset.SkeletonPath);
+		Json->SetNumberField(TEXT("animSequenceFrames"), Asset.AnimSequenceFrames);
+		ImportedAssetValues.Add(MakeShared<FJsonValueObject>(Json));
+	}
 
 	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetNumberField(TEXT("schemaVersion"), 1);
@@ -794,6 +1082,7 @@ bool FAdminImportPreflight::WriteJsonReport(FAdminImportPreflightResult& Result)
 	Root->SetBoolField(TEXT("importSucceeded"), Result.bImportSucceeded);
 	Root->SetArrayField(TEXT("items"), ItemValues);
 	Root->SetArrayField(TEXT("importedObjectPaths"), ImportedValues);
+	Root->SetArrayField(TEXT("importedAssets"), ImportedAssetValues);
 
 	FString JsonText;
 	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonText);
@@ -812,6 +1101,51 @@ bool FAdminImportPreflight::WriteJsonReport(FAdminImportPreflightResult& Result)
 	return bWritten;
 }
 
+void FAdminImportService::ConfigureImportTask(
+	UAssetImportTask& Task,
+	const EAdminImportAssetKind Kind)
+{
+	if (Kind != EAdminImportAssetKind::RiggedVehicle)
+	{
+		return;
+	}
+
+	UFbxImportUI* ImportUI = NewObject<UFbxImportUI>(&Task);
+	ImportUI->bAutomatedImportShouldDetectType = false;
+	ImportUI->MeshTypeToImport = FBXIT_SkeletalMesh;
+	ImportUI->OriginalImportType = FBXIT_SkeletalMesh;
+	ImportUI->bImportMesh = true;
+	ImportUI->bImportAnimations = true;
+	ImportUI->bImportMaterials = false;
+	ImportUI->bImportTextures = false;
+	ImportUI->bCreatePhysicsAsset = false;
+	if (ImportUI->AnimSequenceImportData != nullptr)
+	{
+		ImportUI->AnimSequenceImportData->AnimationLength = FBXALIT_ExportedTime;
+	}
+	Task.Options = ImportUI;
+}
+
+TArray<FName> FAdminImportService::FindNewPackageNames(
+	const TArray<FName>& Before,
+	const TArray<FName>& After)
+{
+	TSet<FName> Existing;
+	for (const FName PackageName : Before)
+	{
+		Existing.Add(PackageName);
+	}
+	TArray<FName> NewPackages;
+	for (const FName PackageName : After)
+	{
+		if (!Existing.Contains(PackageName))
+		{
+			NewPackages.AddUnique(PackageName);
+		}
+	}
+	return NewPackages;
+}
+
 bool FAdminImportService::ImportApproved(FAdminImportPreflightResult& Result)
 {
 	TArray<FAdminImportSelection> Selections;
@@ -827,6 +1161,7 @@ bool FAdminImportService::ImportApproved(FAdminImportPreflightResult& Result)
 	Result.bImportAttempted = true;
 	Result.bImportSucceeded = false;
 	Result.ImportedObjectPaths.Reset();
+	Result.ImportedAssets.Reset();
 
 	if (!Result.bPassed
 		|| !Result.StagingPath.StartsWith(
@@ -854,15 +1189,154 @@ bool FAdminImportService::ImportApproved(FAdminImportPreflightResult& Result)
 		Task->bReplaceExisting = false;
 		Task->bReplaceExistingSettings = false;
 		Task->bSave = true;
+		ConfigureImportTask(*Task, Item.Kind);
 		Tasks.Add(Task);
 	}
 
-	FAssetToolsModule::GetModule().Get().ImportAssetTasks(Tasks);
-	Result.bImportSucceeded = !Tasks.IsEmpty();
-	for (const UAssetImportTask* Task : Tasks)
+	IAssetRegistry& AssetRegistry =
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(
+			TEXT("AssetRegistry")).Get();
+	const auto QueryStagingAssets =
+		[&AssetRegistry, &Result](TArray<FAssetData>& OutAssets)
 	{
-		Result.ImportedObjectPaths.Append(Task->ImportedObjectPaths);
-		Result.bImportSucceeded &= !Task->ImportedObjectPaths.IsEmpty();
+		OutAssets.Reset();
+		AssetRegistry.GetAssetsByPath(
+			FName(*Result.StagingPath), OutAssets, true);
+	};
+	TArray<FAssetData> SessionNewAssets;
+	Result.bImportSucceeded = !Tasks.IsEmpty();
+	for (int32 Index = 0; Index < Tasks.Num(); ++Index)
+	{
+		UAssetImportTask* Task = Tasks[Index];
+		FAdminImportItemResult& Item = Result.Items[Index];
+		TArray<FAssetData> AssetsBeforeTask;
+		QueryStagingAssets(AssetsBeforeTask);
+		TArray<FName> PackagesBeforeTask;
+		for (const FAssetData& Asset : AssetsBeforeTask)
+		{
+			PackagesBeforeTask.AddUnique(Asset.PackageName);
+		}
+
+		TArray<UAssetImportTask*> SingleTask = {Task};
+		FAssetToolsModule::GetModule().Get().ImportAssetTasks(SingleTask);
+		AssetRegistry.ScanPathsSynchronous({Result.StagingPath}, true);
+		TArray<FAssetData> AssetsAfterTask;
+		QueryStagingAssets(AssetsAfterTask);
+		TArray<FName> PackagesAfterTask;
+		for (const FAssetData& Asset : AssetsAfterTask)
+		{
+			PackagesAfterTask.AddUnique(Asset.PackageName);
+		}
+		TSet<FName> NewPackageNames;
+		for (const FName PackageName :
+			FindNewPackageNames(PackagesBeforeTask, PackagesAfterTask))
+		{
+			NewPackageNames.Add(PackageName);
+		}
+		TArray<FAssetData> ItemNewAssets;
+		for (const FAssetData& Asset : AssetsAfterTask)
+		{
+			if (NewPackageNames.Contains(Asset.PackageName))
+			{
+				ItemNewAssets.Add(Asset);
+				SessionNewAssets.Add(Asset);
+				Result.ImportedObjectPaths.AddUnique(Asset.GetObjectPathString());
+				FAdminImportedAssetResult& Imported =
+					Result.ImportedAssets.AddDefaulted_GetRef();
+				Imported.ObjectPath = Asset.GetObjectPathString();
+				Imported.AssetType = Asset.AssetClassPath.ToString();
+				if (USkeletalMesh* SkeletalMesh = Cast<USkeletalMesh>(Asset.GetAsset()))
+				{
+					if (SkeletalMesh->GetSkeleton() != nullptr)
+					{
+						Imported.SkeletonPath = SkeletalMesh->GetSkeleton()->GetPathName();
+					}
+				}
+				else if (UAnimSequence* AnimSequence = Cast<UAnimSequence>(Asset.GetAsset()))
+				{
+					if (AnimSequence->GetSkeleton() != nullptr)
+					{
+						Imported.SkeletonPath = AnimSequence->GetSkeleton()->GetPathName();
+					}
+					Imported.AnimSequenceFrames = AnimSequence->GetNumberOfSampledKeys();
+				}
+			}
+		}
+
+		Result.bImportSucceeded &= !ItemNewAssets.IsEmpty();
+		if (Item.Kind != EAdminImportAssetKind::RiggedVehicle)
+		{
+			continue;
+		}
+
+		int32 SkeletalMeshCount = 0;
+		int32 AnimSequenceCount = 0;
+		USkeletalMesh* ImportedMesh = nullptr;
+		UAnimSequence* ImportedSequence = nullptr;
+		for (const FAssetData& Asset : ItemNewAssets)
+		{
+			UObject* ImportedObject = Asset.GetAsset();
+			if (USkeletalMesh* SkeletalMesh = Cast<USkeletalMesh>(ImportedObject))
+			{
+				++SkeletalMeshCount;
+				ImportedMesh = SkeletalMesh;
+			}
+			else if (UAnimSequence* AnimSequence = Cast<UAnimSequence>(ImportedObject))
+			{
+				++AnimSequenceCount;
+				ImportedSequence = AnimSequence;
+			}
+		}
+		if (SkeletalMeshCount != 1)
+		{
+			AdminImport::AddError(Item, FString::Printf(
+				TEXT("骨骼车辆导入必须产出 1 个 SkeletalMesh，实际为 %d。"),
+				SkeletalMeshCount));
+		}
+		if (ImportedMesh == nullptr || ImportedMesh->GetSkeleton() == nullptr)
+		{
+			AdminImport::AddError(Item, TEXT("骨骼车辆导入产物必须关联有效 Skeleton。"));
+		}
+		if (AnimSequenceCount != 1)
+		{
+			AdminImport::AddError(Item, FString::Printf(
+				TEXT("骨骼车辆导入必须产出 1 条完整 AnimSequence，实际为 %d。"),
+				AnimSequenceCount));
+		}
+		if (ImportedSequence != nullptr && ImportedMesh != nullptr
+			&& ImportedSequence->GetSkeleton() != ImportedMesh->GetSkeleton())
+		{
+			AdminImport::AddError(Item, TEXT("AnimSequence 与 SkeletalMesh 必须使用同一 Skeleton。"));
+		}
+		if (ImportedSequence != nullptr)
+		{
+			const int32 ExpectedFrames =
+				Item.SequenceEndFrame - Item.SequenceStartFrame + 1;
+			const int32 ActualFrames = ImportedSequence->GetNumberOfSampledKeys();
+			if (ActualFrames != ExpectedFrames)
+			{
+				AdminImport::AddError(Item, FString::Printf(
+					TEXT("AnimSequence 帧数不匹配：sidecar=%d，实际=%d。"),
+					ExpectedFrames,
+					ActualFrames));
+			}
+		}
+		Item.bPassed = Item.Errors.IsEmpty();
+		Result.bImportSucceeded &= Item.bPassed;
+	}
+
+	if (!Result.bImportSucceeded && !SessionNewAssets.IsEmpty())
+	{
+		const int32 DeletedCount = ObjectTools::DeleteAssets(SessionNewAssets, false);
+		if (DeletedCount != SessionNewAssets.Num())
+		{
+			UE_LOG(
+				LogAdminImport,
+				Error,
+				TEXT("导入失败后清理暂存资产不完整：期望=%d，实际=%d。"),
+				SessionNewAssets.Num(),
+				DeletedCount);
+		}
 	}
 
 	FAdminImportPreflight::WriteJsonReport(Result);

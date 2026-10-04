@@ -37,6 +37,7 @@ namespace AutomotiveCatalog
 		FString ComponentId;
 		FString DisplayName;
 		bool bRequired = false;
+		TOptional<FString> AnimationId;
 	};
 
 	struct CONFIGURATIONSYSTEM_API FRegion
@@ -50,6 +51,7 @@ namespace AutomotiveCatalog
 		FString CategoryId;
 		FString RegionId;
 		FString DisplayName;
+		TOptional<FString> AnimationId;
 	};
 
 	struct CONFIGURATIONSYSTEM_API FComponent
@@ -57,6 +59,18 @@ namespace AutomotiveCatalog
 		FString ComponentId;
 		FString CategoryId;
 		FString DisplayName;
+		TOptional<FString> AnimationId;
+	};
+
+	struct CONFIGURATIONSYSTEM_API FAnimation
+	{
+		FString AnimationId;
+		FString DisplayName;
+		double FrameRate = 30.0;
+		int32 StartFrame = 0;
+		int32 EndFrame = 0;
+		FString LoopMode;
+		FString CloseMode;
 	};
 
 	struct CONFIGURATIONSYSTEM_API FMaterialFamily
@@ -113,6 +127,9 @@ namespace AutomotiveCatalog
 		TArray<FString> SelectionOrder;
 		TMap<FString, FString> DefaultSelections;
 		TMap<FString, FString> OptionIdAliases;
+		FString SkeletalMeshPath;
+		FString SequencePath;
+		TArray<FAnimation> Animations;
 		TArray<FRegion> Regions;
 		TArray<FCategory> Categories;
 		TArray<FComponent> Components;
@@ -149,6 +166,7 @@ namespace AutomotiveCatalog
 		const FComponent* FindComponent(const FString& ComponentId) const;
 		const FSurface* FindSurface(const FString& SurfaceId) const;
 		const FMaterialFamily* FindMaterialFamily(const FString& MaterialFamilyId) const;
+		const FAnimation* FindAnimation(const FString& AnimationId) const;
 
 	private:
 		FCatalog Catalog;
@@ -161,6 +179,7 @@ namespace AutomotiveCatalog
 		TMap<FString, int32> ComponentIndexById;
 		TMap<FString, int32> SurfaceIndexById;
 		TMap<FString, int32> FamilyIndexById;
+		TMap<FString, int32> AnimationIndexById;
 		TMap<FString, TArray<FString>> CategoryIdsByRegion;
 		TMap<FString, TArray<FString>> ComponentIdsByCategory;
 		TMap<FString, TArray<FString>> SurfaceIdsByComponent;

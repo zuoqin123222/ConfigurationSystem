@@ -34,6 +34,51 @@ bool UConfiguratorWebBridge::IsSupportedCameraId(const FString& CameraId)
 	return true;
 }
 
+bool UConfiguratorWebBridge::IsSupportedAnimationId(const FString& AnimationId)
+{
+	if (AnimationId.IsEmpty() || AnimationId.Len() > 64
+		|| AnimationId.StartsWith(TEXT("-"))
+		|| AnimationId.EndsWith(TEXT("-")))
+	{
+		return false;
+	}
+	bool bPreviousWasDash = false;
+	for (const TCHAR Character : AnimationId)
+	{
+		const bool bIsDash = Character == TEXT('-');
+		if ((!FChar::IsLower(Character)
+				&& !FChar::IsDigit(Character)
+				&& !bIsDash)
+			|| (bIsDash && bPreviousWasDash))
+		{
+			return false;
+		}
+		bPreviousWasDash = bIsDash;
+	}
+	return true;
+}
+
+bool UConfiguratorWebBridge::PlayAnimation(const FString& AnimationId)
+{
+	return Owner != nullptr
+		&& IsSupportedAnimationId(AnimationId)
+		&& Owner->PlayExperienceAnimation(AnimationId);
+}
+
+bool UConfiguratorWebBridge::CloseAnimation(const FString& AnimationId)
+{
+	return Owner != nullptr
+		&& IsSupportedAnimationId(AnimationId)
+		&& Owner->CloseExperienceAnimation(AnimationId);
+}
+
+bool UConfiguratorWebBridge::FocusAnimation(const FString& NextAnimationId)
+{
+	return Owner != nullptr
+		&& (NextAnimationId.IsEmpty() || IsSupportedAnimationId(NextAnimationId))
+		&& Owner->FocusExperienceAnimation(NextAnimationId);
+}
+
 bool UConfiguratorWebBridge::IsSupportedLightPreset(const FString& Preset)
 {
 	return Preset == TEXT("studio") || Preset == TEXT("outdoor");

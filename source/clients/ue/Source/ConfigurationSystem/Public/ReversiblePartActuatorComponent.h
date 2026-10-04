@@ -35,6 +35,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Vehicle|Part Actuator")
 	void Toggle();
 
+	/** 立即冻结在当前插值姿态；下一次 SetOpen/Toggle 会恢复驱动。 */
+	UFUNCTION(BlueprintCallable, Category="Vehicle|Part Actuator")
+	void FreezeAtCurrentPose();
+
 	/**
 	 * 推进一步，供固定步长模拟或自动化探针复用。
 	 * 正常游戏无需调用，组件 Tick 会自动推进。
@@ -79,4 +83,5 @@ private:
 	float Progress = 0.0f;
 
 	bool bOpenRequested = false;
+	bool bFrozen = false;
 };

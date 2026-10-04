@@ -1067,7 +1067,29 @@ bool AConfigShowroomPlayerController::SetAnimationEnabled(const bool bEnabled)
 
 bool AConfigShowroomPlayerController::IsAnimationEnabled() const
 {
-	return IsValid(Vehicle) && Vehicle->IsWheelAnimationEnabled();
+	return IsValid(Vehicle)
+		&& (Vehicle->IsVehicleAnimationPlaying()
+			|| Vehicle->IsWheelAnimationEnabled());
+}
+
+bool AConfigShowroomPlayerController::PlayAnimation(const FName AnimationId)
+{
+	return IsValid(Vehicle) && Vehicle->PlayVehicleAnimation(AnimationId);
+}
+
+bool AConfigShowroomPlayerController::CloseAnimation(const FName AnimationId)
+{
+	return IsValid(Vehicle) && Vehicle->CloseVehicleAnimation(AnimationId);
+}
+
+bool AConfigShowroomPlayerController::FocusAnimation(const FName NextAnimationId)
+{
+	return IsValid(Vehicle) && Vehicle->FocusVehicleAnimation(NextAnimationId);
+}
+
+FName AConfigShowroomPlayerController::GetActiveAnimationId() const
+{
+	return IsValid(Vehicle) ? Vehicle->GetActiveVehicleAnimationId() : NAME_None;
 }
 
 bool AConfigShowroomPlayerController::SetLightPreset(const FString& Preset)
@@ -1125,8 +1147,8 @@ bool AConfigShowroomPlayerController::SetRenderMode(
 		GameInstance->GetSubsystem<UPathTracingExperienceSubsystem>();
 	if (IsValid(PathTracing) && bEnablePathTracing && IsValid(Vehicle))
 	{
-		// 持续运动会让 Path Tracing 每帧清空累积；产品模式进入前先平滑停轮。
-		Vehicle->SetWheelAnimationEnabled(false);
+		// Path Tracing 从本帧开始累积，不能等待反播或平滑减速结束。
+		Vehicle->FreezeAllVehicleMotion();
 	}
 	return IsValid(PathTracing)
 		&& PathTracing->SetPathTracingEnabled(bEnablePathTracing, OutFailureReason);
@@ -1146,6 +1168,11 @@ FString AConfigShowroomPlayerController::GetRenderMode() const
 void AConfigShowroomPlayerController::ResetPresentation()
 {
 	SwitchCamera(0);
+	const FName ActiveAnimationId = GetActiveAnimationId();
+	if (!ActiveAnimationId.IsNone())
+	{
+		CloseAnimation(ActiveAnimationId);
+	}
 	SetAnimationEnabled(false);
 	SetLightPreset(TEXT("studio"));
 	FString IgnoredFailureReason;

@@ -1,0 +1,1 @@
+source/clients/ue/Content/Configurator/_ImportStaging/audi-a5-rigged-v2/*.uasset filter=lfs diff=lfs merge=lfs -text

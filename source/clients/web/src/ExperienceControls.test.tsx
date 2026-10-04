@@ -23,23 +23,48 @@ describe('ExperienceControls', () => {
 
   it('通过受限 bridge 控制镜头、动画、灯光、渲染、复位和全屏', async () => {
     const user = userEvent.setup()
-    const initialState = {
+    let currentState = {
       cameraId: 'wheel',
       animationEnabled: false,
+      animationId: null as string | null,
       lightPreset: 'studio',
       renderMode: 'realtime',
       quality: 'high',
       fullscreen: false,
     }
     const bridge = {
-      getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify(initialState)),
+      getpresentationstatejson: vi.fn(
+        async () => JSON.stringify(currentState),
+      ),
       setcameraid: vi.fn().mockResolvedValue(true),
-      setanimationenabled: vi.fn().mockResolvedValue(true),
-      setlightpreset: vi.fn().mockResolvedValue(true),
-      setrendermode: vi.fn().mockResolvedValue(true),
+      focusanimation: vi.fn(async (animationId: string) => {
+        currentState = {
+          ...currentState,
+          animationEnabled: animationId !== '',
+          animationId: animationId || null,
+        }
+        return true
+      }),
+      setlightpreset: vi.fn(async (preset: string) => {
+        currentState = {
+          ...currentState,
+          lightPreset: preset as 'studio' | 'outdoor',
+        }
+        return true
+      }),
+      setrendermode: vi.fn(async (mode: string) => {
+        currentState = {
+          ...currentState,
+          renderMode: mode as 'realtime' | 'path-tracing',
+        }
+        return true
+      }),
       setqualitylevel: vi.fn().mockResolvedValue(true),
       resetpresentation: vi.fn().mockResolvedValue(true),
-      setfullscreen: vi.fn().mockResolvedValue(true),
+      setfullscreen: vi.fn(async (enabled: boolean) => {
+        currentState = { ...currentState, fullscreen: enabled }
+        return true
+      }),
     }
     window.ue = { uebridge: bridge }
     render(<ExperienceControls ueEnabled />)
@@ -57,6 +82,12 @@ describe('ExperienceControls', () => {
       .toHaveAttribute('src', '/camera-driver.svg')
     await user.click(within(cameraMenu).getByRole('menuitemradio', { name: '驾驶位' }))
     await user.click(within(toolbar).getByRole('button', { name: '动画' }))
+    const animationMenu = await screen.findByRole('menu', { name: '动画列表' })
+    expect(within(animationMenu).getAllByRole('menuitemradio').map((item) => item.textContent))
+      .toEqual(['开启机舱盖', '后盖往复', '车轮旋转'])
+    await user.click(within(animationMenu).getByRole('menuitemradio', { name: '开启机舱盖' }))
+    await user.click(within(toolbar).getByRole('button', { name: '动画' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
     await user.click(within(toolbar).getByRole('button', { name: '灯光' }))
     await user.click(within(toolbar).getByRole('button', { name: '渲染' }))
     await user.click(within(toolbar).getByRole('button', { name: '画质' }))
@@ -65,12 +96,14 @@ describe('ExperienceControls', () => {
     await user.click(within(toolbar).getByRole('button', { name: '全屏' }))
 
     expect(bridge.setcameraid).toHaveBeenCalledWith('driver')
-    expect(bridge.setanimationenabled).toHaveBeenCalledWith(true)
+    expect(bridge.focusanimation).toHaveBeenNthCalledWith(1, 'hood')
+    expect(bridge.focusanimation).toHaveBeenNthCalledWith(2, '')
     expect(bridge.setlightpreset).toHaveBeenCalledWith('outdoor')
     expect(bridge.setrendermode).toHaveBeenCalledWith('path-tracing')
     expect(bridge.setqualitylevel).toHaveBeenCalledWith('epic')
     expect(bridge.resetpresentation).toHaveBeenCalledOnce()
     expect(bridge.setfullscreen).toHaveBeenCalledWith(true)
+    expect(bridge.getpresentationstatejson.mock.calls.length).toBeGreaterThanOrEqual(15)
   })
 
   it('从 UE 状态初始化控件，Promise 拒绝时不更新激活状态', async () => {
@@ -84,7 +117,7 @@ describe('ExperienceControls', () => {
         quality: 'epic',
         fullscreen: true,
       })),
-      setanimationenabled: vi.fn().mockRejectedValue(new Error('rejected')),
+      focusanimation: vi.fn().mockRejectedValue(new Error('rejected')),
     }
     window.ue = { uebridge: bridge }
     render(<ExperienceControls ueEnabled />)
@@ -92,6 +125,7 @@ describe('ExperienceControls', () => {
     const animation = screen.getByRole('button', { name: '动画' })
     await waitFor(() => expect(animation).toHaveAttribute('aria-pressed', 'true'))
     await user.click(animation)
+    await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
 
     expect(await screen.findByRole('alert'))
       .toHaveTextContent('UE 控制桥不可用或命令被拒绝')
@@ -156,6 +190,7 @@ describe('ExperienceControls', () => {
 
     const animation = screen.getByRole('button', { name: '动画' })
     await user.click(animation)
+    await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
 
     expect(screen.getByRole('alert')).toHaveTextContent('UE 控制桥不可用或命令被拒绝')
     expect(animation).toHaveAttribute('aria-pressed', 'false')

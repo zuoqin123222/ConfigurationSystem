@@ -40,7 +40,7 @@ function assertAllowedKeys(value, required, optional, label) {
   );
 }
 
-function validateNodeUi(ui, cameras, label) {
+function validateNodeUi(ui, cameras, animations, label) {
   if (ui === undefined) return;
   check(isRecord(ui), `${label}.ui 必须是 object`);
   check(
@@ -56,6 +56,12 @@ function validateNodeUi(ui, cameras, label) {
     check(
       cameras.has(`${typeof ui.cameraId}:${ui.cameraId}`),
       `${ui.cameraId} 引用了未知 interactionCamera`
+    );
+  }
+  if (ui.animationId !== undefined && ui.animationId !== null) {
+    check(
+      typeof ui.animationId === "string" && animations.has(ui.animationId),
+      `${ui.animationId} 引用了未知 animation`
     );
   }
   check(
@@ -126,6 +132,11 @@ const PAINT_KEYS = [
   "flakeIntensity"
 ];
 
+function isGameObjectPath(value) {
+  return typeof value === "string"
+    && /^\/Game\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value);
+}
+
 function canonicalCustomizationLines(catalog, customizations = {}, renderSurfaces) {
   return catalog.selectionOrder.flatMap((surfaceId) => {
     if (renderSurfaces && !renderSurfaces.has(surfaceId)) return [];
@@ -195,6 +206,9 @@ export function validateCatalog(catalog) {
     "selectionOrder",
     "defaultSelections",
     "optionIdAliases",
+    "skeletalMeshPath",
+    "sequencePath",
+    "animations",
     "regions",
     "categories",
     "components",
@@ -220,6 +234,10 @@ export function validateCatalog(catalog) {
   check(catalog.vehicle.basePriceMinor === 22980000, "SC01 基础价必须为 22980000 分");
   check(catalog.vehicle.priceStatus === "confirmed", "基础价状态必须为 confirmed");
   check(catalog.vehicle.quotable === false, "草案车型必须禁止报价");
+  check(isGameObjectPath(catalog.skeletalMeshPath),
+    "catalog.skeletalMeshPath 必须是 /Game/ 下的完整对象路径");
+  check(isGameObjectPath(catalog.sequencePath),
+    "catalog.sequencePath 必须是 /Game/ 下的完整对象路径");
 
   const regions = uniqueIndex(catalog.regions, "regionId", "regions");
   const categories = uniqueIndex(catalog.categories, "categoryId", "categories");
@@ -265,6 +283,30 @@ export function validateCatalog(catalog) {
     check(typeof camera.displayName === "string" && camera.displayName.length > 0, "interactionCamera.displayName 非法");
     check(typeof camera.iconUrl === "string" && camera.iconUrl.startsWith("/"), "interactionCamera.iconUrl 非法");
     cameras.set(key, camera);
+  }
+  const animations = uniqueIndex(catalog.animations, "animationId", "animations");
+  for (const animation of animations.values()) {
+    assertExactKeys(animation, [
+      "animationId",
+      "displayName",
+      "frameRate",
+      "startFrame",
+      "endFrame",
+      "loopMode",
+      "closeMode"
+    ], `animation ${animation.animationId}`);
+    check(typeof animation.displayName === "string" && animation.displayName.length > 0,
+      `${animation.animationId}.displayName 非法`);
+    check(typeof animation.frameRate === "number" && Number.isFinite(animation.frameRate)
+      && animation.frameRate > 0, `${animation.animationId}.frameRate 非法`);
+    check(Number.isInteger(animation.startFrame) && animation.startFrame >= 0,
+      `${animation.animationId}.startFrame 非法`);
+    check(Number.isInteger(animation.endFrame) && animation.endFrame > animation.startFrame,
+      `${animation.animationId}.endFrame 非法`);
+    check(["none", "forward", "ping-pong"].includes(animation.loopMode),
+      `${animation.animationId}.loopMode 非法`);
+    check(["reverse", "reset-to-start", "stop"].includes(animation.closeMode),
+      `${animation.animationId}.closeMode 非法`);
   }
   check(isRecord(catalog.optionIdAliases), "optionIdAliases 必须是 object");
   for (const [legacyOptionId, optionId] of Object.entries(catalog.optionIdAliases)) {
@@ -329,6 +371,7 @@ export function validateCatalog(catalog) {
     validateNodeUi(
       item.ui,
       cameras,
+      animations,
       item.categoryId ?? item.componentId ?? item.surfaceId
     );
   }

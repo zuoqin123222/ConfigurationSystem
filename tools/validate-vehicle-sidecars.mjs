@@ -9,10 +9,13 @@ const fixtureDir = resolve(root, "contracts", "fixtures");
 const contractFiles = {
   vehicleSchema: resolve(schemaDir, "vehicle-model-sidecar.schema.json"),
   animationSchema: resolve(schemaDir, "vehicle-animation-sidecar.schema.json"),
+  riggedVehicleSchema: resolve(schemaDir, "rigged-vehicle-sidecar.schema.json"),
   validVehicle: resolve(fixtureDir, "vehicle-model.valid.json"),
   validAnimation: resolve(fixtureDir, "vehicle-animation.valid.json"),
+  validRiggedVehicle: resolve(fixtureDir, "rigged-vehicle.valid.json"),
   invalidVehicle: resolve(fixtureDir, "vehicle-model.invalid.json"),
-  invalidAnimation: resolve(fixtureDir, "vehicle-animation.invalid.json")
+  invalidAnimation: resolve(fixtureDir, "vehicle-animation.invalid.json"),
+  invalidRiggedVehicle: resolve(fixtureDir, "rigged-vehicle.invalid.json")
 };
 
 async function readJson(path) {
@@ -259,25 +262,102 @@ export function validateAnimation(animation, schema, vehicle) {
   ];
 }
 
+export function validateRiggedVehicleSemantics(riggedVehicle) {
+  const errors = [...validateAuthorization(riggedVehicle.authorization, "$.authorization")];
+  const bones = new Set(riggedVehicle.skeleton?.bones ?? []);
+  const rootBone = riggedVehicle.skeleton?.rootBone;
+  if (rootBone && !bones.has(rootBone)) {
+    errors.push("$.skeleton.rootBone: 必须存在于 skeleton.bones");
+  }
+
+  const sequenceStart = riggedVehicle.sequence?.startFrame;
+  const sequenceEnd = riggedVehicle.sequence?.endFrame;
+  if (
+    Number.isInteger(sequenceStart) &&
+    Number.isInteger(sequenceEnd) &&
+    sequenceEnd <= sequenceStart
+  ) {
+    errors.push("$.sequence.endFrame: 必须大于 startFrame");
+  }
+
+  const clipIds = new Set();
+  for (const [index, clip] of (riggedVehicle.clips ?? []).entries()) {
+    const path = `$.clips[${index}]`;
+    if (clipIds.has(clip.clipId)) errors.push(`${path}.clipId: clipId 必须唯一`);
+    clipIds.add(clip.clipId);
+    if (!bones.has(clip.targetBone)) {
+      errors.push(`${path}.targetBone: 骨骼中不存在 ${clip.targetBone}`);
+    }
+    if (clip.primaryBone !== undefined && !bones.has(clip.primaryBone)) {
+      errors.push(`${path}.primaryBone: 骨骼中不存在 ${clip.primaryBone}`);
+    }
+    if (clip.clipId === "wheel-spin") {
+      for (const wheelBone of ["Wheel_FL", "Wheel_FR", "Wheel_RL", "Wheel_RR"]) {
+        if (!bones.has(wheelBone)) {
+          errors.push(`${path}: 缺少四轮曲线骨骼 ${wheelBone}`);
+        }
+      }
+    }
+    if (clip.endFrame <= clip.startFrame) {
+      errors.push(`${path}.endFrame: 必须大于 startFrame`);
+    }
+    if (
+      Number.isInteger(sequenceStart) &&
+      Number.isInteger(sequenceEnd) &&
+      (clip.startFrame < sequenceStart || clip.endFrame > sequenceEnd)
+    ) {
+      errors.push(`${path}: 帧范围必须位于完整 sequence 内`);
+    }
+  }
+  return errors;
+}
+
+export function validateRiggedVehicle(riggedVehicle, schema) {
+  return [
+    ...validateJsonSchema(riggedVehicle, schema),
+    ...validateRiggedVehicleSemantics(riggedVehicle)
+  ];
+}
+
 export async function validateSidecarFixtures() {
-  const [vehicleSchema, animationSchema, vehicle, animation, invalidVehicle, invalidAnimation] =
+  const [
+    vehicleSchema,
+    animationSchema,
+    riggedVehicleSchema,
+    vehicle,
+    animation,
+    riggedVehicle,
+    invalidVehicle,
+    invalidAnimation,
+    invalidRiggedVehicle
+  ] =
     await Promise.all(Object.values(contractFiles).map(readJson));
   const validVehicleErrors = validateVehicle(vehicle, vehicleSchema);
   const validAnimationErrors = validateAnimation(animation, animationSchema, vehicle);
+  const validRiggedVehicleErrors = validateRiggedVehicle(riggedVehicle, riggedVehicleSchema);
   const invalidVehicleErrors = validateVehicle(invalidVehicle, vehicleSchema);
   const invalidAnimationErrors = validateAnimation(invalidAnimation, animationSchema, vehicle);
+  const invalidRiggedVehicleErrors = validateRiggedVehicle(
+    invalidRiggedVehicle,
+    riggedVehicleSchema
+  );
   const failures = [];
   if (validVehicleErrors.length) failures.push(...validVehicleErrors.map((error) => `有效车辆 fixture: ${error}`));
   if (validAnimationErrors.length) failures.push(...validAnimationErrors.map((error) => `有效动画 fixture: ${error}`));
+  if (validRiggedVehicleErrors.length) {
+    failures.push(...validRiggedVehicleErrors.map((error) => `有效骨骼车辆 fixture: ${error}`));
+  }
   if (!invalidVehicleErrors.length) failures.push("无效车辆 fixture 未被拒绝");
   if (!invalidAnimationErrors.length) failures.push("无效动画 fixture 未被拒绝");
+  if (!invalidRiggedVehicleErrors.length) failures.push("无效骨骼车辆 fixture 未被拒绝");
   return {
     failures,
     rejected: {
       vehicle: invalidVehicleErrors,
-      animation: invalidAnimationErrors
+      animation: invalidAnimationErrors,
+      riggedVehicle: invalidRiggedVehicleErrors
     },
-    summary: "2 个 sidecar Schema、2 个有效 fixture、2 个无效 fixture"
+    summary: "3 个 sidecar Schema、3 个有效 fixture、3 个无效 fixture"
   };
 }
 

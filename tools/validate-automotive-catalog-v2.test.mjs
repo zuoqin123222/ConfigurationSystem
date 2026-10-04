@@ -73,6 +73,26 @@ test("catalog 声明五个语义交互镜头并校验层级 cameraId 引用", as
   assert.throws(() => validateCatalog(invalidLegacyIndex), /legacyIndex 非法/);
 });
 
+test("catalog 顶层声明完整骨骼网格与动画序列对象路径", async () => {
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  assert.equal(
+    catalog.skeletalMeshPath,
+    "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2.automotive-configurator-audi-a5-rigged-v2"
+  );
+  assert.equal(
+    catalog.sequencePath,
+    "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2_Anim.automotive-configurator-audi-a5-rigged-v2_Anim"
+  );
+
+  const incompleteMesh = structuredClone(catalog);
+  incompleteMesh.skeletalMeshPath = "/Game/Vehicle/SK_Car";
+  assert.throws(() => validateCatalog(incompleteMesh), /skeletalMeshPath/);
+
+  const incompleteSequence = structuredClone(catalog);
+  incompleteSequence.sequencePath = "/Game/Vehicle/A_FullVehicle";
+  assert.throws(() => validateCatalog(incompleteSequence), /sequencePath/);
+});
+
 test("catalog UI 扩展保持向后兼容并接受旧数字 cameraId", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   delete catalog.interactionCameras;

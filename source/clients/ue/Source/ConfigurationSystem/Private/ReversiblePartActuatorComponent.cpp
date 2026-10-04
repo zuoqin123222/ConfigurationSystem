@@ -18,23 +18,32 @@ void UReversiblePartActuatorComponent::BindPart(
 	OpenRelativeTransform = InOpenRelativeTransform;
 	Progress = bStartOpen ? 1.0f : 0.0f;
 	bOpenRequested = bStartOpen;
+	bFrozen = false;
 	ApplyProgress();
 }
 
 void UReversiblePartActuatorComponent::SetOpen(const bool bInOpen)
 {
 	bOpenRequested = bInOpen;
+	bFrozen = false;
 }
 
 void UReversiblePartActuatorComponent::Toggle()
 {
 	bOpenRequested = !bOpenRequested;
+	bFrozen = false;
+}
+
+void UReversiblePartActuatorComponent::FreezeAtCurrentPose()
+{
+	bFrozen = true;
 }
 
 bool UReversiblePartActuatorComponent::IsMoving() const
 {
 	const float TargetProgress = bOpenRequested ? 1.0f : 0.0f;
-	return !FMath::IsNearlyEqual(Progress, TargetProgress, UE_KINDA_SMALL_NUMBER);
+	return !bFrozen
+		&& !FMath::IsNearlyEqual(Progress, TargetProgress, UE_KINDA_SMALL_NUMBER);
 }
 
 void UReversiblePartActuatorComponent::AdvanceActuation(const float DeltaTime)

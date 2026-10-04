@@ -811,6 +811,35 @@ float UConfiguratorPanel::CalculateStageProjectionOffsetX(
 		0.95f);
 }
 
+bool UConfiguratorPanel::PlayExperienceAnimation(const FString& AnimationId)
+{
+	AConfigShowroomPlayerController* Controller =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
+	return Controller != nullptr
+		&& UConfiguratorWebBridge::IsSupportedAnimationId(AnimationId)
+		&& Controller->PlayAnimation(FName(*AnimationId));
+}
+
+bool UConfiguratorPanel::CloseExperienceAnimation(const FString& AnimationId)
+{
+	AConfigShowroomPlayerController* Controller =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
+	return Controller != nullptr
+		&& UConfiguratorWebBridge::IsSupportedAnimationId(AnimationId)
+		&& Controller->CloseAnimation(FName(*AnimationId));
+}
+
+bool UConfiguratorPanel::FocusExperienceAnimation(const FString& NextAnimationId)
+{
+	AConfigShowroomPlayerController* Controller =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
+	return Controller != nullptr
+		&& (NextAnimationId.IsEmpty()
+			|| UConfiguratorWebBridge::IsSupportedAnimationId(NextAnimationId))
+		&& Controller->FocusAnimation(
+			NextAnimationId.IsEmpty() ? NAME_None : FName(*NextAnimationId));
+}
+
 bool UConfiguratorPanel::SetExperienceCameraId(const FString& CameraId)
 {
 	AConfigShowroomPlayerController* Controller =
@@ -923,6 +952,15 @@ FString UConfiguratorPanel::GetExperienceStateJson()
 	State->SetBoolField(
 		TEXT("animationEnabled"),
 		Controller->IsAnimationEnabled());
+	const FName ActiveAnimationId = Controller->GetActiveAnimationId();
+	if (ActiveAnimationId.IsNone())
+	{
+		State->SetField(TEXT("animationId"), MakeShared<FJsonValueNull>());
+	}
+	else
+	{
+		State->SetStringField(TEXT("animationId"), ActiveAnimationId.ToString());
+	}
 	State->SetStringField(TEXT("lightPreset"), Controller->GetLightPreset());
 	State->SetStringField(TEXT("renderMode"), Controller->GetRenderMode());
 	State->SetStringField(TEXT("quality"), Quality);

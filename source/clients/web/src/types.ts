@@ -24,6 +24,17 @@ export type CatalogCameraId = string | number
 export type CatalogNavigationMode = 'tabs' | 'list' | 'none' | 'surfaces-as-components'
 export type CatalogLayout = 'single' | 'stack' | 'grid'
 export type CatalogVariantSort = 'achromatic-then-rainbow'
+export type CatalogAnimationLoopMode = 'none' | 'forward' | 'ping-pong'
+export type CatalogAnimationCloseMode = 'reverse' | 'reset-to-start' | 'stop'
+
+export interface CatalogAnimation extends CatalogNode {
+  animationId: string
+  frameRate: number
+  startFrame: number
+  endFrame: number
+  loopMode: CatalogAnimationLoopMode
+  closeMode: CatalogAnimationCloseMode
+}
 
 export interface CatalogNodeUi {
   order?: number
@@ -31,6 +42,7 @@ export interface CatalogNodeUi {
   cameraId?: CatalogCameraId | null
   navigationMode?: CatalogNavigationMode
   layout?: CatalogLayout
+  animationId?: string | null
 }
 
 export interface CatalogInteractionCamera extends CatalogNode {
@@ -132,6 +144,9 @@ export interface CatalogV2 {
   selectionOrder: string[]
   defaultSelections: Selections
   interactionCameras?: CatalogInteractionCamera[]
+  skeletalMeshPath: string
+  sequencePath: string
+  animations: CatalogAnimation[]
   regions: Array<CatalogNode & { regionId: string }>
   categories: CatalogCategory[]
   components: CatalogComponent[]

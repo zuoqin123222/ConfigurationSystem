@@ -26,6 +26,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Vehicle|Wheels")
 	void AdvanceWheels(float DeltaTime);
 
+	/** 立即停止滚动，不经过响应插值；保留当前轮毂角度。 */
+	UFUNCTION(BlueprintCallable, Category="Vehicle|Wheels")
+	void StopImmediately();
+
+	UFUNCTION(BlueprintPure, Category="Vehicle|Wheels")
+	float GetCurrentSpinDegreesPerSecond() const { return CurrentSpinDegreesPerSecond; }
+
 	UFUNCTION(BlueprintPure, Category="Vehicle|Wheels")
 	float GetSmoothedSteeringDegrees() const { return CurrentSteeringDegrees; }
 

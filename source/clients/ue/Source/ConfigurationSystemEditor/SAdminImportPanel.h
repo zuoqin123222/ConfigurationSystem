@@ -19,6 +19,8 @@ public:
 	void Construct(const FArguments& InArgs);
 
 private:
+	FReply BrowseRiggedVehicleFbx();
+	FReply BrowseRiggedVehicleSidecar();
 	FReply BrowseModelFbx();
 	FReply BrowseModelSidecar();
 	FReply BrowseAnimationFbx();
@@ -49,6 +51,8 @@ private:
 	bool CanRollbackContentPackProvider() const;
 	EContentPackProviderType GetSelectedProviderType() const;
 
+	TSharedPtr<SEditableTextBox> RiggedVehicleFbxTextBox;
+	TSharedPtr<SEditableTextBox> RiggedVehicleSidecarTextBox;
 	TSharedPtr<SEditableTextBox> ModelFbxTextBox;
 	TSharedPtr<SEditableTextBox> ModelSidecarTextBox;
 	TSharedPtr<SEditableTextBox> AnimationFbxTextBox;

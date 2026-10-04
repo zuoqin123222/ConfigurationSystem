@@ -2,8 +2,11 @@
 
 #include "CoreMinimal.h"
 
+class UAssetImportTask;
+
 enum class EAdminImportAssetKind : uint8
 {
+	RiggedVehicle,
 	Model,
 	Animation
 };
@@ -25,9 +28,23 @@ struct FAdminImportItemResult
 	FString ActualSha256;
 	int64 ExpectedBytes = 0;
 	int64 ActualBytes = 0;
+	FString SequenceId;
+	double SequenceFrameRate = 0.0;
+	int32 SequenceStartFrame = 0;
+	int32 SequenceEndFrame = 0;
+	FString PrimaryBone;
+	TArray<FString> WheelCurveBones;
 	bool bPassed = false;
 	TArray<FString> Errors;
 	TArray<FString> Warnings;
+};
+
+struct FAdminImportedAssetResult
+{
+	FString ObjectPath;
+	FString AssetType;
+	FString SkeletonPath;
+	int32 AnimSequenceFrames = 0;
 };
 
 struct FAdminImportPreflightResult
@@ -41,6 +58,7 @@ struct FAdminImportPreflightResult
 	bool bImportSucceeded = false;
 	TArray<FAdminImportItemResult> Items;
 	TArray<FString> ImportedObjectPaths;
+	TArray<FAdminImportedAssetResult> ImportedAssets;
 };
 
 /**
@@ -69,4 +87,14 @@ class FAdminImportService
 public:
 	/** Imports only a successful preflight into its unique staging session. */
 	static bool ImportApproved(FAdminImportPreflightResult& Result);
+
+	/** Applies deterministic FBX import options for the selected contract kind. */
+	static void ConfigureImportTask(
+		UAssetImportTask& Task,
+		EAdminImportAssetKind Kind);
+
+	/** 返回导入后才出现的包名，供 AssetRegistry 暂存差集与自动化测试共用。 */
+	static TArray<FName> FindNewPackageNames(
+		const TArray<FName>& Before,
+		const TArray<FName>& After);
 };

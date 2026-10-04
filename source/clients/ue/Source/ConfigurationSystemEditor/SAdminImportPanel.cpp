@@ -117,7 +117,8 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 						.AutoWrapText(true)
 						.Text(LOCTEXT(
 							"Explanation",
-							"模型与动画可单独或同时预检。只有关键字段、文件大小和 SHA-256 全部通过后，"
+							"首选单个骨骼车辆 FBX + v2 sidecar，一次导入 SkeletalMesh、Skeleton "
+							"与一条完整 AnimSequence。只有关键字段、文件大小和 SHA-256 全部通过后，"
 							"才可批准导入唯一暂存目录；本工具不会写入正式资产目录。"))
 				]
 				+ SVerticalBox::Slot()
@@ -125,7 +126,34 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 				.Padding(0.0f, 3.0f)
 				[
 					MakeFileRow(
-						LOCTEXT("ModelFbx", "模型 FBX"),
+						LOCTEXT("RiggedVehicleFbx", "骨骼车辆 FBX"),
+						RiggedVehicleFbxTextBox,
+						FOnClicked::CreateSP(this, &SAdminImportPanel::BrowseRiggedVehicleFbx),
+						InvalidateDelegate)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 3.0f)
+				[
+					MakeFileRow(
+						LOCTEXT("RiggedVehicleSidecar", "骨骼车辆 sidecar"),
+						RiggedVehicleSidecarTextBox,
+						FOnClicked::CreateSP(this, &SAdminImportPanel::BrowseRiggedVehicleSidecar),
+						InvalidateDelegate)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 12.0f, 0.0f, 4.0f)
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("LegacyImport", "兼容入口：分离模型 / 动画 FBX（v1）"))
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 3.0f)
+				[
+					MakeFileRow(
+						LOCTEXT("ModelFbx", "旧模型 FBX"),
 						ModelFbxTextBox,
 						FOnClicked::CreateSP(this, &SAdminImportPanel::BrowseModelFbx),
 						InvalidateDelegate)
@@ -135,7 +163,7 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 				.Padding(0.0f, 3.0f)
 				[
 					MakeFileRow(
-						LOCTEXT("ModelSidecar", "模型 sidecar"),
+						LOCTEXT("ModelSidecar", "旧模型 sidecar"),
 						ModelSidecarTextBox,
 						FOnClicked::CreateSP(this, &SAdminImportPanel::BrowseModelSidecar),
 						InvalidateDelegate)
@@ -145,7 +173,7 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 				.Padding(0.0f, 3.0f)
 				[
 					MakeFileRow(
-						LOCTEXT("AnimationFbx", "动画 FBX"),
+						LOCTEXT("AnimationFbx", "旧动画 FBX"),
 						AnimationFbxTextBox,
 						FOnClicked::CreateSP(this, &SAdminImportPanel::BrowseAnimationFbx),
 						InvalidateDelegate)
@@ -155,7 +183,7 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 				.Padding(0.0f, 3.0f)
 				[
 					MakeFileRow(
-						LOCTEXT("AnimationSidecar", "动画 sidecar"),
+						LOCTEXT("AnimationSidecar", "旧动画 sidecar"),
 						AnimationSidecarTextBox,
 						FOnClicked::CreateSP(this, &SAdminImportPanel::BrowseAnimationSidecar),
 						InvalidateDelegate)
@@ -342,6 +370,22 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 	RefreshContentPackStatus();
 }
 
+FReply SAdminImportPanel::BrowseRiggedVehicleFbx()
+{
+	return BrowseInto(
+		RiggedVehicleFbxTextBox,
+		TEXT("选择骨骼车辆 FBX"),
+		TEXT("FBX (*.fbx)|*.fbx"));
+}
+
+FReply SAdminImportPanel::BrowseRiggedVehicleSidecar()
+{
+	return BrowseInto(
+		RiggedVehicleSidecarTextBox,
+		TEXT("选择骨骼车辆 sidecar"),
+		TEXT("JSON (*.json)|*.json"));
+}
+
 FReply SAdminImportPanel::BrowseModelFbx()
 {
 	return BrowseInto(ModelFbxTextBox, TEXT("选择模型 FBX"), TEXT("FBX (*.fbx)|*.fbx"));
@@ -412,6 +456,18 @@ FReply SAdminImportPanel::BrowseInto(
 FReply SAdminImportPanel::RunPreflight()
 {
 	TArray<FAdminImportSelection> Selections;
+	const FString RiggedVehicleFbx =
+		RiggedVehicleFbxTextBox->GetText().ToString().TrimStartAndEnd();
+	const FString RiggedVehicleSidecar =
+		RiggedVehicleSidecarTextBox->GetText().ToString().TrimStartAndEnd();
+	if (!RiggedVehicleFbx.IsEmpty() || !RiggedVehicleSidecar.IsEmpty())
+	{
+		FAdminImportSelection& Selection = Selections.AddDefaulted_GetRef();
+		Selection.Kind = EAdminImportAssetKind::RiggedVehicle;
+		Selection.FbxFile = RiggedVehicleFbx;
+		Selection.SidecarFile = RiggedVehicleSidecar;
+	}
+
 	const FString ModelFbx = ModelFbxTextBox->GetText().ToString().TrimStartAndEnd();
 	const FString ModelSidecar = ModelSidecarTextBox->GetText().ToString().TrimStartAndEnd();
 	if (!ModelFbx.IsEmpty() || !ModelSidecar.IsEmpty())
@@ -474,7 +530,9 @@ void SAdminImportPanel::RefreshStatus()
 	{
 		Status += FString::Printf(
 			TEXT("\n[%s] %s\n文件：%s\n大小：%lld / %lld\nSHA-256：%s\n"),
-			Item.Kind == EAdminImportAssetKind::Model ? TEXT("模型") : TEXT("动画"),
+			Item.Kind == EAdminImportAssetKind::RiggedVehicle
+				? TEXT("骨骼车辆")
+				: Item.Kind == EAdminImportAssetKind::Model ? TEXT("模型") : TEXT("动画"),
 			Item.bPassed ? TEXT("通过") : TEXT("失败"),
 			*Item.FbxFile,
 			Item.ActualBytes,

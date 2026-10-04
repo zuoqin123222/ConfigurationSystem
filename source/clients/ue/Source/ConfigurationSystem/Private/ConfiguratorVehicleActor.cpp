@@ -2,13 +2,18 @@
 
 #include "CarConfiguratorSubsystem.h"
 #include "Components/SceneComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Animation/AnimSequence.h"
+#include "Engine/GameInstance.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "ReversiblePartActuatorComponent.h"
 #include "AutomotiveMaterialBinder.h"
 #include "SmoothWheelControllerComponent.h"
+#include "VehicleAnimSequencePlayerComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -69,6 +74,12 @@ namespace ConfiguratorVehicle
 		return LoadOptionalStaticMesh(*StagingPath);
 	}
 
+	template <typename T>
+	T* LoadOptionalAsset(const TCHAR* ObjectPath)
+	{
+		return Cast<T>(StaticLoadObject(T::StaticClass(), nullptr, ObjectPath, nullptr, LOAD_NoWarn));
+	}
+
 	void MarkPartition(
 		UActorComponent* Component,
 		const FName PartTag,
@@ -86,7 +97,7 @@ namespace ConfiguratorVehicle
 
 AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	VehicleRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VehicleRoot"));
 	VehicleRoot->ComponentTags.Add(TEXT("Vehicle.Root"));
 	SetRootComponent(VehicleRoot);
@@ -95,6 +106,12 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	ContentRoot->SetupAttachment(VehicleRoot);
 	ContentRoot->SetRelativeLocation(ConfiguratorVehicle::ContentRootOffset);
 	ContentRoot->ComponentTags.Add(TEXT("Vehicle.ContentRoot"));
+
+	SkeletalVehicle = CreateDefaultSubobject<USkeletalMeshComponent>(
+		TEXT("SkeletalVehicle"));
+	SkeletalVehicle->SetupAttachment(ContentRoot);
+	SkeletalVehicle->SetVisibility(false);
+	SkeletalVehicle->SetHiddenInGame(true);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(
 		TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -383,6 +400,120 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 		TEXT("TrunkActuator"));
 	WheelController = CreateDefaultSubobject<USmoothWheelControllerComponent>(
 		TEXT("SmoothWheelController"));
+	AnimationPlayer = CreateDefaultSubobject<UVehicleAnimSequencePlayerComponent>(
+		TEXT("AnimSequenceFramePlayer"));
+	AnimationPlayer->BindMesh(SkeletalVehicle);
+}
+
+bool AConfiguratorVehicleActor::BuildAnimationClips(
+	const AutomotiveCatalog::FCatalog& Catalog,
+	TArray<FVehicleAnimationClip>& OutClips)
+{
+	OutClips.Reset(Catalog.Animations.Num());
+	for (const AutomotiveCatalog::FAnimation& Animation : Catalog.Animations)
+	{
+		if (!UVehicleAnimSequencePlayerComponent::IsStableAnimationId(
+			Animation.AnimationId))
+		{
+			OutClips.Reset();
+			return false;
+		}
+		FVehicleAnimationClip Clip;
+		Clip.AnimationId = FName(*Animation.AnimationId);
+		Clip.DisplayName = FText::FromString(Animation.DisplayName);
+		Clip.FrameRate = static_cast<float>(Animation.FrameRate);
+		Clip.StartFrame = Animation.StartFrame;
+		Clip.EndFrame = Animation.EndFrame;
+		if (Animation.LoopMode == TEXT("none"))
+		{
+			Clip.LoopMode = EVehicleAnimationLoopMode::None;
+		}
+		else if (Animation.LoopMode == TEXT("forward"))
+		{
+			Clip.LoopMode = EVehicleAnimationLoopMode::Forward;
+		}
+		else if (Animation.LoopMode == TEXT("ping-pong"))
+		{
+			Clip.LoopMode = EVehicleAnimationLoopMode::PingPong;
+		}
+		else
+		{
+			OutClips.Reset();
+			return false;
+		}
+		if (Animation.CloseMode == TEXT("reverse"))
+		{
+			Clip.CloseMode = EVehicleAnimationCloseMode::Reverse;
+		}
+		else if (Animation.CloseMode == TEXT("reset-to-start"))
+		{
+			Clip.CloseMode = EVehicleAnimationCloseMode::ResetToStart;
+		}
+		else if (Animation.CloseMode == TEXT("stop"))
+		{
+			Clip.CloseMode = EVehicleAnimationCloseMode::Stop;
+		}
+		else
+		{
+			OutClips.Reset();
+			return false;
+		}
+		OutClips.Add(MoveTemp(Clip));
+	}
+	return !OutClips.IsEmpty();
+}
+
+bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
+	const AutomotiveCatalog::FCatalog& Catalog)
+{
+	if (bAnimationCatalogConfigured)
+	{
+		return bAnimationSequenceReady;
+	}
+	bAnimationCatalogConfigured = true;
+
+	USkeletalMesh* WholeVehicleMesh =
+		ConfiguratorVehicle::LoadOptionalAsset<USkeletalMesh>(*Catalog.SkeletalMeshPath);
+	UAnimSequence* FullVehicleSequence =
+		ConfiguratorVehicle::LoadOptionalAsset<UAnimSequence>(*Catalog.SequencePath);
+	bStaticAnimationFallbackEnabled = ShouldUseStaticAnimationFallback(
+		IsValid(WholeVehicleMesh),
+		IsValid(FullVehicleSequence));
+	if (bStaticAnimationFallbackEnabled)
+	{
+		SkeletalVehicle->SetSkeletalMeshAsset(nullptr);
+		SkeletalVehicle->SetVisibility(false);
+		SkeletalVehicle->SetHiddenInGame(true);
+		SetStaticProxyVisible(true);
+		return false;
+	}
+
+	SkeletalVehicle->SetSkeletalMeshAsset(WholeVehicleMesh);
+	TArray<FVehicleAnimationClip> Clips;
+	bAnimationSequenceReady =
+		BuildAnimationClips(Catalog, Clips)
+		&& AnimationPlayer->SetSequenceAndClips(FullVehicleSequence, Clips);
+	SkeletalVehicle->SetVisibility(true);
+	SkeletalVehicle->SetHiddenInGame(false);
+	SetStaticProxyVisible(false);
+	return bAnimationSequenceReady;
+}
+
+bool AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(
+	const bool bHasSkeletalMesh,
+	const bool bHasSequence)
+{
+	return !bHasSkeletalMesh || !bHasSequence;
+}
+
+void AConfiguratorVehicleActor::SetStaticProxyVisible(const bool bVisible)
+{
+	TInlineComponentArray<UStaticMeshComponent*> StaticParts(this);
+	for (UStaticMeshComponent* StaticPart : StaticParts)
+	{
+		StaticPart->SetVisibility(bVisible);
+		StaticPart->SetHiddenInGame(!bVisible);
+	}
 }
 
 void AConfiguratorVehicleActor::BeginPlay()
@@ -432,6 +563,16 @@ void AConfiguratorVehicleActor::EndPlay(const EEndPlayReason::Type EndPlayReason
 		}
 	}
 	Super::EndPlay(EndPlayReason);
+}
+
+void AConfiguratorVehicleActor::Tick(const float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (bHasPendingFallbackFocus
+		&& !IsStaticAnimationMoving(ActiveFallbackAnimationId))
+	{
+		StartPendingStaticAnimation();
+	}
 }
 
 bool AConfiguratorVehicleActor::TogglePart(const FName PartId)
@@ -484,6 +625,221 @@ bool AConfiguratorVehicleActor::ToggleWheelSpin()
 {
 	SetWheelAnimationEnabled(!bWheelsSpinning);
 	return bWheelsSpinning;
+}
+
+bool AConfiguratorVehicleActor::PlayVehicleAnimation(const FName AnimationId)
+{
+	if (IsValid(AnimationPlayer)
+		&& AnimationPlayer->PlayAnimationById(AnimationId))
+	{
+		ActiveFallbackAnimationId = NAME_None;
+		return true;
+	}
+	if (!bStaticAnimationFallbackEnabled)
+	{
+		return false;
+	}
+	const bool bApplied = ApplyStaticAnimationFallback(AnimationId, true);
+	if (bApplied)
+	{
+		ActiveFallbackAnimationId = AnimationId;
+	}
+	return bApplied;
+}
+
+bool AConfiguratorVehicleActor::CloseVehicleAnimation(const FName AnimationId)
+{
+	if (IsValid(AnimationPlayer)
+		&& AnimationPlayer->CloseAnimationById(AnimationId))
+	{
+		return true;
+	}
+	if (!bStaticAnimationFallbackEnabled)
+	{
+		return false;
+	}
+	const bool bApplied = ApplyStaticAnimationFallback(AnimationId, false);
+	if (bApplied && ActiveFallbackAnimationId == AnimationId)
+	{
+		ActiveFallbackAnimationId = NAME_None;
+	}
+	return bApplied;
+}
+
+bool AConfiguratorVehicleActor::FocusVehicleAnimation(const FName NextAnimationId)
+{
+	if (!NextAnimationId.IsNone()
+		&& !UVehicleAnimSequencePlayerComponent::IsStableAnimationId(
+			NextAnimationId.ToString()))
+	{
+		return false;
+	}
+	if (!bStaticAnimationFallbackEnabled)
+	{
+		if (IsValid(AnimationPlayer)
+			&& AnimationPlayer->FocusAnimationById(NextAnimationId))
+		{
+			return true;
+		}
+		// 运行时序列/网格异常时，不能留下不可控的骨骼车；恢复可交互静态代理。
+		if (IsValid(AnimationPlayer))
+		{
+			AnimationPlayer->FreezeAnimation();
+		}
+		SkeletalVehicle->SetVisibility(false);
+		SkeletalVehicle->SetHiddenInGame(true);
+		SetStaticProxyVisible(true);
+		bStaticAnimationFallbackEnabled = true;
+		ActiveFallbackAnimationId = NAME_None;
+		return NextAnimationId.IsNone()
+			|| (IsStaticAnimationSupported(NextAnimationId)
+				&& PlayVehicleAnimation(NextAnimationId));
+	}
+	if (!NextAnimationId.IsNone() && !IsStaticAnimationSupported(NextAnimationId))
+	{
+		return false;
+	}
+	if (NextAnimationId == ActiveFallbackAnimationId)
+	{
+		bHasPendingFallbackFocus = false;
+		PendingFallbackAnimationId = NAME_None;
+		if (!NextAnimationId.IsNone())
+		{
+			return ApplyStaticAnimationFallback(NextAnimationId, true);
+		}
+		return true;
+	}
+	if (ActiveFallbackAnimationId.IsNone())
+	{
+		return NextAnimationId.IsNone()
+			|| PlayVehicleAnimation(NextAnimationId);
+	}
+
+	PendingFallbackAnimationId = NextAnimationId;
+	bHasPendingFallbackFocus = true;
+	if (!ApplyStaticAnimationFallback(ActiveFallbackAnimationId, false))
+	{
+		bHasPendingFallbackFocus = false;
+		PendingFallbackAnimationId = NAME_None;
+		return false;
+	}
+	if (!IsStaticAnimationMoving(ActiveFallbackAnimationId))
+	{
+		StartPendingStaticAnimation();
+	}
+	return true;
+}
+
+void AConfiguratorVehicleActor::FreezeAllVehicleMotion()
+{
+	bHasPendingFallbackFocus = false;
+	PendingFallbackAnimationId = NAME_None;
+	ActiveFallbackAnimationId = NAME_None;
+	if (IsValid(AnimationPlayer))
+	{
+		AnimationPlayer->FreezeAnimation();
+	}
+	for (UReversiblePartActuatorComponent* Actuator :
+		{LeftDoorActuator, RightDoorActuator, HoodActuator, TrunkActuator})
+	{
+		if (IsValid(Actuator))
+		{
+			Actuator->FreezeAtCurrentPose();
+		}
+	}
+	if (IsValid(WheelController))
+	{
+		WheelController->StopImmediately();
+	}
+	bWheelsSpinning = false;
+}
+
+FName AConfiguratorVehicleActor::GetActiveVehicleAnimationId() const
+{
+	const FName SequenceAnimationId = IsValid(AnimationPlayer)
+		? AnimationPlayer->GetActiveAnimationId()
+		: NAME_None;
+	return SequenceAnimationId.IsNone()
+		? ActiveFallbackAnimationId
+		: SequenceAnimationId;
+}
+
+bool AConfiguratorVehicleActor::IsVehicleAnimationPlaying() const
+{
+	return !GetActiveVehicleAnimationId().IsNone();
+}
+
+bool AConfiguratorVehicleActor::ApplyStaticAnimationFallback(
+	const FName AnimationId,
+	const bool bOpen)
+{
+	if (AnimationId == TEXT("wheel-spin"))
+	{
+		SetWheelAnimationEnabled(bOpen);
+		return true;
+	}
+	if (AnimationId == TEXT("trunk") && !bOpen)
+	{
+		// catalog 的 closeMode=stop：静态代理同样保持当前姿态。
+		return true;
+	}
+	if (AnimationId == TEXT("hood")
+		|| AnimationId == TEXT("door-left")
+		|| AnimationId == TEXT("door-right")
+		|| AnimationId == TEXT("trunk"))
+	{
+		return SetPartOpen(AnimationId, bOpen);
+	}
+	return false;
+}
+
+bool AConfiguratorVehicleActor::IsStaticAnimationSupported(
+	const FName AnimationId) const
+{
+	return AnimationId == TEXT("wheel-spin")
+		|| AnimationId == TEXT("trunk")
+		|| AnimationId == TEXT("hood")
+		|| AnimationId == TEXT("door-left")
+		|| AnimationId == TEXT("door-right");
+}
+
+bool AConfiguratorVehicleActor::IsStaticAnimationMoving(
+	const FName AnimationId) const
+{
+	if (AnimationId == TEXT("wheel-spin"))
+	{
+		return bWheelsSpinning;
+	}
+	const UReversiblePartActuatorComponent* Actuator =
+		AnimationId == TEXT("hood") ? HoodActuator
+		: AnimationId == TEXT("trunk") ? TrunkActuator
+		: AnimationId == TEXT("door-left") ? LeftDoorActuator
+		: AnimationId == TEXT("door-right") ? RightDoorActuator
+		: nullptr;
+	return IsValid(Actuator) && Actuator->IsMoving();
+}
+
+void AConfiguratorVehicleActor::StartPendingStaticAnimation()
+{
+	if (!bHasPendingFallbackFocus)
+	{
+		return;
+	}
+	const FName NextAnimationId = PendingFallbackAnimationId;
+	const FName PreviousAnimationId = ActiveFallbackAnimationId;
+	PendingFallbackAnimationId = NAME_None;
+	bHasPendingFallbackFocus = false;
+	ActiveFallbackAnimationId = NAME_None;
+	if (!NextAnimationId.IsNone()
+		&& !PlayVehicleAnimation(NextAnimationId)
+		&& !PreviousAnimationId.IsNone())
+	{
+		// 新动画失败时恢复旧静态代理，避免 UI 成功切焦后车辆留在闭合空态。
+		if (ApplyStaticAnimationFallback(PreviousAnimationId, true))
+		{
+			ActiveFallbackAnimationId = PreviousAnimationId;
+		}
+	}
 }
 
 FRotator AConfiguratorVehicleActor::GetHoodOpenRotation()

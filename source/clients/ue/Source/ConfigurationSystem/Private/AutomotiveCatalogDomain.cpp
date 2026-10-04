@@ -3,6 +3,7 @@
 #include "Dom/JsonObject.h"
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
+#include "Misc/PackageName.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 
@@ -101,6 +102,45 @@ namespace AutomotiveCatalog
 			return true;
 		}
 
+		bool ReadUiAnimationId(
+			const TSharedPtr<FJsonObject>& Object,
+			TOptional<FString>& Out,
+			FError& OutError)
+		{
+			if (!Object.IsValid() || !Object->HasField(TEXT("ui")))
+			{
+				return true;
+			}
+			const TSharedPtr<FJsonObject>* Ui = nullptr;
+			if (!Object->TryGetObjectField(TEXT("ui"), Ui)
+				|| Ui == nullptr || !Ui->IsValid())
+			{
+				SetError(OutError, TEXT("INVALID_CATALOG"), TEXT("ui 必须是对象"));
+				return false;
+			}
+			if (!(*Ui)->HasField(TEXT("animationId"))
+				|| IsNullField(*Ui, TEXT("animationId")))
+			{
+				return true;
+			}
+			FString AnimationId;
+			if (!(*Ui)->TryGetStringField(TEXT("animationId"), AnimationId)
+				|| AnimationId.IsEmpty())
+			{
+				SetError(OutError, TEXT("INVALID_CATALOG"),
+					TEXT("ui.animationId 必须是非空字符串或 null"));
+				return false;
+			}
+			Out = MoveTemp(AnimationId);
+			return true;
+		}
+
+		bool IsGameObjectPath(const FString& Path)
+		{
+			return Path.StartsWith(TEXT("/Game/"))
+				&& FPackageName::IsValidObjectPath(Path);
+		}
+
 		bool ParseCatalog(
 			const TSharedPtr<FJsonObject>& Root,
 			FCatalog& Out,
@@ -194,6 +234,48 @@ namespace AutomotiveCatalog
 				Out.OptionIdAliases.Add(Pair.Key, MoveTemp(OptionId));
 			}
 
+			const TArray<TSharedPtr<FJsonValue>>* Animations = nullptr;
+			if (!ReadString(
+					Root, TEXT("skeletalMeshPath"), Out.SkeletalMeshPath, OutError)
+				|| !ReadString(Root, TEXT("sequencePath"), Out.SequencePath, OutError)
+				|| !Root->TryGetArrayField(TEXT("animations"), Animations)
+				|| Animations->IsEmpty())
+			{
+				SetError(OutError, TEXT("INVALID_CATALOG"),
+					TEXT("animations 必须是非空数组"));
+				return false;
+			}
+			for (const TSharedPtr<FJsonValue>& Value : *Animations)
+			{
+				const TSharedPtr<FJsonObject>* Object = nullptr;
+				FAnimation Animation;
+				double StartFrame = 0.0;
+				double EndFrame = 0.0;
+				if (!Value.IsValid() || !Value->TryGetObject(Object)
+					|| !ReadString(*Object, TEXT("animationId"), Animation.AnimationId, OutError)
+					|| !ReadString(*Object, TEXT("displayName"), Animation.DisplayName, OutError)
+					|| (*Object)->HasField(TEXT("sequencePath"))
+					|| !(*Object)->TryGetNumberField(TEXT("frameRate"), Animation.FrameRate)
+					|| !(*Object)->TryGetNumberField(TEXT("startFrame"), StartFrame)
+					|| !(*Object)->TryGetNumberField(TEXT("endFrame"), EndFrame)
+					|| !ReadString(*Object, TEXT("loopMode"), Animation.LoopMode, OutError)
+					|| !ReadString(*Object, TEXT("closeMode"), Animation.CloseMode, OutError)
+					|| !FMath::IsFinite(Animation.FrameRate)
+					|| Animation.FrameRate <= 0.0
+					|| FMath::FloorToDouble(StartFrame) != StartFrame
+					|| FMath::FloorToDouble(EndFrame) != EndFrame
+					|| StartFrame < 0.0 || EndFrame <= StartFrame
+					|| EndFrame > static_cast<double>(MAX_int32))
+				{
+					SetError(OutError, TEXT("INVALID_CATALOG"),
+						TEXT("animation 字段非法"));
+					return false;
+				}
+				Animation.StartFrame = static_cast<int32>(StartFrame);
+				Animation.EndFrame = static_cast<int32>(EndFrame);
+				Out.Animations.Add(MoveTemp(Animation));
+			}
+
 			const TArray<TSharedPtr<FJsonValue>>* Regions = nullptr;
 			if (!Root->TryGetArrayField(TEXT("regions"), Regions))
 			{
@@ -226,7 +308,8 @@ namespace AutomotiveCatalog
 				if (!Value.IsValid() || !Value->TryGetObject(Object)
 					|| !ReadString(*Object, TEXT("categoryId"), Category.CategoryId, OutError)
 					|| !ReadString(*Object, TEXT("regionId"), Category.RegionId, OutError)
-					|| !ReadString(*Object, TEXT("displayName"), Category.DisplayName, OutError))
+					|| !ReadString(*Object, TEXT("displayName"), Category.DisplayName, OutError)
+					|| !ReadUiAnimationId(*Object, Category.AnimationId, OutError))
 				{
 					return false;
 				}
@@ -246,7 +329,8 @@ namespace AutomotiveCatalog
 				if (!Value.IsValid() || !Value->TryGetObject(Object)
 					|| !ReadString(*Object, TEXT("componentId"), Component.ComponentId, OutError)
 					|| !ReadString(*Object, TEXT("categoryId"), Component.CategoryId, OutError)
-					|| !ReadString(*Object, TEXT("displayName"), Component.DisplayName, OutError))
+					|| !ReadString(*Object, TEXT("displayName"), Component.DisplayName, OutError)
+					|| !ReadUiAnimationId(*Object, Component.AnimationId, OutError))
 				{
 					return false;
 				}
@@ -267,7 +351,8 @@ namespace AutomotiveCatalog
 					|| !ReadString(*Object, TEXT("surfaceId"), Surface.SurfaceId, OutError)
 					|| !ReadString(*Object, TEXT("componentId"), Surface.ComponentId, OutError)
 					|| !ReadString(*Object, TEXT("displayName"), Surface.DisplayName, OutError)
-					|| !ReadBool(*Object, TEXT("required"), Surface.bRequired, OutError))
+					|| !ReadBool(*Object, TEXT("required"), Surface.bRequired, OutError)
+					|| !ReadUiAnimationId(*Object, Surface.AnimationId, OutError))
 				{
 					return false;
 				}
@@ -575,6 +660,7 @@ namespace AutomotiveCatalog
 		TMap<FString, int32> CandidateComponents;
 		TMap<FString, int32> CandidateSurfaces;
 		TMap<FString, int32> CandidateFamilies;
+		TMap<FString, int32> CandidateAnimations;
 		TMap<FString, TArray<FString>> CandidateCategoriesByRegion;
 		TMap<FString, TArray<FString>> CandidateComponentsByCategory;
 		TMap<FString, TArray<FString>> CandidateSurfacesByComponent;
@@ -583,6 +669,39 @@ namespace AutomotiveCatalog
 		TMap<FString, FString> CandidateDefaultsBySurface;
 		TSet<FString> SurfaceIds;
 		TSet<FString> FamilyIds;
+
+		if (!Private::IsGameObjectPath(Candidate.SkeletalMeshPath)
+			|| !Private::IsGameObjectPath(Candidate.SequencePath)
+			|| Candidate.Animations.IsEmpty())
+		{
+			Private::SetError(
+				OutError,
+				TEXT("INVALID_ANIMATION_ASSET_PATH"),
+				Candidate.SkeletalMeshPath + TEXT("|") + Candidate.SequencePath);
+			return false;
+		}
+		for (int32 Index = 0; Index < Candidate.Animations.Num(); ++Index)
+		{
+			const FAnimation& Animation = Candidate.Animations[Index];
+			if (Animation.AnimationId.IsEmpty()
+				|| CandidateAnimations.Contains(Animation.AnimationId)
+				|| Animation.DisplayName.IsEmpty()
+				|| !FMath::IsFinite(Animation.FrameRate)
+				|| Animation.FrameRate <= 0.0
+				|| Animation.StartFrame < 0
+				|| Animation.EndFrame <= Animation.StartFrame
+				|| !(Animation.LoopMode == TEXT("none")
+					|| Animation.LoopMode == TEXT("forward")
+					|| Animation.LoopMode == TEXT("ping-pong"))
+				|| !(Animation.CloseMode == TEXT("reverse")
+					|| Animation.CloseMode == TEXT("reset-to-start")
+					|| Animation.CloseMode == TEXT("stop")))
+			{
+				Private::SetError(OutError, TEXT("INVALID_ANIMATION"), Animation.AnimationId);
+				return false;
+			}
+			CandidateAnimations.Add(Animation.AnimationId, Index);
+		}
 
 		if (Candidate.SchemaVersion != AutomotiveCatalog::SchemaVersion
 			|| Candidate.Lifecycle != TEXT("draft")
@@ -627,6 +746,12 @@ namespace AutomotiveCatalog
 				return false;
 			}
 			CandidateCategories.Add(Category.CategoryId, Index);
+			if (Category.AnimationId.IsSet()
+				&& !CandidateAnimations.Contains(Category.AnimationId.GetValue()))
+			{
+				Private::SetError(OutError, TEXT("UNKNOWN_ANIMATION"), Category.CategoryId);
+				return false;
+			}
 			CandidateCategoriesByRegion.FindChecked(Category.RegionId).Add(Category.CategoryId);
 			CandidateComponentsByCategory.Add(Category.CategoryId);
 			CandidateSurfacesByCategory.Add(Category.CategoryId);
@@ -643,6 +768,12 @@ namespace AutomotiveCatalog
 				return false;
 			}
 			CategoryByComponent.Add(Component.ComponentId, Component.CategoryId);
+			if (Component.AnimationId.IsSet()
+				&& !CandidateAnimations.Contains(Component.AnimationId.GetValue()))
+			{
+				Private::SetError(OutError, TEXT("UNKNOWN_ANIMATION"), Component.ComponentId);
+				return false;
+			}
 			CandidateComponents.Add(Component.ComponentId, Index);
 			CandidateComponentsByCategory.FindChecked(Component.CategoryId).Add(
 				Component.ComponentId);
@@ -663,6 +794,12 @@ namespace AutomotiveCatalog
 				return false;
 			}
 			SurfaceIds.Add(Surface.SurfaceId);
+			if (Surface.AnimationId.IsSet()
+				&& !CandidateAnimations.Contains(Surface.AnimationId.GetValue()))
+			{
+				Private::SetError(OutError, TEXT("UNKNOWN_ANIMATION"), Surface.SurfaceId);
+				return false;
+			}
 			CandidateSurfaces.Add(Surface.SurfaceId, Index);
 			CandidateOptionsBySurface.Add(Surface.SurfaceId);
 		}
@@ -814,6 +951,7 @@ namespace AutomotiveCatalog
 		ComponentIndexById = MoveTemp(CandidateComponents);
 		SurfaceIndexById = MoveTemp(CandidateSurfaces);
 		FamilyIndexById = MoveTemp(CandidateFamilies);
+		AnimationIndexById = MoveTemp(CandidateAnimations);
 		CategoryIdsByRegion = MoveTemp(CandidateCategoriesByRegion);
 		ComponentIdsByCategory = MoveTemp(CandidateComponentsByCategory);
 		SurfaceIdsByComponent = MoveTemp(CandidateSurfacesByComponent);
@@ -909,6 +1047,12 @@ namespace AutomotiveCatalog
 	{
 		const int32* Index = FamilyIndexById.Find(MaterialFamilyId);
 		return bValid && Index != nullptr ? &Catalog.MaterialFamilies[*Index] : nullptr;
+	}
+
+	const FAnimation* FCatalogIndex::FindAnimation(const FString& AnimationId) const
+	{
+		const int32* Index = AnimationIndexById.Find(AnimationId);
+		return bValid && Index != nullptr ? &Catalog.Animations[*Index] : nullptr;
 	}
 
 	int64 CalculateOptionsPriceMinor(

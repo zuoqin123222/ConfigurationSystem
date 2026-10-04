@@ -2,7 +2,7 @@
 
 状态：首个原子阶段契约已实现；真实车辆仍需在 DCC 与 UE5.8 中人工验收。
 
-本指南供资产作者和 AI Agent 共同执行。规范性关键词 `必须`、`禁止`、`应` 不可弱化。每次交付包含模型 FBX、动画 FBX、源文件、车辆 sidecar 和动画 sidecar；JSON 必须先通过仓库验证器。
+本指南供资产作者和 AI Agent 共同执行。规范性关键词 `必须`、`禁止`、`应` 不可弱化。新交付首选单个骨骼车辆 FBX（SkeletalMesh + Skeleton + 一条完整 AnimSequence）、源文件和 v2 sidecar；旧模型/动画分离交付继续兼容。JSON 必须先通过仓库验证器。
 
 ## 稳定规则 ID
 
@@ -18,6 +18,8 @@
 | `DCC-MATERIAL-001` | 材质槽 ID 稳定、唯一，并在全部 LOD 中保持同一全集。 |
 | `DCC-LOD-001` | LOD 连续编号，屏幕阈值和三角形数严格递减。 |
 | `DCC-ANIM-001` | clip 目标存在、标签匹配、帧区间有效且动作可逆。 |
+| `DCC-RIGGED-001` | 单个 FBX 必须同时包含骨骼网格、骨骼和且仅一条完整动画序列。 |
+| `DCC-RIGGED-002` | clip 仅作为完整序列内的帧范围元数据，且 sequence/clip 的 `loop` 均必须为 `false`。 |
 | `DCC-ARTIFACT-001` | artifact `clipId` 唯一，并与 clip 一一对应。 |
 | `DCC-AUTH-001` | 授权信息有来源证据并允许 Unreal 导入和渲染。 |
 | `DCC-HASH-001` | 源文件和 FBX 的字节数、SHA-256 与实际文件一致。 |
@@ -32,6 +34,16 @@
 - 交换格式：二进制 `FBX 2020.2`。
 
 ### 输出
+
+首选 v2：
+
+```text
+source/<vehicle>.<blend|ma|max>
+export/<vehicle>_rigged.fbx
+rigged-vehicle.sidecar.json
+```
+
+兼容 v1：
 
 ```text
 source/<vehicle>.<blend|ma|max>
@@ -178,6 +190,12 @@ Vehicle_Root [Vehicle.Root]
 
 ## 7. 动画
 
+- v2 的 FBX 时间轴必须只导出一条完整动画序列；所有动作片段通过
+  `clips[].startFrame/endFrame` 标记，不拆成多个 UE AnimSequence。
+- `sequence.startFrame < sequence.endFrame`；每个 clip 必须完全落在该闭区间内，
+  且 `clip.startFrame < clip.endFrame`。
+- `sequence.loop` 与每个 `clips[].loop` 必须为 `false`；循环策略只能由运行时显式决定。
+- `clips[].targetBone` 必须存在于 `skeleton.bones`，`skeleton.rootBone` 也必须包含在该数组中。
 - 每个 clip 使用小写 kebab-case `clipId`，只控制一个 `targetNode`。
 - `targetNode` 必须存在于车辆 sidecar，`targetTag` 必须与该节点标签一致。
 - `endFrame` 必须大于 `startFrame`，`frameRate >= 1`。
@@ -189,6 +207,17 @@ Vehicle_Root [Vehicle.Root]
 - UE 运行时仍以可逆执行器为准，FBX clip 是制作基准和验收证据，不得用不可逆 Montage 覆盖运行时契约。
 
 ## 8. FBX 2020.2 导出
+
+首选骨骼车辆 FBX：
+
+- 单文件包含 SkeletalMesh、Skeleton 与一条完整动画时间轴。
+- `skeletalMesh: true`、`importAnimations: true`、`animationLength: exported-time`。
+- `bakeAnimation: true`、`resampleAll: true`；禁止在 DCC 导出多个 take。
+- UE 管理员入口强制 Skeletal Mesh 类型、导入动画、Exported Time，并关闭材质、
+  贴图和 PhysicsAsset 自动创建；导入后必须验证 1 个 SkeletalMesh、有效 Skeleton
+  和 1 个使用同一 Skeleton 的 AnimSequence。
+
+以下分离模型/动画 FBX 仅用于 v1 兼容：
 
 模型 FBX：
 

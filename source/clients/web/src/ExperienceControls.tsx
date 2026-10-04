@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchCatalog } from './api'
-import type { CatalogCameraId, CatalogInteractionCamera } from './types'
+import type { CatalogAnimation, CatalogCameraId, CatalogInteractionCamera } from './types'
 import {
   executeUeControl,
+  focusUeAnimation,
   getUeBridge,
   getUePresentationState,
   type UeControlCommand,
@@ -24,11 +25,14 @@ interface ExperienceControlsProps {
 
 export default function ExperienceControls({ ueEnabled = false }: ExperienceControlsProps) {
   const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
+  const [animationMenuOpen, setAnimationMenuOpen] = useState(false)
   const [qualityMenuOpen, setQualityMenuOpen] = useState(false)
   const [cameras, setCameras] = useState<CatalogInteractionCamera[]>([])
+  const [animations, setAnimations] = useState<CatalogAnimation[]>([])
   const [cameraId, setCameraId] = useState<CatalogCameraId | null>(null)
   const [cameraIndex, setCameraIndex] = useState<UeCameraIndex | null>(null)
   const [animationEnabled, setAnimationEnabled] = useState(false)
+  const [animationId, setAnimationId] = useState<string | null>(null)
   const [lightPreset, setLightPreset] = useState<'studio' | 'outdoor'>('studio')
   const [renderMode, setRenderMode] = useState<'realtime' | 'path-tracing'>('realtime')
   const [quality, setQuality] = useState<UeQualityLevel>('high')
@@ -65,6 +69,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     setCameraId(state.cameraId ?? null)
     setCameraIndex(state.cameraIndex ?? null)
     setAnimationEnabled(state.animationEnabled)
+    setAnimationId(state.animationId ?? null)
     setLightPreset(state.lightPreset)
     setRenderMode(state.renderMode)
     setQuality(state.quality)
@@ -81,6 +86,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         setCameras((catalog.interactionCameras ?? [])
           .slice()
           .sort((left, right) => left.order - right.order))
+        setAnimations(catalog.animations ?? [])
       })
       .catch(() => {
         if (active && !controller.signal.aborted) setError('无法读取镜头目录')
@@ -100,12 +106,59 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     }
   }, [ueEnabled])
 
-  const run = async (command: UeControlCommand, onSuccess?: () => void) => {
+  const run = async (
+    createCommand: UeControlCommand | ((state: UePresentationState) => UeControlCommand),
+    onSuccess?: (state: UePresentationState) => void,
+  ) => {
     if (!ueEnabled) return false
-    const accepted = await executeUeControl(getUeBridge(true), command)
+    const bridge = getUeBridge(true)
+    const currentState = await getUePresentationState(bridge)
+    if (!currentState) {
+      setError(bridge
+        ? '无法读取 UE 展示状态'
+        : 'UE 控制桥不可用或命令被拒绝')
+      return false
+    }
+    applyState(currentState)
+    const command = typeof createCommand === 'function'
+      ? createCommand(currentState)
+      : createCommand
+    const accepted = await executeUeControl(bridge, command)
     setError(accepted ? '' : 'UE 控制桥不可用或命令被拒绝')
-    if (accepted) onSuccess?.()
+    if (accepted) {
+      onSuccess?.(currentState)
+      const updatedState = await getUePresentationState(bridge)
+      if (updatedState) applyState(updatedState)
+    }
     return accepted
+  }
+
+  const selectAnimation = async (nextAnimationId: string) => {
+    if (!ueEnabled) return
+    const bridge = getUeBridge(true)
+    const currentState = await getUePresentationState(bridge)
+    if (!currentState) {
+      setError(bridge
+        ? '无法读取 UE 展示状态'
+        : 'UE 控制桥不可用或命令被拒绝')
+      return
+    }
+    applyState(currentState)
+    const currentAnimationId = currentState.animationId ?? null
+    const nextId = currentAnimationId === nextAnimationId ? null : nextAnimationId
+    const accepted = await focusUeAnimation(
+      bridge,
+      currentAnimationId,
+      nextId,
+    )
+    setError(accepted ? '' : 'UE 控制桥不可用或命令被拒绝')
+    if (accepted) {
+      setAnimationId(nextId)
+      setAnimationEnabled(nextId !== null)
+      setAnimationMenuOpen(false)
+      const updatedState = await getUePresentationState(bridge)
+      if (updatedState) applyState(updatedState)
+    }
   }
 
   return (
@@ -151,23 +204,41 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
             </div>
           )}
         </div>
-        <button
-          aria-pressed={animationEnabled}
-          onClick={() => void run(
-            { type: 'animation', enabled: !animationEnabled },
-            () => setAnimationEnabled((enabled) => !enabled),
+        <div className="toolbar-item">
+          <button
+            aria-expanded={animationMenuOpen}
+            aria-pressed={animationEnabled}
+            onClick={() => setAnimationMenuOpen((open) => !open)}
+          >
+            <span aria-hidden="true">▷</span>
+            动画
+          </button>
+          {animationMenuOpen && (
+            <div className="control-popover animation-popover" role="menu" aria-label="动画列表">
+              {animations.map((animation) => (
+                <button
+                  key={animation.animationId}
+                  role="menuitemradio"
+                  aria-checked={animationId === animation.animationId}
+                  onClick={() => void selectAnimation(animation.animationId)}
+                >
+                  {animation.displayName}
+                </button>
+              ))}
+            </div>
           )}
-        >
-          <span aria-hidden="true">▷</span>
-          动画
-        </button>
+        </div>
         <button
           aria-pressed={lightPreset === 'outdoor'}
           onClick={() => {
-            const nextPreset = lightPreset === 'studio' ? 'outdoor' : 'studio'
             void run(
-              { type: 'light', preset: nextPreset },
-              () => setLightPreset(nextPreset),
+              (state) => ({
+                type: 'light',
+                preset: state.lightPreset === 'studio' ? 'outdoor' : 'studio',
+              }),
+              (state) => setLightPreset(
+                state.lightPreset === 'studio' ? 'outdoor' : 'studio',
+              ),
             )
           }}
         >
@@ -177,10 +248,14 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         <button
           aria-pressed={renderMode === 'path-tracing'}
           onClick={() => {
-            const nextMode = renderMode === 'realtime' ? 'path-tracing' : 'realtime'
             void run(
-              { type: 'render', mode: nextMode },
-              () => setRenderMode(nextMode),
+              (state) => ({
+                type: 'render',
+                mode: state.renderMode === 'realtime' ? 'path-tracing' : 'realtime',
+              }),
+              (state) => setRenderMode(
+                state.renderMode === 'realtime' ? 'path-tracing' : 'realtime',
+              ),
             )
           }}
         >
@@ -230,8 +305,8 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         <button
           aria-pressed={fullscreen}
           onClick={() => void run(
-            { type: 'fullscreen', enabled: !fullscreen },
-            () => setFullscreen((enabled) => !enabled),
+            (state) => ({ type: 'fullscreen', enabled: !state.fullscreen }),
+            (state) => setFullscreen(!state.fullscreen),
           )}
         >
           <span aria-hidden="true">□</span>

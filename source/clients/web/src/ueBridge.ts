@@ -10,6 +10,9 @@ export interface ReflectedUeBridge {
   setcamera?: (cameraIndex: number) => Promise<boolean>
   setcameraid?: (cameraId: string) => Promise<boolean>
   setanimationenabled?: (enabled: boolean) => Promise<boolean>
+  playanimation?: (animationId: string) => Promise<boolean>
+  closeanimation?: (animationId: string) => Promise<boolean>
+  focusanimation?: (nextAnimationId: string) => Promise<boolean>
   setlightpreset?: (preset: string) => Promise<boolean>
   setrendermode?: (mode: string) => Promise<boolean>
   setqualitylevel?: (quality: string) => Promise<boolean>
@@ -31,6 +34,8 @@ export type UeControlCommand =
   }
   | { type: 'camera'; cameraIndex: UeCameraIndex }
   | { type: 'animation'; enabled: boolean }
+  | { type: 'play-animation'; animationId: string }
+  | { type: 'close-animation'; animationId: string }
   | { type: 'light'; preset: 'studio' | 'outdoor' }
   | { type: 'render'; mode: 'realtime' | 'path-tracing' }
   | { type: 'quality'; quality: UeQualityLevel }
@@ -54,6 +59,7 @@ export interface UePresentationState {
   cameraId?: CatalogCameraId
   cameraIndex?: UeCameraIndex
   animationEnabled: boolean
+  animationId?: string | null
   lightPreset: 'studio' | 'outdoor'
   renderMode: 'realtime' | 'path-tracing'
   quality: UeQualityLevel
@@ -131,6 +137,54 @@ export async function setUeCameraId(
   } catch {
     return false
   }
+}
+
+export async function playUeAnimation(
+  bridge: ReflectedUeBridge | null,
+  animationId: string,
+): Promise<boolean> {
+  if (!isCatalogNodeId(animationId)
+    || typeof bridge?.playanimation !== 'function') return false
+  try {
+    return await bridge.playanimation(animationId)
+  } catch {
+    return false
+  }
+}
+
+export async function closeUeAnimation(
+  bridge: ReflectedUeBridge | null,
+  animationId: string,
+): Promise<boolean> {
+  if (!isCatalogNodeId(animationId)
+    || typeof bridge?.closeanimation !== 'function') return false
+  try {
+    return await bridge.closeanimation(animationId)
+  } catch {
+    return false
+  }
+}
+
+export async function focusUeAnimation(
+  bridge: ReflectedUeBridge | null,
+  currentAnimationId: string | null,
+  nextAnimationId: string | null,
+): Promise<boolean> {
+  if (nextAnimationId !== null && !isCatalogNodeId(nextAnimationId)) return false
+  if (typeof bridge?.focusanimation === 'function') {
+    try {
+      return await bridge.focusanimation(nextAnimationId ?? '')
+    } catch {
+      return false
+    }
+  }
+  if (currentAnimationId === nextAnimationId) return true
+  if (currentAnimationId
+    && !await closeUeAnimation(bridge, currentAnimationId)) return false
+  if (!nextAnimationId) return true
+  if (await playUeAnimation(bridge, nextAnimationId)) return true
+  if (currentAnimationId) await playUeAnimation(bridge, currentAnimationId)
+  return false
 }
 
 function isUeCameraIndex(value: unknown): value is UeCameraIndex {
@@ -229,6 +283,9 @@ export async function getUePresentationState(
       && Number(state.cameraIndex) <= 5
     if ((!validCameraId && !validCameraIndex)
       || typeof state.animationEnabled !== 'boolean'
+      || (state.animationId !== undefined
+        && state.animationId !== null
+        && !isCatalogNodeId(state.animationId))
       || !['studio', 'outdoor'].includes(String(state.lightPreset))
       || !['realtime', 'path-tracing'].includes(String(state.renderMode))
       || !['low', 'medium', 'high', 'epic'].includes(String(state.quality))
@@ -258,6 +315,10 @@ export async function executeUeControl(
         if (typeof command.enabled !== 'boolean'
           || typeof bridge.setanimationenabled !== 'function') return false
         return await bridge.setanimationenabled(command.enabled)
+      case 'play-animation':
+        return playUeAnimation(bridge, command.animationId)
+      case 'close-animation':
+        return closeUeAnimation(bridge, command.animationId)
       case 'light':
         if (!['studio', 'outdoor'].includes(command.preset)
           || typeof bridge.setlightpreset !== 'function') return false

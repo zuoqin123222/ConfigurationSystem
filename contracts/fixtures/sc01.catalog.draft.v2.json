@@ -124,6 +124,55 @@
       "iconUrl": "/sc01/option-icons/default.svg"
     }
   ],
+  "skeletalMeshPath": "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2.automotive-configurator-audi-a5-rigged-v2",
+  "sequencePath": "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2_Anim.automotive-configurator-audi-a5-rigged-v2_Anim",
+  "animations": [
+    {
+      "animationId": "hood",
+      "displayName": "开启机舱盖",
+      "frameRate": 24,
+      "startFrame": 0,
+      "endFrame": 30,
+      "loopMode": "none",
+      "closeMode": "reverse"
+    },
+    {
+      "animationId": "door-left",
+      "displayName": "开启左车门",
+      "frameRate": 24,
+      "startFrame": 31,
+      "endFrame": 61,
+      "loopMode": "none",
+      "closeMode": "reverse"
+    },
+    {
+      "animationId": "door-right",
+      "displayName": "开启右车门",
+      "frameRate": 24,
+      "startFrame": 62,
+      "endFrame": 92,
+      "loopMode": "none",
+      "closeMode": "reverse"
+    },
+    {
+      "animationId": "trunk",
+      "displayName": "后盖往复",
+      "frameRate": 24,
+      "startFrame": 93,
+      "endFrame": 123,
+      "loopMode": "ping-pong",
+      "closeMode": "stop"
+    },
+    {
+      "animationId": "wheel-spin",
+      "displayName": "车轮旋转",
+      "frameRate": 24,
+      "startFrame": 124,
+      "endFrame": 184,
+      "loopMode": "forward",
+      "closeMode": "reset-to-start"
+    }
+  ],
   "regions": [
     {
       "regionId": "exterior",
@@ -266,7 +315,7 @@
       "componentId": "chassis",
       "categoryId": "exterior",
       "displayName": "车架",
-      "ui": { "order": 1, "cameraId": "exterior", "navigationMode": "tabs", "layout": "single" },
+      "ui": { "order": 1, "cameraId": "exterior", "animationId": "hood", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",

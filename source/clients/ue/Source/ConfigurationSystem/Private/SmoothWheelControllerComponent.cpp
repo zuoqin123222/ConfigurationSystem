@@ -38,6 +38,13 @@ void USmoothWheelControllerComponent::SetWheelTargets(
 	TargetSpinDegreesPerSecond = InSpinDegreesPerSecond;
 }
 
+void USmoothWheelControllerComponent::StopImmediately()
+{
+	TargetSteeringDegrees = CurrentSteeringDegrees;
+	TargetSpinDegreesPerSecond = 0.0f;
+	CurrentSpinDegreesPerSecond = 0.0f;
+}
+
 void USmoothWheelControllerComponent::AdvanceWheels(const float DeltaTime)
 {
 	if (DeltaTime <= 0.0f)

@@ -81,6 +81,50 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 	TestEqual(TEXT("region 数"), Catalog.GetCatalog().Regions.Num(), 4);
 	TestEqual(TEXT("四阶段 category 数"), Catalog.GetCatalog().Categories.Num(), 4);
 	TestEqual(TEXT("component 数"), Catalog.GetCatalog().Components.Num(), 16);
+	TestEqual(TEXT("顶层动画定义数"), Catalog.GetCatalog().Animations.Num(), 5);
+	TestEqual(TEXT("骨骼网格由顶层 Catalog 提供"),
+		Catalog.GetCatalog().SkeletalMeshPath,
+		FString(TEXT("/Game/Configurator/AuthorizedAudiA5/"
+			"SK_A5_Car.SK_A5_Car")));
+	TestEqual(TEXT("所有帧段共享顶层完整 AnimSequence"),
+		Catalog.GetCatalog().SequencePath,
+		FString(TEXT("/Game/Configurator/AuthorizedAudiA5/Animations/"
+			"A_A5_FullVehicle.A_A5_FullVehicle")));
+	const AutomotiveCatalog::FAnimation* HoodAnimation =
+		Catalog.FindAnimation(TEXT("hood"));
+	TestNotNull(TEXT("可按 animationId 查询动画"), HoodAnimation);
+	if (HoodAnimation != nullptr)
+	{
+		TestEqual(TEXT("机盖使用完整序列首个帧段"), HoodAnimation->StartFrame, 0);
+		TestEqual(TEXT("机盖帧段末帧"), HoodAnimation->EndFrame, 30);
+		TestEqual(TEXT("机盖关闭行为为反向播放"),
+			HoodAnimation->CloseMode, FString(TEXT("reverse")));
+	}
+	const AutomotiveCatalog::FComponent* Chassis =
+		Catalog.FindComponent(TEXT("chassis"));
+	TestTrue(TEXT("chassis 节点联动 hood 动画"),
+		Chassis != nullptr && Chassis->AnimationId.IsSet()
+			&& Chassis->AnimationId.GetValue() == TEXT("hood"));
+	AutomotiveCatalog::FCatalog InvalidSequenceCatalog = Catalog.GetCatalog();
+	InvalidSequenceCatalog.SequencePath = TEXT("Invalid/FullSequence");
+	AutomotiveCatalog::FCatalogIndex InvalidSequenceIndex;
+	TestFalse(TEXT("拒绝非 /Game/ 顶层完整序列路径"),
+		InvalidSequenceIndex.Initialize(InvalidSequenceCatalog, Error));
+	AutomotiveCatalog::FCatalog IncompleteMeshPathCatalog = Catalog.GetCatalog();
+	IncompleteMeshPathCatalog.SkeletalMeshPath = TEXT("/Game/Vehicle/SK_Car");
+	AutomotiveCatalog::FCatalogIndex IncompleteMeshPathIndex;
+	TestFalse(TEXT("拒绝缺少对象名的骨骼网格包路径"),
+		IncompleteMeshPathIndex.Initialize(IncompleteMeshPathCatalog, Error));
+	AutomotiveCatalog::FCatalog IncompleteSequencePathCatalog = Catalog.GetCatalog();
+	IncompleteSequencePathCatalog.SequencePath = TEXT("/Game/Vehicle/A_FullVehicle");
+	AutomotiveCatalog::FCatalogIndex IncompleteSequencePathIndex;
+	TestFalse(TEXT("拒绝缺少对象名的动画序列包路径"),
+		IncompleteSequencePathIndex.Initialize(IncompleteSequencePathCatalog, Error));
+	AutomotiveCatalog::FCatalog InvalidFrameCatalog = Catalog.GetCatalog();
+	InvalidFrameCatalog.Animations[0].StartFrame = -1;
+	AutomotiveCatalog::FCatalogIndex InvalidFrameIndex;
+	TestFalse(TEXT("拒绝负数 clip 首帧"),
+		InvalidFrameIndex.Initialize(InvalidFrameCatalog, Error));
 	TestEqual(
 		TEXT("四阶段按契约顺序"),
 		FString::JoinBy(

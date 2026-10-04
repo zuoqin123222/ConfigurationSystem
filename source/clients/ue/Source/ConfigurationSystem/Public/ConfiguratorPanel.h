@@ -45,6 +45,9 @@ public:
 	bool SetExperienceCamera(int32 CameraIndex);
 	bool SetExperienceCameraId(const FString& CameraId);
 	bool SetExperienceAnimationEnabled(bool bEnabled);
+	bool PlayExperienceAnimation(const FString& AnimationId);
+	bool CloseExperienceAnimation(const FString& AnimationId);
+	bool FocusExperienceAnimation(const FString& NextAnimationId);
 	bool SetExperienceLightPreset(const FString& Preset);
 	bool SetExperienceRenderMode(const FString& Mode);
 	bool SetExperienceQualityLevel(const FString& Quality);

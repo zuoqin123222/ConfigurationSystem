@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import {
   validateAnimation,
+  validateRiggedVehicle,
   validateSidecarFixtures,
   validateVehicle
 } from "./validate-vehicle-sidecars.mjs";
@@ -14,11 +15,20 @@ async function json(relativePath) {
   return JSON.parse(await readFile(resolve(root, relativePath), "utf8"));
 }
 
-const [vehicleSchema, animationSchema, validVehicle, validAnimation] = await Promise.all([
+const [
+  vehicleSchema,
+  animationSchema,
+  riggedVehicleSchema,
+  validVehicle,
+  validAnimation,
+  validRiggedVehicle
+] = await Promise.all([
   json("contracts/schemas/vehicle-model-sidecar.schema.json"),
   json("contracts/schemas/vehicle-animation-sidecar.schema.json"),
+  json("contracts/schemas/rigged-vehicle-sidecar.schema.json"),
   json("contracts/fixtures/vehicle-model.valid.json"),
-  json("contracts/fixtures/vehicle-animation.valid.json")
+  json("contracts/fixtures/vehicle-animation.valid.json"),
+  json("contracts/fixtures/rigged-vehicle.valid.json")
 ]);
 
 function clone(value) {
@@ -30,11 +40,22 @@ test("有效车辆与动画 sidecar 通过 Schema 和跨文件语义验证", () 
   assert.deepEqual(validateAnimation(validAnimation, animationSchema, validVehicle), []);
 });
 
+test("有效骨骼车辆 v2 sidecar 声明单 FBX、骨骼和一条完整 sequence", () => {
+  assert.deepEqual(validateRiggedVehicle(validRiggedVehicle, riggedVehicleSchema), []);
+  assert.equal(validRiggedVehicle.kind, "rigged-vehicle");
+  assert.equal(validRiggedVehicle.export.skeletalMesh, true);
+  assert.equal(validRiggedVehicle.export.importAnimations, true);
+  assert.equal(validRiggedVehicle.export.animationLength, "exported-time");
+  assert.equal(Object.keys(validRiggedVehicle.artifacts).length, 1);
+  assert.ok(validRiggedVehicle.clips.every((clip) => clip.loop === false));
+});
+
 test("仓库 fixture 集合要求有效样例通过、无效样例被拒绝", async () => {
   const result = await validateSidecarFixtures();
   assert.deepEqual(result.failures, []);
   assert.ok(result.rejected.vehicle.length >= 8);
   assert.ok(result.rejected.animation.length >= 6);
+  assert.ok(result.rejected.riggedVehicle.length >= 6);
 });
 
 test("车辆 sidecar 拒绝非 UE 坐标、非 FBX 2020.2 和非法哈希", () => {
@@ -126,4 +147,28 @@ test("动画 sidecar 拒绝重复的 artifact clipId", () => {
   animation.artifacts[1].clipId = animation.artifacts[0].clipId;
   const errors = validateAnimation(animation, animationSchema, validVehicle);
   assert.ok(errors.some((error) => error.includes("artifact clipId 必须唯一")));
+});
+
+test("骨骼车辆拒绝循环、越界片段和未知目标骨骼", () => {
+  const riggedVehicle = clone(validRiggedVehicle);
+  riggedVehicle.sequence.loop = true;
+  riggedVehicle.clips[0].loop = true;
+  riggedVehicle.clips[0].targetBone = "Missing_Bone";
+  riggedVehicle.clips[0].endFrame = riggedVehicle.sequence.endFrame + 1;
+  const errors = validateRiggedVehicle(riggedVehicle, riggedVehicleSchema);
+  assert.ok(errors.some((error) => error.includes("$.sequence.loop")));
+  assert.ok(errors.some((error) => error.includes("$.clips[0].loop")));
+  assert.ok(errors.some((error) => error.includes("骨骼中不存在 Missing_Bone")));
+  assert.ok(errors.some((error) => error.includes("帧范围必须位于完整 sequence 内")));
+});
+
+test("骨骼车辆拒绝无效完整 sequence 与重复片段 ID", () => {
+  const riggedVehicle = clone(validRiggedVehicle);
+  riggedVehicle.sequence.endFrame = riggedVehicle.sequence.startFrame;
+  riggedVehicle.skeleton.rootBone = "Missing_Root";
+  riggedVehicle.clips[1].clipId = riggedVehicle.clips[0].clipId;
+  const errors = validateRiggedVehicle(riggedVehicle, riggedVehicleSchema);
+  assert.ok(errors.some((error) => error.includes("$.sequence.endFrame")));
+  assert.ok(errors.some((error) => error.includes("$.skeleton.rootBone")));
+  assert.ok(errors.some((error) => error.includes("clipId 必须唯一")));
 });

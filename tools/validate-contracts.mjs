@@ -50,6 +50,7 @@ const schemaNames = [
   "bake-manifest.schema.json",
   "vehicle-model-sidecar.schema.json",
   "vehicle-animation-sidecar.schema.json",
+  "rigged-vehicle-sidecar.schema.json",
   "content-pack-manifest.schema.json",
   "reference-asset-normalization.schema.json",
   "catalog.v2.schema.json",
@@ -415,5 +416,5 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log("契约验证通过：10 个 Schema JSON；v1 保持 8 个选项、2 个模板、16 个组合、4 个视角与 64 个图片期望；SC01 v2 草案通过有效/无效配置、禁止报价 price-result 与 2 个稳定身份黄金向量；参考资产、content-pack、P0-3 与车辆 sidecar 验证通过。");
+  console.log("契约验证通过：11 个 Schema JSON；v1 保持 8 个选项、2 个模板、16 个组合、4 个视角与 64 个图片期望；SC01 v2 草案通过有效/无效配置、禁止报价 price-result 与 2 个稳定身份黄金向量；参考资产、content-pack、P0-3 与车辆 sidecar 验证通过。");
 }

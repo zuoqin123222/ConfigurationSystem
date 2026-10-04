@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "2.0.0",
+  "kind": "rigged-vehicle",
+  "vehicleId": "demo-car",
+  "modelVersion": "rigged-model-2026-01",
+  "animationVersion": "animation-2026-01",
+  "coordinateSystem": {
+    "unit": "centimeter",
+    "forward": "+X",
+    "right": "+Y",
+    "up": "+Z",
+    "handedness": "left"
+  },
+  "source": {
+    "dcc": "blender",
+    "dccVersion": "4.5.3",
+    "file": {
+      "path": "source/demo-car.blend",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "bytes": 42000000
+    }
+  },
+  "export": {
+    "format": "FBX",
+    "fbxVersion": "2020.2",
+    "binary": true,
+    "skeletalMesh": true,
+    "importAnimations": true,
+    "animationLength": "exported-time",
+    "bakeAnimation": true,
+    "resampleAll": true
+  },
+  "skeleton": {
+    "rootBone": "Vehicle_Root",
+    "bones": ["Vehicle_Root", "Vehicle_Body", "Door_FL", "Hood", "Trunk"]
+  },
+  "sequence": {
+    "sequenceId": "vehicle-full-sequence",
+    "frameRate": 30,
+    "startFrame": 0,
+    "endFrame": 180,
+    "loop": false,
+    "rootMotion": false
+  },
+  "clips": [
+    {
+      "clipId": "door-front-left-open",
+      "targetBone": "Door_FL",
+      "action": "open",
+      "startFrame": 0,
+      "endFrame": 45,
+      "reversible": true,
+      "loop": false
+    },
+    {
+      "clipId": "hood-open",
+      "targetBone": "Hood",
+      "action": "open",
+      "startFrame": 60,
+      "endFrame": 105,
+      "reversible": true,
+      "loop": false
+    },
+    {
+      "clipId": "trunk-open",
+      "targetBone": "Trunk",
+      "action": "open",
+      "startFrame": 120,
+      "endFrame": 165,
+      "reversible": true,
+      "loop": false
+    }
+  ],
+  "authorization": {
+    "rightsHolder": "Example Motors",
+    "licenseId": "demo-evaluation-2026",
+    "permittedUses": ["modify", "unreal-import", "render", "distribute-render"],
+    "territory": "worldwide",
+    "expiresOn": null,
+    "redistribution": "render-only"
+  },
+  "artifacts": {
+    "fbx": {
+      "path": "export/demo-car-rigged.fbx",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "bytes": 36000000
+    }
+  }
+}

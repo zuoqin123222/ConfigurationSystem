@@ -184,7 +184,12 @@ void UCarConfiguratorSubsystem::RegisterVehicle(
 	{
 		RegisteredVehicle->ApplyConfiguration(State->GetSelection());
 	}
-if (IsValid(RegisteredVehicle) && IsValid(AutomotiveMaterialBinder)
+	if (IsValid(RegisteredVehicle) && IsValid(AutomotiveConfigurationState))
+	{
+		RegisteredVehicle->ConfigureAnimationFromCatalog(
+			AutomotiveConfigurationState->GetCatalogIndex().GetCatalog());
+	}
+	if (IsValid(RegisteredVehicle) && IsValid(AutomotiveMaterialBinder)
 		&& IsValid(AutomotiveConfigurationState) && IsValid(AutomotiveMaterialLibrary))
 	{
 		checkf(

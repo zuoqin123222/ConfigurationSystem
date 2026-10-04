@@ -2,14 +2,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "AutomotiveCatalogDomain.h"
 #include "CarConfigurationState.h"
 #include "ConfiguratorVehicleActor.generated.h"
 
 class UMaterialInstanceDynamic;
 class UReversiblePartActuatorComponent;
 class USceneComponent;
+class USkeletalMeshComponent;
 class USmoothWheelControllerComponent;
 class UStaticMeshComponent;
+class UVehicleAnimSequencePlayerComponent;
+struct FVehicleAnimationClip;
 
 /**
  * 运行时优先加载 AuthorizedAudiA5 真实几何；单个资产缺失时保留 Engine 基础形状回退。
@@ -24,6 +28,7 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	/** 把领域状态映射到车辆逻辑分区颜色，不参与 canonical key 或价格计算。 */
 	UFUNCTION(BlueprintCallable, Category = "车辆配置")
@@ -47,6 +52,36 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "车辆体验")
 	bool ToggleWheelSpin();
+
+	UFUNCTION(BlueprintCallable, Category = "车辆体验")
+	bool PlayVehicleAnimation(FName AnimationId);
+
+	UFUNCTION(BlueprintCallable, Category = "车辆体验")
+	bool CloseVehicleAnimation(FName AnimationId);
+
+	/** 原子聚焦动画；NAME_None 表示关闭，快速请求只保留最后一个目标。 */
+	UFUNCTION(BlueprintCallable, Category = "车辆体验")
+	bool FocusVehicleAnimation(FName NextAnimationId);
+
+	/** Path Tracing 使用：立即冻结骨骼与所有静态代理运动。 */
+	UFUNCTION(BlueprintCallable, Category = "车辆体验")
+	void FreezeAllVehicleMotion();
+
+	UFUNCTION(BlueprintPure, Category = "车辆体验")
+	FName GetActiveVehicleAnimationId() const;
+
+	UFUNCTION(BlueprintPure, Category = "车辆体验")
+	bool IsVehicleAnimationPlaying() const;
+
+	/** 从已校验的车型目录一次性加载整车骨骼网格、完整序列并转换全部帧段。 */
+	bool ConfigureAnimationFromCatalog(const AutomotiveCatalog::FCatalog& Catalog);
+
+	static bool BuildAnimationClips(
+		const AutomotiveCatalog::FCatalog& Catalog,
+		TArray<FVehicleAnimationClip>& OutClips);
+	static bool ShouldUseStaticAnimationFallback(
+		bool bHasSkeletalMesh,
+		bool bHasSequence);
 
 	static FRotator GetHoodOpenRotation();
 	static FRotator GetTrunkOpenRotation();
@@ -74,6 +109,11 @@ private:
 		TObjectPtr<UMaterialInstanceDynamic>& Storage,
 		const FLinearColor& Color);
 	void SetMaterialFamilyColor(const FName& MaterialName, const FLinearColor& Color);
+	bool ApplyStaticAnimationFallback(FName AnimationId, bool bOpen);
+	bool IsStaticAnimationSupported(FName AnimationId) const;
+	bool IsStaticAnimationMoving(FName AnimationId) const;
+	void StartPendingStaticAnimation();
+	void SetStaticProxyVisible(bool bVisible);
 
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TObjectPtr<USceneComponent> VehicleRoot;
@@ -81,6 +121,13 @@ private:
 	/** 把源模型的水平几何中心对齐 Actor 原点，并把轮胎最低点抬到 Z=0。 */
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TObjectPtr<USceneComponent> ContentRoot;
+
+	/** 优先显示与完整动画序列 Skeleton 匹配的多骨骼整车；资产不可用时显示静态代理。 */
+	UPROPERTY(VisibleAnywhere, Category = "车辆动画")
+	TObjectPtr<USkeletalMeshComponent> SkeletalVehicle;
+
+	UPROPERTY(VisibleAnywhere, Category = "车辆动画")
+	TObjectPtr<UVehicleAnimSequencePlayerComponent> AnimationPlayer;
 
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TObjectPtr<UStaticMeshComponent> PaintBody;
@@ -170,4 +217,10 @@ private:
 	TArray<TObjectPtr<UMaterialInstanceDynamic>> RuntimeMaterialInstances;
 
 	bool bWheelsSpinning = false;
+	bool bAnimationCatalogConfigured = false;
+	bool bAnimationSequenceReady = false;
+	bool bStaticAnimationFallbackEnabled = true;
+	FName ActiveFallbackAnimationId;
+	FName PendingFallbackAnimationId;
+	bool bHasPendingFallbackFocus = false;
 };

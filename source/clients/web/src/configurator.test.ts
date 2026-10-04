@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  animationIdForSelection,
   cameraIdForSelection,
   categoriesInUiOrder,
   componentsForCategory,
@@ -18,6 +19,17 @@ import {
 import { catalogFixture, initialSelections } from './test/catalogFixture'
 
 describe('v2 动态选配逻辑', () => {
+  it('保留 Catalog 顶层骨骼网格和完整动画序列路径', () => {
+    expect(catalogFixture.skeletalMeshPath)
+      .toBe('/Game/Configurator/AuthorizedAudiA5/SK_A5_Car.SK_A5_Car')
+    expect(catalogFixture.sequencePath)
+      .toBe('/Game/Configurator/AuthorizedAudiA5/Animations/A_A5_FullVehicle.A_A5_FullVehicle')
+    expect(catalogFixture.animations.every(
+      (animation) => !Object.hasOwn(animation, 'sequencePath')
+        && !Object.hasOwn(animation, 'skeletalMeshPath'),
+    )).toBe(true)
+  })
+
   it('按 selectionOrder 生成完整初始选择和稳定标识', () => {
     const selections = createInitialSelections(catalogFixture)
 
@@ -95,6 +107,21 @@ describe('v2 动态选配逻辑', () => {
     catalog.categories[0].ui = { order: 10 }
     expect(categoriesInUiOrder(catalog).map((item) => item.categoryId))
       .toEqual(['interior', 'performance', 'personalization', 'exterior'])
+  })
+
+  it('按 surface、component、category 优先级解析动画联动并校验顶层定义', () => {
+    expect(animationIdForSelection(catalogFixture, {
+      categoryId: 'exterior',
+      componentId: 'chassis',
+    })).toBe('hood')
+    expect(animationIdForSelection(catalogFixture, {
+      categoryId: 'exterior',
+      componentId: 'wheel',
+    })).toBeNull()
+
+    const invalid = structuredClone(catalogFixture)
+    invalid.components.find((item) => item.componentId === 'chassis')!.ui!.animationId = 'missing'
+    expect(animationIdForSelection(invalid, { componentId: 'chassis' })).toBeNull()
   })
 
   it('由 category surfaces-as-components 配置把 surface 平铺为部件入口', () => {

@@ -17,6 +17,7 @@ import {
   saveConfiguration,
 } from './api'
 import {
+  animationIdForSelection,
   cameraIdForSelection,
   categoriesInUiOrder,
   componentsForCategory,
@@ -49,6 +50,7 @@ import {
   CONFIGURATOR_HEADER_STATE_EVENT,
   getUeConfiguratorHeaderState,
   getUeBridge,
+  focusUeAnimation,
   isUeConfiguratorHeaderState,
   syncUeConfiguratorCategory,
   syncUeConfiguratorHeaderState,
@@ -487,6 +489,7 @@ function Configurator({
   const [render, setRender] = useState<LegacyRender | null>(null)
   const [pendingRender, setPendingRender] = useState<LegacyRender | null>(null)
   const renderRequestRef = useRef('')
+  const focusedAnimationIdRef = useRef<string | null>(null)
   const [renderLoading, setRenderLoading] = useState(!embedded)
   const [renderMessage, setRenderMessage] = useState('')
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
@@ -536,38 +539,46 @@ function Configurator({
     0,
   )
 
+  const focusCatalogNode = useCallback((selection: {
+    categoryId?: string
+    componentId?: string
+    surfaceId?: string
+  }) => {
+    if (!embedded) return
+    const bridge = getUeBridge(true)
+    void setUeCameraId(bridge, cameraIdForSelection(catalog, selection))
+    const nextAnimationId = animationIdForSelection(catalog, selection)
+    void focusUeAnimation(
+      bridge,
+      focusedAnimationIdRef.current,
+      nextAnimationId,
+    ).then((accepted) => {
+      if (accepted) focusedAnimationIdRef.current = nextAnimationId
+    })
+  }, [catalog, embedded])
+
   const selectCategory = useCallback((nextCategoryId: string) => {
     if (!catalog.categories.some((category) => category.categoryId === nextCategoryId)) return
     setCategoryId(nextCategoryId)
     if (embedded) {
       void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
-      void setUeCameraId(getUeBridge(true), cameraIdForSelection(catalog, {
-        categoryId: nextCategoryId,
-      }))
+      focusCatalogNode({ categoryId: nextCategoryId })
     }
-  }, [catalog, embedded])
+  }, [catalog, embedded, focusCatalogNode])
 
   const selectComponent = (nextComponentId: string) => {
     setComponentId(nextComponentId)
     if (surfacesAsComponents) setSurfaceId(nextComponentId)
-    if (embedded) {
-      void setUeCameraId(getUeBridge(true), cameraIdForSelection(catalog, {
-        categoryId,
-        componentId: surfacesAsComponents ? undefined : nextComponentId,
-        surfaceId: surfacesAsComponents ? nextComponentId : undefined,
-      }))
-    }
+    focusCatalogNode({
+      categoryId,
+      componentId: surfacesAsComponents ? undefined : nextComponentId,
+      surfaceId: surfacesAsComponents ? nextComponentId : undefined,
+    })
   }
 
   const selectSurface = (nextSurfaceId: string) => {
     setSurfaceId(nextSurfaceId)
-    if (embedded) {
-      void setUeCameraId(getUeBridge(true), cameraIdForSelection(catalog, {
-        categoryId,
-        componentId,
-        surfaceId: nextSurfaceId,
-      }))
-    }
+    focusCatalogNode({ categoryId, componentId, surfaceId: nextSurfaceId })
   }
 
   useEffect(() => {
@@ -576,14 +587,12 @@ function Configurator({
       const nextCategoryId = (event as CustomEvent<string>).detail
       if (catalog.categories.some((category) => category.categoryId === nextCategoryId)) {
         setCategoryId(nextCategoryId)
-        void setUeCameraId(getUeBridge(true), cameraIdForSelection(catalog, {
-          categoryId: nextCategoryId,
-        }))
+        focusCatalogNode({ categoryId: nextCategoryId })
       }
     }
     window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
     return () => window.removeEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
-  }, [catalog.categories, embedded])
+  }, [catalog.categories, embedded, focusCatalogNode])
 
   useEffect(() => {
     const firstComponent = components[0]?.componentId

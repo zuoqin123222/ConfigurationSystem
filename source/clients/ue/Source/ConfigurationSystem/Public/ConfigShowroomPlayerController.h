@@ -146,6 +146,18 @@ public:
 	UFUNCTION(BlueprintPure, Category="Configurator|Experience")
 	bool IsAnimationEnabled() const;
 
+	UFUNCTION(BlueprintCallable, Category="Configurator|Experience")
+	bool PlayAnimation(FName AnimationId);
+
+	UFUNCTION(BlueprintCallable, Category="Configurator|Experience")
+	bool CloseAnimation(FName AnimationId);
+
+	UFUNCTION(BlueprintCallable, Category="Configurator|Experience")
+	bool FocusAnimation(FName NextAnimationId);
+
+	UFUNCTION(BlueprintPure, Category="Configurator|Experience")
+	FName GetActiveAnimationId() const;
+
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	bool SetLightPreset(const FString& Preset);
 

@@ -8,6 +8,7 @@
 #include "PathTracingExperienceSubsystem.h"
 #include "ReversiblePartActuatorComponent.h"
 #include "SmoothWheelControllerComponent.h"
+#include "VehicleAnimSequencePlayerComponent.h"
 
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -185,6 +186,16 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		UConfiguratorWebBridge::IsSupportedCameraId(TEXT("front-cabin")));
 	TestFalse(TEXT("bridge 拒绝含点号的镜头 id"),
 		UConfiguratorWebBridge::IsSupportedCameraId(TEXT("front.cabin")));
+	TestTrue(TEXT("bridge 接受 catalog 动画 id"),
+		UConfiguratorWebBridge::IsSupportedAnimationId(TEXT("wheel-spin")));
+	TestFalse(TEXT("bridge 拒绝包含路径字符的动画 id"),
+		UConfiguratorWebBridge::IsSupportedAnimationId(TEXT("../hood")));
+	TestFalse(TEXT("bridge 拒绝前导连字符动画 id"),
+		UConfiguratorWebBridge::IsSupportedAnimationId(TEXT("-hood")));
+	TestFalse(TEXT("bridge 拒绝尾随连字符动画 id"),
+		UConfiguratorWebBridge::IsSupportedAnimationId(TEXT("hood-")));
+	TestFalse(TEXT("bridge 拒绝连续连字符动画 id"),
+		UConfiguratorWebBridge::IsSupportedAnimationId(TEXT("hood--open")));
 	FString ParsedCameraId;
 	TestTrue(TEXT("controller 可解析语义镜头标签"),
 		AConfigShowroomPlayerController::TryParseCameraIdTag(
@@ -518,7 +529,7 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 			FMath::Lerp(StartPOV.FOV, EndPOV.FOV, 0.5f),
 			0.1f));
 	AConfigRuntimeCameraActor* RuntimeCamera =
-		NewObject<AConfigRuntimeCameraActor>(GetTransientPackage());
+		NewObject<AConfigRuntimeCameraActor>();
 	RuntimeCamera->ApplyCameraPOV(FinalPOV);
 	FMinimalViewInfo AppliedPOV;
 	RuntimeCamera->CalcCamera(0.0f, AppliedPOV);
@@ -532,6 +543,161 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("过渡视图保留正交近裁剪面"), AppliedPOV.OrthoNearClipPlane, EndPOV.OrthoNearClipPlane);
 	TestEqual(TEXT("过渡视图保留正交远裁剪面"), AppliedPOV.OrthoFarClipPlane, EndPOV.OrthoFarClipPlane);
 	TestFalse(TEXT("过渡视图保留 FOV LOD 开关"), AppliedPOV.bUseFieldOfViewForLOD);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FVehicleAnimSequenceFramePlayerAutomationTest,
+	"ConfigurationSystem.Runtime.Experience.AnimSequenceFramePlayer",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
+bool FVehicleAnimSequenceFramePlayerAutomationTest::RunTest(
+	const FString& Parameters)
+{
+	(void)Parameters;
+	int32 Direction = 1;
+	bool bStopped = false;
+	TestEqual(TEXT("none 到末帧后停在末帧"),
+		UVehicleAnimSequencePlayerComponent::AdvanceFrame(
+			29, 0, 30, EVehicleAnimationLoopMode::None, Direction, bStopped),
+		30);
+	TestTrue(TEXT("none 到末帧报告停止"), bStopped);
+
+	Direction = 1;
+	bStopped = false;
+	TestEqual(TEXT("forward 越过末帧后回到首帧"),
+		UVehicleAnimSequencePlayerComponent::AdvanceFrame(
+			30, 0, 30, EVehicleAnimationLoopMode::Forward, Direction, bStopped),
+		0);
+	TestFalse(TEXT("forward 循环不停止"), bStopped);
+
+	Direction = 1;
+	TestEqual(TEXT("ping-pong 到末帧反向"),
+		UVehicleAnimSequencePlayerComponent::AdvanceFrame(
+			29, 0, 30, EVehicleAnimationLoopMode::PingPong, Direction, bStopped),
+		30);
+	TestEqual(TEXT("ping-pong 末帧后方向为反向"), Direction, -1);
+	TestEqual(TEXT("ping-pong 反向逐帧"),
+		UVehicleAnimSequencePlayerComponent::AdvanceFrame(
+			30, 0, 30, EVehicleAnimationLoopMode::PingPong, Direction, bStopped),
+		29);
+
+	bool bReverse = false;
+	TestEqual(TEXT("reverse 关闭保留当前帧并启动反向"),
+		UVehicleAnimSequencePlayerComponent::ResolveCloseFrame(
+			18, 0, EVehicleAnimationCloseMode::Reverse, bReverse),
+		18);
+	TestTrue(TEXT("reverse 关闭进入反向播放"), bReverse);
+	TestEqual(TEXT("reset-to-start 关闭回到首帧"),
+		UVehicleAnimSequencePlayerComponent::ResolveCloseFrame(
+			18, 0, EVehicleAnimationCloseMode::ResetToStart, bReverse),
+		0);
+	TestFalse(TEXT("reset-to-start 不继续播放"), bReverse);
+	TestEqual(TEXT("stop 关闭保持当前帧"),
+		UVehicleAnimSequencePlayerComponent::ResolveCloseFrame(
+			18, 0, EVehicleAnimationCloseMode::Stop, bReverse),
+		18);
+	TestFalse(TEXT("stop 关闭不继续播放"), bReverse);
+
+	int32 RangeStart = 124;
+	int32 RangeEnd = 240;
+	TestTrue(TEXT("超出完整序列末帧的 clip 被显式钳制"),
+		UVehicleAnimSequencePlayerComponent::NormalizeFrameRange(
+			RangeStart, RangeEnd, 184));
+	TestEqual(TEXT("钳制后保留合法首帧"), RangeStart, 124);
+	TestEqual(TEXT("钳制到完整序列末帧"), RangeEnd, 184);
+	RangeStart = 200;
+	RangeEnd = 240;
+	TestFalse(TEXT("完全落在序列范围外的 clip 被拒绝"),
+		UVehicleAnimSequencePlayerComponent::NormalizeFrameRange(
+			RangeStart, RangeEnd, 184));
+
+	AutomotiveCatalog::FCatalog Catalog;
+	const auto AddCatalogAnimation = [&Catalog](
+		const TCHAR* Id,
+		const TCHAR* LoopMode,
+		const TCHAR* CloseMode,
+		const int32 StartFrame,
+		const int32 EndFrame)
+	{
+		AutomotiveCatalog::FAnimation& Animation =
+			Catalog.Animations.AddDefaulted_GetRef();
+		Animation.AnimationId = Id;
+		Animation.DisplayName = Id;
+		Animation.FrameRate = 24.0;
+		Animation.StartFrame = StartFrame;
+		Animation.EndFrame = EndFrame;
+		Animation.LoopMode = LoopMode;
+		Animation.CloseMode = CloseMode;
+	};
+	AddCatalogAnimation(TEXT("hood"), TEXT("none"), TEXT("reverse"), 7, 19);
+	AddCatalogAnimation(
+		TEXT("trunk"), TEXT("ping-pong"), TEXT("stop"), 20, 39);
+	AddCatalogAnimation(
+		TEXT("wheel-spin"), TEXT("forward"), TEXT("reset-to-start"), 40, 71);
+	TArray<FVehicleAnimationClip> CatalogClips;
+	TestTrue(TEXT("Actor 可转换 Catalog 中的全部动画定义"),
+		AConfiguratorVehicleActor::BuildAnimationClips(Catalog, CatalogClips));
+	TestEqual(TEXT("转换不丢失任何 clip"), CatalogClips.Num(), Catalog.Animations.Num());
+	TestEqual(TEXT("转换保留 Catalog 帧率"), CatalogClips[0].FrameRate, 24.0f);
+	TestEqual(TEXT("转换保留非硬编码首帧"), CatalogClips[0].StartFrame, 7);
+	TestEqual(TEXT("转换保留非硬编码末帧"), CatalogClips[2].EndFrame, 71);
+	TestEqual(TEXT("转换 ping-pong 模式"),
+		CatalogClips[1].LoopMode, EVehicleAnimationLoopMode::PingPong);
+	TestEqual(TEXT("转换 reset-to-start 关闭模式"),
+		CatalogClips[2].CloseMode, EVehicleAnimationCloseMode::ResetToStart);
+	TestFalse(TEXT("mesh 与 sequence 均存在时禁止静态代理回退"),
+		AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(true, true));
+	TestTrue(TEXT("缺少 mesh 时允许静态代理回退"),
+		AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(false, true));
+	TestTrue(TEXT("缺少 sequence 时允许静态代理回退"),
+		AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(true, false));
+	AutomotiveCatalog::FCatalog InvalidIdCatalog = Catalog;
+	InvalidIdCatalog.Animations[0].AnimationId = TEXT("hood--open");
+	TestFalse(TEXT("UE 在配置播放器前拒绝非 stable animation ID"),
+		AConfiguratorVehicleActor::BuildAnimationClips(
+			InvalidIdCatalog, CatalogClips));
+
+	AConfiguratorVehicleActor* Vehicle =
+		NewObject<AConfiguratorVehicleActor>();
+	TestTrue(TEXT("缺少骨骼动画资产时 hood 使用静态代理回退"),
+		Vehicle->PlayVehicleAnimation(TEXT("hood")));
+	TestEqual(TEXT("静态代理也暴露当前动画 id"),
+		Vehicle->GetActiveVehicleAnimationId(), FName(TEXT("hood")));
+	TestTrue(TEXT("静态代理支持关闭动画"),
+		Vehicle->CloseVehicleAnimation(TEXT("hood")));
+	TestTrue(TEXT("关闭后清理当前动画 id"),
+		Vehicle->GetActiveVehicleAnimationId().IsNone());
+	USceneComponent* HoodPivot =
+		FindObjectFast<USceneComponent>(Vehicle, TEXT("HoodHingePivot"));
+	UReversiblePartActuatorComponent* HoodActuator =
+		FindObjectFast<UReversiblePartActuatorComponent>(Vehicle, TEXT("HoodActuator"));
+	TestNotNull(TEXT("静态代理包含 hood 执行器"), HoodActuator);
+	if (HoodPivot != nullptr && HoodActuator != nullptr)
+	{
+		HoodActuator->BindPart(
+			HoodPivot,
+			FTransform::Identity,
+			FTransform(FRotator(0.0f, 90.0f, 0.0f)));
+		TestTrue(TEXT("原子焦点可启动旧静态动画"),
+			Vehicle->FocusVehicleAnimation(TEXT("hood")));
+		HoodActuator->AdvanceActuation(0.5f);
+		TestTrue(TEXT("切焦先接受 trunk 为 pending"),
+			Vehicle->FocusVehicleAnimation(TEXT("trunk")));
+		TestEqual(TEXT("reverse 完成前仍保持旧动画焦点"),
+			Vehicle->GetActiveVehicleAnimationId(), FName(TEXT("hood")));
+		TestTrue(TEXT("快速请求用 wheel-spin 替换旧 pending"),
+			Vehicle->FocusVehicleAnimation(TEXT("wheel-spin")));
+		HoodActuator->AdvanceActuation(1.0f);
+		Vehicle->Tick(0.0f);
+		TestEqual(TEXT("reverse 完成后只播放最新 pending"),
+			Vehicle->GetActiveVehicleAnimationId(), FName(TEXT("wheel-spin")));
+		Vehicle->FreezeAllVehicleMotion();
+		TestTrue(TEXT("冻结后清空活动动画"),
+			Vehicle->GetActiveVehicleAnimationId().IsNone());
+		TestFalse(TEXT("冻结后车轮立即停止"),
+			Vehicle->IsWheelAnimationEnabled());
+	}
 	return true;
 }
 
@@ -562,6 +728,10 @@ bool FReversiblePartActuatorAutomationTest::RunTest(const FString& Parameters)
 	Actuator->AdvanceActuation(0.25f);
 	TestTrue(TEXT("运动中反向沿当前进度连续回退"), Actuator->GetProgress() < ForwardProgress);
 	TestFalse(TEXT("回到闭合端后不再移动前仍保持闭合目标"), Actuator->IsOpenRequested());
+	const float FrozenProgress = Actuator->GetProgress();
+	Actuator->FreezeAtCurrentPose();
+	Actuator->AdvanceActuation(1.0f);
+	TestEqual(TEXT("冻结静态代理后不再推进"), Actuator->GetProgress(), FrozenProgress);
 	return true;
 }
 
@@ -603,9 +773,12 @@ bool FSmoothWheelControllerAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("四轮独立 Spin Pivot 均发生滚动"),
 		!SpinPivots[0]->GetRelativeRotation().IsZero()
 			&& !SpinPivots[3]->GetRelativeRotation().IsZero());
+	Controller->StopImmediately();
+	TestTrue(TEXT("Path Tracing 可立即把车轮角速度归零"),
+		FMath::IsNearlyZero(Controller->GetCurrentSpinDegreesPerSecond()));
 
 	AConfiguratorVehicleActor* Vehicle =
-		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+		NewObject<AConfiguratorVehicleActor>();
 	Vehicle->SetWheelAnimationEnabled(true);
 	TestTrue(TEXT("显式 Set 开启动画并返回真实状态"), Vehicle->IsWheelAnimationEnabled());
 	Vehicle->SetWheelAnimationEnabled(false);
@@ -622,7 +795,7 @@ bool FVehiclePresentationHierarchyAutomationTest::RunTest(const FString& Paramet
 {
 	(void)Parameters;
 	AConfiguratorVehicleActor* Vehicle =
-		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+		NewObject<AConfiguratorVehicleActor>();
 	const auto FindScene = [Vehicle](const TCHAR* Name)
 	{
 		return FindObjectFast<USceneComponent>(Vehicle, FName(Name));

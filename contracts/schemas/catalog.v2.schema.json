@@ -13,6 +13,9 @@
     "selectionOrder",
     "defaultSelections",
     "optionIdAliases",
+    "skeletalMeshPath",
+    "sequencePath",
+    "animations",
     "regions",
     "categories",
     "components",
@@ -59,6 +62,13 @@
     "interactionCameras": {
       "type": "array",
       "items": { "$ref": "#/$defs/interactionCamera" }
+    },
+    "skeletalMeshPath": { "$ref": "#/$defs/ueObjectPath" },
+    "sequencePath": { "$ref": "#/$defs/ueObjectPath" },
+    "animations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/animation" }
     },
     "regions": {
       "type": "array",
@@ -108,6 +118,10 @@
       "type": "string",
       "minLength": 1
     },
+    "ueObjectPath": {
+      "type": "string",
+      "pattern": "^/Game/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+    },
     "cameraId": {
       "anyOf": [
         { "$ref": "#/$defs/id" },
@@ -128,6 +142,12 @@
         "cameraId": {
           "anyOf": [
             { "$ref": "#/$defs/cameraId" },
+            { "type": "null" }
+          ]
+        },
+        "animationId": {
+          "anyOf": [
+            { "$ref": "#/$defs/id" },
             { "type": "null" }
           ]
         },
@@ -165,6 +185,28 @@
         "order": { "type": "integer", "minimum": 0 },
         "displayName": { "$ref": "#/$defs/nonEmptyString" },
         "iconUrl": { "type": "string", "pattern": "^/" }
+      }
+    },
+    "animation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "animationId",
+        "displayName",
+        "frameRate",
+        "startFrame",
+        "endFrame",
+        "loopMode",
+        "closeMode"
+      ],
+      "properties": {
+        "animationId": { "$ref": "#/$defs/id" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "frameRate": { "type": "number", "exclusiveMinimum": 0 },
+        "startFrame": { "type": "integer", "minimum": 0 },
+        "endFrame": { "type": "integer", "minimum": 1 },
+        "loopMode": { "enum": ["none", "forward", "ping-pong"] },
+        "closeMode": { "enum": ["reverse", "reset-to-start", "stop"] }
       }
     },
     "optionUi": {

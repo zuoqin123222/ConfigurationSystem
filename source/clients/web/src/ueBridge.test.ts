@@ -1,13 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   applyUeConfiguration,
+  closeUeAnimation,
   createUeConfigurationJson,
   createUeConfiguratorHeaderStateJson,
   executeUeControl,
   getUeConfiguratorHeaderState,
   getUeBridge,
   getUePresentationState,
+  focusUeAnimation,
   isUeConfiguratorHeaderState,
+  playUeAnimation,
   setUeCameraId,
   syncUeConfiguratorCategory,
   syncUeConfiguratorHeaderState,
@@ -155,6 +158,8 @@ describe('受限 UE bridge', () => {
       setcamera: vi.fn().mockResolvedValue(true),
       setcameraid: vi.fn().mockResolvedValue(true),
       setanimationenabled: vi.fn().mockResolvedValue(true),
+      playanimation: vi.fn().mockResolvedValue(true),
+      closeanimation: vi.fn().mockResolvedValue(true),
       setlightpreset: vi.fn().mockResolvedValue(true),
       setrendermode: vi.fn().mockResolvedValue(true),
       setqualitylevel: vi.fn().mockResolvedValue(true),
@@ -169,6 +174,14 @@ describe('受限 UE bridge', () => {
     })).resolves.toBe(true)
     await expect(executeUeControl(bridge, { type: 'camera', cameraIndex: 5 })).resolves.toBe(true)
     await expect(executeUeControl(bridge, { type: 'animation', enabled: true })).resolves.toBe(true)
+    await expect(executeUeControl(
+      bridge,
+      { type: 'play-animation', animationId: 'hood' },
+    )).resolves.toBe(true)
+    await expect(executeUeControl(
+      bridge,
+      { type: 'close-animation', animationId: 'hood' },
+    )).resolves.toBe(true)
     await expect(executeUeControl(bridge, { type: 'light', preset: 'outdoor' })).resolves.toBe(true)
     await expect(executeUeControl(bridge, { type: 'render', mode: 'path-tracing' })).resolves.toBe(true)
     await expect(executeUeControl(bridge, { type: 'quality', quality: 'epic' })).resolves.toBe(true)
@@ -178,6 +191,8 @@ describe('受限 UE bridge', () => {
     expect(bridge.setcameraid).toHaveBeenCalledWith('front-cabin')
     expect(bridge.setcamera).toHaveBeenCalledWith(5)
     expect(bridge.setanimationenabled).toHaveBeenCalledWith(true)
+    expect(bridge.playanimation).toHaveBeenCalledWith('hood')
+    expect(bridge.closeanimation).toHaveBeenCalledWith('hood')
     expect(bridge.setlightpreset).toHaveBeenCalledWith('outdoor')
     expect(bridge.setrendermode).toHaveBeenCalledWith('path-tracing')
     expect(bridge.setqualitylevel).toHaveBeenCalledWith('epic')
@@ -222,6 +237,7 @@ describe('受限 UE bridge', () => {
     const state = {
       cameraId: 'front-cabin',
       animationEnabled: true,
+      animationId: 'hood',
       lightPreset: 'outdoor',
       renderMode: 'path-tracing',
       quality: 'epic',
@@ -232,6 +248,11 @@ describe('受限 UE bridge', () => {
     }
 
     await expect(getUePresentationState(bridge)).resolves.toEqual(state)
+    bridge.getpresentationstatejson.mockResolvedValue(JSON.stringify({
+      ...state,
+      animationId: '../hood',
+    }))
+    await expect(getUePresentationState(bridge)).resolves.toBeNull()
     bridge.getpresentationstatejson.mockResolvedValue('{"cameraIndex":99}')
     await expect(getUePresentationState(bridge)).resolves.toBeNull()
   })
@@ -250,5 +271,38 @@ describe('受限 UE bridge', () => {
     }
 
     await expect(getUePresentationState(bridge)).resolves.toEqual(state)
+  })
+
+  it('焦点动画优先调用 UE 原子接口，并拒绝非法 ID', async () => {
+    const focusanimation = vi.fn().mockResolvedValue(true)
+    const bridge = {
+      focusanimation,
+      playanimation: vi.fn().mockResolvedValue(true),
+      closeanimation: vi.fn().mockResolvedValue(true),
+    }
+
+    await expect(focusUeAnimation(bridge, 'hood', 'trunk')).resolves.toBe(true)
+    expect(focusanimation).toHaveBeenCalledWith('trunk')
+    expect(bridge.closeanimation).not.toHaveBeenCalled()
+    expect(bridge.playanimation).not.toHaveBeenCalled()
+    await expect(focusUeAnimation(bridge, 'trunk', null)).resolves.toBe(true)
+    expect(focusanimation).toHaveBeenLastCalledWith('')
+    await expect(focusUeAnimation(bridge, 'hood', '-invalid')).resolves.toBe(false)
+  })
+
+  it('旧 bridge 切换失败时恢复原动画', async () => {
+    const bridge = {
+      playanimation: vi.fn()
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true),
+      closeanimation: vi.fn().mockResolvedValue(true),
+    }
+
+    await expect(focusUeAnimation(bridge, 'hood', 'trunk')).resolves.toBe(false)
+    expect(bridge.closeanimation).toHaveBeenCalledWith('hood')
+    expect(bridge.playanimation).toHaveBeenNthCalledWith(1, 'trunk')
+    expect(bridge.playanimation).toHaveBeenNthCalledWith(2, 'hood')
+    await expect(playUeAnimation(bridge, 'Invalid Animation')).resolves.toBe(false)
+    await expect(closeUeAnimation(bridge, '../hood')).resolves.toBe(false)
   })
 })

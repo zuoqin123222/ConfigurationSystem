@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://configurationsystem.local/schemas/rigged-vehicle-sidecar.schema.json",
+  "title": "Rigged Vehicle Sidecar",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "vehicleId",
+    "modelVersion",
+    "animationVersion",
+    "coordinateSystem",
+    "source",
+    "export",
+    "skeleton",
+    "sequence",
+    "clips",
+    "authorization",
+    "artifacts"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.0.0" },
+    "kind": { "const": "rigged-vehicle" },
+    "vehicleId": { "$ref": "#/$defs/id" },
+    "modelVersion": { "$ref": "#/$defs/id" },
+    "animationVersion": { "$ref": "#/$defs/id" },
+    "coordinateSystem": { "$ref": "#/$defs/coordinateSystem" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dcc", "dccVersion", "file"],
+      "properties": {
+        "dcc": { "enum": ["blender", "maya", "3ds-max"] },
+        "dccVersion": { "type": "string", "minLength": 1 },
+        "file": { "$ref": "#/$defs/sourceArtifact" }
+      }
+    },
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "fbxVersion",
+        "binary",
+        "skeletalMesh",
+        "importAnimations",
+        "animationLength",
+        "bakeAnimation",
+        "resampleAll"
+      ],
+      "properties": {
+        "format": { "const": "FBX" },
+        "fbxVersion": { "const": "2020.2" },
+        "binary": { "const": true },
+        "skeletalMesh": { "const": true },
+        "importAnimations": { "const": true },
+        "animationLength": { "const": "exported-time" },
+        "bakeAnimation": { "const": true },
+        "resampleAll": { "const": true }
+      }
+    },
+    "skeleton": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootBone", "bones"],
+      "properties": {
+        "rootBone": { "$ref": "#/$defs/nodeName" },
+        "bones": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nodeName" }
+        }
+      }
+    },
+    "sequence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequenceId", "frameRate", "startFrame", "endFrame", "loop", "rootMotion"],
+      "properties": {
+        "sequenceId": { "$ref": "#/$defs/id" },
+        "frameRate": { "type": "number", "minimum": 1 },
+        "startFrame": { "type": "integer", "minimum": 0 },
+        "endFrame": { "type": "integer", "minimum": 1 },
+        "loop": { "const": false },
+        "rootMotion": { "const": false }
+      }
+    },
+    "clips": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/clip" }
+    },
+    "authorization": { "$ref": "#/$defs/authorization" },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fbx"],
+      "properties": {
+        "fbx": { "$ref": "#/$defs/artifact" }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "nodeName": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": { "type": "string", "pattern": "\\.fbx$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "sourceArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "coordinateSystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "forward", "right", "up", "handedness"],
+      "properties": {
+        "unit": { "const": "centimeter" },
+        "forward": { "const": "+X" },
+        "right": { "const": "+Y" },
+        "up": { "const": "+Z" },
+        "handedness": { "const": "left" }
+      }
+    },
+    "clip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clipId", "targetBone", "action", "startFrame", "endFrame", "reversible", "loop"],
+      "properties": {
+        "clipId": { "$ref": "#/$defs/id" },
+        "targetBone": { "$ref": "#/$defs/nodeName" },
+        "primaryBone": { "$ref": "#/$defs/nodeName" },
+        "action": { "enum": ["open", "close", "rotate", "translate", "custom"] },
+        "startFrame": { "type": "integer", "minimum": 0 },
+        "endFrame": { "type": "integer", "minimum": 1 },
+        "reversible": { "const": true },
+        "loop": { "const": false }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rightsHolder", "licenseId", "permittedUses", "territory", "expiresOn", "redistribution"],
+      "properties": {
+        "rightsHolder": { "type": "string", "minLength": 1 },
+        "licenseId": { "type": "string", "minLength": 1 },
+        "permittedUses": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["modify", "unreal-import", "render", "distribute-render"] }
+        },
+        "territory": { "type": "string", "minLength": 1 },
+        "expiresOn": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "redistribution": { "enum": ["none", "render-only", "source-and-render"] }
+      }
+    }
+  }
+}

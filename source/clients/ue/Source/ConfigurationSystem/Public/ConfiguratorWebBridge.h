@@ -19,6 +19,7 @@ public:
 	void Initialize(UConfiguratorPanel* InOwner);
 	static bool IsSupportedCameraIndex(int32 CameraIndex);
 	static bool IsSupportedCameraId(const FString& CameraId);
+	static bool IsSupportedAnimationId(const FString& AnimationId);
 	static bool IsSupportedLightPreset(const FString& Preset);
 	static bool IsSupportedRenderMode(const FString& Mode);
 	static bool IsSupportedQualityLevel(const FString& Quality);
@@ -35,6 +36,12 @@ public:
 	bool SetCameraId(const FString& CameraId);
 	UFUNCTION()
 	bool SetAnimationEnabled(bool bEnabled);
+	UFUNCTION()
+	bool PlayAnimation(const FString& AnimationId);
+	UFUNCTION()
+	bool CloseAnimation(const FString& AnimationId);
+	UFUNCTION()
+	bool FocusAnimation(const FString& NextAnimationId);
 	UFUNCTION()
 	bool SetLightPreset(const FString& Preset);
 	UFUNCTION()

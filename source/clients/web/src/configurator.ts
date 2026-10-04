@@ -215,6 +215,30 @@ export function cameraIdForSelection(
   return surfaceCamera ?? componentCamera ?? categoryCamera ?? null
 }
 
+export function animationIdForSelection(
+  catalog: CatalogV2,
+  selection: {
+    categoryId?: string
+    componentId?: string
+    surfaceId?: string
+  },
+): string | null {
+  const animationId = catalog.surfaces.find(
+    (surface) => surface.surfaceId === selection.surfaceId,
+  )?.ui?.animationId
+    ?? catalog.components.find(
+      (component) => component.componentId === selection.componentId,
+    )?.ui?.animationId
+    ?? catalog.categories.find(
+      (category) => category.categoryId === selection.categoryId,
+    )?.ui?.animationId
+    ?? null
+  return animationId !== null
+    && (catalog.animations ?? []).some((animation) => animation.animationId === animationId)
+    ? animationId
+    : null
+}
+
 export interface MaterialOptionGroup {
   materialFamily: CatalogMaterialFamily
   options: CatalogOption[]

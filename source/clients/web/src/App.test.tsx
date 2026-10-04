@@ -338,6 +338,29 @@ describe('App v2', () => {
     })
   })
 
+  it('embedded 节点焦点按 catalog ui 联动 chassis 的 hood 动画', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    const playanimation = vi.fn().mockResolvedValue(true)
+    const closeanimation = vi.fn().mockResolvedValue(true)
+    window.ue = {
+      uebridge: {
+        applyconfigurationjson: vi.fn(),
+        setcameraid: vi.fn().mockResolvedValue(true),
+        playanimation,
+        closeanimation,
+      },
+    }
+    mockApi()
+    render(<App />)
+
+    const parts = await screen.findByRole('region', { name: '部件筛选' })
+    await userEvent.click(within(parts).getByRole('button', { name: '车架' }))
+    await waitFor(() => expect(playanimation).toHaveBeenCalledWith('hood'))
+
+    await userEvent.click(within(parts).getByRole('button', { name: '轮毂' }))
+    await waitFor(() => expect(closeanimation).toHaveBeenCalledWith('hood'))
+  })
+
   it('embedded 页签按目录 cameraId 调用语义 setcameraid', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const setcameraid = vi.fn().mockResolvedValue(true)

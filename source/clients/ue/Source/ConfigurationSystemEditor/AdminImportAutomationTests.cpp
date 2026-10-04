@@ -2,6 +2,9 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+#include "AssetImportTask.h"
+#include "Factories/FbxAnimSequenceImportData.h"
+#include "Factories/FbxImportUI.h"
 #include "HAL/FileManager.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
@@ -134,9 +137,120 @@ bool FAdminImportPreflightAutomationTest::RunTest(const FString& Parameters)
 		FAdminImportPreflight::Run({Selection}, Session + TEXT("-animation"));
 	TestTrue(TEXT("有效动画 sidecar 通过"), AnimationResult.bPassed);
 
+	const FString RiggedFbxPath = FPaths::Combine(TestDirectory, TEXT("test-rigged.fbx"));
+	const FString RiggedSidecarPath = FPaths::Combine(TestDirectory, TEXT("test-rigged.json"));
+	TestTrue(
+		TEXT("创建测试骨骼车辆 FBX"),
+		FFileHelper::SaveStringToFile(
+			TEXT("ConfigurationSystem admin import SHA-256 probe"),
+			*RiggedFbxPath,
+			FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM));
+	const FString RiggedJson = FString::Printf(
+		TEXT(R"JSON({
+  "schemaVersion":"2.0.0",
+  "kind":"rigged-vehicle",
+  "vehicleId":"automation-car",
+  "modelVersion":"rigged-model-1",
+  "animationVersion":"animation-1",
+  "coordinateSystem":{"unit":"centimeter","forward":"+X","right":"+Y","up":"+Z","handedness":"left"},
+  "source":{"dcc":"blender","dccVersion":"4.5","file":{"path":"source.blend","sha256":"0000000000000000000000000000000000000000000000000000000000000000","bytes":1}},
+  "export":{"format":"FBX","fbxVersion":"2020.2","binary":true,"skeletalMesh":true,"importAnimations":true,"animationLength":"exported-time","bakeAnimation":true,"resampleAll":true},
+  "skeleton":{"rootBone":"Vehicle_Root","bones":["Vehicle_Root","Door_FL"]},
+  "sequence":{"sequenceId":"vehicle-full-sequence","frameRate":30,"startFrame":0,"endFrame":90,"loop":false,"rootMotion":false},
+  "clips":[{"clipId":"door-open","targetBone":"Door_FL","action":"open","startFrame":0,"endFrame":45,"reversible":true,"loop":false}],
+  "authorization":{"rightsHolder":"Automation","licenseId":"test","permittedUses":["modify","unreal-import"],"territory":"test","expiresOn":null,"redistribution":"none"},
+  "artifacts":{"fbx":{"path":"test-rigged.fbx","sha256":"%s","bytes":%lld}}
+})JSON"),
+		*Sha256,
+		FileBytes);
+	TestTrue(
+		TEXT("创建有效骨骼车辆 sidecar"),
+		FFileHelper::SaveStringToFile(
+			RiggedJson,
+			*RiggedSidecarPath,
+			FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM));
+	Selection.Kind = EAdminImportAssetKind::RiggedVehicle;
+	Selection.FbxFile = RiggedFbxPath;
+	Selection.SidecarFile = RiggedSidecarPath;
+	FAdminImportPreflightResult RiggedResult =
+		FAdminImportPreflight::Run({Selection}, Session + TEXT("-rigged"));
+	TestTrue(TEXT("有效骨骼车辆 v2 sidecar 通过"), RiggedResult.bPassed);
+	TestEqual(
+		TEXT("记录完整 sequence 起始帧"),
+		RiggedResult.Items[0].SequenceStartFrame,
+		0);
+	TestEqual(
+		TEXT("记录完整 sequence 结束帧"),
+		RiggedResult.Items[0].SequenceEndFrame,
+		90);
+
+	const FString InvalidRiggedJson = RiggedJson
+		.Replace(TEXT("\"endFrame\":45"), TEXT("\"endFrame\":120"))
+		.Replace(TEXT("\"loop\":false}],"), TEXT("\"loop\":true}],"));
+	TestTrue(
+		TEXT("创建无效片段 sidecar"),
+		FFileHelper::SaveStringToFile(
+			InvalidRiggedJson,
+			*RiggedSidecarPath,
+			FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM));
+	FAdminImportPreflightResult InvalidRiggedResult =
+		FAdminImportPreflight::Run({Selection}, Session + TEXT("-rigged-invalid"));
+	TestFalse(TEXT("越界或循环片段被拒绝"), InvalidRiggedResult.bPassed);
+	TestTrue(
+		TEXT("失败原因包含帧范围"),
+		InvalidRiggedResult.Items[0].Errors.ContainsByPredicate(
+			[](const FString& Error)
+			{
+				return Error.Contains(TEXT("帧范围"));
+			}));
+	TestTrue(
+		TEXT("失败原因包含禁止循环"),
+		InvalidRiggedResult.Items[0].Errors.ContainsByPredicate(
+			[](const FString& Error)
+			{
+				return Error.Contains(TEXT(".loop 必须为 false"));
+			}));
+
+	UAssetImportTask* RiggedTask = NewObject<UAssetImportTask>();
+	FAdminImportService::ConfigureImportTask(
+		*RiggedTask, EAdminImportAssetKind::RiggedVehicle);
+	UFbxImportUI* ImportUI = Cast<UFbxImportUI>(RiggedTask->Options);
+	TestNotNull(TEXT("骨骼车辆强制提供 UFbxImportUI"), ImportUI);
+	if (ImportUI != nullptr)
+	{
+		TestEqual(TEXT("强制 SkeletalMesh 导入类型"), ImportUI->MeshTypeToImport, FBXIT_SkeletalMesh);
+		TestTrue(TEXT("强制导入骨骼网格"), ImportUI->bImportMesh);
+		TestTrue(TEXT("强制导入动画"), ImportUI->bImportAnimations);
+		TestFalse(TEXT("禁止自动猜测 FBX 类型"), ImportUI->bAutomatedImportShouldDetectType);
+		TestFalse(TEXT("不自动创建物理资产"), ImportUI->bCreatePhysicsAsset);
+		TestTrue(
+			TEXT("动画长度使用完整导出时间"),
+			ImportUI->AnimSequenceImportData != nullptr
+				&& ImportUI->AnimSequenceImportData->AnimationLength == FBXALIT_ExportedTime);
+	}
+
+	const TArray<FName> NewPackages = FAdminImportService::FindNewPackageNames(
+		{
+			TEXT("/Game/Configurator/_ImportStaging/session/Existing")
+		},
+		{
+			TEXT("/Game/Configurator/_ImportStaging/session/Existing"),
+			TEXT("/Game/Configurator/_ImportStaging/session/Vehicle"),
+			TEXT("/Game/Configurator/_ImportStaging/session/VehicleAnimation"),
+			TEXT("/Game/Configurator/_ImportStaging/session/VehicleAnimation")
+		});
+	TestEqual(TEXT("AssetRegistry 差集只保留本次新增包"), NewPackages.Num(), 2);
+	TestTrue(TEXT("AssetRegistry 差集包含骨骼车辆"),
+		NewPackages.Contains(TEXT("/Game/Configurator/_ImportStaging/session/Vehicle")));
+	TestTrue(TEXT("AssetRegistry 差集包含完整动画"),
+		NewPackages.Contains(
+			TEXT("/Game/Configurator/_ImportStaging/session/VehicleAnimation")));
+
 	IFileManager::Get().Delete(*ValidResult.ReportPath);
 	IFileManager::Get().Delete(*InvalidResult.ReportPath);
 	IFileManager::Get().Delete(*AnimationResult.ReportPath);
+	IFileManager::Get().Delete(*RiggedResult.ReportPath);
+	IFileManager::Get().Delete(*InvalidRiggedResult.ReportPath);
 	IFileManager::Get().DeleteDirectory(*TestDirectory, false, true);
 	return true;
 }

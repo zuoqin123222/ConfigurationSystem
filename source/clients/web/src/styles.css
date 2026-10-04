@@ -557,6 +557,13 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   height: 16px;
   object-fit: contain;
 }
+.animation-popover {
+  grid-template-columns: repeat(5, max-content);
+  min-width: 0;
+}
+.animation-popover button {
+  white-space: nowrap;
+}
 .quality-control { position: fixed; z-index: 22; top: 20px; right: 20px; }
 .icon-button {
   width: 38px; height: 38px; border: 1px solid #d5d5d2; border-radius: 50%;
