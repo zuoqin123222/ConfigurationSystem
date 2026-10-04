@@ -446,6 +446,52 @@ describe('App v2', () => {
       .toBeInTheDocument()
   })
 
+  it('座椅背板使用满幅自定义取色并只额外开放亮面或雾面', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+      .getByRole('button', { name: '内饰' }))
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
+      .getByRole('button', { name: '座椅' }))
+    await user.click(within(screen.getByRole('region', { name: '子项筛选' }))
+      .getByRole('button', { name: '背板' }))
+
+    expect(screen.getByRole('button', { name: /高光原色碳纤维，免费/ }))
+      .toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: /自定义取色，¥1,680/ }))
+    const editor = screen.getByRole('region', { name: '自定义取色颜色' })
+    const finish = within(editor).getByRole('group', { name: '背板表面效果' })
+    expect(within(finish).getByRole('button', { name: '亮面' }))
+      .toHaveAttribute('aria-pressed', 'true')
+    await user.click(within(finish).getByRole('button', { name: '雾面' }))
+    expect(within(finish).getByRole('button', { name: '雾面' }))
+      .toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /自定义取色，¥1,680/ }).querySelector('img'))
+      .toHaveAttribute('src', '/sc01/option-icons/rainbow.svg')
+  })
+
+  it('座椅回中标按四种材料展示免费完整色卡', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+      .getByRole('button', { name: '内饰' }))
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
+      .getByRole('button', { name: '座椅' }))
+    await user.click(within(screen.getByRole('region', { name: '子项筛选' }))
+      .getByRole('button', { name: '回中标' }))
+
+    expect(screen.getByRole('region', { name: '奥司维材质' })).toHaveTextContent('免费')
+    expect(screen.getByRole('region', { name: 'Alcantara材质' })).toHaveTextContent('免费')
+    expect(screen.getByRole('region', { name: '超纤皮材质' })).toHaveTextContent('免费')
+    expect(screen.getByRole('region', { name: '牛皮材质' })).toHaveTextContent('免费')
+  })
+
   it('渲染相关配置变化会刷新代理图并保留上一张直到新图就绪', async () => {
     const user = userEvent.setup()
     const fetchMock = mockApi()

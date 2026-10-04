@@ -383,6 +383,32 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   font: 10px ui-monospace, SFMono-Regular, Consolas, monospace;
   text-transform: uppercase;
 }
+.finish-control {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  color: #666a62;
+  font-size: 10px;
+}
+.finish-control > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.finish-control button {
+  min-height: 34px;
+  border: 1px solid #d2d1ca;
+  border-radius: 5px;
+  color: #555950;
+  background: #fff;
+  cursor: pointer;
+}
+.finish-control button.selected {
+  border-color: #292c27;
+  color: #fff;
+  background: #292c27;
+}
 .inline-color-picker { display: grid; gap: 8px; }
 .color-picker-plane {
   position: relative;

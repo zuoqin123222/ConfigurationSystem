@@ -74,7 +74,7 @@ bool FSc01V2GoldenVectorsAutomationTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("必选表面数"), Catalog.GetCatalog().SelectionOrder.Num(), 38);
-	TestEqual(TEXT("选项索引覆盖 catalog"), Catalog.GetCatalog().Options.Num(), 152);
+	TestEqual(TEXT("选项索引覆盖 catalog"), Catalog.GetCatalog().Options.Num(), 154);
 	TestEqual(TEXT("色卡索引覆盖 catalog"), Catalog.GetCatalog().MaterialVariants.Num(), 352);
 	TestEqual(TEXT("车辆 displayName"), Catalog.GetCatalog().VehicleDisplayName, FString(TEXT("SC01")));
 	TestEqual(TEXT("基础价读取为 22980000 分"), Catalog.GetCatalog().BasePriceMinor, int64(22980000));
@@ -251,11 +251,11 @@ bool FSc01V2CustomizationAutomationTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("定制 configurationId 与 server sc01-v2.ts 一致"),
 		Configuration.ConfigurationId,
-		FString(TEXT("cfg-107edc9c2b0200b34757143d")));
+		FString(TEXT("cfg-cea5b986ba7f948e91d44ea7")));
 	TestEqual(
 		TEXT("定制 renderKey 与 server sc01-v2.ts 一致"),
 		Configuration.RenderKey,
-		FString(TEXT("sc01__sc01-draft-20260121__render-107edc9c2b0200b34757143d")));
+		FString(TEXT("sc01__sc01-draft-20260121__render-cea5b986ba7f948e91d44ea7")));
 
 	Sc01V2::FCustomizations Mismatch = Customizations;
 	Mismatch[TEXT("steering-wheel-skin")] =

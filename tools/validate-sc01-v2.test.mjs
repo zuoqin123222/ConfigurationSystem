@@ -19,7 +19,7 @@ const fixture = (name) =>
 
 test("SC01 v2 草案 catalog、正反配置、价格结果与黄金向量聚合通过", async () => {
   const result = await validateSc01Fixtures(root);
-  assert.deepEqual(result, { optionCount: 152, vectorCount: 2 });
+  assert.deepEqual(result, { optionCount: 154, vectorCount: 2 });
 });
 
 test("catalog 使用显式 defaultSelections 消除多标配项的顺序歧义", async () => {
@@ -191,6 +191,36 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
   assert.equal(catalog.optionIdAliases["door-middle-leather-72"], "door-middle-leather");
   assert.equal(byId.get("engine-cover-silver").pricing.isStandard, true);
   assert.equal(byId.get("engine-cover-ppg-custom").parameters.color.mode, "custom");
+  assert.equal(byId.get("a-pillar-woven").materialFamilyId, "woven-fabric");
+  assert.equal(byId.get("a-pillar-woven").parameters.color.mode, "fixed");
+  assert.equal(byId.get("roof-woven-standard").materialFamilyId, "woven-fabric");
+  assert.equal(catalog.defaultSelections["ip-center-mark"], "ip-center-mark-uncovered-black");
+  assert.equal(byId.get("ip-center-mark-uncovered-black").displayName, "无包覆(黑)");
+  assert.ok([
+    "ip-center-mark-ultrasuede",
+    "ip-center-mark-alcantara",
+    "ip-center-mark-microfiber",
+    "ip-center-mark-leather"
+  ].every((optionId) =>
+    byId.get(optionId).parameters.color.mode === "variant"
+      && byId.get(optionId).pricing.unitPriceMinor === 10000
+  ));
+  assert.ok([
+    "seat-headrest-mark-ultrasuede",
+    "seat-headrest-mark-alcantara",
+    "seat-headrest-mark-microfiber",
+    "seat-headrest-mark-leather"
+  ].every((optionId) =>
+    byId.get(optionId).parameters.color.mode === "variant"
+      && byId.get(optionId).pricing.unitPriceMinor === 0
+  ));
+  assert.equal(
+    catalog.surfaces.find((surface) => surface.surfaceId === "seat-shell-back").displayName,
+    "背板"
+  );
+  assert.equal(byId.get("seat-shell-carbon-original").displayName, "高光原色碳纤维");
+  assert.equal(byId.get("seat-shell-custom").displayName, "自定义取色");
+  assert.equal(byId.get("seat-shell-custom").parameters.color.mode, "custom");
   assert.deepEqual(
     catalog.components
       .filter((component) => component.categoryId === "personalization")

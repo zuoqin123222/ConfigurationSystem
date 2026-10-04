@@ -44,8 +44,8 @@ const additionalDefaults = [
   ['steering-center-mark', 'steering-center-standard', '回中标'],
   ['seat-backrest', 'seat-back-ultrasuede-black', '座椅接触面'],
   ['seat-bolster', 'seat-bolster-microfiber-black', '座椅边皮'],
-  ['seat-shell-back', 'seat-shell-black', '碳纤维背板颜色'],
-  ['seat-headrest-mark', 'seat-headrest-standard', '头枕回中标'],
+  ['seat-shell-back', 'seat-shell-carbon-original', '背板'],
+  ['seat-headrest-mark', 'seat-headrest-mark-ultrasuede', '回中标'],
   ['door-upper', 'door-upper-microfiber-black', '门板上段'],
   ['door-middle', 'door-middle-ultrasuede-black', '门板中面板'],
   ['door-armrest', 'door-armrest-microfiber-black', '门板扶手'],
@@ -55,7 +55,7 @@ const additionalDefaults = [
   ['ip-instrument-cover', 'ip-instrument-cover-microfiber-black', '仪表盖'],
   ['ip-upper-trim', 'ip-upper-trim-microfiber-black', '上层软包'],
   ['ip-lower-trim', 'ip-lower-trim-microfiber-black', '下层软包'],
-  ['ip-center-mark', 'ip-center-mark-black-paint', '仪表台回中标'],
+  ['ip-center-mark', 'ip-center-mark-uncovered-black', '仪表台回中标'],
   ['storage-soft-bag', 'storage-soft-bag-microfiber-black', '储物盒软包'],
   ['console-armrest-cover', 'console-armrest-cover-microfiber-black', '扶手盖子'],
   ['console-armrest-side', 'console-armrest-side-microfiber-black', '扶手侧边'],
@@ -129,8 +129,8 @@ export const catalogFixture: CatalogV2 = {
     'steering-center-mark': 'steering-center-standard',
     'seat-backrest': 'seat-back-ultrasuede-black',
     'seat-bolster': 'seat-bolster-microfiber-black',
-    'seat-shell-back': 'seat-shell-black',
-    'seat-headrest-mark': 'seat-headrest-standard',
+    'seat-shell-back': 'seat-shell-carbon-original',
+    'seat-headrest-mark': 'seat-headrest-mark-ultrasuede',
     'door-upper': 'door-upper-microfiber-black',
     'door-middle': 'door-middle-ultrasuede-black',
     'door-armrest': 'door-armrest-microfiber-black',
@@ -140,7 +140,7 @@ export const catalogFixture: CatalogV2 = {
     'ip-instrument-cover': 'ip-instrument-cover-microfiber-black',
     'ip-upper-trim': 'ip-upper-trim-microfiber-black',
     'ip-lower-trim': 'ip-lower-trim-microfiber-black',
-    'ip-center-mark': 'ip-center-mark-black-paint',
+    'ip-center-mark': 'ip-center-mark-uncovered-black',
     'storage-soft-bag': 'storage-soft-bag-microfiber-black',
     'console-armrest-cover': 'console-armrest-cover-microfiber-black',
     'console-armrest-side': 'console-armrest-side-microfiber-black',
@@ -203,6 +203,7 @@ export const catalogFixture: CatalogV2 = {
     { materialFamilyId: 'ultrasuede', displayName: '奥司维' },
     { materialFamilyId: 'alcantara', displayName: 'Alcantara' },
     { materialFamilyId: 'leather', displayName: '牛皮' },
+    { materialFamilyId: 'microfiber', displayName: '超纤皮' },
   ],
   materialVariants: [
     {
@@ -227,6 +228,14 @@ export const catalogFixture: CatalogV2 = {
       displayName: '9743 Nero',
       colorCode: '9743',
       thumbnailUrl: '/sc01/thumbnails/leather-p9-9743.webp',
+      reviewRequired: false,
+    },
+    {
+      variantId: 'microfiber-p16-np-3048',
+      materialFamilyId: 'microfiber',
+      displayName: 'NP-3048 黑',
+      colorCode: 'NP-3048',
+      thumbnailUrl: '/sc01/thumbnails/microfiber-p16-np-3048.webp',
       reviewRequired: false,
     },
   ],
@@ -334,6 +343,38 @@ export const catalogFixture: CatalogV2 = {
         status: 'confirmed' as const,
       },
     },
+    {
+      ...option('seat-shell-custom', 'seat-shell-back', 'paint', '自定义取色', false),
+      parameters: {
+        color: { mode: 'custom' as const, value: null, required: true },
+        material: { materialFamilyId: 'paint', variantId: null },
+      },
+      pricing: {
+        ...pricing,
+        unitPriceMinor: 168000,
+        quantity: 2,
+        isStandard: false,
+        status: 'confirmed' as const,
+      },
+    },
+    ...([
+      ['seat-headrest-mark-alcantara', 'alcantara', 'Alcantara'],
+      ['seat-headrest-mark-microfiber', 'microfiber', '超纤皮'],
+      ['seat-headrest-mark-leather', 'leather', '牛皮'],
+    ] as const).map(([optionId, materialFamilyId, displayName]) => ({
+      ...option(optionId, 'seat-headrest-mark', materialFamilyId, displayName, false),
+      parameters: {
+        color: { mode: 'variant' as const, value: null, required: true },
+        material: { materialFamilyId, variantId: null },
+      },
+      pricing: {
+        ...pricing,
+        unitPriceMinor: 0,
+        quantity: 1,
+        isStandard: false,
+        status: 'confirmed' as const,
+      },
+    })),
     ...additionalDefaults.map(([surfaceId, optionId, displayName]) => {
       const result = option(
         optionId,
@@ -350,6 +391,58 @@ export const catalogFixture: CatalogV2 = {
           parameters: {
             color: { mode: 'fixed' as const, value: '#C0C0C0', required: true },
             material: { materialFamilyId: 'paint', variantId: null },
+          },
+        }
+      }
+      if (surfaceId === 'seat-headrest-mark') {
+        return {
+          ...result,
+          displayName: '奥司维',
+          materialFamilyId: 'ultrasuede',
+          parameters: {
+            color: { mode: 'variant' as const, value: null, required: true },
+            material: { materialFamilyId: 'ultrasuede', variantId: null },
+          },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+        }
+      }
+      if (surfaceId === 'seat-shell-back') {
+        return {
+          ...result,
+          displayName: '高光原色碳纤维',
+          materialFamilyId: 'paint',
+          finish: 'gloss',
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+        }
+      }
+      if (surfaceId === 'ip-center-mark') {
+        return {
+          ...result,
+          displayName: '无包覆(黑)',
+          materialFamilyId: 'paint',
+          colorCode: '#111111',
+          parameters: {
+            color: { mode: 'fixed' as const, value: '#111111', required: true },
+            material: null,
+          },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
           },
         }
       }

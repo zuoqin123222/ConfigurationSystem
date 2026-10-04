@@ -102,6 +102,9 @@ const PREFERRED_DARK_VARIANTS: Record<string, string> = {
   microfiber: 'microfiber-p16-np-3048',
 }
 
+const SEAT_SHELL_GLOSS_ROUGHNESS = 0.18
+const SEAT_SHELL_MATTE_ROUGHNESS = 0.68
+
 function sortMaterialVariants(
   variants: CatalogV2['materialVariants'],
   materialFamilyId: string,
@@ -656,9 +659,12 @@ function Configurator({
     const existing = customizations[surfaceId]
     let nextCustomizations = normalizeCustomizations(catalog, nextSelections, customizations)
     if (option?.parameters.color?.mode === 'custom' && !existing) {
+      const paint = createDefaultPaintCustomization()
       nextCustomizations = {
         ...nextCustomizations,
-        [surfaceId]: createDefaultPaintCustomization(),
+        [surfaceId]: surfaceId === 'seat-shell-back'
+          ? { ...paint, roughness: SEAT_SHELL_GLOSS_ROUGHNESS }
+          : paint,
       }
     }
     setCustomizations(nextCustomizations)
@@ -962,6 +968,37 @@ function Configurator({
                 />
               </div>
             </div>
+            {surface.surfaceId === 'seat-shell-back' && (
+              <div className="finish-control" role="group" aria-label="背板表面效果">
+                <span>表面效果</span>
+                <div>
+                  <button
+                    type="button"
+                    className={currentCustomization.roughness < 0.5 ? 'selected' : ''}
+                    aria-pressed={currentCustomization.roughness < 0.5}
+                    onClick={() => setPaintParameter(
+                      surface.surfaceId,
+                      'roughness',
+                      SEAT_SHELL_GLOSS_ROUGHNESS,
+                    )}
+                  >
+                    亮面
+                  </button>
+                  <button
+                    type="button"
+                    className={currentCustomization.roughness >= 0.5 ? 'selected' : ''}
+                    aria-pressed={currentCustomization.roughness >= 0.5}
+                    onClick={() => setPaintParameter(
+                      surface.surfaceId,
+                      'roughness',
+                      SEAT_SHELL_MATTE_ROUGHNESS,
+                    )}
+                  >
+                    雾面
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
         )}
       </section>

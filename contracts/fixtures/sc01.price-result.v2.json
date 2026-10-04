@@ -2,7 +2,7 @@
   "schemaVersion": "2.0.0",
   "catalogVersion": "sc01-draft-20260121",
   "vehicleId": "sc01",
-  "configurationId": "cfg-a6f4ff1da447a06af7ce32fa",
+  "configurationId": "cfg-3f068ece7b6dff2b6f228976",
   "currency": "CNY",
   "basePriceMinor": 22980000,
   "lineItems": [
@@ -112,7 +112,7 @@
     },
     {
       "surfaceId": "seat-shell-back",
-      "optionId": "seat-shell-black",
+      "optionId": "seat-shell-carbon-original",
       "unitPriceMinor": 0,
       "quantity": 1,
       "subtotalMinor": 0,
@@ -120,7 +120,7 @@
     },
     {
       "surfaceId": "seat-headrest-mark",
-      "optionId": "seat-headrest-standard",
+      "optionId": "seat-headrest-mark-ultrasuede",
       "unitPriceMinor": 0,
       "quantity": 1,
       "subtotalMinor": 0,
@@ -200,7 +200,7 @@
     },
     {
       "surfaceId": "ip-center-mark",
-      "optionId": "ip-center-mark-black-paint",
+      "optionId": "ip-center-mark-uncovered-black",
       "unitPriceMinor": 0,
       "quantity": 1,
       "subtotalMinor": 0,

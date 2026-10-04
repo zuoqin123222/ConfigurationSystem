@@ -25,8 +25,8 @@ const selections: Record<string, string> = {
   "steering-center-mark": "steering-center-standard",
   "seat-backrest": "seat-back-ultrasuede-black",
   "seat-bolster": "seat-bolster-microfiber-black",
-  "seat-shell-back": "seat-shell-black",
-  "seat-headrest-mark": "seat-headrest-standard",
+  "seat-shell-back": "seat-shell-carbon-original",
+  "seat-headrest-mark": "seat-headrest-mark-ultrasuede",
   "door-upper": "door-upper-microfiber-black",
   "door-middle": "door-middle-ultrasuede-black",
   "door-armrest": "door-armrest-microfiber-black",
@@ -36,7 +36,7 @@ const selections: Record<string, string> = {
   "ip-instrument-cover": "ip-instrument-cover-microfiber-black",
   "ip-upper-trim": "ip-upper-trim-microfiber-black",
   "ip-lower-trim": "ip-lower-trim-microfiber-black",
-  "ip-center-mark": "ip-center-mark-black-paint",
+  "ip-center-mark": "ip-center-mark-uncovered-black",
   "storage-soft-bag": "storage-soft-bag-microfiber-black",
   "console-armrest-cover": "console-armrest-cover-microfiber-black",
   "console-armrest-side": "console-armrest-side-microfiber-black",
@@ -70,7 +70,7 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().vehicle.vehicleId, "sc01");
   assert.equal(response.json().vehicle.quotable, false);
-  assert.equal(response.json().options.length, 152);
+  assert.equal(response.json().options.length, 154);
   assert.equal(response.json().surfaces.length, 38);
   assert.equal(response.json().selectionOrder.length, 38);
   assert.equal(response.json().categories.map(

@@ -64,12 +64,12 @@
     "ip-instrument-cover": "ip-instrument-cover-microfiber-black",
     "ip-upper-trim": "ip-upper-trim-microfiber-black",
     "ip-lower-trim": "ip-lower-trim-microfiber-black",
-    "ip-center-mark": "ip-center-mark-black-paint",
+    "ip-center-mark": "ip-center-mark-uncovered-black",
     "a-pillar-surface": "a-pillar-woven",
     "seat-backrest": "seat-back-ultrasuede-black",
     "seat-bolster": "seat-bolster-microfiber-black",
-    "seat-shell-back": "seat-shell-black",
-    "seat-headrest-mark": "seat-headrest-standard",
+    "seat-shell-back": "seat-shell-carbon-original",
+    "seat-headrest-mark": "seat-headrest-mark-ultrasuede",
     "door-upper": "door-upper-microfiber-black",
     "door-middle": "door-middle-ultrasuede-black",
     "door-armrest": "door-armrest-microfiber-black",
@@ -558,7 +558,7 @@
     {
       "surfaceId": "seat-shell-back",
       "componentId": "seat",
-      "displayName": "碳纤维背板颜色",
+      "displayName": "背板",
       "required": true,
       "reviewRequired": false,
       "sourceRefs": [
@@ -1025,6 +1025,17 @@
           "documentId": "sc01-configuration-list",
           "page": 1,
           "locator": "EVA"
+        }
+      ]
+    },
+    {
+      "materialFamilyId": "woven-fabric",
+      "displayName": "织布",
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 3,
+          "locator": "棚面、A柱 / 织布 / 标配"
         }
       ]
     },
@@ -7977,12 +7988,12 @@
       ]
     },
     {
-      "optionId": "seat-shell-black",
+      "optionId": "seat-shell-carbon-original",
       "surfaceId": "seat-shell-back",
       "materialFamilyId": "carbon-fiber",
-      "displayName": "经典黑色",
+      "displayName": "高光原色碳纤维",
       "colorCode": null,
-      "finish": null,
+      "finish": "gloss",
       "renderRelevant": true,
       "parameters": {
         "color": null,
@@ -8005,7 +8016,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "碳纤维背板颜色 / 经典黑色 / 标配"
+          "locator": "碳纤维背板颜色 / 高光原色碳纤维 / 标配"
         }
       ]
     },
@@ -8013,12 +8024,16 @@
       "optionId": "seat-shell-custom",
       "surfaceId": "seat-shell-back",
       "materialFamilyId": "carbon-fiber",
-      "displayName": "色彩拓展",
+      "displayName": "自定义取色",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
       "parameters": {
-        "color": null,
+        "color": {
+          "mode": "custom",
+          "value": null,
+          "required": true
+        },
         "material": {
           "materialFamilyId": "carbon-fiber",
           "variantId": null
@@ -8038,27 +8053,31 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "碳纤维背板颜色 / 色彩拓展（69%用户选择） / 1680*2 元"
+          "locator": "碳纤维背板颜色 / 自定义取色 / 亮面或雾面 / 1680*2 元"
         }
       ]
     },
     {
-      "optionId": "seat-headrest-standard",
+      "optionId": "seat-headrest-mark-ultrasuede",
       "surfaceId": "seat-headrest-mark",
-      "materialFamilyId": "microfiber",
-      "displayName": "奥司维/Alcantara超纤皮/牛皮",
+      "materialFamilyId": "ultrasuede",
+      "displayName": "奥司维",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
       "parameters": {
-        "color": null,
+        "color": {
+          "mode": "variant",
+          "value": null,
+          "required": true
+        },
         "material": {
-          "materialFamilyId": "microfiber",
+          "materialFamilyId": "ultrasuede",
           "variantId": null
         }
       },
       "thumbnailUrl": null,
-      "reviewRequired": true,
+      "reviewRequired": false,
       "pricing": {
         "unitPriceMinor": 0,
         "quantity": 1,
@@ -8071,7 +8090,118 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 2,
-          "locator": "回中标 / Ultrasuede/Alcantara超纤/牛皮 / 标配"
+          "locator": "回中标 / 奥司维 / 免费"
+        }
+      ]
+    },
+    {
+      "optionId": "seat-headrest-mark-alcantara",
+      "surfaceId": "seat-headrest-mark",
+      "materialFamilyId": "alcantara",
+      "displayName": "Alcantara",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "variant",
+          "value": null,
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "alcantara",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 2,
+          "locator": "回中标 / Alcantara / 免费"
+        }
+      ]
+    },
+    {
+      "optionId": "seat-headrest-mark-microfiber",
+      "surfaceId": "seat-headrest-mark",
+      "materialFamilyId": "microfiber",
+      "displayName": "超纤皮",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "variant",
+          "value": null,
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "microfiber",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 2,
+          "locator": "回中标 / 超纤皮 / 免费"
+        }
+      ]
+    },
+    {
+      "optionId": "seat-headrest-mark-leather",
+      "surfaceId": "seat-headrest-mark",
+      "materialFamilyId": "leather",
+      "displayName": "牛皮",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "variant",
+          "value": null,
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "leather",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 2,
+          "locator": "回中标 / 牛皮 / 免费"
         }
       ]
     },
@@ -9923,64 +10053,28 @@
       ]
     },
     {
-      "optionId": "ip-center-mark-leather-felt",
+      "optionId": "ip-center-mark-uncovered-black",
       "surfaceId": "ip-center-mark",
-      "materialFamilyId": "felt",
-      "displayName": "皮质/毛毡",
-      "colorCode": null,
-      "finish": null,
-      "renderRelevant": true,
-      "parameters": {
-        "color": null,
-        "material": {
-          "materialFamilyId": "felt",
-          "variantId": null
-        }
-      },
-      "thumbnailUrl": null,
-      "reviewRequired": false,
-      "pricing": {
-        "unitPriceMinor": 10000,
-        "quantity": 1,
-        "pricingUnit": "per-piece",
-        "isStandard": false,
-        "status": "confirmed",
-        "quotable": false
-      },
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 3,
-          "locator": "回中标 / 皮质/毛毡 / 100 元"
-        }
-      ]
-    },
-    {
-      "optionId": "ip-center-mark-microfiber",
-      "surfaceId": "ip-center-mark",
-      "materialFamilyId": "microfiber",
-      "displayName": "超纤皮",
-      "colorCode": null,
+      "materialFamilyId": null,
+      "displayName": "无包覆(黑)",
+      "colorCode": "#111111",
       "finish": null,
       "renderRelevant": true,
       "parameters": {
         "color": {
-          "mode": "variant",
-          "value": null,
+          "mode": "fixed",
+          "value": "#111111",
           "required": true
         },
-        "material": {
-          "materialFamilyId": "microfiber",
-          "variantId": null
-        }
+        "material": null
       },
       "thumbnailUrl": null,
       "reviewRequired": false,
       "pricing": {
-        "unitPriceMinor": 10000,
+        "unitPriceMinor": 0,
         "quantity": 1,
         "pricingUnit": "per-piece",
-        "isStandard": false,
+        "isStandard": true,
         "status": "confirmed",
         "quotable": false
       },
@@ -9988,7 +10082,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 3,
-          "locator": "回中标 / 皮质/毛毡 / 100 元"
+          "locator": "回中标 / 无包覆(黑) / 标配"
         }
       ]
     },
@@ -10025,7 +10119,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 3,
-          "locator": "回中标 / 皮质/毛毡 / 100 元"
+          "locator": "回中标 / 皮质/翻毛 / 奥司维 / 100 元"
         }
       ]
     },
@@ -10062,7 +10156,44 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 3,
-          "locator": "回中标 / 皮质/毛毡 / 100 元"
+          "locator": "回中标 / 皮质/翻毛 / Alcantara / 100 元"
+        }
+      ]
+    },
+    {
+      "optionId": "ip-center-mark-microfiber",
+      "surfaceId": "ip-center-mark",
+      "materialFamilyId": "microfiber",
+      "displayName": "超纤皮",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "variant",
+          "value": null,
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "microfiber",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 10000,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 3,
+          "locator": "回中标 / 皮质/翻毛 / 超纤皮 / 100 元"
         }
       ]
     },
@@ -10099,40 +10230,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 3,
-          "locator": "回中标 / 皮质/毛毡 / 100 元"
-        }
-      ]
-    },
-    {
-      "optionId": "ip-center-mark-black-paint",
-      "surfaceId": "ip-center-mark",
-      "materialFamilyId": "paint",
-      "displayName": "黑漆",
-      "colorCode": null,
-      "finish": null,
-      "renderRelevant": true,
-      "parameters": {
-        "color": null,
-        "material": {
-          "materialFamilyId": "paint",
-          "variantId": null
-        }
-      },
-      "thumbnailUrl": null,
-      "reviewRequired": false,
-      "pricing": {
-        "unitPriceMinor": 0,
-        "quantity": 1,
-        "pricingUnit": "per-piece",
-        "isStandard": true,
-        "status": "confirmed",
-        "quotable": false
-      },
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 3,
-          "locator": "回中标 / 黑漆 / 标配"
+          "locator": "回中标 / 皮质/翻毛 / 牛皮 / 100 元"
         }
       ]
     },
@@ -11011,19 +11109,19 @@
     {
       "optionId": "roof-woven-standard",
       "surfaceId": "roof-surface",
-      "materialFamilyId": "woven-wool",
+      "materialFamilyId": "woven-fabric",
       "displayName": "织布",
-      "colorCode": null,
+      "colorCode": "#111111",
       "finish": null,
       "renderRelevant": true,
       "parameters": {
         "color": {
-          "mode": "variant",
-          "value": null,
+          "mode": "fixed",
+          "value": "#111111",
           "required": true
         },
         "material": {
-          "materialFamilyId": "woven-wool",
+          "materialFamilyId": "woven-fabric",
           "variantId": null
         }
       },
@@ -11196,19 +11294,19 @@
     {
       "optionId": "a-pillar-woven",
       "surfaceId": "a-pillar-surface",
-      "materialFamilyId": "woven-wool",
+      "materialFamilyId": "woven-fabric",
       "displayName": "织布",
-      "colorCode": null,
+      "colorCode": "#111111",
       "finish": null,
       "renderRelevant": true,
       "parameters": {
         "color": {
-          "mode": "variant",
-          "value": null,
+          "mode": "fixed",
+          "value": "#111111",
           "required": true
         },
         "material": {
-          "materialFamilyId": "woven-wool",
+          "materialFamilyId": "woven-fabric",
           "variantId": null
         }
       },
@@ -11820,6 +11918,10 @@
     "wheel-color-custom": "wheel-color-black",
     "front-caliper-custom": "front-caliper-blue",
     "rear-caliper-custom": "rear-caliper-blue",
-    "engine-cover-ppg": "engine-cover-ppg-custom"
+    "engine-cover-ppg": "engine-cover-ppg-custom",
+    "ip-center-mark-black-paint": "ip-center-mark-uncovered-black",
+    "ip-center-mark-leather-felt": "ip-center-mark-ultrasuede",
+    "seat-headrest-standard": "seat-headrest-mark-ultrasuede",
+    "seat-shell-black": "seat-shell-carbon-original"
   }
 }
