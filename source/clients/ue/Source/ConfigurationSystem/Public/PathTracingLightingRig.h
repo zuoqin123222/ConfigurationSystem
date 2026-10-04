@@ -6,10 +6,10 @@
 
 class UDirectionalLightComponent;
 class UPointLightComponent;
+class UPostProcessComponent;
 class URectLightComponent;
 class USceneComponent;
 class USkyLightComponent;
-class UStaticMeshComponent;
 class UTextureCube;
 
 /** PT 专用灯光参数；不依赖地图资产，便于运行时切换和自动化验证。 */
@@ -20,6 +20,7 @@ struct CONFIGURATIONSYSTEM_API FPathTracingLightingPreset
 	float DirectionalIntensity = 50000.0f;
 	float PointIntensity = 2500.0f;
 	float RectIntensity = 8000.0f;
+	float ExposureBias = 0.0f;
 	FRotator DirectionalRotation = FRotator::ZeroRotator;
 
 	static FPathTracingLightingPreset ForEnvironment(int32 EnvironmentIndex);
@@ -44,7 +45,8 @@ public:
 	UDirectionalLightComponent* GetDirectionalLightComponent() const { return DirectionalLight; }
 	UPointLightComponent* GetPointLightComponent() const { return PointLight; }
 	URectLightComponent* GetRectLightComponent() const { return RectLight; }
-	UStaticMeshComponent* GetFloorComponent() const { return Floor; }
+	UPostProcessComponent* GetExposureComponent() const { return Exposure; }
+
 	static const FName RigActorTag;
 
 private:
@@ -63,9 +65,8 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<URectLightComponent> RectLight;
 
-	/** 仅随 PT Rig 存续的 18m × 18m 薄地板，顶面位于世界 Z=0。 */
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UStaticMeshComponent> Floor;
+	TObjectPtr<UPostProcessComponent> Exposure;
 
 	int32 EnvironmentIndex = 0;
 };

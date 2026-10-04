@@ -7,7 +7,6 @@
 #include "ConfiguratorVehicleActor.generated.h"
 
 class UMaterialInstanceDynamic;
-class UMaterialInterface;
 class UReversiblePartActuatorComponent;
 class USceneComponent;
 class USkeletalMeshComponent;
@@ -83,8 +82,6 @@ public:
 	static bool ShouldUseStaticAnimationFallback(
 		bool bHasSkeletalMesh,
 		bool bHasSequence);
-	/** 按导入骨骼网格的真实 slot 名解析授权材质；未知 slot 返回 NAME_None。 */
-	static FName GetAuthorizedMaterialNameForSkeletalSlot(FName SlotName);
 
 	static FRotator GetHoodOpenRotation();
 	static FRotator GetTrunkOpenRotation();
@@ -117,7 +114,6 @@ private:
 	bool IsStaticAnimationMoving(FName AnimationId) const;
 	void StartPendingStaticAnimation();
 	void SetStaticProxyVisible(bool bVisible);
-	void ApplyAuthorizedSkeletalMaterials();
 
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TObjectPtr<USceneComponent> VehicleRoot;
@@ -219,10 +215,6 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UMaterialInstanceDynamic>> RuntimeMaterialInstances;
-
-	/** 显式硬引用保证名称映射使用的授权材质进入 Cook。 */
-	UPROPERTY(VisibleAnywhere, Category = "车辆动画")
-	TMap<FName, TObjectPtr<UMaterialInterface>> AuthorizedSkeletalMaterials;
 
 	bool bWheelsSpinning = false;
 	bool bAnimationCatalogConfigured = false;
