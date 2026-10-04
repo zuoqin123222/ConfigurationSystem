@@ -23,10 +23,10 @@ interface ExperienceControlsProps {
   ueEnabled?: boolean
 }
 
-type OpenMenu = 'camera' | 'animation' | 'scene' | 'quality' | null
-
 export default function ExperienceControls({ ueEnabled = false }: ExperienceControlsProps) {
-  const [openMenu, setOpenMenu] = useState<OpenMenu>(null)
+  const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
+  const [animationMenuOpen, setAnimationMenuOpen] = useState(false)
+  const [qualityMenuOpen, setQualityMenuOpen] = useState(false)
   const [cameras, setCameras] = useState<CatalogInteractionCamera[]>([])
   const [animations, setAnimations] = useState<CatalogAnimation[]>([])
   const [cameraId, setCameraId] = useState<CatalogCameraId | null>(null)
@@ -53,10 +53,10 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const keepToolbarAwake = useCallback(() => {
     setToolbarIdle(false)
     if (idleTimer.current !== null) window.clearTimeout(idleTimer.current)
-    if (fullscreen && openMenu === null) {
+    if (fullscreen) {
       idleTimer.current = window.setTimeout(() => setToolbarIdle(true), 1800)
     }
-  }, [fullscreen, openMenu])
+  }, [fullscreen])
 
   useEffect(() => {
     keepToolbarAwake()
@@ -155,7 +155,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     if (accepted) {
       setAnimationId(nextId)
       setAnimationEnabled(nextId !== null)
-      setOpenMenu(null)
+      setAnimationMenuOpen(false)
       const updatedState = await getUePresentationState(bridge)
       if (updatedState) applyState(updatedState)
     }
@@ -169,14 +169,13 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       <nav className="experience-toolbar" aria-label="体验控制">
         <div className="toolbar-item">
           <button
-            aria-expanded={openMenu === 'camera'}
-            aria-haspopup="menu"
-            onClick={() => setOpenMenu((current) => current === 'camera' ? null : 'camera')}
+            aria-expanded={cameraMenuOpen}
+            onClick={() => setCameraMenuOpen((open) => !open)}
           >
             <span aria-hidden="true">◉</span>
             镜头
           </button>
-          {openMenu === 'camera' && (
+          {cameraMenuOpen && (
             <div className="control-popover camera-popover" role="menu" aria-label="镜头预设">
               {cameras.map((camera) => (
                 <button
@@ -194,7 +193,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
                     () => {
                       setCameraId(camera.cameraId)
                       setCameraIndex(camera.legacyIndex ?? null)
-                      setOpenMenu(null)
+                      setCameraMenuOpen(false)
                     },
                   )}
                 >
@@ -207,15 +206,14 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         </div>
         <div className="toolbar-item">
           <button
-            aria-expanded={openMenu === 'animation'}
-            aria-haspopup="menu"
+            aria-expanded={animationMenuOpen}
             aria-pressed={animationEnabled}
-            onClick={() => setOpenMenu((current) => current === 'animation' ? null : 'animation')}
+            onClick={() => setAnimationMenuOpen((open) => !open)}
           >
             <span aria-hidden="true">▷</span>
             动画
           </button>
-          {openMenu === 'animation' && (
+          {animationMenuOpen && (
             <div className="control-popover animation-popover" role="menu" aria-label="动画列表">
               {animations.map((animation) => (
                 <button
@@ -230,39 +228,23 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
             </div>
           )}
         </div>
-        <div className="toolbar-item">
-          <button
-            aria-expanded={openMenu === 'scene'}
-            aria-haspopup="menu"
-            onClick={() => setOpenMenu((current) => current === 'scene' ? null : 'scene')}
-          >
-            <span aria-hidden="true">☼</span>
-            场景
-          </button>
-          {openMenu === 'scene' && (
-            <div className="control-popover scene-popover" role="menu" aria-label="场景预设">
-              {([
-                { value: 'studio', label: '工作室' },
-                { value: 'outdoor', label: '户外' },
-              ] as const).map((preset) => (
-                <button
-                  key={preset.value}
-                  role="menuitemradio"
-                  aria-checked={lightPreset === preset.value}
-                  onClick={() => void run(
-                    { type: 'light', preset: preset.value },
-                    () => {
-                      setLightPreset(preset.value)
-                      setOpenMenu(null)
-                    },
-                  )}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <button
+          aria-pressed={lightPreset === 'outdoor'}
+          onClick={() => {
+            void run(
+              (state) => ({
+                type: 'light',
+                preset: state.lightPreset === 'studio' ? 'outdoor' : 'studio',
+              }),
+              (state) => setLightPreset(
+                state.lightPreset === 'studio' ? 'outdoor' : 'studio',
+              ),
+            )
+          }}
+        >
+          <span aria-hidden="true">☼</span>
+          灯光
+        </button>
         <button
           aria-pressed={renderMode === 'path-tracing'}
           onClick={() => {
@@ -282,14 +264,13 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         </button>
         <div className="toolbar-item">
           <button
-            aria-expanded={openMenu === 'quality'}
-            aria-haspopup="menu"
-            onClick={() => setOpenMenu((current) => current === 'quality' ? null : 'quality')}
+            aria-expanded={qualityMenuOpen}
+            onClick={() => setQualityMenuOpen((open) => !open)}
           >
             <span aria-hidden="true">◐</span>
             画质
           </button>
-          {openMenu === 'quality' && (
+          {qualityMenuOpen && (
             <div className="control-popover quality-popover" role="menu" aria-label="画质设置">
               {QUALITY_LEVELS.map((level) => (
                 <button
@@ -300,7 +281,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
                     { type: 'quality', quality: level.value },
                     () => {
                       setQuality(level.value)
-                      setOpenMenu(null)
+                      setQualityMenuOpen(false)
                     },
                   )}
                 >

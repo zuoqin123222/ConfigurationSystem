@@ -34,7 +34,7 @@ namespace
 	constexpr float StageMargin = 18.0f;
 	constexpr float StageCornerRadius = 24.0f;
 	constexpr float ControlsLayerWidth = 620.0f;
-	constexpr float ControlsLayerHeight = 260.0f;
+	constexpr float ControlsLayerHeight = 190.0f;
 	constexpr float ControlsBottomInset = 32.0f;
 	constexpr float HealthRequestTimeoutSeconds = 3.0f;
 	constexpr int32 MaxBridgeJsonCharacters = 65536;

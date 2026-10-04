@@ -21,7 +21,7 @@ describe('ExperienceControls', () => {
     document.body.classList.remove('controls-document')
   })
 
-  it('通过受限 bridge 控制镜头、动画、场景、渲染、复位和全屏', async () => {
+  it('通过受限 bridge 控制镜头、动画、灯光、渲染、复位和全屏', async () => {
     const user = userEvent.setup()
     let currentState = {
       cameraId: 'wheel',
@@ -88,13 +88,7 @@ describe('ExperienceControls', () => {
     await user.click(within(animationMenu).getByRole('menuitemradio', { name: '开启机舱盖' }))
     await user.click(within(toolbar).getByRole('button', { name: '动画' }))
     await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
-    await user.click(within(toolbar).getByRole('button', { name: '场景' }))
-    const sceneMenu = await screen.findByRole('menu', { name: '场景预设' })
-    expect(within(sceneMenu).getByRole('menuitemradio', { name: '工作室' }))
-      .toHaveAttribute('aria-checked', 'true')
-    expect(within(sceneMenu).getByRole('menuitemradio', { name: '户外' }))
-      .toHaveAttribute('aria-checked', 'false')
-    await user.click(within(sceneMenu).getByRole('menuitemradio', { name: '户外' }))
+    await user.click(within(toolbar).getByRole('button', { name: '灯光' }))
     await user.click(within(toolbar).getByRole('button', { name: '渲染' }))
     await user.click(within(toolbar).getByRole('button', { name: '画质' }))
     await user.click(screen.getByRole('menuitemradio', { name: '极高' }))
@@ -239,45 +233,5 @@ describe('ExperienceControls', () => {
 
     fireEvent.pointerMove(view!)
     expect(view).not.toHaveClass('toolbar-idle')
-  })
-
-  it('只允许打开一个弹层，并在弹层打开期间禁用 idle 隐藏', async () => {
-    vi.useFakeTimers()
-    window.ue = {
-      uebridge: {
-        getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
-          cameraIndex: 1,
-          animationEnabled: false,
-          lightPreset: 'studio',
-          renderMode: 'realtime',
-          quality: 'high',
-          fullscreen: true,
-        })),
-      },
-    }
-    const { container } = render(<ExperienceControls ueEnabled />)
-    const view = container.querySelector('.controls-view')
-    const cameraButton = screen.getByRole('button', { name: '镜头' })
-    const animationButton = screen.getByRole('button', { name: '动画' })
-
-    await act(async () => {
-      await Promise.resolve()
-    })
-    fireEvent.click(cameraButton)
-    expect(screen.getByRole('menu', { name: '镜头预设' })).toBeInTheDocument()
-    expect(cameraButton).toHaveAttribute('aria-expanded', 'true')
-
-    fireEvent.click(animationButton)
-    expect(screen.queryByRole('menu', { name: '镜头预设' })).not.toBeInTheDocument()
-    expect(screen.getByRole('menu', { name: '动画列表' })).toBeInTheDocument()
-    expect(cameraButton).toHaveAttribute('aria-expanded', 'false')
-    expect(animationButton).toHaveAttribute('aria-expanded', 'true')
-
-    act(() => vi.advanceTimersByTime(3600))
-    expect(view).not.toHaveClass('toolbar-idle')
-
-    fireEvent.click(animationButton)
-    act(() => vi.advanceTimersByTime(1800))
-    expect(view).toHaveClass('toolbar-idle')
   })
 })

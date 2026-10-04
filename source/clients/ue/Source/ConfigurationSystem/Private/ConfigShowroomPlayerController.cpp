@@ -147,6 +147,7 @@ FMinimalViewInfo AConfigShowroomPlayerController::BuildRevealStartPOV(
 		TargetRelative.RotateAngleAxis(-32.0f, FVector::UpVector) * 1.45f;
 	Result.Location = Pivot + OrbitedRelative + FVector(0.0, 0.0, 90.0);
 	Result.Rotation = (Pivot - Result.Location).Rotation();
+	Result.FOV = FMath::Max(Target.FOV, 48.0f);
 	return Result;
 }
 
@@ -587,6 +588,11 @@ void AConfigShowroomPlayerController::SetupInputComponent()
 	InputComponent->BindKey(EKeys::P, IE_Pressed, this, &AConfigShowroomPlayerController::TogglePathTracingInput);
 	InputComponent->BindKey(EKeys::F5, IE_Pressed, this, &AConfigShowroomPlayerController::SaveInput);
 	InputComponent->BindKey(EKeys::F9, IE_Pressed, this, &AConfigShowroomPlayerController::LoadInput);
+	InputComponent->BindKey(EKeys::Q, IE_Pressed, this, &AConfigShowroomPlayerController::ToggleLeftDoor);
+	InputComponent->BindKey(EKeys::W, IE_Pressed, this, &AConfigShowroomPlayerController::ToggleRightDoor);
+	InputComponent->BindKey(EKeys::H, IE_Pressed, this, &AConfigShowroomPlayerController::ToggleHood);
+	InputComponent->BindKey(EKeys::T, IE_Pressed, this, &AConfigShowroomPlayerController::ToggleTrunk);
+	InputComponent->BindKey(EKeys::R, IE_Pressed, this, &AConfigShowroomPlayerController::ToggleWheelsInput);
 }
 
 bool AConfigShowroomPlayerController::SwitchCamera(const int32 CameraIndex)

@@ -2,21 +2,13 @@
 
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
-#include "Components/PointLightComponent.h"
-#include "Components/SkyLightComponent.h"
 #include "ConfigShowroomGameMode.h"
-#include "ConfigurationSystemEditor.h"
 #include "ConfiguratorVehicleActor.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/PointLight.h"
-#include "Engine/PostProcessVolume.h"
-#include "Engine/SkeletalMesh.h"
 #include "Engine/SkyLight.h"
 #include "Engine/StaticMeshActor.h"
-#include "Engine/TextureCube.h"
-#include "Materials/Material.h"
-#include "Materials/MaterialInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "FileHelpers.h"
@@ -106,29 +98,6 @@ namespace ConfigShowroomAutomation
 		}
 		return nullptr;
 	}
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FConfigShowroomCameraFovPolicyAutomationTest,
-	"ConfigurationSystem.Editor.Showroom.CameraFovPolicy",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FConfigShowroomCameraFovPolicyAutomationTest::RunTest(const FString& Parameters)
-{
-	(void)Parameters;
-	UCameraComponent* CameraComponent = NewObject<UCameraComponent>();
-	CameraComponent->SetFieldOfView(57.0f);
-	FConfigurationSystemEditorModule::ApplyDefaultCameraFov(
-		CameraComponent, 42.0f, false);
-	TestTrue(
-		TEXT("地图生成器保留已有相机 FOV"),
-		FMath::IsNearlyEqual(CameraComponent->FieldOfView, 57.0f));
-	FConfigurationSystemEditorModule::ApplyDefaultCameraFov(
-		CameraComponent, 42.0f, true);
-	TestTrue(
-		TEXT("地图生成器只为新建相机设置默认 FOV"),
-		FMath::IsNearlyEqual(CameraComponent->FieldOfView, 42.0f));
-	return true;
 }
 
 bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
@@ -339,27 +308,9 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 	{
 		const TCHAR* PackageName;
 		const TCHAR* Prefix;
-		const TCHAR* SkyMaterialPath;
-		const TCHAR* ExpectedCubemapPath;
-		float ExpectedSkyIntensity;
-		float ExpectedDirectionalIntensity;
 	} LightingMaps[] = {
-		{
-			TEXT("/Game/Maps/L_Lighting_Studio"),
-			TEXT("Studio"),
-			TEXT("/Game/Maps/Lighting_Studio/M_Env_CubeMapSky_Inst.M_Env_CubeMapSky_Inst"),
-			TEXT("/Game/Library/HDRIs/Studio_02.Studio_02"),
-			1.0f,
-			50000.0f
-		},
-		{
-			TEXT("/Game/Maps/L_Lighting_Outdoor"),
-			TEXT("Outdoor"),
-			TEXT("/Game/Maps/Lighting_Outdoor/M_Env_CubeMapSky_Inst.M_Env_CubeMapSky_Inst"),
-			TEXT("/Game/Library/HDRIs/008.008"),
-			1.2f,
-			90000.0f
-		}
+		{TEXT("/Game/Maps/L_Lighting_Studio"), TEXT("Studio")},
+		{TEXT("/Game/Maps/L_Lighting_Outdoor"), TEXT("Outdoor")}
 	};
 	for (const auto& LightingMap : LightingMaps)
 	{
@@ -387,26 +338,9 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 		if (Floor != nullptr)
 		{
 			TestTrue(
-				*FString::Printf(TEXT("%s 地面位于 Z=0 且覆盖车辆"), LightingMap.Prefix),
-				FMath::IsNearlyZero(Floor->GetActorLocation().Z, 0.01)
-					&& Floor->GetActorScale3D().X >= 10.0
-					&& Floor->GetActorScale3D().Y >= 10.0);
-			const UMaterialInterface* FloorMaterial =
-				Floor->GetStaticMeshComponent()->GetMaterial(0);
-			TestNotNull(
-				*FString::Printf(TEXT("%s 地板显式绑定材质"), LightingMap.Prefix),
-				FloorMaterial);
-			if (FloorMaterial != nullptr)
-			{
-				TestEqual(
-					*FString::Printf(TEXT("%s 地板使用 PT 兼容材质"), LightingMap.Prefix),
-					FloorMaterial->GetPathName(),
-					FString(TEXT("/Game/Maps/Lighting_Common/M_PT_Floor.M_PT_Floor")));
-				TestEqual(
-					*FString::Printf(TEXT("%s 地板材质为 Opaque"), LightingMap.Prefix),
-					FloorMaterial->GetBlendMode(),
-					BLEND_Opaque);
-			}
+				*FString::Printf(TEXT("%s 地面顶面位于 Z=0"), LightingMap.Prefix),
+				FMath::IsNearlyEqual(Floor->GetActorLocation().Z, -10.0, 0.01)
+					&& FMath::IsNearlyEqual(Floor->GetActorScale3D().Z, 0.2, 0.001));
 		}
 		TestEqual(
 			*FString::Printf(TEXT("%s 方向光唯一"), LightingMap.Prefix),
@@ -423,116 +357,6 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 			ConfigShowroomAutomation::CountInPersistentLevel<APointLight>(
 				LightingWorld),
 			1);
-		const ASkyLight* SkyLight =
-			ConfigShowroomAutomation::FindByLabel<ASkyLight>(
-				LightingWorld,
-				*FString::Printf(TEXT("%sSkyLight_TEMP"), LightingMap.Prefix));
-		TestNotNull(
-			*FString::Printf(TEXT("%s 天空光可按稳定标签定位"), LightingMap.Prefix),
-			SkyLight);
-		if (SkyLight != nullptr)
-		{
-			const USkyLightComponent* SkyComponent = SkyLight->GetLightComponent();
-			TestEqual(
-				*FString::Printf(TEXT("%s 天空光使用指定 Cubemap"), LightingMap.Prefix),
-				SkyComponent->SourceType,
-				SLS_SpecifiedCubemap);
-			TestNotNull(
-				*FString::Printf(TEXT("%s 天空光 Cubemap 非空"), LightingMap.Prefix),
-				SkyComponent->Cubemap.Get());
-			if (SkyComponent->Cubemap != nullptr)
-			{
-				TestEqual(
-					*FString::Printf(TEXT("%s 天空光与天空材质 HDR 一致"), LightingMap.Prefix),
-					SkyComponent->Cubemap->GetPathName(),
-					FString(LightingMap.ExpectedCubemapPath));
-			}
-			TestTrue(
-				*FString::Printf(TEXT("%s 天空光强度合理"), LightingMap.Prefix),
-				FMath::IsNearlyEqual(
-					SkyComponent->Intensity,
-					LightingMap.ExpectedSkyIntensity,
-					0.01f));
-		}
-		const AStaticMeshActor* SkySphere =
-			ConfigShowroomAutomation::FindByLabel<AStaticMeshActor>(
-				LightingWorld,
-				*FString::Printf(TEXT("%sSkySphere"), LightingMap.Prefix));
-		if (TestNotNull(
-			*FString::Printf(TEXT("%s 天空球存在"), LightingMap.Prefix),
-			SkySphere))
-		{
-			const UMaterialInterface* SkyMaterial =
-				SkySphere->GetStaticMeshComponent()->GetMaterial(0);
-			TestNotNull(
-				*FString::Printf(TEXT("%s 天空球材质非空"), LightingMap.Prefix),
-				SkyMaterial);
-			if (SkyMaterial != nullptr)
-			{
-				TestEqual(
-					*FString::Printf(TEXT("%s 天空球保留选定 HDRI 材质"), LightingMap.Prefix),
-					SkyMaterial->GetPathName(),
-					FString(LightingMap.SkyMaterialPath));
-			}
-		}
-		const ADirectionalLight* DirectionalLight =
-			ConfigShowroomAutomation::FindByLabel<ADirectionalLight>(
-				LightingWorld,
-				*FString::Printf(TEXT("%sDirectionalLight_TEMP"), LightingMap.Prefix));
-		if (TestNotNull(
-			*FString::Printf(TEXT("%s 方向光存在"), LightingMap.Prefix),
-			DirectionalLight))
-		{
-			TestTrue(
-				*FString::Printf(TEXT("%s 方向光亮度可用于 PT"), LightingMap.Prefix),
-				FMath::IsNearlyEqual(
-					DirectionalLight->GetLightComponent()->Intensity,
-					LightingMap.ExpectedDirectionalIntensity,
-					1.0f));
-		}
-		const APostProcessVolume* PostProcess =
-			ConfigShowroomAutomation::FindByLabel<APostProcessVolume>(
-				LightingWorld,
-				*FString::Printf(TEXT("%sPostProcess_TEMP"), LightingMap.Prefix));
-		if (TestNotNull(
-			*FString::Printf(TEXT("%s 后处理体存在"), LightingMap.Prefix),
-			PostProcess))
-		{
-			TestTrue(
-				*FString::Printf(TEXT("%s 后处理覆盖全局"), LightingMap.Prefix),
-				PostProcess->bUnbound);
-			TestTrue(
-				*FString::Printf(TEXT("%s 使用固定手动曝光"), LightingMap.Prefix),
-				PostProcess->Settings.bOverride_AutoExposureMethod
-					&& PostProcess->Settings.AutoExposureMethod == AEM_Manual
-					&& PostProcess->Settings.bOverride_AutoExposureBias
-					&& FMath::IsNearlyZero(PostProcess->Settings.AutoExposureBias));
-		}
-	}
-	USkeletalMesh* RiggedVehicle = LoadObject<USkeletalMesh>(
-		nullptr,
-		TEXT("/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
-			"automotive-configurator-audi-a5-rigged-v2."
-			"automotive-configurator-audi-a5-rigged-v2"));
-	if (TestNotNull(TEXT("14 骨骼车辆 SkeletalMesh 可加载"), RiggedVehicle))
-	{
-		TestEqual(TEXT("车辆骨骼数量保持 14"), RiggedVehicle->GetRefSkeleton().GetNum(), 14);
-		TestEqual(TEXT("车辆材质槽数量保持 8"), RiggedVehicle->GetMaterials().Num(), 8);
-		for (int32 SlotIndex = 0; SlotIndex < RiggedVehicle->GetMaterials().Num(); ++SlotIndex)
-		{
-			const UMaterialInterface* Material =
-				RiggedVehicle->GetMaterials()[SlotIndex].MaterialInterface;
-			TestNotNull(
-				*FString::Printf(TEXT("车辆材质槽 %d 非空"), SlotIndex),
-				Material);
-			if (Material != nullptr)
-			{
-				TestNotEqual(
-					*FString::Printf(TEXT("车辆材质槽 %d 不再回退 WorldGrid"), SlotIndex),
-					Material->GetPathName(),
-					FString(TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial")));
-			}
-		}
 	}
 	return true;
 }

@@ -85,14 +85,9 @@ namespace PrimaryAssetProbeEditor
 	ActorType* FindOrSpawnActor(
 		UWorld* World,
 		const TCHAR* StableLabel,
-		const FTransform& Transform,
-		bool* bOutWasCreated = nullptr)
+		const FTransform& Transform)
 	{
 		ActorType* Result = nullptr;
-		if (bOutWasCreated != nullptr)
-		{
-			*bOutWasCreated = false;
-		}
 		for (TActorIterator<ActorType> It(World); It; ++It)
 		{
 			if (It->GetActorLabel() == StableLabel)
@@ -113,10 +108,6 @@ namespace PrimaryAssetProbeEditor
 				ActorType::StaticClass(),
 				Transform.GetLocation(),
 				Transform.Rotator());
-			if (bOutWasCreated != nullptr)
-			{
-				*bOutWasCreated = Result != nullptr;
-			}
 		}
 		if (Result != nullptr)
 		{
@@ -607,17 +598,6 @@ bool FConfigurationSystemEditorModule::TickCreateConfigShowroomMap(const float D
 	return false;
 }
 
-void FConfigurationSystemEditorModule::ApplyDefaultCameraFov(
-	UCameraComponent* CameraComponent,
-	const float DefaultFov,
-	const bool bCameraWasCreated)
-{
-	if (bCameraWasCreated && IsValid(CameraComponent))
-	{
-		CameraComponent->SetFieldOfView(DefaultFov);
-	}
-}
-
 void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 {
 	using namespace PrimaryAssetProbeEditor;
@@ -683,19 +663,12 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 	bool bAllCamerasCreated = true;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(CameraLabels); ++Index)
 	{
-		bool bCameraWasCreated = false;
 		ACameraActor* Camera = FindOrSpawnActor<ACameraActor>(
-			World,
-			CameraLabels[Index],
-			CameraTransforms[Index],
-			&bCameraWasCreated);
+			World, CameraLabels[Index], CameraTransforms[Index]);
 		bAllCamerasCreated &= Camera != nullptr;
 		if (Camera != nullptr)
 		{
-			ApplyDefaultCameraFov(
-				Camera->GetCameraComponent(),
-				CameraFovs[Index],
-				bCameraWasCreated);
+			Camera->GetCameraComponent()->SetFieldOfView(CameraFovs[Index]);
 			if (Index < 6)
 			{
 				Camera->Tags.AddUnique(FName(
