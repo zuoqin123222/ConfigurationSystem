@@ -62,5 +62,21 @@ public class ConfigurationSystem : ModuleRules
 					StagedFileType.NonUFS);
 			}
 		}
+
+		// Web 选装项在缺少实拍缩略图时使用同源 SVG 占位图。它们必须与色卡一起
+		// 进入 Shipping 的 NonUFS 目录，否则离线客户端会出现缺图而不是 NoPicture。
+		string OptionIconSource = Path.GetFullPath(Path.Combine(
+			ModuleDirectory,
+			"..", "..", "..", "web", "public", "sc01", "option-icons"));
+		if (Directory.Exists(OptionIconSource))
+		{
+			foreach (string OptionIcon in Directory.GetFiles(OptionIconSource, "*.svg"))
+			{
+				RuntimeDependencies.Add(
+					"$(TargetOutputDir)/sc01/option-icons/" + Path.GetFileName(OptionIcon),
+					OptionIcon,
+					StagedFileType.NonUFS);
+			}
+		}
 	}
 }
