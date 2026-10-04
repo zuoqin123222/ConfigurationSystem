@@ -46,6 +46,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void SetupInputComponent() override;
+	virtual void UpdateCameraManager(float DeltaSeconds) override;
 
 public:
 	AConfigShowroomPlayerController();
@@ -189,6 +190,8 @@ private:
 	void DollyInteractiveCamera(float Amount);
 	void SetInteractiveTargetPOV(const FMinimalViewInfo& POV);
 	void ResetInteractiveOrbit(const FMinimalViewInfo& POV, bool bResetPivot);
+	void UpdateStageProjectionOffset(float DeltaSeconds);
+	void ApplyRuntimeCameraPOV(const FMinimalViewInfo& POV);
 	void ToggleEnvironmentInput();
 	void TogglePathTracingInput();
 	void SaveInput();
@@ -224,6 +227,8 @@ private:
 	FMinimalViewInfo InteractiveTargetPOV;
 	float CameraTransitionElapsed = 0.0f;
 	float CameraTransitionDuration = 0.85f;
+	/** 当前非对称投影补偿；独立于机位 Transform，便于关闭后无损回退。 */
+	float CurrentStageProjectionOffsetX = 0.0f;
 	FTimerHandle InitialRevealTimer;
 	FTimerHandle CameraZoneTransitionTimer;
 	FTimerHandle PersistenceDebounceTimer;

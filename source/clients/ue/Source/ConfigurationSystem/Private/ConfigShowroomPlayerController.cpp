@@ -14,6 +14,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/GameUserSettings.h"
 #include "GenericPlatform/GenericApplicationMessageHandler.h"
+#include "HAL/IConsoleManager.h"
 #include "InputCoreTypes.h"
 #include "PathTracingExperienceSubsystem.h"
 #include "AutomotiveConfigurationState.h"
@@ -25,6 +26,17 @@ namespace
 {
 	constexpr int32 RequiredWindowWidth = 1600;
 	constexpr int32 RequiredWindowHeight = 900;
+	constexpr float StageProjectionInterpolationSpeed = 8.0f;
+
+	// 安全回退开关：设为 0 后目标偏移归零，镜头 Transform、OrbitPivot 和
+	// 预设机位均不需要恢复或重建。控制台：
+	// config.Camera.StageAwareProjection 0
+	TAutoConsoleVariable<int32> CVarStageAwareProjection(
+		TEXT("config.Camera.StageAwareProjection"),
+		1,
+		TEXT("Compensate the camera projection for configurator UI stage insets.\n")
+		TEXT("0: legacy centered full-viewport projection, 1: stage-aware projection."),
+		ECVF_Default);
 
 	void ApplyMainWindowPolicy()
 	{
@@ -234,6 +246,7 @@ void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 	{
 		return;
 	}
+	UpdateStageProjectionOffset(DeltaSeconds);
 
 	if (bOrbitTransitionActive)
 	{
@@ -247,13 +260,13 @@ void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 			CameraTransitionEndPOV,
 			CameraTransitionPivot,
 			Alpha);
-		RuntimeCamera->ApplyCameraPOV(POV);
+		ApplyRuntimeCameraPOV(POV);
 
 		if (Alpha >= 1.0f)
 		{
 			bOrbitTransitionActive = false;
 			bInitialRevealActive = false;
-			RuntimeCamera->ApplyCameraPOV(CameraTransitionEndPOV);
+			ApplyRuntimeCameraPOV(CameraTransitionEndPOV);
 			ResetInteractiveOrbit(
 				CameraTransitionEndPOV,
 				!IsInteriorCameraPreset(CurrentCameraIndex));
@@ -275,8 +288,69 @@ void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 			Smoothed = InteractiveTargetPOV;
 			bInteractiveSmoothingActive = false;
 		}
-		RuntimeCamera->ApplyCameraPOV(Smoothed);
+		ApplyRuntimeCameraPOV(Smoothed);
+		return;
 	}
+
+	// 即使镜头静止，也要在面板折叠、全屏切换或窗口缩放时刷新投影。
+	ApplyRuntimeCameraPOV(RuntimeCamera->GetCameraPOV());
+}
+
+void AConfigShowroomPlayerController::UpdateCameraManager(
+	const float DeltaSeconds)
+{
+	Super::UpdateCameraManager(DeltaSeconds);
+	if (PlayerCameraManager == nullptr
+		|| !IsValid(RuntimeCamera)
+		|| GetViewTarget() != RuntimeCamera)
+	{
+		return;
+	}
+
+	// 必须在 UE 完成默认 ViewTarget/CameraModifier 更新后再写入；若只把
+	// OffCenterProjectionOffset 存在 RuntimeCamera 中，UE 5.8 的默认
+	// PlayerCameraManager 会在同帧最终缓存中将该高级字段重置为零。
+	FMinimalViewInfo FinalPOV = PlayerCameraManager->GetCameraCacheView();
+	FinalPOV.OffCenterProjectionOffset.X = CurrentStageProjectionOffsetX;
+	PlayerCameraManager->SetCameraCachePOV(FinalPOV);
+}
+
+void AConfigShowroomPlayerController::UpdateStageProjectionOffset(
+	const float DeltaSeconds)
+{
+	const bool bStageAwareProjectionEnabled =
+		CVarStageAwareProjection.GetValueOnGameThread() != 0;
+	const float TargetOffset = bStageAwareProjectionEnabled
+		&& IsValid(ConfiguratorPanel)
+		? ConfiguratorPanel->GetStageProjectionOffsetX()
+		: 0.0f;
+
+	// UI 显隐时平滑改变构图，避免车体在全屏按钮点击后横向跳变。
+	CurrentStageProjectionOffsetX = FMath::FInterpTo(
+		CurrentStageProjectionOffsetX,
+		TargetOffset,
+		DeltaSeconds,
+		StageProjectionInterpolationSpeed);
+	if (FMath::IsNearlyEqual(CurrentStageProjectionOffsetX, TargetOffset, 0.0001f))
+	{
+		CurrentStageProjectionOffsetX = TargetOffset;
+	}
+}
+
+void AConfigShowroomPlayerController::ApplyRuntimeCameraPOV(
+	const FMinimalViewInfo& POV)
+{
+	if (!IsValid(RuntimeCamera))
+	{
+		return;
+	}
+
+	// 只覆盖投影中心，不修改 Location、Rotation、FOV 或 OrbitPivot。
+	// 所有镜头路径都必须经过这里；关闭 CVar 后该值平滑回到 0，
+	// 即恢复改动前的全视口居中投影。
+	FMinimalViewInfo StageAwarePOV = POV;
+	StageAwarePOV.OffCenterProjectionOffset.X = CurrentStageProjectionOffsetX;
+	RuntimeCamera->ApplyCameraPOV(StageAwarePOV);
 }
 
 void AConfigShowroomPlayerController::BeginPlay()
@@ -329,7 +403,7 @@ void AConfigShowroomPlayerController::BeginPlay()
 		CameraTransitionPivot = OrbitPivot;
 		CameraTransitionElapsed = 0.0f;
 		CameraTransitionDuration = 2.0f;
-		RuntimeCamera->ApplyCameraPOV(CameraTransitionStartPOV);
+		ApplyRuntimeCameraPOV(CameraTransitionStartPOV);
 		SetViewTarget(RuntimeCamera);
 		bInitialRevealPending = true;
 		GetWorldTimerManager().SetTimer(
@@ -475,7 +549,7 @@ return true;
 		}
 		if (IsInteriorCameraPreset(CameraIndex))
 		{
-			RuntimeCamera->ApplyCameraPOV(PresetPOV);
+			ApplyRuntimeCameraPOV(PresetPOV);
 			ResetInteractiveOrbit(PresetPOV, false);
 			return true;
 		}
@@ -529,7 +603,7 @@ return true;
 	CameraTransitionElapsed = 0.0f;
 	CameraTransitionDuration = 0.85f;
 	CurrentCameraIndex = CameraIndex;
-	RuntimeCamera->ApplyCameraPOV(CameraTransitionStartPOV);
+	ApplyRuntimeCameraPOV(CameraTransitionStartPOV);
 	SetViewTarget(RuntimeCamera);
 	bOrbitTransitionActive = true;
 	return true;
@@ -566,7 +640,7 @@ void AConfigShowroomPlayerController::FinishInteriorExteriorCameraSwitch()
 	}
 	CurrentCameraIndex = PendingCameraIndex;
 	PendingCameraIndex = INDEX_NONE;
-	RuntimeCamera->ApplyCameraPOV(PresetPOV);
+	ApplyRuntimeCameraPOV(PresetPOV);
 	ResetInteractiveOrbit(PresetPOV, !IsInteriorCameraPreset(CurrentCameraIndex));
 	SetViewTarget(RuntimeCamera);
 	if (PlayerCameraManager != nullptr)
@@ -639,7 +713,7 @@ void AConfigShowroomPlayerController::CancelInitialCameraReveal(
 	FMinimalViewInfo PresetPOV;
 	if (GetCameraPresetPOV(CurrentCameraIndex, PresetPOV))
 	{
-		RuntimeCamera->ApplyCameraPOV(PresetPOV);
+		ApplyRuntimeCameraPOV(PresetPOV);
 		ResetInteractiveOrbit(PresetPOV, !IsInteriorCameraPreset(CurrentCameraIndex));
 	}
 }

@@ -34,6 +34,11 @@ public:
 	static bool IsValidConfiguratorHeaderStateJson(
 		const FString& StateJson,
 		FString& OutError);
+	/** 将舞台左右遮挡宽度换算为 UE 非对称投影偏移。 */
+	static float CalculateStageProjectionOffsetX(
+		float ViewportWidth,
+		float LeftInset,
+		float RightInset);
 	static constexpr int32 MaxHealthProbeAttempts = 5;
 
 	void ApplyWebConfigurationJson(const FString& ConfigurationJson);
@@ -49,6 +54,12 @@ public:
 	bool TriggerConfiguratorHeaderAction(const FString& Action);
 	FString GetConfiguratorHeaderStateJson() const;
 	FString GetExperienceStateJson();
+
+	/**
+	 * 返回左侧可见舞台中心相对全窗口中心的投影补偿。
+	 * 普通模式考虑右侧 480px 面板；全屏模式返回 0。
+	 */
+	float GetStageProjectionOffsetX() const;
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;

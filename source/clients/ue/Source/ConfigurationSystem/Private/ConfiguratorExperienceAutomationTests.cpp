@@ -150,6 +150,33 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		TEXT("无已完成请求时不安排退避"),
 		UConfiguratorPanel::GetHealthRetryDelaySeconds(0),
 		0.0f);
+	TestTrue(
+		TEXT("1600px 视口扣除右侧 480px 面板后偏移为 0.3"),
+		FMath::IsNearlyEqual(
+			UConfiguratorPanel::CalculateStageProjectionOffsetX(
+				1600.0f, 0.0f, 480.0f),
+			0.3f));
+	TestTrue(
+		TEXT("全屏无遮挡时投影保持居中"),
+		FMath::IsNearlyZero(
+			UConfiguratorPanel::CalculateStageProjectionOffsetX(
+				1600.0f, 0.0f, 0.0f)));
+	TestTrue(
+		TEXT("左右等宽遮挡不会改变舞台中心"),
+		FMath::IsNearlyZero(
+			UConfiguratorPanel::CalculateStageProjectionOffsetX(
+				1600.0f, 160.0f, 160.0f)));
+	TestTrue(
+		TEXT("左侧遮挡产生反向投影偏移"),
+		FMath::IsNearlyEqual(
+			UConfiguratorPanel::CalculateStageProjectionOffsetX(
+				1600.0f, 320.0f, 0.0f),
+			-0.2f));
+	TestTrue(
+		TEXT("无效视口宽度安全归零"),
+		FMath::IsNearlyZero(
+			UConfiguratorPanel::CalculateStageProjectionOffsetX(
+				0.0f, 0.0f, 480.0f)));
 	TestTrue(TEXT("bridge 接受六个固定镜头中的最后一个"),
 		UConfiguratorWebBridge::IsSupportedCameraIndex(5));
 	TestFalse(TEXT("bridge 拒绝越界镜头"),

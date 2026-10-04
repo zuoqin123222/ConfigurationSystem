@@ -787,6 +787,47 @@ bool UConfiguratorPanel::SetExperienceFullscreen(const bool bEnabled)
 	return true;
 }
 
+float UConfiguratorPanel::CalculateStageProjectionOffsetX(
+	const float ViewportWidth,
+	const float LeftInset,
+	const float RightInset)
+{
+	if (!FMath::IsFinite(ViewportWidth)
+		|| ViewportWidth <= KINDA_SMALL_NUMBER
+		|| !FMath::IsFinite(LeftInset)
+		|| !FMath::IsFinite(RightInset))
+	{
+		return 0.0f;
+	}
+
+	// OffCenterProjectionOffset 使用相对于完整视口宽度的归一化偏移。
+	// 右侧遮挡比左侧宽时，可见舞台中心向左移动，因此返回正值。
+	// 这里限幅只用于防御异常布局；正常 1600px 窗口 + 480px 面板为 0.3。
+	const float SafeLeftInset = FMath::Max(LeftInset, 0.0f);
+	const float SafeRightInset = FMath::Max(RightInset, 0.0f);
+	return FMath::Clamp(
+		(SafeRightInset - SafeLeftInset) / ViewportWidth,
+		-0.95f,
+		0.95f);
+}
+
+float UConfiguratorPanel::GetStageProjectionOffsetX() const
+{
+	if (bWebFullscreen)
+	{
+		return 0.0f;
+	}
+
+	// 使用根控件的 Slate 逻辑宽度，和 480px 面板处于同一坐标系；
+	// 二者的 DPI 缩放会在相除时抵消。右侧面板使舞台中心左移，
+	// UE 的正 OffCenterProjectionOffset 会把画面主体向左投影。
+	const float ViewportWidth = GetCachedGeometry().GetLocalSize().X;
+	return CalculateStageProjectionOffsetX(
+		ViewportWidth,
+		0.0f,
+		ExpandedPanelWidth);
+}
+
 bool UConfiguratorPanel::SetConfiguratorCategory(const FString& CategoryId)
 {
 	if (!UConfiguratorWebBridge::IsSupportedConfiguratorCategory(CategoryId))
