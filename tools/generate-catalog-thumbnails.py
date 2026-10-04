@@ -129,10 +129,35 @@ def pixel_crop(
 
 
 def save_webp(source: Image.Image, box: tuple[int, int, int, int], output: Path,
-              size: int, quality: int) -> bytes:
+              size: int, quality: int,
+              output_cleanup_crop: dict[str, Any] | None = None) -> bytes:
     x, y, width, height = box
     thumbnail = source.crop((x, y, x + width, y + height))
     thumbnail = thumbnail.resize((size, size), Image.Resampling.LANCZOS)
+    if output_cleanup_crop:
+        cleanup_x = require_int(output_cleanup_crop.get("x"), "outputCleanupCrop.x")
+        cleanup_y = require_int(output_cleanup_crop.get("y"), "outputCleanupCrop.y")
+        cleanup_width = require_int(
+            output_cleanup_crop.get("width"), "outputCleanupCrop.width"
+        )
+        cleanup_height = require_int(
+            output_cleanup_crop.get("height"), "outputCleanupCrop.height"
+        )
+        if (
+            cleanup_x < 0
+            or cleanup_y < 0
+            or cleanup_width <= 0
+            or cleanup_height <= 0
+            or cleanup_x + cleanup_width > size
+            or cleanup_y + cleanup_height > size
+        ):
+            raise ValueError(f"Invalid outputCleanupCrop for {output.name}")
+        thumbnail = thumbnail.crop((
+            cleanup_x,
+            cleanup_y,
+            cleanup_x + cleanup_width,
+            cleanup_y + cleanup_height,
+        )).resize((size, size), Image.Resampling.LANCZOS)
     if thumbnail.mode not in ("RGB", "RGBA"):
         thumbnail = thumbnail.convert("RGBA" if "A" in thumbnail.getbands() else "RGB")
 
@@ -223,11 +248,16 @@ def generate(args: argparse.Namespace) -> tuple[int, int]:
             output_name = f"{variant_id}.webp"
             output_path = args.output_dir / output_name
             output_bytes = save_webp(
-                source, crop, output_path, args.size, args.quality
+                source,
+                crop,
+                output_path,
+                args.size,
+                args.quality,
+                item.get("outputCleanupCrop"),
             )
             output_url = f"/sc01/thumbnails/{output_name}"
             output_urls[variant_id] = output_url
-            generated_items.append({
+            generated_item = {
                 "variantId": variant_id,
                 "sourcePage": {
                     "file": page_name,
@@ -242,7 +272,10 @@ def generate(args: argparse.Namespace) -> tuple[int, int]:
                 "sha256": sha256(output_bytes),
                 "replaceable": True,
                 "reviewRequired": bool(item.get("reviewRequired", False)),
-            })
+            }
+            if isinstance(item.get("outputCleanupCrop"), dict):
+                generated_item["outputCleanupCrop"] = item["outputCleanupCrop"]
+            generated_items.append(generated_item)
     finally:
         for image, _ in source_cache.values():
             image.close()

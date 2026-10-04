@@ -12,7 +12,7 @@
     "replaceable": true
   },
   "itemCount": 352,
-  "totalBytes": 5936032,
+  "totalBytes": 5703136,
   "items": [
     {
       "variantId": "alcantara-p2-2911",
@@ -57,10 +57,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 45170,
-      "sha256": "3a3a4cf5a99bf8a370e11c269d754284927a30d28628ed225cc8bfa974cebdcf",
+      "byteLength": 41278,
+      "sha256": "8328e0d083493084f07a70409e73bca97ce2a10e7f2974d8a24dc5c17c27bddd",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 39,
+        "y": 49,
+        "width": 433,
+        "height": 433
+      }
     },
     {
       "variantId": "alcantara-p2-1112",
@@ -81,10 +87,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 46576,
-      "sha256": "a058e640083512882071fb99db152093374a4075ea7f8a5eefebb12edd2b2587",
+      "byteLength": 42040,
+      "sha256": "83baea0540058bdc3a3b23c4dbee1e8a4ee5a22a3a1763028f7218e14c0ed8d3",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 45,
+        "y": 61,
+        "width": 422,
+        "height": 422
+      }
     },
     {
       "variantId": "alcantara-p2-2293",
@@ -105,10 +117,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 39608,
-      "sha256": "acf9cf19e9c813fa56b3445c0057a1dd8e7546283c621377e641b619606ab8a0",
+      "byteLength": 38132,
+      "sha256": "601a5318b9e68807f69427f1d7a1d790002229e5a31f1d0ccf408add4c4a3e8d",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 60,
+        "y": 93,
+        "width": 392,
+        "height": 392
+      }
     },
     {
       "variantId": "alcantara-p2-2100",
@@ -129,10 +147,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 39332,
-      "sha256": "63ebdc1031690b98d37c24fe31cb5b7765f248fad0c015a3062f91dddaabb4f5",
+      "byteLength": 38158,
+      "sha256": "72cfee64a483cd7729b46e440785f5e51aec8d304ac5b45cd205d78b5af55b77",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 61,
+        "y": 96,
+        "width": 389,
+        "height": 389
+      }
     },
     {
       "variantId": "alcantara-p2-1510",
@@ -153,10 +177,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 40122,
-      "sha256": "09cfe7105b42e8c3276be3c9ab3707bcca4868f8a4606529d4e84b0c09fd77a9",
+      "byteLength": 38874,
+      "sha256": "de5db6baf107f415c5a5312804313fa3c99453849ae8d0f0dcbf577026882306",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 68,
+        "y": 111,
+        "width": 375,
+        "height": 375
+      }
     },
     {
       "variantId": "alcantara-p2-1108",
@@ -177,10 +207,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 37280,
-      "sha256": "5f24b1378b78895ae9989df18026abc980229a2d02042de26d61f918f570559f",
+      "byteLength": 36500,
+      "sha256": "56849ce69011d4ce54225022e98a80d7fd8ceefe64471736e978baa63071414c",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 71,
+        "y": 118,
+        "width": 369,
+        "height": 369
+      }
     },
     {
       "variantId": "alcantara-p2-2292",
@@ -201,10 +237,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 38972,
-      "sha256": "8bb2d2fb70250b4782effdc55c4ad27445db06281cb92728a25539af2e191da1",
+      "byteLength": 38648,
+      "sha256": "e059552b68fe7a751fcb6b655922d3bc82374f614e4d77e0143fdf480af9209b",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 71,
+        "y": 118,
+        "width": 369,
+        "height": 369
+      }
     },
     {
       "variantId": "alcantara-p2-1594",
@@ -225,10 +267,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 38436,
-      "sha256": "9d5fb16844226da95fc01a4928912f4c59717e810985acf8d91c0a4db63a5345",
+      "byteLength": 34776,
+      "sha256": "b5b612ce8d27fc571473ce6942f281a1ffc3f208c7eae16df941e4b0c88c5e6e",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 33,
+        "y": 37,
+        "width": 445,
+        "height": 445
+      }
     },
     {
       "variantId": "alcantara-p2-2974",
@@ -249,10 +297,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 38604,
-      "sha256": "d09c231ebb7cd5292679fe687c187809e481098a18e037b6204a3cddb921acdd",
+      "byteLength": 35296,
+      "sha256": "8b7824f304cd69f44a8367f1977bc5c01eb103fce3add01436c5cd6eed58ef48",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 44,
+        "y": 59,
+        "width": 424,
+        "height": 424
+      }
     },
     {
       "variantId": "alcantara-p2-1110",
@@ -273,10 +327,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 38560,
-      "sha256": "dbfc6b313425ab57287e6f472d315e2a6ae714ebd2eb2fc62c0067a6eaebb978",
+      "byteLength": 37140,
+      "sha256": "9b9ce88db9bd00c3a6947421a3e35bb4413af7afbb44771c604ae586a9befd51",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 49,
+        "y": 70,
+        "width": 414,
+        "height": 414
+      }
     },
     {
       "variantId": "alcantara-p2-2909",
@@ -297,10 +357,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 35098,
-      "sha256": "e0ac9b8019efcd82ade4e554e7feaa2f850075fbf4a2418a33102ef952114fe2",
+      "byteLength": 33858,
+      "sha256": "c30326f546f20f23f7e978f09d9a2f0988a4e809659bae1213f87bfba91778ea",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 60,
+        "y": 93,
+        "width": 392,
+        "height": 392
+      }
     },
     {
       "variantId": "alcantara-p2-2940",
@@ -321,10 +387,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 36948,
-      "sha256": "813d3721ff8f9cc49749899eda12ac85125721cf45dcb18f8189417676c5b383",
+      "byteLength": 36544,
+      "sha256": "689e4faea655dbe238468a68a338af1f3a2478a3494a33eb069a8227a1ae6387",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 62,
+        "y": 98,
+        "width": 388,
+        "height": 388
+      }
     },
     {
       "variantId": "alcantara-p2-4415",
@@ -345,10 +417,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 36742,
-      "sha256": "c7bcfe71f83c5c7732b9ee0444b2738a83eb342baf73928d450513a23bb19b3f",
+      "byteLength": 34650,
+      "sha256": "3854b97aa3943889cda1d818e591b6066342a13eec1539c51e162a1b56d12ed4",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 70,
+        "y": 116,
+        "width": 371,
+        "height": 371
+      }
     },
     {
       "variantId": "alcantara-p2-4914",
@@ -369,10 +447,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 39562,
-      "sha256": "76f25e0e14630717de7526aca9a0bb97b323cf787952f6d8e45b1642efe45440",
+      "byteLength": 37426,
+      "sha256": "85a1a03b8697694f482d6f7023d6fce19029213aa580e84c3d83db5992bfd410",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 70,
+        "y": 116,
+        "width": 371,
+        "height": 371
+      }
     },
     {
       "variantId": "alcantara-p2-2930",
@@ -393,10 +477,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 34118,
-      "sha256": "6daef945978dff7ad7cb595d7e670b50386c13eacb6d18a95a53c774e414e111",
+      "byteLength": 34684,
+      "sha256": "673092bf2e3d7a0da2185cbd86a9a537627339f004ff38bd2d7fa0f3f4fa345d",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 72,
+        "y": 119,
+        "width": 368,
+        "height": 368
+      }
     },
     {
       "variantId": "alcantara-p2-1125",
@@ -417,10 +507,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 40050,
-      "sha256": "e741c644fc9da64cae91d5056cfd537db7f9ee27fc423dbcffa2f6bce05b92e9",
+      "byteLength": 36104,
+      "sha256": "88d8d01ff6f9df63a60bd9204f73b5e1bda530907ebdbde67ba3a8cb82452709",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 32,
+        "y": 35,
+        "width": 447,
+        "height": 447
+      }
     },
     {
       "variantId": "alcantara-p2-1452",
@@ -441,10 +537,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 34952,
-      "sha256": "9d132fccf556a23328dc06c027645a3fbe68f48416e820c0f287b18846c1c183",
+      "byteLength": 31136,
+      "sha256": "2aaee78d3b97bda8a0977541dec7ab2ca82f2e7914d2e0f83d82c02044c2b8d5",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 41,
+        "y": 53,
+        "width": 430,
+        "height": 430
+      }
     },
     {
       "variantId": "alcantara-p2-1045",
@@ -465,10 +567,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 33658,
-      "sha256": "cdd9fcdb1d45402c3c83dc56871b0667b403ffd37b92a4a3436375fcfdcba4a7",
+      "byteLength": 30466,
+      "sha256": "83f7c905fb53c8479c5d6405ac30b9dbda3d17be3b7be38668246ad37a4d823c",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 46,
+        "y": 64,
+        "width": 419,
+        "height": 419
+      }
     },
     {
       "variantId": "alcantara-p2-1581",
@@ -489,10 +597,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 39098,
-      "sha256": "2769e62e2c4aaf6222524a52d1b5b472c91abcb15cf0b5c2fbf854038fef874a",
+      "byteLength": 36848,
+      "sha256": "90fd3fdd95cb2a68c65ab0f36f5396a096ef766976532accdb8af82cdd5de195",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 57,
+        "y": 88,
+        "width": 397,
+        "height": 397
+      }
     },
     {
       "variantId": "alcantara-p2-3314",
@@ -513,10 +627,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 31544,
-      "sha256": "6933174860c735a3e9a9854bde107c30d5696cca4776ae2383a96301e446e21b",
+      "byteLength": 30426,
+      "sha256": "35989319e7c67dcd4d8b80b20e623fdde50b5b91c3a92797d785866a37c21aee",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 60,
+        "y": 93,
+        "width": 392,
+        "height": 392
+      }
     },
     {
       "variantId": "alcantara-p2-3322",
@@ -537,10 +657,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 34124,
-      "sha256": "5fd09dff116d4d3a6df36778da7a703834724d995710320fb985f0084f52057f",
+      "byteLength": 32524,
+      "sha256": "b651a10b050e9e115c6e79fad5250a13139eeb07246250775fbcbf9831c3713c",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 69,
+        "y": 114,
+        "width": 373,
+        "height": 373
+      }
     },
     {
       "variantId": "alcantara-p2-6676",
@@ -561,10 +687,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 29672,
-      "sha256": "483122aad2d40d0ea4387db6542f0b805a208242601aa7d24c752b4967ada375",
+      "byteLength": 29956,
+      "sha256": "a5e1fcbb5072009a073010781ffb22b3bca8017922068814b421a28c0bdebac4",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 70,
+        "y": 115,
+        "width": 372,
+        "height": 372
+      }
     },
     {
       "variantId": "alcantara-p2-9073",
@@ -585,10 +717,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 23528,
-      "sha256": "33cd3a0e50d6709a3d182481b1a754914ddf51dc0a0cc9f70ebbcc82fba7746c",
+      "byteLength": 24190,
+      "sha256": "37bbd56bb774dd4ac3a84b03c025a34e8ed2f1c98f8698a6dd16beb8efbdcd12",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 72,
+        "y": 119,
+        "width": 368,
+        "height": 368
+      }
     },
     {
       "variantId": "alcantara-p3-1041",
@@ -633,10 +771,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 40126,
-      "sha256": "2782f1e7fb758e7e02d6529f2a6a6e34195666da0123b3f0baf87864d376063f",
+      "byteLength": 36476,
+      "sha256": "27b25ec44b1920528e97b260b53d17643e14826ff39f8feadce0227df8af739c",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 39,
+        "y": 50,
+        "width": 433,
+        "height": 433
+      }
     },
     {
       "variantId": "alcantara-p3-2969",
@@ -657,10 +801,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 27582,
-      "sha256": "89de915311b56a9cf8e18d330865536964dd4fb8f065d24efff10742958e7295",
+      "byteLength": 25296,
+      "sha256": "4cca4a4c4ad62d0ee95320a8e92c8a0994e358d2a8cfa2c7ed994cbec7c47cf0",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 43,
+        "y": 57,
+        "width": 426,
+        "height": 426
+      }
     },
     {
       "variantId": "alcantara-p3-2014",
@@ -681,10 +831,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 30546,
-      "sha256": "8004b1a094700ad6c3f98afbf954beb85adb57ad84cb634ff8fe5760d213ad8c",
+      "byteLength": 31898,
+      "sha256": "1c478b24f3fd3c63673775fd8f27d1310dc8f0b01074d5c288db7fc05746b11d",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 52,
+        "y": 77,
+        "width": 407,
+        "height": 407
+      }
     },
     {
       "variantId": "alcantara-p3-4996",
@@ -705,10 +861,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 28634,
-      "sha256": "ed9e37bbd92e85818d50034c57fcb9d4226c53f46ee20c99d445a774813cc53e",
+      "byteLength": 26666,
+      "sha256": "41a39979e779a74a686f8a1f445fe30ad8232f9bfeab0ded692c1f2c8b7b7a14",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 54,
+        "y": 81,
+        "width": 404,
+        "height": 404
+      }
     },
     {
       "variantId": "alcantara-p3-3679",
@@ -729,10 +891,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 26592,
-      "sha256": "05d8796511ed90bfb859a80f61b2e1258abae27ade32371adef7e3f426a8f954",
+      "byteLength": 23668,
+      "sha256": "46a9b5fdaa0a9cdae6902ba7b0fe863bcc89015872b8b57cd806621fa356f0d2",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 61,
+        "y": 96,
+        "width": 389,
+        "height": 389
+      }
     },
     {
       "variantId": "alcantara-p3-2916",
@@ -753,10 +921,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 38800,
-      "sha256": "91420ac691f0cdaf050311ea507c4250255f6fa45b1b03cfbd29aa10d952a5cf",
+      "byteLength": 36906,
+      "sha256": "a90c46544a4facc795d74bc10d84d052b7c321ff5fc198de63672e32eff01d7e",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 61,
+        "y": 96,
+        "width": 389,
+        "height": 389
+      }
     },
     {
       "variantId": "alcantara-p3-9076",
@@ -777,10 +951,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 30620,
-      "sha256": "41c43253b715e0258957551a15c320f30501645df7ab7a7fc5962369daedeebd",
+      "byteLength": 30666,
+      "sha256": "60ee53bf964fac52885bb5430c0365fbf9591c5115b0965b34fac4bb8224bc9e",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 66,
+        "y": 106,
+        "width": 380,
+        "height": 380
+      }
     },
     {
       "variantId": "alcantara-p3-2846",
@@ -825,10 +1005,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 41578,
-      "sha256": "5d26af97ee28f7c7a40373ac29ea385937baea4853d536f974056d5ce62fc468",
+      "byteLength": 36130,
+      "sha256": "b285b81eab9ccaefbed7ff1ac688d3391a6c776e32131130acfc53ffb59d44e4",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 36,
+        "y": 42,
+        "width": 440,
+        "height": 440
+      }
     },
     {
       "variantId": "alcantara-p3-4897",
@@ -849,10 +1035,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 26044,
-      "sha256": "acbaf688b59520c7ecd5b3c4a361a0d5b058a77429823bf9fa82af5d564c4a87",
+      "byteLength": 21684,
+      "sha256": "91c3d60c1e406e19aea644995e0fd72b55531984fdb723297fa9f902729523e7",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 43,
+        "y": 57,
+        "width": 426,
+        "height": 426
+      }
     },
     {
       "variantId": "alcantara-p3-4859",
@@ -873,10 +1065,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 20492,
-      "sha256": "c4514a75963a15af80ec27a1e0792d400b7f010b2966173ac4283f72dbe41843",
+      "byteLength": 19026,
+      "sha256": "a5bb7dead6ef956b1da2b441e2bf856d3774b6b720072a69ee771e230c4b18c7",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 47,
+        "y": 67,
+        "width": 417,
+        "height": 417
+      }
     },
     {
       "variantId": "alcantara-p3-2910",
@@ -897,10 +1095,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 20118,
-      "sha256": "e145839c73c0225ebff62cc2891d36f8d6ffdf8c8003bf227a92eb0175e97286",
+      "byteLength": 18082,
+      "sha256": "0fdfdbc3d03bedd5fcd8ca24441418253bd4779228490d78d316c3841e505bc3",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 53,
+        "y": 79,
+        "width": 405,
+        "height": 405
+      }
     },
     {
       "variantId": "alcantara-p3-6833",
@@ -921,10 +1125,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 18702,
-      "sha256": "425b0af9303f9bf9ff1ae17d88c7abfd974ccdf0b2778a12875f05d28bde9a41",
+      "byteLength": 17096,
+      "sha256": "808c3823ad48608ec899c1dee7a77bd5587bc1d81c5d0dcb43ebefdb4fb5c301",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 58,
+        "y": 89,
+        "width": 396,
+        "height": 396
+      }
     },
     {
       "variantId": "alcantara-p3-9714",
@@ -945,10 +1155,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 29932,
-      "sha256": "e0ae7ee2ae5c364162afce1b16044a38a4c66fb5456e4dcdf53feebb9ab40113",
+      "byteLength": 28224,
+      "sha256": "2909739333b115e241fdcede6a25bc8748ecd786b8517bcf3211ca600db9fb6c",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 61,
+        "y": 96,
+        "width": 389,
+        "height": 389
+      }
     },
     {
       "variantId": "alcantara-p3-9500",
@@ -969,10 +1185,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 20062,
-      "sha256": "7a5f7b452b8145b05d3348e62bb2fde32c6ac8d86e9f42b60684f4571fc7efc5",
+      "byteLength": 18654,
+      "sha256": "336eca3d52060f93c879ee087db50d009dc3297242677d6b5ef0d970a1225b87",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 66,
+        "y": 106,
+        "width": 380,
+        "height": 380
+      }
     },
     {
       "variantId": "alcantara-p3-9036",
@@ -1017,10 +1239,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 28052,
-      "sha256": "8c59f557f0309cbc49d55a96f3a7d30042198060e5b6783e0767b3484c166efc",
+      "byteLength": 23572,
+      "sha256": "eea4334b64067dc59f18eb33f4436d5c293de24c22ab64ef8a8f0e4fd7943bed",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 36,
+        "y": 42,
+        "width": 440,
+        "height": 440
+      }
     },
     {
       "variantId": "alcantara-p3-8813",
@@ -1041,10 +1269,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 21618,
-      "sha256": "e60f3ed891932777ccc251ea38aa7196ebc52bd0923df18aaa092c05bdb7da0a",
+      "byteLength": 20224,
+      "sha256": "49cc1a3d9cebef3868d271751a7b9870f7138d8c7a46501e6fd91a93e6a03db3",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 43,
+        "y": 58,
+        "width": 425,
+        "height": 425
+      }
     },
     {
       "variantId": "alcantara-p3-9980",
@@ -1065,10 +1299,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 16726,
-      "sha256": "14799b64d87222c8643b9636471eb00702969a970a2a805ea2e63b027bdc79a1",
+      "byteLength": 14174,
+      "sha256": "3477b53f0f2216441f264601bfcd75f86d297dbc42bd3b4991cf678420c76209",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 45,
+        "y": 61,
+        "width": 422,
+        "height": 422
+      }
     },
     {
       "variantId": "alcantara-p3-9041",
@@ -1089,10 +1329,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 16464,
-      "sha256": "f8187edae2cc3cd8da19de9d18491ceca2dad794ae5346bc2400c701a0cb7cc5",
+      "byteLength": 14396,
+      "sha256": "94cd7f3d6f9e34ebc415fcf66c3d089b84a8fbf18d7dd024250574b5454aaba2",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 50,
+        "y": 72,
+        "width": 412,
+        "height": 412
+      }
     },
     {
       "variantId": "alcantara-p3-6408",
@@ -1113,10 +1359,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 18676,
-      "sha256": "06a91c12e66699e594af4a2fa357c2e638141824d6ddd15dbf15c7e3b00f65ca",
+      "byteLength": 17648,
+      "sha256": "d372a635f56a4ca60cbb4fe7b552139757e528df0659572fec281eae7c1ef1c3",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 58,
+        "y": 89,
+        "width": 396,
+        "height": 396
+      }
     },
     {
       "variantId": "alcantara-p3-9022",
@@ -1137,10 +1389,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 32380,
-      "sha256": "e610e39f25af00a5e1cf2160b7e7751431246bd383fcb8522475c4e270260de1",
+      "byteLength": 31080,
+      "sha256": "45d8306e88de8e2f364edb74d42a967997344e8173606a1715977f77fd452784",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 61,
+        "y": 96,
+        "width": 389,
+        "height": 389
+      }
     },
     {
       "variantId": "alcantara-p3-5432",
@@ -1161,10 +1419,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 26688,
-      "sha256": "1cbda302dadcdda6ec7ec82bf84c6b6b7c127285b1bc19a2c4f1391b64a9142f",
+      "byteLength": 26270,
+      "sha256": "1d8e747c7753a860fdd5e60970ec546e24610d2948d574d0518aa522c63ba137",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 66,
+        "y": 107,
+        "width": 379,
+        "height": 379
+      }
     },
     {
       "variantId": "alcantara-p4-1363",
@@ -1233,10 +1497,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 49254,
-      "sha256": "8283325eeefe266dfb49d9c3edcef430cade838ebd698a267aa5820d110f9fd3",
+      "byteLength": 43690,
+      "sha256": "408827a94b3ff8886d5fa5f65289ad023452149866439b1838136856004dcb64",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 38,
+        "y": 47,
+        "width": 435,
+        "height": 435
+      }
     },
     {
       "variantId": "alcantara-p4-2853",
@@ -1257,10 +1527,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 41744,
-      "sha256": "683a9ee27a6fb3106488eaf8a9be02567a82b48838c85f461381e8973b82dd87",
+      "byteLength": 39708,
+      "sha256": "57719a0fad29a4faa2f3f5233424f54313af3e0291b37072dcf63d8aa1703b08",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 47,
+        "y": 65,
+        "width": 418,
+        "height": 418
+      }
     },
     {
       "variantId": "alcantara-p4-7586",
@@ -1281,10 +1557,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 45862,
-      "sha256": "9939ed28cc4722e1672a616555f573b0c945e5084b3d74ec260361ff46e21a63",
+      "byteLength": 41922,
+      "sha256": "4386f034d36453965afa777e8cfa8ee024f922fb0437fae729d408e5842efc8b",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 53,
+        "y": 78,
+        "width": 406,
+        "height": 406
+      }
     },
     {
       "variantId": "alcantara-p4-7687",
@@ -1305,10 +1587,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 43044,
-      "sha256": "86c91092e4d38951e8f97fe2a1807a0015fd65239f87c6725f45288053e9d759",
+      "byteLength": 40116,
+      "sha256": "2b1f52ebf4c719197e40d09f96ca41fbe00b43f487c29f8cd6fa8d6dce205ad1",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 66,
+        "y": 107,
+        "width": 379,
+        "height": 379
+      }
     },
     {
       "variantId": "alcantara-p4-5751",
@@ -1329,10 +1617,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 31376,
-      "sha256": "b15d40373fb6f91217642ce88dfe3273156b71fb79aa16f8bf4a81d0577983ec",
+      "byteLength": 30282,
+      "sha256": "d7a62770a1f278821571be04cf71255aa8bf9a2babcacfddf6c3a71e22fa78fc",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 75,
+        "y": 125,
+        "width": 362,
+        "height": 362
+      }
     },
     {
       "variantId": "alcantara-p4-6632",
@@ -1353,10 +1647,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 27262,
-      "sha256": "52bd08cee15fa183cd6efc1c943a51b6ac290e6f715d431f6d9af5f05b1b5134",
+      "byteLength": 26702,
+      "sha256": "a96d501a446ffb6192322c9b03a9b934349a79601a15735bdc6dab5c8c4ccb9a",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 71,
+        "y": 117,
+        "width": 370,
+        "height": 370
+      }
     },
     {
       "variantId": "alcantara-p4-2156",
@@ -1425,10 +1725,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 45658,
-      "sha256": "cc2854d0887bee753bed41b2665dd917a229f9d22835789b982404363e5e4ff1",
+      "byteLength": 40970,
+      "sha256": "efaf94eca58a1b2cb92aa4181911a657084e1c2584d12f95ea026d957e008f8d",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 38,
+        "y": 47,
+        "width": 435,
+        "height": 435
+      }
     },
     {
       "variantId": "alcantara-p4-5919",
@@ -1449,10 +1755,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 45018,
-      "sha256": "8516f39c307f979cc8ec5e896671cde4124b815efe7351961be0a271fe9cca2d",
+      "byteLength": 39850,
+      "sha256": "c112d055e52615d542d6f2a431f372bffa0603fffe61999bfd17a79673f4aff7",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 47,
+        "y": 65,
+        "width": 418,
+        "height": 418
+      }
     },
     {
       "variantId": "alcantara-p4-2957",
@@ -1473,10 +1785,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 34758,
-      "sha256": "a16f9ff86b498ea920a43ddd3b5263e95dd74470cfe46cc8b23981c130322ba5",
+      "byteLength": 32494,
+      "sha256": "bea4b25b4dc731343b0cfc26bc84615d840d25df85cb488bbbb0b30fc4918668",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 54,
+        "y": 81,
+        "width": 403,
+        "height": 403
+      }
     },
     {
       "variantId": "alcantara-p4-6609",
@@ -1497,10 +1815,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 20862,
-      "sha256": "728afb0343571b012738090a55299b35ed404d00e95c219c313ddbcdaf86e5ce",
+      "byteLength": 20768,
+      "sha256": "a2487e6afd5af8ff0ccd467edbe158536ca4bef197f668f4253c5ad10b611acb",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 66,
+        "y": 107,
+        "width": 379,
+        "height": 379
+      }
     },
     {
       "variantId": "alcantara-p4-6406",
@@ -1521,10 +1845,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 22260,
-      "sha256": "fde80de3224a56d81639bd971c2e4df9f8eee56aa7a27096d53ea615b1d435a3",
+      "byteLength": 21446,
+      "sha256": "e676f8e1aab2ae284eb0c705c5b6e62f33d7853a2ed1e19272ea78462fad648a",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 74,
+        "y": 124,
+        "width": 363,
+        "height": 363
+      }
     },
     {
       "variantId": "alcantara-p4-9040",
@@ -1545,10 +1875,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 12774,
-      "sha256": "96406d3e11ef50c5eadb4cf6e18ce91b6da8173d783df1c0bcd1bc4d9da97af9",
+      "byteLength": 12166,
+      "sha256": "21b3c5397cb019a12641286bc56bbaeda230d75bae9e48f02d84daea4114ac9f",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 71,
+        "y": 117,
+        "width": 370,
+        "height": 370
+      }
     },
     {
       "variantId": "alcantara-p4-1398",
@@ -1617,10 +1953,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 42206,
-      "sha256": "8faea2dd1fa6a5db4744053c9b44c7252d47758df656d2d2772e1e4b1f940997",
+      "byteLength": 37872,
+      "sha256": "64392ad77eab6949ab1cb4e5b1c956df760a9f7eb94ce8ea176ea164c8101b22",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 39,
+        "y": 48,
+        "width": 434,
+        "height": 434
+      }
     },
     {
       "variantId": "alcantara-p4-7052",
@@ -1641,10 +1983,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 32074,
-      "sha256": "f333c21463fef7ce20abcbf570a621f90c17f691e414b02edccbb9fc6650defb",
+      "byteLength": 29694,
+      "sha256": "93f9299905ed9ff8915ade72fbbcc1165f6b821e9c0cd3ef903204c2f2815a3a",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 47,
+        "y": 65,
+        "width": 418,
+        "height": 418
+      }
     },
     {
       "variantId": "alcantara-p4-9052",
@@ -1665,10 +2013,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 27598,
-      "sha256": "1468536e89e06bb562a9aeffe8e8917311ac42118f8ef547ed9eae616bb25a88",
+      "byteLength": 26460,
+      "sha256": "10bd6085cba54a3c3ac0e7fe99c7701b5188f9cc5d1ef8ec056d2e7b2df5cf55",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 53,
+        "y": 79,
+        "width": 405,
+        "height": 405
+      }
     },
     {
       "variantId": "alcantara-p4-9806",
@@ -1689,10 +2043,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 20320,
-      "sha256": "cda4da9c68627fe2a4116b1b4b333a6788d96964834f4941009e28d238701f62",
+      "byteLength": 18896,
+      "sha256": "4865d1b9833cb5a91c22486cb57b70cf7ec8848217747f2e7991c6288a48ea2b",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 66,
+        "y": 107,
+        "width": 379,
+        "height": 379
+      }
     },
     {
       "variantId": "alcantara-p4-9002",
@@ -1713,10 +2073,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 14364,
-      "sha256": "0eab673b2bcf49141b11877c2dfc10fa9a962068f44e861f10b5db400d9b6001",
+      "byteLength": 14660,
+      "sha256": "7e1c2c595ac4af6eafef24652ca8848d38618eed1c6899f1a9346f5230cabe8c",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 75,
+        "y": 125,
+        "width": 362,
+        "height": 362
+      }
     },
     {
       "variantId": "ultrasuede-p6-uf7",
@@ -1761,10 +2127,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 29566,
-      "sha256": "2fa528ac5ec718c7aaeacb008a6b1e4c82d28b89aab6628919b570ce8efae79f",
+      "byteLength": 29676,
+      "sha256": "e14c82c1e9bf718c989173458761a298fdf60c3597d82083deda21578b949c27",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 47,
+        "y": 67,
+        "width": 417,
+        "height": 417
+      }
     },
     {
       "variantId": "ultrasuede-p6-sf5",
@@ -1785,10 +2157,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 27460,
-      "sha256": "3af14acebe90082ea4664fb21d74cba7ac035ec5bb543d2ab47751805087b7a9",
+      "byteLength": 25736,
+      "sha256": "fdb9e9439e6f45e840564d0f944a931534bbacd46e4bc139ae2a2ace39297dbf",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 52,
+        "y": 76,
+        "width": 408,
+        "height": 408
+      }
     },
     {
       "variantId": "ultrasuede-p6-sf8",
@@ -1809,10 +2187,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 33662,
-      "sha256": "ec9919de01f9fd72466290b80c76e31fbc668205654177db7671a4daa75cdfeb",
+      "byteLength": 33136,
+      "sha256": "1d6dbf48289cb639bfbb6e30c4f668c0157d3ca9de3632e1f2b3eeb91bc738f0",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 82,
+        "y": 140,
+        "width": 348,
+        "height": 348
+      }
     },
     {
       "variantId": "ultrasuede-p6-uf8",
@@ -1833,10 +2217,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 41552,
-      "sha256": "f466e7f5741ccb34a6ff04937c2bdb1d449b1b2c6dd45c96dd17a71d0bbebf77",
+      "byteLength": 38930,
+      "sha256": "abf3718961b291a307ba7bf575c4aa146519c43c38d019f1e03392eb69082aff",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 65,
+        "y": 47,
+        "width": 418,
+        "height": 418
+      }
     },
     {
       "variantId": "ultrasuede-p6-sg5",
@@ -1857,10 +2247,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 36214,
-      "sha256": "8a4d37683ae080dc5c96d4341805af8765a2cb9153a2b7fed2d168a0beb68162",
+      "byteLength": 36704,
+      "sha256": "77aff878a29027fb3bdcf63427a271769e38f8ce518167586279933d7169a867",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 65,
+        "y": 69,
+        "width": 415,
+        "height": 415
+      }
     },
     {
       "variantId": "ultrasuede-p6-uf9",
@@ -1881,10 +2277,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 31164,
-      "sha256": "a307ea636932719b5cc4ab47011b4fd59254601b2607a9589393cb3d6ed14e9b",
+      "byteLength": 29414,
+      "sha256": "9b999e276b40e0fc95007cbdff399d6b2a1fcf8a9ab40f0310a6fabe7b4e76f9",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 75,
+        "y": 97,
+        "width": 388,
+        "height": 388
+      }
     },
     {
       "variantId": "ultrasuede-p6-sg7",
@@ -1905,10 +2307,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 26804,
-      "sha256": "04c67a658c2aaf79cf708da2539587777c446386b1a98069f829088491c42ee5",
+      "byteLength": 27050,
+      "sha256": "3fcc9905da5d04d4e25030d42706c28bfb5a9f5b1974b1cce1c47931648cbafe",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 94,
+        "y": 141,
+        "width": 347,
+        "height": 347
+      }
     },
     {
       "variantId": "ultrasuede-p6-ug2",
@@ -1929,10 +2337,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 25030,
-      "sha256": "b202df2ba4a1c75ea27bf28eb3769b97487c9e5dd4b341972b1b1b90f65564b7",
+      "byteLength": 23732,
+      "sha256": "7d2e0a96074c87df7f91db2ad7cd54f2fb251881c768a883712db32e9aa7f4c9",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 74,
+        "y": 54,
+        "width": 410,
+        "height": 410
+      }
     },
     {
       "variantId": "ultrasuede-p6-sg2",
@@ -1953,10 +2367,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 43280,
-      "sha256": "11277f47b22ab230676ca281fddf9ff98399adbee14b1d41032c23a76c7c1108",
+      "byteLength": 44276,
+      "sha256": "7368bc83ed771d0812f68085b0e94c90e4e837ef5eac4975d111b7db94a90c47",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 72,
+        "y": 70,
+        "width": 412,
+        "height": 412
+      }
     },
     {
       "variantId": "ultrasuede-p6-sg0",
@@ -1977,10 +2397,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 37658,
-      "sha256": "2a06d936ffd156a32f6482d1683f66a923186c3c1e9dac5acdb2f304b5bc7731",
+      "byteLength": 39546,
+      "sha256": "ee9db0a7be38214ad7a22ead9bf240cc828843f24cb84f7c32370f2465a6f858",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 85,
+        "y": 101,
+        "width": 385,
+        "height": 385
+      }
     },
     {
       "variantId": "ultrasuede-p6-sg4",
@@ -2001,10 +2427,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 9070,
-      "sha256": "92f4692f08d515f2441477f6a0231cef9b8f842f334380416f2ee56e9035ffbf",
+      "byteLength": 6486,
+      "sha256": "4661b7b19d717616be37c1dbd23376cfe39a0cbd80c584073c007db9e5d46bd1",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 100,
+        "y": 136,
+        "width": 352,
+        "height": 352
+      }
     },
     {
       "variantId": "ultrasuede-p7-bk575",
@@ -2049,10 +2481,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 38010,
-      "sha256": "e46be885b1008c5a3e7b3f598ad550049c301d10fea2ce05ec775cd28a06d2a5",
+      "byteLength": 36960,
+      "sha256": "78ea2abbabfecdc528fdcbafdea11d2111a662b68319e9b5ec30d1911a4fdce9",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 73,
+        "y": 122,
+        "width": 365,
+        "height": 365
+      }
     },
     {
       "variantId": "ultrasuede-p7-gry1",
@@ -2097,10 +2535,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 29712,
-      "sha256": "2d69d6899ba802829b0bfff319ef8948e533aa15322d5643d23c13e11260fa1c",
+      "byteLength": 29416,
+      "sha256": "9e524a2ce42b12d446ee0e33290246bc5ee9ffb62fbd23e4c5517605fbe6ca1c",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 73,
+        "y": 121,
+        "width": 366,
+        "height": 366
+      }
     },
     {
       "variantId": "ultrasuede-p7-bk905",
@@ -2145,10 +2589,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 12502,
-      "sha256": "f1ef0c96930162587f2394206eb22702c85ad4bce9ffeb8240b1b5e4b2d78fc6",
+      "byteLength": 10308,
+      "sha256": "c23d12d2cd511d746f077def1085f914f59715d00ec5a8d64b79e71d0bb7003c",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 40,
+        "y": 80,
+        "width": 432,
+        "height": 432
+      }
     },
     {
       "variantId": "leather-p9-9259",
@@ -2265,10 +2715,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 16432,
-      "sha256": "a5f5a66a7e260f8d30fd6d07d68a9fc09c6d26ba1ee0d891d3eb193da45a5722",
+      "byteLength": 14262,
+      "sha256": "e6dfe8de8ec1d2babf9636c08adfa5ec53a1f0758c155c85c91dd38935d79ba0",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 32,
+        "y": 34,
+        "width": 448,
+        "height": 448
+      }
     },
     {
       "variantId": "leather-p9-0308",
@@ -2337,10 +2793,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 15816,
-      "sha256": "6b3b3f9173d03af445e8b0783ac0e7093453ba1b44ac8d081b3ac4fb85bf58ab",
+      "byteLength": 14758,
+      "sha256": "727f9129c2102510b33a80860084924f4daec909ce63c314f7d9fbc9f1a74f8f",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 35,
+        "y": 40,
+        "width": 442,
+        "height": 442
+      }
     },
     {
       "variantId": "leather-p9-9743",
@@ -2385,10 +2847,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 15226,
-      "sha256": "b0244914de038fb095ab0d478d93833902a21a894af9ef12d0306c7f91a98cd7",
+      "byteLength": 11672,
+      "sha256": "0fdceee820198e36ec1455dcaa406a1756f916e171a4620f6c535842f62817df",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 76,
+        "y": 10,
+        "width": 360,
+        "height": 360
+      }
     },
     {
       "variantId": "leather-p10-2054",
@@ -2433,10 +2901,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 13150,
-      "sha256": "5b8023b994dcc11b9a5f0fcbfb56740ff634ad734ac1c63614b6fd898731bfc6",
+      "byteLength": 8120,
+      "sha256": "a107ddf55bd289250fd085221bf2fe23433be7df1dae59c4b22beff93cba67b1",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 212,
+        "y": 6,
+        "width": 88,
+        "height": 88
+      }
     },
     {
       "variantId": "leather-p10-8526",
@@ -2481,10 +2955,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 27204,
-      "sha256": "faa5bc5567f413c202a17e9dff161a16e8515b52f07a8e4bd13ace03b4d6b963",
+      "byteLength": 25370,
+      "sha256": "0b2028299c95217a8f64a64c70574bac07cc01643020b131c03934703ac4777d",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 93,
+        "y": 22,
+        "width": 326,
+        "height": 326
+      }
     },
     {
       "variantId": "leather-p10-1265",
@@ -2529,10 +3009,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 9092,
-      "sha256": "8378a86d6d72738d457e4c8a3d073038bf7f7fc30f236dcabb1d64b40dc7e694",
+      "byteLength": 5240,
+      "sha256": "8dbeda8369e2ed7b0c2b91f7322583a7c370bb2f6d89a2dd2f948c41a2f1c0ac",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 212,
+        "y": 6,
+        "width": 87,
+        "height": 87
+      }
     },
     {
       "variantId": "leather-p10-8776",
@@ -2577,10 +3063,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 18428,
-      "sha256": "4649704f10c2b21601dbec0a11aad12d357aa0ffadb65164d0534532e8ec2788",
+      "byteLength": 14326,
+      "sha256": "c5425801fb884406caa1cfc7602b84cf423297f2e0ec530497c64ef1ea15e11f",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 93,
+        "y": 22,
+        "width": 326,
+        "height": 326
+      }
     },
     {
       "variantId": "leather-p10-9743",
@@ -2769,10 +3261,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 16478,
-      "sha256": "19cc4f38a72d0573642db1604850ab1659633d73c58d55495eeee5d8dfbd0b0c",
+      "byteLength": 15110,
+      "sha256": "fb260e0fbfe95c1e927736046239d348a7fa8f454cdd3b9b4defb72c8eee3e30",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 36,
+        "y": 43,
+        "width": 439,
+        "height": 439
+      }
     },
     {
       "variantId": "leather-p11-9765",
@@ -2889,10 +3387,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 13450,
-      "sha256": "0636150549bc952fdb2605caee117284fbfd39343b0cd7c3f67bd35523fa4a31",
+      "byteLength": 11672,
+      "sha256": "760988f35018efcc248508783051765e63e3104b9d2018e54f09bfb63459d688",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 35,
+        "y": 40,
+        "width": 442,
+        "height": 442
+      }
     },
     {
       "variantId": "leather-p12-3997",
@@ -2937,10 +3441,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 15182,
-      "sha256": "79c570d9abd5b78bd718ca1e0b35bc73a18c1d6147a597e0296685e908755793",
+      "byteLength": 13430,
+      "sha256": "b7e0aa9d7ddd91af0c1b0b6c0fdbca8e8dcb3452dc150ad23e4e561a66187acd",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 41,
+        "y": 29,
+        "width": 430,
+        "height": 430
+      }
     },
     {
       "variantId": "leather-p12-4210",
@@ -2961,10 +3471,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 15006,
-      "sha256": "3468ffe1c33b94b0f32958277cba963081aeb714e89408240f5fe5217c3a3e86",
+      "byteLength": 13284,
+      "sha256": "534e865285ec79c982bf90f83e54f8c8aaf63074a669ca69cc21539d6933aae3",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 61,
+        "y": 27,
+        "width": 389,
+        "height": 389
+      }
     },
     {
       "variantId": "leather-p12-4481",
@@ -2985,10 +3501,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 16220,
-      "sha256": "2c4cba84f1c54137d9669b60beb70b7b68254e97226d7465adf97ed357d3dfdc",
+      "byteLength": 14750,
+      "sha256": "ef71850ba93b72191d38b3ced5a5fc251c8631fc947d7d80d29823288f99fe0d",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 48,
+        "y": 28,
+        "width": 416,
+        "height": 416
+      }
     },
     {
       "variantId": "leather-p12-4806",
@@ -3009,10 +3531,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 19382,
-      "sha256": "b2dd2edba8394f1f8c943147fa37f97a1a81ddb697e941a937ff022809f6cd4a",
+      "byteLength": 17572,
+      "sha256": "e2e1ccd35117830172522d6f36b0aa44db7c5674e67391ef620c767180cf0489",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 47,
+        "y": 29,
+        "width": 418,
+        "height": 418
+      }
     },
     {
       "variantId": "leather-p12-4008",
@@ -3033,10 +3561,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 19104,
-      "sha256": "8ed2b7fdd1f71aab6fba6ded6164729871a362a5e7ca650db3cc8e0744fa148d",
+      "byteLength": 17396,
+      "sha256": "8804c5a0fa53b968217c11bb1801cdf5e76eae3edf397f3af409d2881b4cf363",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 45,
+        "y": 29,
+        "width": 421,
+        "height": 421
+      }
     },
     {
       "variantId": "leather-p12-3998",
@@ -3057,10 +3591,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 20314,
-      "sha256": "394b4d06e25cb1a8c912b95f033a5fc5ba86fb2bcccb1fbcfa0928b6ef35f374",
+      "byteLength": 18920,
+      "sha256": "a1719500f8c15fffc87d0d2c2cd87df036e76414087db278c5e5e2e0cc279ddc",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 35,
+        "y": 30,
+        "width": 442,
+        "height": 442
+      }
     },
     {
       "variantId": "leather-p12-4225",
@@ -3081,10 +3621,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 26420,
-      "sha256": "08dc82858fa8b4e404990d7d76fdc28fc0ca74211e4de7a4bbabc12f118c671c",
+      "byteLength": 25308,
+      "sha256": "192e706f709194ab372230c4c7134aa86ea6815ffb48bf5f7a5aa55e4f09c3f8",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 43,
+        "y": 29,
+        "width": 425,
+        "height": 425
+      }
     },
     {
       "variantId": "leather-p12-4609",
@@ -3105,10 +3651,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 20264,
-      "sha256": "859f4b46ba6b4a283b36779db89f9aab98699bb25613abdb81164b29c88f2a61",
+      "byteLength": 19052,
+      "sha256": "d71a2330241fff1744e84559faccd5c94e0b5918730081e282862d06d5fefb2a",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 59,
+        "y": 27,
+        "width": 393,
+        "height": 393
+      }
     },
     {
       "variantId": "leather-p12-4610",
@@ -3129,10 +3681,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 15436,
-      "sha256": "8c86decb6393f5dfd8e730aca16d05917f77eedc451064f9127faa7107ec4e0c",
+      "byteLength": 13914,
+      "sha256": "a9a8b6642e0db0c709a2983b7373fd9f8abcf2e8cff6ef9d9647cc0e0105b498",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 51,
+        "y": 28,
+        "width": 409,
+        "height": 409
+      }
     },
     {
       "variantId": "leather-p12-4296",
@@ -3153,10 +3711,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 19812,
-      "sha256": "0c974e675d7b1db7ef8b94fbc055fc243b26ca46a4de871c7f72c6b86e1ecb07",
+      "byteLength": 18332,
+      "sha256": "6a8480e5aaa10ee2070c07e609b2a09c2f843e9116b34815d843e9716f997c21",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 46,
+        "y": 28,
+        "width": 419,
+        "height": 419
+      }
     },
     {
       "variantId": "leather-p12-4128",
@@ -3177,10 +3741,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 15420,
-      "sha256": "c31db99924ae36aa45a08ecefc2833cc2dec5313c7fac4936a31cbcf9eda43e3",
+      "byteLength": 13344,
+      "sha256": "354ee7e05b20eb90a555b605aaf736a24290a7b5d496e3eb00177fdb800fa16b",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 45,
+        "y": 29,
+        "width": 421,
+        "height": 421
+      }
     },
     {
       "variantId": "leather-p13-3251",
@@ -3633,10 +4203,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 11502,
-      "sha256": "9bce08905a5591327e0f3aea19e4ca92e37d0afca8df05019d0773139f6925d6",
+      "byteLength": 7292,
+      "sha256": "6a85ebd4dd32098b0327a36803b628d33a2169e7814669cb64904045f38c1b18",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 74,
+        "y": 25,
+        "width": 363,
+        "height": 363
+      }
     },
     {
       "variantId": "leather-p14-3800",
@@ -3729,10 +4305,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 14048,
-      "sha256": "802d07c97d6a0310171df44278618a960a94a807020f3d1f7bbda31670117d90",
+      "byteLength": 11462,
+      "sha256": "25dc323c9706d3992954a49d585bcfcabe9e235c47bf04a246c64f0d8635b81b",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 75,
+        "y": 25,
+        "width": 362,
+        "height": 362
+      }
     },
     {
       "variantId": "leather-p14-5226",
@@ -3825,10 +4407,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 21036,
-      "sha256": "0dafd3e68bdcedbfdd8a3ca096939540df86cace934cf70d5ba32679e88eb8cb",
+      "byteLength": 16366,
+      "sha256": "97549691f2e8dcefd58fe298d7f72cc15e7e40a6951c33690fc29c36bb24fdee",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 75,
+        "y": 25,
+        "width": 362,
+        "height": 362
+      }
     },
     {
       "variantId": "leather-p14-3030",
@@ -4809,10 +5397,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 804,
-      "sha256": "ca177d572d0933723a4f18cce20a075ca5b5ccf0aa46138d8db73e9d88b7aa5f",
+      "byteLength": 732,
+      "sha256": "3be0c6842233384994551343584333492761970f6345437d54452efaaab06c3e",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 45,
+        "y": 61,
+        "width": 422,
+        "height": 422
+      }
     },
     {
       "variantId": "microfiber-p16-np-3041",
@@ -6801,10 +7395,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 13728,
-      "sha256": "2060be732316efa52d937b7bb3a775836538664a626bdf97ef13e2c749f3120b",
+      "byteLength": 12454,
+      "sha256": "14fb02711f353ade715a8894cae5e6515341e24768225e3e9e2aeb04c59ac37e",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 32,
+        "y": 34,
+        "width": 448,
+        "height": 448
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r04c2",
@@ -6825,10 +7425,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 11326,
-      "sha256": "10e0cde3dfab015beecd3c31fc27ce3da1f7b42bc8e6c0ab68bd9c78054fc9e4",
+      "byteLength": 10268,
+      "sha256": "15e520d608738b924622b3789bc08a96b5cc583ec6d396d16078c30734723126",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 32,
+        "y": 34,
+        "width": 448,
+        "height": 448
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r05c1",
@@ -6849,10 +7455,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 10114,
-      "sha256": "6a34e22da35e68efa9c935a1ecc54036083f5103735aa3c23f49f5150fe824e7",
+      "byteLength": 9750,
+      "sha256": "541c98b195d53484a8ff333d3f18681a42aa427557eca63b1ed21a649a33b8df",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 32,
+        "y": 35,
+        "width": 447,
+        "height": 447
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r05c2",
@@ -6873,10 +7485,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 10636,
-      "sha256": "48efbc5d45319b2fc2a0a11710d12dcfeae9560b725aec901faa0b8916916cfa",
+      "byteLength": 9774,
+      "sha256": "ead1a33b047e544bc8ffecbd025a61b9c5f290b65d4d3ca27354a24ce293f6de",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 32,
+        "y": 35,
+        "width": 447,
+        "height": 447
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r06c1",
@@ -6897,10 +7515,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 7696,
-      "sha256": "fda63f31b6bda67e732920d2fef17070e457fbac062f54779ae0e3e5be27960d",
+      "byteLength": 6230,
+      "sha256": "fb862fa6adf5a2d06f6ce06703e6517d08506541f2e3d618d9af881191cc463d",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 33,
+        "y": 37,
+        "width": 445,
+        "height": 445
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r06c2",
@@ -6921,10 +7545,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8800,
-      "sha256": "2562292b2c2c71b57500faa88e922be38421a8b273bdf9ac002008a1a4db3993",
+      "byteLength": 8136,
+      "sha256": "c1b0280640ecca2a4d15ac2c0a8d691f806ceb7150e7c0a1b02dd2113c13bc15",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 33,
+        "y": 37,
+        "width": 445,
+        "height": 445
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r07c1",
@@ -6945,10 +7575,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 12338,
-      "sha256": "5939110cbb08d3886bd9677488f1ed00bdad49b0c84d4abc5ecd6aa281a87e6f",
+      "byteLength": 11368,
+      "sha256": "49591c745f2e5e8d39f567727c54f5958637f4fc0fc70d9b26713f0979af1bb0",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 34,
+        "y": 39,
+        "width": 443,
+        "height": 443
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r07c2",
@@ -6969,10 +7605,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8526,
-      "sha256": "4d9346c76f5e10893ca9e07cdca77cbf6290f573f36e09a36c725a82ab54c2a7",
+      "byteLength": 7840,
+      "sha256": "17814c4832413f8577dbbca6207605643b7fb445416eb7d1131072f5d2a84855",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 34,
+        "y": 39,
+        "width": 443,
+        "height": 443
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r08c1",
@@ -6993,10 +7635,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 24576,
-      "sha256": "24d5fcc26aa29f390afd4b1eee6f7cbfa9cd211f2bb658daeed0e6be11933ff8",
+      "byteLength": 24550,
+      "sha256": "b04bddd0da34e56fa72ef4a5d07040417eb02f2dd6c4eea872c1ec674b8d9652",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 35,
+        "y": 40,
+        "width": 442,
+        "height": 442
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r08c2",
@@ -7017,10 +7665,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 11308,
-      "sha256": "bcbf34e0c18116d616cc5982da8ec5bc6cabae69eec64c2862a276accae4ba61",
+      "byteLength": 10986,
+      "sha256": "f038a8117d728e6a5e2869e7620ca82843ad26f6e6a8e8084a7bc5449d78e4c4",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 34,
+        "y": 39,
+        "width": 443,
+        "height": 443
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r09c1",
@@ -7041,10 +7695,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 7178,
-      "sha256": "e6d91b0623cb45fd6b2ae53014764102361d51f9de6c2aea36746a63dcc00533",
+      "byteLength": 6418,
+      "sha256": "c778b982a2239f2fb04cf7690e1d9a0e19e158e4df657761a7bff031d3d2709f",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 46,
+        "y": 65,
+        "width": 419,
+        "height": 419
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r09c2",
@@ -7065,10 +7725,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 4672,
-      "sha256": "6ec1f56cf940158c1ba3ea992ff95fc216fc20965c0143080847179bbb78fecc",
+      "byteLength": 3634,
+      "sha256": "daf4477a75eea14fd8d2df1be3b3f5e5c5db302131538e9531c44066ceb24a9b",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 46,
+        "y": 65,
+        "width": 419,
+        "height": 419
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r10c1",
@@ -7089,10 +7755,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 10350,
-      "sha256": "8fb9cb76d8de6ca744cab7a8fca31ec030d2f07457595fcf8174ec09621150d9",
+      "byteLength": 9442,
+      "sha256": "d0c79bc235abe4b0d5459c42fb6856c5cf5ece94791f8b770ff6cf8e3f2181ae",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 48,
+        "y": 68,
+        "width": 416,
+        "height": 416
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r10c2",
@@ -7113,10 +7785,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 7544,
-      "sha256": "0d9feb7938dd8557301309ce1079c9996adb1c9b6b817e6baa9a7397184de98c",
+      "byteLength": 5808,
+      "sha256": "eefd539d7ac58b6484cbf4970a13be71ba3dec6fa80fc6743e916f2cb6e7d526",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 48,
+        "y": 69,
+        "width": 415,
+        "height": 415
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r11c1",
@@ -7137,10 +7815,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 9764,
-      "sha256": "f8904605115e1254821bc802b4cede75871e34d0a95a2475c74395d920421104",
+      "byteLength": 8760,
+      "sha256": "05d496774db66ebadcc13f2c2cb4aa21b48a39aa19c3367f18014fa443f296d0",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 49,
+        "y": 70,
+        "width": 414,
+        "height": 414
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r11c2",
@@ -7161,10 +7845,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 10066,
-      "sha256": "179a1195a61256f62c06a04e73ee29abefc32320e79470c7d02f74e07afa2176",
+      "byteLength": 9328,
+      "sha256": "686781e6b73579652f2e37d794d8d42df05ccc4f8fac8cdee7dfdde8737611b1",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 49,
+        "y": 70,
+        "width": 414,
+        "height": 414
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r12c1",
@@ -7185,10 +7875,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 5096,
-      "sha256": "f0f1de5c5831b573bad2b6b83fb4960387671dcdd81d803dcadff5fb962461d1",
+      "byteLength": 4138,
+      "sha256": "449cda75075e6a2cb40e038ab11eb467d9cdea9bc288f12f571d0de68e3e24b0",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 49,
+        "y": 70,
+        "width": 414,
+        "height": 414
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r12c2",
@@ -7209,10 +7905,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 4014,
-      "sha256": "e963406c18cec8d0a727053475b2cb2a5c0da05c83a9990634d9f1c3ac902b86",
+      "byteLength": 3120,
+      "sha256": "f8bef061ce9a8fe1e358cddf81749404fd02ea85124ff3655422d0c93cbfef51",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 49,
+        "y": 70,
+        "width": 414,
+        "height": 414
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r13c1",
@@ -7233,10 +7935,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 9586,
-      "sha256": "410601e952896ed4f620a3ac77794e755bba5605468652823362b646ef5caa4e",
+      "byteLength": 8912,
+      "sha256": "d9ea8d1e43cde4a2eeda3b95e07c65a47de515c5f93e6434cdc95e0ba149ab41",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 51,
+        "y": 74,
+        "width": 410,
+        "height": 410
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r13c2",
@@ -7257,10 +7965,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 4618,
-      "sha256": "ea655e1491d5cbae557f250e48c15b3d83c921a83310d5e2dcb62bd3c67bbd2c",
+      "byteLength": 3330,
+      "sha256": "9bcdb126bc9085b1faf59e51adb3af6837a99f80fbee3471cdf0cc0aaca9f1b5",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 51,
+        "y": 74,
+        "width": 410,
+        "height": 410
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r14c1",
@@ -7281,10 +7995,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 10044,
-      "sha256": "c4ef5d248af40736391c96dca6993d4252cd12c2f39e2724d21994faf69474a0",
+      "byteLength": 9304,
+      "sha256": "43767ae84ff4bb85ad29c8d1fe224505c487b0549a8a61f27e206b1019669994",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 51,
+        "y": 74,
+        "width": 410,
+        "height": 410
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r14c2",
@@ -7305,10 +8025,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8694,
-      "sha256": "e9b3522f6ecd63ecb3148c59ea0c4706f51688b755785b556e2f6241d947f156",
+      "byteLength": 7856,
+      "sha256": "6c108bb5885830ac5a0fd546d87e70e77bd7c224a66845e60930204223845829",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 51,
+        "y": 74,
+        "width": 410,
+        "height": 410
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r15c1",
@@ -7329,10 +8055,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 5486,
-      "sha256": "7f1c1bddfd884b419531c7802188e0f116c82b41938ab9a8c47eab073fbdb546",
+      "byteLength": 4160,
+      "sha256": "0aa309ff47ae7f9c98c754b09c5965c2ab7a169fc86d4026fc7a227cf8fabc1e",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 51,
+        "y": 74,
+        "width": 410,
+        "height": 410
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r15c2",
@@ -7353,10 +8085,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8768,
-      "sha256": "3e3f71a42c4a1cef45fa31e3fe3407938018d214799ab845a15a3161ab91d777",
+      "byteLength": 8314,
+      "sha256": "4448c4d74368274c137a30ba11caf636d9e6c86dc7dcbec4fcb8c045ae826562",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 51,
+        "y": 74,
+        "width": 410,
+        "height": 410
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r16c1",
@@ -7377,10 +8115,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8400,
-      "sha256": "b4480c29c6fc7592030fa1d0c245e191416d33918dbfb2012e5c4acd11f879ec",
+      "byteLength": 7808,
+      "sha256": "dd6b0dc4f412c83de96a0f3d2179bd9f6f7b05c14192d16f5a96ed4a94e2c648",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 53,
+        "y": 78,
+        "width": 406,
+        "height": 406
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r16c2",
@@ -7401,10 +8145,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 9296,
-      "sha256": "8296b2f36121a330e7db3d0b97e3e31645a72791f1d85df03e978e0188105fc9",
+      "byteLength": 8242,
+      "sha256": "cddd0130b969fb058d2ac29237bd7320b66e98af1a4e9d0ad32f246f5801aaf6",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 54,
+        "y": 81,
+        "width": 403,
+        "height": 403
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r17c1",
@@ -7425,10 +8175,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 10180,
-      "sha256": "f70e8452b53949deccf59d13a2dd54ffc444cdd0d0a8ca611d7db59675edeffc",
+      "byteLength": 9684,
+      "sha256": "8ce813de53f0a6931832ca25d22d7619bf53c483dda6382c313f5e41c387f749",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 55,
+        "y": 83,
+        "width": 402,
+        "height": 402
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r17c2",
@@ -7449,10 +8205,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 6876,
-      "sha256": "ce70e60315864aa2c853229388daff4e0e1241d5710add1d8fed2ae9e6e39865",
+      "byteLength": 5314,
+      "sha256": "209ddf4848164ee34cc1264a1d39e50ccbc3a9644161cc3ef9e788cbe459b459",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 54,
+        "y": 82,
+        "width": 403,
+        "height": 403
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r18c1",
@@ -7473,10 +8235,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 13938,
-      "sha256": "3eb5cd845ea0aeb4a46dfeab7d8b52adaf1bbd468b8554cc1b927b99ce2351a7",
+      "byteLength": 13038,
+      "sha256": "0a3e6f8f1947814cb04e74be0163922632c5fe266f592932e4268c8a1048c229",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 55,
+        "y": 83,
+        "width": 402,
+        "height": 402
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r18c2",
@@ -7497,10 +8265,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8932,
-      "sha256": "4a54e1a098fb09965264d5eb21f5c09ab279d3f098991b3ba84859d5c5dc884d",
+      "byteLength": 8420,
+      "sha256": "01040952379362f7a6463e0d02f8c3b6fed2923cabc381f32d34192a622d1aad",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 55,
+        "y": 83,
+        "width": 402,
+        "height": 402
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r19c1",
@@ -7521,10 +8295,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 13890,
-      "sha256": "744b9a780c8f82466b30ed312a58955e6d56f48d558569e0346ff6151053d047",
+      "byteLength": 12886,
+      "sha256": "96ca3861ac3d1af466b08c4fcfcdf03e9f77f4254e00d70e963573aa637276c6",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 56,
+        "y": 85,
+        "width": 400,
+        "height": 400
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r19c2",
@@ -7545,10 +8325,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 10944,
-      "sha256": "16090243c251633660e1e719412082094c8ae0be113eac444fcfdf0fcf01cfe8",
+      "byteLength": 9960,
+      "sha256": "557b210ead2be4900ca504bc506d8e596cf632a9b0f8a3ae598cc5767544357d",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 56,
+        "y": 86,
+        "width": 399,
+        "height": 399
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r20c1",
@@ -7569,10 +8355,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 7736,
-      "sha256": "feeb24438aa37e39cc45a5eb61016462ef22d617b63dfdbabe36b646f4c0e904",
+      "byteLength": 6830,
+      "sha256": "61f47611928816519478ef0527d6948139503f236b64d998cbc54d7e9492192b",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 57,
+        "y": 88,
+        "width": 397,
+        "height": 397
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r20c2",
@@ -7593,10 +8385,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8756,
-      "sha256": "ecaf00b224982acc66e2823d078daf69f3618412466ec81226aa621fca67444d",
+      "byteLength": 8324,
+      "sha256": "5fadc86dbdf3b7645b797ce02a4da26fff8073572aecba9fc78cecd98d6224a3",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 57,
+        "y": 87,
+        "width": 398,
+        "height": 398
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r21c1",
@@ -7617,10 +8415,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 2190,
-      "sha256": "37c563d4494f6f839fb62787ed7b831e267b45e8fe1f64bf6008b7b0035af08a",
+      "byteLength": 1432,
+      "sha256": "0ccc265f60d29b9f292f7b0f0e215fbe67cf9dd6cc016d82a17d64e023fbaeee",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 57,
+        "y": 88,
+        "width": 397,
+        "height": 397
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r21c2",
@@ -7641,10 +8445,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 12920,
-      "sha256": "cd8877c9bc2ee302df17d42c998105ac42a385e0fed5eb15e2347f9882e63d4c",
+      "byteLength": 12110,
+      "sha256": "98d0f4320562350856e9a73815695bd9cf23933a94bcd4b46f90aba5078fbe25",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 58,
+        "y": 89,
+        "width": 396,
+        "height": 396
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r22c1",
@@ -7665,10 +8475,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 6414,
-      "sha256": "9eca2fd04193b574365105d06ec55f6501ab4c34688cd5716b521ea10594ee3b",
+      "byteLength": 5654,
+      "sha256": "f43ed6832f620b6d987a1b64e860d053cbd6433e2f5209e6a67c607c3070c8a5",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 59,
+        "y": 92,
+        "width": 393,
+        "height": 393
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r22c2",
@@ -7689,10 +8505,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8652,
-      "sha256": "423d684ee54346f795cc95eabdfd19e509e9f1f565fee64b8fb417d53076560a",
+      "byteLength": 7672,
+      "sha256": "34b68e9c88740f423816b2284b694c9f88b09475c591f170edf005caec0c5ef2",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 59,
+        "y": 92,
+        "width": 393,
+        "height": 393
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r23c1",
@@ -7713,10 +8535,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 6380,
-      "sha256": "3f50ccfc8e5f0c3bef8cc3803bc75d9784d624f0473d59b636e6aa6510bdcb6a",
+      "byteLength": 5276,
+      "sha256": "0468fcf6c920fc45abad9a7dc3e538a078f009bb9a151f97a7aee311f73526bb",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 59,
+        "y": 92,
+        "width": 393,
+        "height": 393
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r23c2",
@@ -7737,10 +8565,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 1956,
-      "sha256": "3089b286e9f51b4160fec1908e139ceac1cdf37bc77ea29f45fef4ef9364bf50",
+      "byteLength": 1166,
+      "sha256": "e72ffb508e43740ebba5b8414239999681ad50323ed77f8f9aac84d75670f790",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 59,
+        "y": 92,
+        "width": 393,
+        "height": 393
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r24c1",
@@ -7761,10 +8595,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 5458,
-      "sha256": "0c703698d1ebaaeb1aabc6756836ddbd97e45ef28f9108357a2fbb3db2c7127a",
+      "byteLength": 4018,
+      "sha256": "6089f1ff10f3cb3d21ec8c047a9df46e614ff6965b5b093acf5777cc90419922",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 60,
+        "y": 93,
+        "width": 392,
+        "height": 392
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r24c2",
@@ -7785,10 +8625,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 5392,
-      "sha256": "3c772f7c8a28471d3e1ae37d2a51afa6f217e26f90c3c78ea38d2b82f60f3af4",
+      "byteLength": 4386,
+      "sha256": "51c506034d90967838b3dc505c79e09d827142a43d35c3bd2aec51e197664f88",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 60,
+        "y": 93,
+        "width": 392,
+        "height": 392
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r25c1",
@@ -7809,10 +8655,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 7728,
-      "sha256": "4c7c9ae54531b2991037377d9e5c849a0fdb888299b523608d8b677ba5c12944",
+      "byteLength": 7292,
+      "sha256": "6a321e88621e9a51d2069fd5cb463225206593336c3ad05fea58a375f9f95bee",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 60,
+        "y": 94,
+        "width": 391,
+        "height": 391
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r25c2",
@@ -7833,10 +8685,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 10786,
-      "sha256": "ac1a14a26eee650a6cfa776dd4f9adfb0b30e6b6559fd6f944d5965b7fb742f9",
+      "byteLength": 10044,
+      "sha256": "be7518292dd155df80018346277c7d2a646c5bc9bf32318d8af00c401dd3f24f",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 58,
+        "y": 90,
+        "width": 395,
+        "height": 395
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r26c1",
@@ -7857,10 +8715,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 9092,
-      "sha256": "456e0440af87b6296c1eb659b4d1cba1b6ea474d7ccda5ca7c9fc4aee02d4cf7",
+      "byteLength": 7836,
+      "sha256": "7ca9577c0b068b8e7955a1207e5a171651ecc63e8e407fd20ca3c8bca728f471",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 61,
+        "y": 96,
+        "width": 389,
+        "height": 389
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r26c2",
@@ -7881,10 +8745,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8378,
-      "sha256": "0fada20466570909f18063d44775b11acd342bd88ccf1380f1f88ec98cd045aa",
+      "byteLength": 7582,
+      "sha256": "d3c1fb7d177ecb4470c2a7d7929ed027f037ee40815095edf4555932dc17f706",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 58,
+        "y": 90,
+        "width": 395,
+        "height": 395
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r27c1",
@@ -7905,10 +8775,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8196,
-      "sha256": "dc26a87b5bb73bfa8522c3810c48eec2355eaecbd5cf833b5501473fcca1742d",
+      "byteLength": 7418,
+      "sha256": "db9a8d3839c68a6ee195e0d439af65ca005fca2e3f6af783f859fb4368efb9f4",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 62,
+        "y": 97,
+        "width": 388,
+        "height": 388
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r27c2",
@@ -7929,10 +8805,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 7864,
-      "sha256": "f567a0090ee7d3cc8202bc618aa72e1f1b7287bc016d8549f506a761fc500d5d",
+      "byteLength": 7000,
+      "sha256": "92c73e55f386a8d2487dbfb8a7707bd4fefc4a1fc4d0270ec4cc3e280a5a3534",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 59,
+        "y": 92,
+        "width": 393,
+        "height": 393
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r28c1",
@@ -7953,10 +8835,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 9850,
-      "sha256": "5ed7852b908bfab9b46c503aab540bee901f3aef4c11cf0689838703932afff5",
+      "byteLength": 9018,
+      "sha256": "f1f48770786fd32adcfbe11cc41dcdf5262e37251b8ff99f9dc6678d4f221c99",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 62,
+        "y": 98,
+        "width": 388,
+        "height": 388
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r28c2",
@@ -7977,10 +8865,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 8046,
-      "sha256": "030b3a89126557f57b7db89f63def99bb6a4eefc49f93d1517159dcdcf6cbbf2",
+      "byteLength": 7172,
+      "sha256": "3a7f8ee4a0dbb3db9f5e8c4a90293fb544539399c07da32f80de7e9a6bd2384f",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 61,
+        "y": 95,
+        "width": 390,
+        "height": 390
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r29c1",
@@ -8001,10 +8895,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 2530,
-      "sha256": "8ad85ecec0b4284abc09a06a040a21c409a9dc2eb75150b7864373db2c5931ba",
+      "byteLength": 1822,
+      "sha256": "824c71c6d70feeec23094273e9d8ce588f9c19d6da25944e3a5fd8862e1f91fe",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 62,
+        "y": 99,
+        "width": 387,
+        "height": 387
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r29c2",
@@ -8025,10 +8925,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 5710,
-      "sha256": "3248d4bf4f12c6da39c721521c40c68f66896344949589c99b474f617a151ff5",
+      "byteLength": 5228,
+      "sha256": "0f876ed7684ef9648af859a0c6ab4ba6be34273d26b18dd95c06d37b89b6417a",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 61,
+        "y": 95,
+        "width": 390,
+        "height": 390
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r30c1",
@@ -8049,10 +8955,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 4632,
-      "sha256": "311218ce4c53c629e3c2f0c90301fa259a6ce18744582494164955868866f510",
+      "byteLength": 3932,
+      "sha256": "4744cb8455359e5d974b399f38977f28fac141c43bca120ed47bcf853cf46744",
       "replaceable": true,
-      "reviewRequired": true
+      "reviewRequired": true,
+      "outputCleanupCrop": {
+        "x": 64,
+        "y": 102,
+        "width": 384,
+        "height": 384
+      }
     },
     {
       "variantId": "microfiber-p17-kj-p17-r30c2",
