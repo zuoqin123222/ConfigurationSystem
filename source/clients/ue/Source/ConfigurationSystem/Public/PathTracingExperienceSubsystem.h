@@ -7,6 +7,7 @@
 #include "PathTracingExperienceSubsystem.generated.h"
 
 class FPathTracingExperienceViewExtension;
+class APathTracingLightingRig;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FPathTracingProgressChanged, int32, CurrentSample, int32, TargetSamples);
@@ -76,6 +77,13 @@ public:
 	UFUNCTION(BlueprintPure, Category="Configurator|Path Tracing")
 	int32 GetTargetSamples() const { return TargetSamples; }
 
+	/** 记录当前展厅环境；PT 已启用时立即刷新专用 Rig。 */
+	UFUNCTION(BlueprintCallable, Category="Configurator|Path Tracing")
+	bool RefreshLightingRig(int32 EnvironmentIndex, FString& OutFailureReason);
+
+	UFUNCTION(BlueprintPure, Category="Configurator|Path Tracing")
+	APathTracingLightingRig* GetLightingRig() const { return LightingRig; }
+
 	UPROPERTY(BlueprintAssignable, Category="Configurator|Path Tracing")
 	FPathTracingProgressChanged OnProgressChanged;
 
@@ -94,17 +102,22 @@ public:
 private:
 	bool ValidatePathTracingSupport(FString& OutFailureReason) const;
 	bool ApplyViewMode(bool bEnabled, FString& OutFailureReason);
+	bool EnsureLightingRig(FString& OutFailureReason);
+	void DestroyLightingRig();
 	void StartPathTracingWarmup();
 	void SetWarmupState(EPathTracingWarmupState NewState);
 	void FailWarmup(const FString& FailureReason);
 
 	TSharedPtr<FPathTracingExperienceViewExtension, ESPMode::ThreadSafe> ViewExtension;
+	UPROPERTY(Transient)
+	TObjectPtr<APathTracingLightingRig> LightingRig;
 	FRenderCommandFence WarmupRenderFence;
 	EPathTracingWarmupState WarmupState = EPathTracingWarmupState::Idle;
 	double WarmupStartSeconds = 0.0;
 	FString WarmupFailureReason;
 	bool bPathTracingRequested = false;
 	bool bPathTracingEnabled = false;
+	int32 LightingEnvironmentIndex = 0;
 	int32 CurrentSample = 0;
 	int32 TargetSamples = 0;
 };
