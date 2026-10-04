@@ -8,6 +8,7 @@ import {
   getUeBridge,
   getUePresentationState,
   isUeConfiguratorHeaderState,
+  setUeCameraId,
   syncUeConfiguratorCategory,
   syncUeConfiguratorHeaderState,
   triggerUeConfiguratorHeaderAction,
@@ -61,14 +62,35 @@ describe('受限 UE bridge', () => {
     expect(applyUeConfiguration({}, {}, {})).toBe(false)
   })
 
-  it('只允许四个固定阶段通过 bridge 联动选配右栏', async () => {
+  it('允许目录阶段 ID 通过 bridge 联动并拒绝非法 ID', async () => {
     const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
     const bridge = { setconfiguratorcategory }
 
     await expect(syncUeConfiguratorCategory(bridge, 'interior')).resolves.toBe(true)
-    await expect(syncUeConfiguratorCategory(bridge, 'unknown')).resolves.toBe(false)
+    await expect(syncUeConfiguratorCategory(bridge, 'Invalid Category')).resolves.toBe(false)
     expect(setconfiguratorcategory).toHaveBeenCalledOnce()
     expect(setconfiguratorcategory).toHaveBeenCalledWith('interior')
+  })
+
+  it('语义相机优先调用 setcameraid，入口缺失时按 legacyIndex 调用 setcamera', async () => {
+    const bridge = {
+      setcameraid: vi.fn().mockResolvedValue(true),
+      setcamera: vi.fn().mockResolvedValue(true),
+    }
+    const legacyBridge = {
+      setcamera: vi.fn().mockResolvedValue(true),
+    }
+
+    await expect(setUeCameraId(bridge, 'front-cabin', 5)).resolves.toBe(true)
+    await expect(setUeCameraId(bridge, 4)).resolves.toBe(true)
+    await expect(setUeCameraId(legacyBridge, 'wheel', 2)).resolves.toBe(true)
+    await expect(setUeCameraId(legacyBridge, 'seat', null)).resolves.toBe(false)
+    await expect(setUeCameraId(bridge, 'Invalid Camera')).resolves.toBe(false)
+
+    expect(bridge.setcameraid).toHaveBeenCalledWith('front-cabin')
+    expect(bridge.setcamera).toHaveBeenCalledWith(4)
+    expect(legacyBridge.setcamera).toHaveBeenCalledOnce()
+    expect(legacyBridge.setcamera).toHaveBeenCalledWith(2)
   })
 
   it('只允许完整合法的 Header 状态通过 bridge 转发', async () => {
@@ -128,9 +150,10 @@ describe('受限 UE bridge', () => {
     expect(triggerconfiguratorheaderaction.mock.calls).toEqual([['save'], ['share']])
   })
 
-  it('await CEF Promise 并只把七类显式命令路由到对应的 bridge 方法', async () => {
+  it('await CEF Promise 并把语义镜头及其余显式命令路由到对应 bridge 方法', async () => {
     const bridge = {
       setcamera: vi.fn().mockResolvedValue(true),
+      setcameraid: vi.fn().mockResolvedValue(true),
       setanimationenabled: vi.fn().mockResolvedValue(true),
       setlightpreset: vi.fn().mockResolvedValue(true),
       setrendermode: vi.fn().mockResolvedValue(true),
@@ -139,6 +162,11 @@ describe('受限 UE bridge', () => {
       setfullscreen: vi.fn().mockResolvedValue(true),
     }
 
+    await expect(executeUeControl(bridge, {
+      type: 'camera',
+      cameraId: 'front-cabin',
+      legacyIndex: 5,
+    })).resolves.toBe(true)
     await expect(executeUeControl(bridge, { type: 'camera', cameraIndex: 5 })).resolves.toBe(true)
     await expect(executeUeControl(bridge, { type: 'animation', enabled: true })).resolves.toBe(true)
     await expect(executeUeControl(bridge, { type: 'light', preset: 'outdoor' })).resolves.toBe(true)
@@ -147,6 +175,7 @@ describe('受限 UE bridge', () => {
     await expect(executeUeControl(bridge, { type: 'reset' })).resolves.toBe(true)
     await expect(executeUeControl(bridge, { type: 'fullscreen', enabled: true })).resolves.toBe(true)
 
+    expect(bridge.setcameraid).toHaveBeenCalledWith('front-cabin')
     expect(bridge.setcamera).toHaveBeenCalledWith(5)
     expect(bridge.setanimationenabled).toHaveBeenCalledWith(true)
     expect(bridge.setlightpreset).toHaveBeenCalledWith('outdoor')
@@ -191,7 +220,7 @@ describe('受限 UE bridge', () => {
 
   it('读取并校验 UE 展示状态 JSON', async () => {
     const state = {
-      cameraIndex: 4,
+      cameraId: 'front-cabin',
       animationEnabled: true,
       lightPreset: 'outdoor',
       renderMode: 'path-tracing',
@@ -205,5 +234,21 @@ describe('受限 UE bridge', () => {
     await expect(getUePresentationState(bridge)).resolves.toEqual(state)
     bridge.getpresentationstatejson.mockResolvedValue('{"cameraIndex":99}')
     await expect(getUePresentationState(bridge)).resolves.toBeNull()
+  })
+
+  it('继续读取只有 cameraIndex 的旧 UE 展示状态', async () => {
+    const state = {
+      cameraIndex: 4,
+      animationEnabled: false,
+      lightPreset: 'studio',
+      renderMode: 'realtime',
+      quality: 'high',
+      fullscreen: false,
+    } as const
+    const bridge = {
+      getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify(state)),
+    }
+
+    await expect(getUePresentationState(bridge)).resolves.toEqual(state)
   })
 })

@@ -18,6 +18,7 @@ class CONFIGURATIONSYSTEM_API UConfiguratorWebBridge final : public UObject
 public:
 	void Initialize(UConfiguratorPanel* InOwner);
 	static bool IsSupportedCameraIndex(int32 CameraIndex);
+	static bool IsSupportedCameraId(const FString& CameraId);
 	static bool IsSupportedLightPreset(const FString& Preset);
 	static bool IsSupportedRenderMode(const FString& Mode);
 	static bool IsSupportedQualityLevel(const FString& Quality);
@@ -30,6 +31,8 @@ public:
 	FString GetPresentationStateJson() const;
 	UFUNCTION()
 	bool SetCamera(int32 CameraIndex);
+	UFUNCTION()
+	bool SetCameraId(const FString& CameraId);
 	UFUNCTION()
 	bool SetAnimationEnabled(bool bEnabled);
 	UFUNCTION()

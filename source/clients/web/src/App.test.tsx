@@ -106,19 +106,24 @@ describe('App v2', () => {
 
     expect(screen.getByText('正在加载 SC01 草案目录…')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'SC01 定制' })).toBeInTheDocument()
-    const stages = screen.getByRole('navigation', { name: '选配阶段' })
-    expect(within(stages).getAllByRole('button')).toHaveLength(4)
-    expect(within(stages).getByRole('button', { name: '外饰' })).toHaveAttribute('aria-current', 'step')
-    expect(within(stages).getByRole('button', { name: '其他个性化' })).toBeInTheDocument()
+    const categories = screen.getByRole('region', { name: '分类筛选' })
+    expect(within(categories).getAllByRole('button')).toHaveLength(4)
+    expect(within(categories).getByRole('button', { name: '外饰' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(categories).getByRole('button', { name: '个性化' })).toBeInTheDocument()
     expect(screen.getByText('参考总价')).toBeInTheDocument()
     expect(screen.getByText('¥229,800')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '保存' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '分享' })).toBeInTheDocument()
     expect(screen.getByText('未同步更改')).toBeInTheDocument()
+    const stageNavigation = screen.getByRole('navigation', { name: '选配阶段' })
+    expect(within(stageNavigation).getAllByRole('button').map((button) => button.textContent))
+      .toEqual(['01外饰', '02内饰', '03性能', '04个性化'])
+    expect(within(stageNavigation).getByRole('button', { name: '外饰' }).querySelector('img'))
+      .toHaveAttribute('src', '/category-exterior.svg')
     expect(screen.queryByText('DRAFT · 不可报价')).not.toBeInTheDocument()
     expect(document.querySelector('.brand')).toBeNull()
     expect(document.querySelector('.vehicle-title')).toBeNull()
-    expect(screen.queryByRole('region', { name: '阶段筛选' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '分类筛选' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '部件筛选' }))
       .toHaveTextContent('车漆车架轮毂卡钳')
     expect(screen.queryByText(/当前材质|可选材质|款可选/)).not.toBeInTheDocument()
@@ -173,7 +178,7 @@ describe('App v2', () => {
     expect(screen.queryByRole('group', { name: '车辆视角' })).not.toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '画质设置' })).not.toBeInTheDocument()
-    expect(screen.getByRole('region', { name: '阶段筛选' }))
+    expect(screen.getByRole('region', { name: '分类筛选' }))
       .toHaveTextContent('外饰内饰性能个性化')
     expect(screen.getByRole('region', { name: '部件筛选' }))
       .toHaveTextContent('车漆车架轮毂卡钳')
@@ -212,13 +217,13 @@ describe('App v2', () => {
     expect(document.querySelector('#ue-srgb-to-linear')).not.toBeNull()
   })
 
-  it('controls 视图只渲染透明体验控制层且不请求目录', async () => {
+  it('controls 视图请求目录并渲染透明体验控制层', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=controls')
     const fetchMock = mockApi()
     window.ue = {
       uebridge: {
         getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
-          cameraIndex: 1,
+          cameraId: 'wheel',
           animationEnabled: false,
           lightPreset: 'studio',
           renderMode: 'realtime',
@@ -240,23 +245,31 @@ describe('App v2', () => {
     expect(screen.getByRole('button', { name: '画质' })).toBeInTheDocument()
     expect(screen.queryByRole('complementary', { name: '车辆选配' })).not.toBeInTheDocument()
     expect(document.body).toHaveClass('controls-document')
-    expect(fetchMock).not.toHaveBeenCalled()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v2/catalog',
+      expect.objectContaining({ headers: { Accept: 'application/json' } }),
+    ))
   })
 
-  it('header 视图展示顶部标题和四阶段，并通过受限 bridge 联动右栏', async () => {
+  it('header 视图从目录渲染阶段导航并可切换', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=header')
-    const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
     const triggerconfiguratorheaderaction = vi.fn().mockResolvedValue(true)
+    const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
     window.ue = {
-      uebridge: { setconfiguratorcategory, triggerconfiguratorheaderaction },
+      uebridge: { triggerconfiguratorheaderaction, setconfiguratorcategory },
     }
     const user = userEvent.setup()
+    mockApi()
     render(<App />)
 
     expect(screen.getByRole('heading', { name: 'SC01 定制' })).toBeInTheDocument()
-    const stages = screen.getByRole('navigation', { name: '选配阶段' })
-    expect(within(stages).getAllByRole('button')).toHaveLength(4)
-    expect(stages.querySelectorAll('.stage-indicator')).toHaveLength(1)
+    const navigation = await screen.findByRole('navigation', { name: '选配阶段' })
+    expect(within(navigation).getAllByRole('button').map((button) => button.textContent))
+      .toEqual(['01外饰', '02内饰', '03性能', '04个性化'])
+    expect(within(navigation).getByRole('button', { name: '内饰' }).querySelector('img'))
+      .toHaveAttribute('src', '/category-interior.svg')
+    await user.click(within(navigation).getByRole('button', { name: '内饰' }))
+    expect(setconfiguratorcategory).toHaveBeenCalledWith('interior')
 
     fireEvent(window, new CustomEvent('ue-configurator-header-state', {
       detail: {
@@ -273,15 +286,13 @@ describe('App v2', () => {
     await user.click(screen.getByRole('button', { name: '分享' }))
     expect(triggerconfiguratorheaderaction.mock.calls).toEqual([['save'], ['share']])
 
-    const interior = within(stages).getByRole('button', { name: /内饰/ })
-    await user.click(interior)
-    expect(setconfiguratorcategory).toHaveBeenCalledWith('interior')
-    expect(interior).toHaveAttribute('aria-current', 'step')
     expect(document.body).toHaveClass('header-document')
   })
 
-  it('embedded 右栏响应顶部阶段事件，且不再包含保存栏、汇总和 canonical 调试信息', async () => {
+  it('embedded 右栏响应顶部阶段事件并触发目录阶段镜头', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    const setcameraid = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { setcameraid } }
     mockApi()
     render(<App />)
     const panel = await screen.findByRole('complementary', { name: '车辆选配' })
@@ -290,6 +301,7 @@ describe('App v2', () => {
 
     expect(await within(screen.getByRole('region', { name: '部件筛选' }))
       .findByRole('button', { name: '方向盘' })).toBeInTheDocument()
+    await waitFor(() => expect(setcameraid).toHaveBeenCalledWith('front-cabin'))
     const scrollRegion = panel.querySelector('.panel-scroll')
     const summary = panel.querySelector('.summary')
     expect(scrollRegion).not.toBeNull()
@@ -326,7 +338,29 @@ describe('App v2', () => {
     })
   })
 
-  it('阶段、部件、子项联动，轮毂三项纵排且个性化 surface 提升为部件', async () => {
+  it('embedded 页签按目录 cameraId 调用语义 setcameraid', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    const setcameraid = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { setcameraid } }
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
+      .getByRole('button', { name: '轮毂' }))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('wheel'))
+
+    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
+      .getByRole('button', { name: '内饰' }))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('front-cabin'))
+
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
+      .getByRole('button', { name: '座椅' }))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('seat'))
+  })
+
+  it('分类、部件、子项由目录元数据联动且 wheel layout 为 stack', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
@@ -347,23 +381,23 @@ describe('App v2', () => {
     expect(magnesiumOption)
       .toHaveAttribute('aria-pressed', 'true')
 
-    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
     expect(await screen.findByText('Black UF7')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '奥司维材质' })).toHaveTextContent('Black UF7')
-    await user.click(screen.getByRole('button', { name: /Black UF7，免费/ }))
-    expect(screen.getByRole('button', { name: /Black UF7，免费/ }))
+    await user.click(screen.getByRole('button', { name: /Black UF7，奥司维，¥1,180/ }))
+    expect(screen.getByRole('button', { name: /Black UF7，奥司维，¥1,180/ }))
       .toHaveAttribute('aria-pressed', 'true')
 
-    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
-      .getByRole('button', { name: '其他个性化' }))
+    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
+      .getByRole('button', { name: '个性化' }))
     const personalizationParts = await screen.findByRole('region', { name: '部件筛选' })
-    expect(personalizationParts).toHaveTextContent(
+    expect(personalizationParts).toHaveTextContent('个性化')
+    expect(screen.getByRole('region', { name: '子项筛选' })).toHaveTextContent(
       '内饰全车黑色喷漆件缝线徽标中面板横饰板换挡刹车脚垫',
     )
-    expect(screen.queryByRole('region', { name: '子项筛选' })).not.toBeInTheDocument()
   })
 
   it('不为未声明 variant 色彩能力的付费材质选项展示色卡', async () => {
@@ -372,7 +406,7 @@ describe('App v2', () => {
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
-    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '座椅' }))
@@ -388,7 +422,7 @@ describe('App v2', () => {
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
-    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
@@ -446,13 +480,13 @@ describe('App v2', () => {
       .toBeInTheDocument()
   })
 
-  it('座椅背板使用满幅自定义取色并只额外开放亮面或雾面', async () => {
+  it('座椅背板自定义取色使用 option ui 默认参数且不包含专用控件', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
-    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '座椅' }))
@@ -463,12 +497,7 @@ describe('App v2', () => {
       .toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: /自定义取色，¥1,680/ }))
     const editor = screen.getByRole('region', { name: '自定义取色颜色' })
-    const finish = within(editor).getByRole('group', { name: '背板表面效果' })
-    expect(within(finish).getByRole('button', { name: '亮面' }))
-      .toHaveAttribute('aria-pressed', 'true')
-    await user.click(within(finish).getByRole('button', { name: '雾面' }))
-    expect(within(finish).getByRole('button', { name: '雾面' }))
-      .toHaveAttribute('aria-pressed', 'true')
+    expect(within(editor).queryByRole('group', { name: '背板表面效果' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /自定义取色，¥1,680/ }).querySelector('img'))
       .toHaveAttribute('src', '/sc01/option-icons/rainbow.svg')
   })
@@ -479,7 +508,7 @@ describe('App v2', () => {
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
-    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
       .getByRole('button', { name: '内饰' }))
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '座椅' }))

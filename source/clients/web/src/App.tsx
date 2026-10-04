@@ -9,6 +9,8 @@ import {
   saveConfiguration,
 } from './api'
 import {
+  cameraIdForSelection,
+  categoriesInUiOrder,
   componentsForCategory,
   createCanonicalKey,
   createDefaultPaintCustomization,
@@ -17,6 +19,7 @@ import {
   materialVariantsForOption,
   normalizeCustomizations,
   normalizeSelections,
+  optionsForSurface,
   supportsMaterialVariants,
   surfacesForComponent,
 } from './configurator'
@@ -32,7 +35,6 @@ import type {
 } from './types'
 import {
   applyUeConfiguration,
-  CONFIGURATOR_CATEGORIES,
   CONFIGURATOR_CATEGORY_EVENT,
   CONFIGURATOR_HEADER_ACTION_EVENT,
   CONFIGURATOR_HEADER_STATE_EVENT,
@@ -41,6 +43,7 @@ import {
   isUeConfiguratorHeaderState,
   syncUeConfiguratorCategory,
   syncUeConfiguratorHeaderState,
+  setUeCameraId,
   triggerUeConfiguratorHeaderAction,
   type UeConfiguratorCategory,
   type UeConfiguratorHeaderState,
@@ -74,48 +77,6 @@ function optionPrice(option: CatalogV2['options'][number]): string {
     return `¥${(option.pricing.unitPriceMinor / 100).toLocaleString('zh-CN')}`
   }
   return '价格待确认'
-}
-
-function colorSortKey(displayName: string, colorCode: string | null): string {
-  const value = `${displayName} ${colorCode ?? ''}`.toLowerCase()
-  const hues = [
-    ['黑', 'black'],
-    ['灰', 'grey', 'gray', '银', 'silver', '白', 'white'],
-    ['红', 'red', '酒红', 'burgundy'],
-    ['橙', 'orange'],
-    ['黄', 'yellow', '金', 'gold'],
-    ['绿', 'green'],
-    ['青', 'cyan', 'teal'],
-    ['蓝', 'blue'],
-    ['紫', 'purple', 'violet'],
-    ['粉', 'pink'],
-    ['棕', 'brown', '咖', 'tan', '米', 'beige'],
-  ]
-  const hueIndex = hues.findIndex((names) => names.some((name) => value.includes(name)))
-  return `${String(hueIndex < 0 ? 99 : hueIndex).padStart(2, '0')}:${value}`
-}
-
-const PREFERRED_DARK_VARIANTS: Record<string, string> = {
-  ultrasuede: 'ultrasuede-p6-uf7',
-  alcantara: 'alcantara-p4-9002',
-  leather: 'leather-p9-9743',
-  microfiber: 'microfiber-p16-np-3048',
-}
-
-const SEAT_SHELL_GLOSS_ROUGHNESS = 0.18
-const SEAT_SHELL_MATTE_ROUGHNESS = 0.68
-
-function sortMaterialVariants(
-  variants: CatalogV2['materialVariants'],
-  materialFamilyId: string,
-): CatalogV2['materialVariants'] {
-  const preferredId = PREFERRED_DARK_VARIANTS[materialFamilyId]
-  return variants.slice().sort((left, right) => {
-    if (left.variantId === preferredId) return -1
-    if (right.variantId === preferredId) return 1
-    return colorSortKey(left.displayName, left.colorCode)
-      .localeCompare(colorSortKey(right.displayName, right.colorCode), 'zh-CN')
-  })
 }
 
 function optionSwatch(option: CatalogV2['options'][number]): string {
@@ -200,7 +161,7 @@ function UeColorCorrected({ children }: { children: ReactNode }) {
 }
 
 function ConfiguratorHeader() {
-  const [categoryId, setCategoryId] = useState<UeConfiguratorCategory>('exterior')
+  const [categories, setCategories] = useState<CatalogV2['categories']>([])
   const [headerState, setHeaderState] = useState<UeConfiguratorHeaderState>({
     categoryId: 'exterior',
     referenceTotalMinor: 22980000,
@@ -211,93 +172,105 @@ function ConfiguratorHeader() {
   })
 
   useEffect(() => {
+    const controller = new AbortController()
     document.documentElement.classList.add('header-document')
     document.body.classList.add('header-document')
-    const handleCategory = (event: Event) => {
-      const nextCategory = (event as CustomEvent<string>).detail
-      if (CONFIGURATOR_CATEGORIES.some((category) => category.id === nextCategory)) {
-        setCategoryId(nextCategory as UeConfiguratorCategory)
-      }
-    }
     const handleHeaderState = (event: Event) => {
       const nextState = (event as CustomEvent<unknown>).detail
       if (isUeConfiguratorHeaderState(nextState)) {
         setHeaderState(nextState)
-        setCategoryId(nextState.categoryId)
       }
     }
-    window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
     window.addEventListener(CONFIGURATOR_HEADER_STATE_EVENT, handleHeaderState)
     void getUeConfiguratorHeaderState(getUeBridge(true)).then((state) => {
       if (state) {
         setHeaderState(state)
-        setCategoryId(state.categoryId)
       }
     })
+    void fetchCatalog(controller.signal).then((catalog) => {
+      const nextCategories = categoriesInUiOrder(catalog)
+      setCategories(nextCategories)
+      setHeaderState((current) => nextCategories.some(
+        (category) => category.categoryId === current.categoryId,
+      )
+        ? current
+        : { ...current, categoryId: nextCategories[0]?.categoryId ?? current.categoryId })
+    }).catch(() => {
+      // 顶栏状态与动作仍可在目录暂不可用时工作。
+    })
     return () => {
-      window.removeEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
+      controller.abort()
       window.removeEventListener(CONFIGURATOR_HEADER_STATE_EVENT, handleHeaderState)
       document.documentElement.classList.remove('header-document')
       document.body.classList.remove('header-document')
     }
   }, [])
 
-  const selectCategory = (nextCategory: UeConfiguratorCategory) => {
-    setCategoryId(nextCategory)
-    void syncUeConfiguratorCategory(getUeBridge(true), nextCategory)
-  }
-
   const triggerAction = (action: 'save' | 'share') => {
     void triggerUeConfiguratorHeaderAction(getUeBridge(true), action)
   }
 
+  const selectCategory = (categoryId: string) => {
+    if (!categories.some((category) => category.categoryId === categoryId)) return
+    setHeaderState((current) => ({ ...current, categoryId }))
+    void syncUeConfiguratorCategory(getUeBridge(true), categoryId)
+  }
+
   return (
     <ConfiguratorTopBar
-      categoryId={categoryId}
+      categories={categories}
       headerState={headerState}
-      onSelectCategory={selectCategory}
       onAction={triggerAction}
+      onSelectCategory={selectCategory}
     />
   )
 }
 
 function ConfiguratorTopBar({
-  categoryId,
+  categories,
   headerState,
-  onSelectCategory,
   onAction,
+  onSelectCategory,
   standalone = false,
 }: {
-  categoryId: string
+  categories: CatalogV2['categories']
   headerState: UeConfiguratorHeaderState
-  onSelectCategory: (categoryId: UeConfiguratorCategory) => void
   onAction: (action: 'save' | 'share') => void
+  onSelectCategory: (categoryId: string) => void
   standalone?: boolean
 }) {
   const activeStageIndex = Math.max(
     0,
-    CONFIGURATOR_CATEGORIES.findIndex((category) => category.id === categoryId),
+    categories.findIndex((category) => category.categoryId === headerState.categoryId),
   )
   return (
     <header className={`configurator-header ${standalone ? 'standalone-header' : ''}`}>
       <h1 className="brand-title" aria-label="SC01 定制">
         <strong>SC</strong><em>01</em><small>定制</small>
       </h1>
-      <nav aria-label="选配阶段">
-        <span
-          className={`stage-indicator stage-indicator-${activeStageIndex}`}
+      <nav
+        aria-label="选配阶段"
+        style={{ gridTemplateColumns: `repeat(${Math.max(categories.length, 1)}, minmax(0, 1fr))` }}
+      >
+        {categories.length > 0 && <span
+          className="stage-indicator"
           aria-hidden="true"
-        />
-        {CONFIGURATOR_CATEGORIES.map((category, index) => (
-          <div className="header-stage" key={category.id}>
+          style={{
+            width: `${100 / categories.length}%`,
+            transform: `translateX(${activeStageIndex * 100}%)`,
+          }}
+        />}
+        {categories.map((category, index) => (
+          <div className="header-stage" key={category.categoryId}>
             <button
-              className={categoryId === category.id ? 'active' : ''}
-              aria-label={category.label}
-              aria-current={categoryId === category.id ? 'step' : undefined}
-              onClick={() => onSelectCategory(category.id)}
+              className={headerState.categoryId === category.categoryId ? 'active' : ''}
+              aria-label={category.displayName}
+              aria-current={headerState.categoryId === category.categoryId ? 'step' : undefined}
+              onClick={() => onSelectCategory(category.categoryId)}
             >
               <span>{String(index + 1).padStart(2, '0')}</span>
-              {category.label}
+              {category.ui?.iconUrl && <img src={category.ui.iconUrl} alt="" />}
+              {category.displayName}
             </button>
           </div>
         ))}
@@ -491,7 +464,9 @@ function Configurator({
   offlineDraft,
   embedded,
 }: ConfiguratorProps) {
-  const [categoryId, setCategoryId] = useState(catalog.categories[0]?.categoryId ?? '')
+  const [categoryId, setCategoryId] = useState(
+    categoriesInUiOrder(catalog)[0]?.categoryId ?? '',
+  )
   const [componentId, setComponentId] = useState('all')
   const [surfaceId, setSurfaceId] = useState(catalog.selectionOrder[0] ?? '')
   const [activeView, setActiveView] = useState<RenderViewId>('front-left')
@@ -506,27 +481,19 @@ function Configurator({
   const [syncMessage, setSyncMessage] = useState('')
 
   const components = useMemo(
-    () => {
-      const categoryComponents = componentsForCategory(catalog, categoryId)
-      if (categoryId !== 'personalization') return categoryComponents
-      const componentIds = new Set(categoryComponents.map((component) => component.componentId))
-      return catalog.surfaces
-        .filter((surface) => componentIds.has(surface.componentId))
-        .map((surface) => ({
-          componentId: `surface:${surface.surfaceId}`,
-          categoryId,
-          displayName: surface.displayName,
-        }))
-    },
+    () => componentsForCategory(catalog, categoryId),
     [catalog, categoryId],
   )
   const surfaces = useMemo(
-    () => componentId.startsWith('surface:')
-      ? catalog.surfaces.filter((surface) => surface.surfaceId === componentId.slice(8))
-      : surfacesForComponent(catalog, componentId)
+    () => surfacesForComponent(catalog, componentId)
         .filter((surface) => components.some((component) => component.componentId === surface.componentId)),
     [catalog, componentId, components],
   )
+  const categories = useMemo(
+    () => categoriesInUiOrder(catalog),
+    [catalog],
+  )
+  const currentComponent = components.find((component) => component.componentId === componentId)
   const currentSurface = catalog.surfaces.find((surface) => surface.surfaceId === surfaceId)
     ?? surfaces[0]
     ?? catalog.surfaces[0]
@@ -557,8 +524,32 @@ function Configurator({
     setCategoryId(nextCategoryId)
     if (embedded) {
       void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
+      void setUeCameraId(getUeBridge(true), cameraIdForSelection(catalog, {
+        categoryId: nextCategoryId,
+      }))
     }
-  }, [catalog.categories, embedded])
+  }, [catalog, embedded])
+
+  const selectComponent = (nextComponentId: string) => {
+    setComponentId(nextComponentId)
+    if (embedded) {
+      void setUeCameraId(getUeBridge(true), cameraIdForSelection(catalog, {
+        categoryId,
+        componentId: nextComponentId,
+      }))
+    }
+  }
+
+  const selectSurface = (nextSurfaceId: string) => {
+    setSurfaceId(nextSurfaceId)
+    if (embedded) {
+      void setUeCameraId(getUeBridge(true), cameraIdForSelection(catalog, {
+        categoryId,
+        componentId,
+        surfaceId: nextSurfaceId,
+      }))
+    }
+  }
 
   useEffect(() => {
     if (!embedded) return
@@ -566,6 +557,9 @@ function Configurator({
       const nextCategoryId = (event as CustomEvent<string>).detail
       if (catalog.categories.some((category) => category.categoryId === nextCategoryId)) {
         setCategoryId(nextCategoryId)
+        void setUeCameraId(getUeBridge(true), cameraIdForSelection(catalog, {
+          categoryId: nextCategoryId,
+        }))
       }
     }
     window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
@@ -659,12 +653,10 @@ function Configurator({
     const existing = customizations[surfaceId]
     let nextCustomizations = normalizeCustomizations(catalog, nextSelections, customizations)
     if (option?.parameters.color?.mode === 'custom' && !existing) {
-      const paint = createDefaultPaintCustomization()
+      const paint = createDefaultPaintCustomization(option)
       nextCustomizations = {
         ...nextCustomizations,
-        [surfaceId]: surfaceId === 'seat-shell-back'
-          ? { ...paint, roughness: SEAT_SHELL_GLOSS_ROUGHNESS }
-          : paint,
+        [surfaceId]: paint,
       }
     }
     setCustomizations(nextCustomizations)
@@ -770,10 +762,10 @@ function Configurator({
     return () => window.removeEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
   })
 
-  const visibleSurfaces = componentId === 'wheel' ? surfaces : [currentSurface]
+  const visibleSurfaces = currentComponent?.ui?.layout === 'stack' ? surfaces : [currentSurface]
 
   const renderSurfaceOptions = (surface: CatalogV2['surfaces'][number]) => {
-    const options = catalog.options.filter((option) => option.surfaceId === surface.surfaceId)
+    const options = optionsForSurface(catalog, surface.surfaceId)
     const variantFamilyIds = new Set(
       options.flatMap((option) =>
         supportsMaterialVariants(option) && option.materialFamilyId
@@ -810,15 +802,13 @@ function Configurator({
           aria-pressed={optionSelected}
           aria-label={`${displayName}，${optionPrice(option)}`}
         >
-          {thumbnailUrl
-            ? <img src={thumbnailUrl} alt="" loading="lazy" />
-            : option.parameters.color?.mode === 'custom'
-              ? <img src="/sc01/option-icons/rainbow.svg" alt="" />
-              : <span
-                  className="color-choice-swatch"
-                  style={{ background: optionSwatch(option) }}
-                  aria-hidden="true"
-                />}
+          {(option.ui?.iconUrl ?? thumbnailUrl)
+            ? <img src={option.ui?.iconUrl ?? thumbnailUrl ?? ''} alt="" loading="lazy" />
+            : <span
+                className="color-choice-swatch"
+                style={{ background: optionSwatch(option) }}
+                aria-hidden="true"
+              />}
           <span className="color-choice-name">{displayName}</span>
           <small>{optionPrice(option)}</small>
         </button>
@@ -839,7 +829,7 @@ function Configurator({
                 aria-pressed={!selections[surface.surfaceId]}
                 aria-label="默认，免费"
               >
-                <img src="/sc01/option-icons/default.svg" alt="" />
+                <span className="color-choice-swatch" aria-hidden="true" />
                 <span className="color-choice-name">默认</span>
                 <small>免费</small>
               </button>
@@ -860,16 +850,8 @@ function Configurator({
             )
             const variantOptions = familyOptions.filter(supportsMaterialVariants)
             const variantChoices = variantOptions.flatMap((option) =>
-              sortMaterialVariants(
-                materialVariantsForOption(catalog, option),
-                materialFamily.materialFamilyId,
-              ).map((variant) => ({ option, variant })))
-            const preferredVariantId = PREFERRED_DARK_VARIANTS[materialFamily.materialFamilyId]
-            const preferredVariant = catalog.materialVariants.find(
-              (variant) =>
-                variant.materialFamilyId === materialFamily.materialFamilyId
-                && variant.variantId === preferredVariantId,
-            )
+              materialVariantsForOption(catalog, option)
+                .map((variant) => ({ option, variant })))
             const remainingFamilyOptions = familyOptions.filter(
               (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
             )
@@ -902,13 +884,11 @@ function Configurator({
                 <div className="choice-grid">
                   {standardFamilyOption && renderFlatOption(
                     standardFamilyOption,
-                    preferredVariant?.displayName ?? standardFamilyOption.displayName,
-                    preferredVariant?.thumbnailUrl ?? standardFamilyOption.thumbnailUrl,
+                    standardFamilyOption.displayName,
+                    standardFamilyOption.ui?.iconUrl ?? standardFamilyOption.thumbnailUrl,
                   )}
                   {remainingFamilyOptions.map((option) => renderFlatOption(option))}
                   {variantChoices
-                    .filter(({ variant }) =>
-                      !standardFamilyOption || variant.variantId !== preferredVariantId)
                     .map(({ option, variant }) => {
                       const variantSelected = selections[surface.surfaceId] === option.optionId
                         && currentCustomization
@@ -938,7 +918,8 @@ function Configurator({
           })}
         </div>
 
-        {selectedOption?.parameters.color?.mode === 'custom'
+        {(selectedOption?.ui?.control === 'color-picker'
+          || (!selectedOption?.ui?.control && selectedOption?.parameters.color?.mode === 'custom'))
           && currentCustomization
           && !('materialVariantId' in currentCustomization) && (
           <section className="paint-editor" aria-label={`${selectedOption.displayName}颜色`}>
@@ -968,37 +949,6 @@ function Configurator({
                 />
               </div>
             </div>
-            {surface.surfaceId === 'seat-shell-back' && (
-              <div className="finish-control" role="group" aria-label="背板表面效果">
-                <span>表面效果</span>
-                <div>
-                  <button
-                    type="button"
-                    className={currentCustomization.roughness < 0.5 ? 'selected' : ''}
-                    aria-pressed={currentCustomization.roughness < 0.5}
-                    onClick={() => setPaintParameter(
-                      surface.surfaceId,
-                      'roughness',
-                      SEAT_SHELL_GLOSS_ROUGHNESS,
-                    )}
-                  >
-                    亮面
-                  </button>
-                  <button
-                    type="button"
-                    className={currentCustomization.roughness >= 0.5 ? 'selected' : ''}
-                    aria-pressed={currentCustomization.roughness >= 0.5}
-                    onClick={() => setPaintParameter(
-                      surface.surfaceId,
-                      'roughness',
-                      SEAT_SHELL_MATTE_ROUGHNESS,
-                    )}
-                  >
-                    雾面
-                  </button>
-                </div>
-              </div>
-            )}
           </section>
         )}
       </section>
@@ -1010,7 +960,7 @@ function Configurator({
       {!embedded && (
         <ConfiguratorTopBar
           standalone
-          categoryId={categoryId}
+          categories={categories}
           headerState={{
             categoryId: categoryId as UeConfiguratorCategory,
             referenceTotalMinor: referenceTotal,
@@ -1023,11 +973,11 @@ function Configurator({
             dirty,
             online,
           }}
-          onSelectCategory={selectCategory}
           onAction={(action) => {
             if (action === 'save') void persist()
             if (action === 'share') void share()
           }}
+          onSelectCategory={selectCategory}
         />
       )}
       <div className="configurator-workspace">
@@ -1088,26 +1038,28 @@ function Configurator({
           </div>}
 
           <div className="panel-scroll">
-          {embedded && <FilterGroup
-              className="filter-group-stage"
-              label="阶段"
-              items={catalog.categories.map((item) => ({
+          <FilterGroup
+              label="分类"
+              items={categories.map((item) => ({
                 id: item.categoryId,
                 name: item.displayName,
+                iconUrl: item.ui?.iconUrl,
               }))}
               value={categoryId}
               onChange={selectCategory}
-            />}
+            />
           <section className="part-selector" aria-label="部件与子项">
             <FilterGroup label="部件" items={components.map((item) => ({
               id: item.componentId,
               name: item.displayName,
-            }))} value={componentId} onChange={setComponentId} />
-            {surfaces.length > 1 && componentId !== 'wheel' && (
+              iconUrl: item.ui?.iconUrl,
+            }))} value={componentId} onChange={selectComponent} />
+            {surfaces.length > 1 && currentComponent?.ui?.navigationMode !== 'none' && (
               <FilterGroup label="子项" items={surfaces.map((item) => ({
                 id: item.surfaceId,
                 name: item.displayName,
-              }))} value={currentSurface.surfaceId} onChange={setSurfaceId} />
+                iconUrl: item.ui?.iconUrl,
+              }))} value={currentSurface.surfaceId} onChange={selectSurface} />
             )}
           </section>
           <section className="options" aria-live="polite">
@@ -1130,7 +1082,7 @@ function FilterGroup({
 }: {
   className?: string
   label: string
-  items: Array<{ id: string; name: string }>
+  items: Array<{ id: string; name: string; iconUrl?: string | null }>
   value: string
   onChange: (value: string) => void
 }) {
@@ -1145,6 +1097,7 @@ function FilterGroup({
             onClick={() => onChange(item.id)}
             aria-pressed={value === item.id}
           >
+            {item.iconUrl && <img src={item.iconUrl} alt="" />}
             {item.name}
           </button>
         ))}

@@ -27,6 +27,8 @@ namespace
 	constexpr int32 RequiredWindowWidth = 1600;
 	constexpr int32 RequiredWindowHeight = 900;
 	constexpr float StageProjectionInterpolationSpeed = 8.0f;
+	const TCHAR* CameraTagPrefix = TEXT("Configurator.Camera.");
+	const FName InteriorCameraTag(TEXT("Configurator.Camera.Interior"));
 
 	// 安全回退开关：设为 0 后目标偏移归零，镜头 Transform、OrbitPivot 和
 	// 预设机位均不需要恢复或重建。控制台：
@@ -176,13 +178,55 @@ bool AConfigShowroomPlayerController::IsInteriorCameraPreset(const int32 CameraI
 	return CameraIndex == 4 || CameraIndex == 5;
 }
 
+bool AConfigShowroomPlayerController::TryParseCameraIdTag(
+	const FName Tag,
+	FString& OutCameraId)
+{
+	OutCameraId.Reset();
+	const FString TagString = Tag.ToString();
+	if (!TagString.StartsWith(CameraTagPrefix, ESearchCase::CaseSensitive))
+	{
+		return false;
+	}
+	const FString Candidate = TagString.RightChop(FCString::Strlen(CameraTagPrefix));
+	if (Candidate.IsEmpty() || Candidate.Len() > 64)
+	{
+		return false;
+	}
+	// FName 比较不区分大小写，因此保留 interior，避免与 companion tag 混淆。
+	if (Candidate.Equals(TEXT("interior"), ESearchCase::IgnoreCase))
+	{
+		return false;
+	}
+	for (const TCHAR Character : Candidate)
+	{
+		if (!FChar::IsLower(Character)
+			&& !FChar::IsDigit(Character)
+			&& Character != TEXT('-'))
+		{
+			return false;
+		}
+	}
+	OutCameraId = Candidate;
+	return true;
+}
+
+bool AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(
+	const bool bFromInterior,
+	const bool bToInterior,
+	const bool bSameCamera)
+{
+	return !bSameCamera && (bFromInterior || bToInterior);
+}
+
 bool AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(
 	const int32 FromCameraIndex,
 	const int32 ToCameraIndex)
 {
-	return FromCameraIndex != ToCameraIndex
-		&& (IsInteriorCameraPreset(FromCameraIndex)
-			|| IsInteriorCameraPreset(ToCameraIndex));
+	return ShouldUseBlackCameraTransition(
+		IsInteriorCameraPreset(FromCameraIndex),
+		IsInteriorCameraPreset(ToCameraIndex),
+		FromCameraIndex == ToCameraIndex);
 }
 
 bool AConfigShowroomPlayerController::ShouldCancelPendingCameraTransition(
@@ -269,7 +313,7 @@ void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 			ApplyRuntimeCameraPOV(CameraTransitionEndPOV);
 			ResetInteractiveOrbit(
 				CameraTransitionEndPOV,
-				!IsInteriorCameraPreset(CurrentCameraIndex));
+				!IsCurrentCameraInterior());
 		}
 		return;
 	}
@@ -353,6 +397,63 @@ void AConfigShowroomPlayerController::ApplyRuntimeCameraPOV(
 	RuntimeCamera->ApplyCameraPOV(StageAwarePOV);
 }
 
+void AConfigShowroomPlayerController::DiscoverCameraPresets()
+{
+	ShowroomCameras.SetNum(6);
+	ShowroomCamerasById.Reset();
+	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+	{
+		ACameraActor* Camera = *It;
+		for (int32 Index = 0; Index < ShowroomCameras.Num(); ++Index)
+		{
+			const FName LegacyTag(*FString::Printf(
+				TEXT("Configurator.Camera.%d"), Index));
+			if (Camera->ActorHasTag(LegacyTag))
+			{
+				ShowroomCameras[Index] = Camera;
+			}
+		}
+		for (const FName Tag : Camera->Tags)
+		{
+			FString CameraId;
+			if (TryParseCameraIdTag(Tag, CameraId)
+				&& !CameraId.IsNumeric()
+				&& !ShowroomCamerasById.Contains(CameraId))
+			{
+				ShowroomCamerasById.Add(CameraId, Camera);
+			}
+		}
+	}
+}
+
+FString AConfigShowroomPlayerController::FindSemanticCameraId(
+	const ACameraActor* Camera) const
+{
+	if (!IsValid(Camera))
+	{
+		return FString();
+	}
+	for (const TPair<FString, TObjectPtr<ACameraActor>>& Pair : ShowroomCamerasById)
+	{
+		if (Pair.Value == Camera)
+		{
+			return Pair.Key;
+		}
+	}
+	return FString();
+}
+
+bool AConfigShowroomPlayerController::IsInteriorCamera(
+	const ACameraActor* Camera) const
+{
+	return IsValid(Camera) && Camera->ActorHasTag(InteriorCameraTag);
+}
+
+bool AConfigShowroomPlayerController::IsCurrentCameraInterior() const
+{
+	return IsInteriorCamera(CurrentCameraPreset);
+}
+
 void AConfigShowroomPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -365,18 +466,7 @@ void AConfigShowroomPlayerController::BeginPlay()
 		ApplyMainWindowPolicy();
 	}
 
-	ShowroomCameras.SetNum(6);
-	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
-	{
-		for (int32 Index = 0; Index < ShowroomCameras.Num(); ++Index)
-		{
-			const FName CameraTag(*FString::Printf(TEXT("Configurator.Camera.%d"), Index));
-			if (It->ActorHasTag(CameraTag))
-			{
-				ShowroomCameras[Index] = *It;
-			}
-		}
-	}
+	DiscoverCameraPresets();
 
 	for (TActorIterator<AShowroomEnvironmentActor> It(GetWorld()); It; ++It)
 	{
@@ -397,6 +487,8 @@ void AConfigShowroomPlayerController::BeginPlay()
 	if (IsValid(RuntimeCamera) && GetCameraPresetPOV(0, InitialCameraPOV))
 	{
 		CurrentCameraIndex = 0;
+		CurrentCameraPreset = ShowroomCameras[0];
+		CurrentCameraId = FindSemanticCameraId(CurrentCameraPreset);
 		OrbitPivot = GetVehicleCameraPivot();
 		CameraTransitionStartPOV = BuildRevealStartPOV(InitialCameraPOV, OrbitPivot);
 		CameraTransitionEndPOV = InitialCameraPOV;
@@ -509,31 +601,61 @@ bool AConfigShowroomPlayerController::SwitchCamera(const int32 CameraIndex)
 	{
 		return false;
 	}
+	return SwitchToCamera(
+		ShowroomCameras[CameraIndex],
+		CameraIndex,
+		FindSemanticCameraId(ShowroomCameras[CameraIndex]));
+}
+
+bool AConfigShowroomPlayerController::SetCameraId(const FString& CameraId)
+{
+	const TObjectPtr<ACameraActor>* Camera = ShowroomCamerasById.Find(CameraId);
+	if (Camera == nullptr || !IsValid(Camera->Get()))
+	{
+		return false;
+	}
+	return SwitchToCamera(
+		Camera->Get(),
+		ShowroomCameras.IndexOfByKey(Camera->Get()),
+		CameraId);
+}
+
+bool AConfigShowroomPlayerController::SwitchToCamera(
+	ACameraActor* Camera,
+	const int32 LegacyCameraIndex,
+	const FString& CameraId)
+{
+	if (!IsValid(Camera))
+	{
+		return false;
+	}
+	const bool bSameCamera = Camera == CurrentCameraPreset;
 	if ((bInitialRevealPending || bInitialRevealActive)
-		&& CameraIndex == CurrentCameraIndex)
+		&& bSameCamera)
 	{
 		CancelInitialCameraReveal(true);
 		return true;
 	}
-	if (ShouldCancelPendingCameraTransition(
-		CurrentCameraIndex, PendingCameraIndex, CameraIndex))
+	if (IsValid(PendingCameraPreset) && bSameCamera)
 	{
 		GetWorldTimerManager().ClearTimer(CameraZoneTransitionTimer);
+		PendingCameraPreset = nullptr;
 		PendingCameraIndex = INDEX_NONE;
+		PendingCameraId.Reset();
 		if (PlayerCameraManager != nullptr)
 		{
 			PlayerCameraManager->StartCameraFade(
 				1.0f, 0.0f, 0.22f, FLinearColor::Black, false, false);
 		}
-return true;
+		return true;
 	}
-	if (CameraIndex == CurrentCameraIndex
-		&& PendingCameraIndex == INDEX_NONE
+	if (bSameCamera
+		&& !IsValid(PendingCameraPreset)
 		&& IsValid(RuntimeCamera)
 		&& GetViewTarget() == RuntimeCamera)
 	{
 		FMinimalViewInfo PresetPOV;
-		if (!GetCameraPresetPOV(CameraIndex, PresetPOV))
+		if (!GetCameraPresetPOV(Camera, PresetPOV))
 		{
 			return false;
 		}
@@ -547,7 +669,7 @@ return true;
 		{
 			return true;
 		}
-		if (IsInteriorCameraPreset(CameraIndex))
+		if (IsInteriorCamera(Camera))
 		{
 			ApplyRuntimeCameraPOV(PresetPOV);
 			ResetInteractiveOrbit(PresetPOV, false);
@@ -556,14 +678,15 @@ return true;
 	}
 
 	const bool bReplacingPendingBlackTransition =
-		ShouldReplacePendingCameraTransition(
-			CurrentCameraIndex, PendingCameraIndex, CameraIndex);
+		IsValid(PendingCameraPreset) && !bSameCamera;
 	GetWorldTimerManager().ClearTimer(InitialRevealTimer);
 	bInitialRevealPending = false;
 	bOrbitTransitionActive = false;
 	bInteractiveSmoothingActive = false;
 	GetWorldTimerManager().ClearTimer(CameraZoneTransitionTimer);
+	PendingCameraPreset = nullptr;
 	PendingCameraIndex = INDEX_NONE;
+	PendingCameraId.Reset();
 
 	if (!IsValid(RuntimeCamera))
 	{
@@ -574,9 +697,14 @@ return true;
 		return false;
 	}
 
-	if (ShouldUseBlackCameraTransition(CurrentCameraIndex, CameraIndex))
+	if (ShouldUseBlackCameraTransition(
+		IsCurrentCameraInterior(),
+		IsInteriorCamera(Camera),
+		bSameCamera))
 	{
-		PendingCameraIndex = CameraIndex;
+		PendingCameraPreset = Camera;
+		PendingCameraIndex = LegacyCameraIndex;
+		PendingCameraId = CameraId;
 		PlayerCameraManager->StartCameraFade(
 			0.0f, 1.0f, 0.18f, FLinearColor::Black, false, true);
 		GetWorldTimerManager().SetTimer(
@@ -593,7 +721,7 @@ return true;
 			1.0f, 0.0f, 0.22f, FLinearColor::Black, false, false);
 	}
 
-	if (!GetCameraPresetPOV(CameraIndex, CameraTransitionEndPOV))
+	if (!GetCameraPresetPOV(Camera, CameraTransitionEndPOV))
 	{
 		return false;
 	}
@@ -602,7 +730,9 @@ return true;
 	CameraTransitionPivot = OrbitPivot;
 	CameraTransitionElapsed = 0.0f;
 	CameraTransitionDuration = 0.85f;
-	CurrentCameraIndex = CameraIndex;
+	CurrentCameraPreset = Camera;
+	CurrentCameraIndex = LegacyCameraIndex;
+	CurrentCameraId = CameraId;
 	ApplyRuntimeCameraPOV(CameraTransitionStartPOV);
 	SetViewTarget(RuntimeCamera);
 	bOrbitTransitionActive = true;
@@ -616,10 +746,11 @@ bool AConfigShowroomPlayerController::SetCamera(const int32 CameraIndex)
 
 void AConfigShowroomPlayerController::FinishInteriorExteriorCameraSwitch()
 {
-	if (!ShowroomCameras.IsValidIndex(PendingCameraIndex)
-		|| !IsValid(ShowroomCameras[PendingCameraIndex]))
+	if (!IsValid(PendingCameraPreset))
 	{
+		PendingCameraPreset = nullptr;
 		PendingCameraIndex = INDEX_NONE;
+		PendingCameraId.Reset();
 		if (PlayerCameraManager != nullptr)
 		{
 			PlayerCameraManager->StartCameraFade(
@@ -628,9 +759,11 @@ void AConfigShowroomPlayerController::FinishInteriorExteriorCameraSwitch()
 		return;
 	}
 	FMinimalViewInfo PresetPOV;
-	if (!IsValid(RuntimeCamera) || !GetCameraPresetPOV(PendingCameraIndex, PresetPOV))
+	if (!IsValid(RuntimeCamera) || !GetCameraPresetPOV(PendingCameraPreset, PresetPOV))
 	{
+		PendingCameraPreset = nullptr;
 		PendingCameraIndex = INDEX_NONE;
+		PendingCameraId.Reset();
 		if (PlayerCameraManager != nullptr)
 		{
 			PlayerCameraManager->StartCameraFade(
@@ -638,10 +771,14 @@ void AConfigShowroomPlayerController::FinishInteriorExteriorCameraSwitch()
 		}
 		return;
 	}
+	CurrentCameraPreset = PendingCameraPreset;
 	CurrentCameraIndex = PendingCameraIndex;
+	CurrentCameraId = PendingCameraId;
+	PendingCameraPreset = nullptr;
 	PendingCameraIndex = INDEX_NONE;
+	PendingCameraId.Reset();
 	ApplyRuntimeCameraPOV(PresetPOV);
-	ResetInteractiveOrbit(PresetPOV, !IsInteriorCameraPreset(CurrentCameraIndex));
+	ResetInteractiveOrbit(PresetPOV, !IsCurrentCameraInterior());
 	SetViewTarget(RuntimeCamera);
 	if (PlayerCameraManager != nullptr)
 	{
@@ -662,12 +799,22 @@ bool AConfigShowroomPlayerController::GetCameraPresetPOV(
 	FMinimalViewInfo& OutPOV) const
 {
 	if (!ShowroomCameras.IsValidIndex(CameraIndex)
-		|| !IsValid(ShowroomCameras[CameraIndex])
-		|| !IsValid(ShowroomCameras[CameraIndex]->GetCameraComponent()))
+		|| !IsValid(ShowroomCameras[CameraIndex]))
 	{
 		return false;
 	}
-	ShowroomCameras[CameraIndex]->GetCameraComponent()->GetCameraView(0.0f, OutPOV);
+	return GetCameraPresetPOV(ShowroomCameras[CameraIndex], OutPOV);
+}
+
+bool AConfigShowroomPlayerController::GetCameraPresetPOV(
+	const ACameraActor* Camera,
+	FMinimalViewInfo& OutPOV) const
+{
+	if (!IsValid(Camera) || !IsValid(Camera->GetCameraComponent()))
+	{
+		return false;
+	}
+	Camera->GetCameraComponent()->GetCameraView(0.0f, OutPOV);
 	return true;
 }
 
@@ -675,8 +822,8 @@ AConfigRuntimeCameraActor* AConfigShowroomPlayerController::GetInteractiveCamera
 {
 	if (bInitialRevealPending
 		|| bOrbitTransitionActive
-		|| PendingCameraIndex != INDEX_NONE
-		|| !ShowroomCameras.IsValidIndex(CurrentCameraIndex)
+		|| IsValid(PendingCameraPreset)
+		|| !IsValid(CurrentCameraPreset)
 		|| !IsValid(RuntimeCamera)
 		|| GetViewTarget() != RuntimeCamera)
 	{
@@ -688,7 +835,9 @@ AConfigRuntimeCameraActor* AConfigShowroomPlayerController::GetInteractiveCamera
 void AConfigShowroomPlayerController::StartInitialCameraReveal()
 {
 	bInitialRevealPending = false;
-	if (!IsValid(RuntimeCamera) || CurrentCameraIndex != 0)
+	if (!IsValid(RuntimeCamera)
+		|| !ShowroomCameras.IsValidIndex(0)
+		|| CurrentCameraPreset != ShowroomCameras[0])
 	{
 		return;
 	}
@@ -714,7 +863,7 @@ void AConfigShowroomPlayerController::CancelInitialCameraReveal(
 	if (GetCameraPresetPOV(CurrentCameraIndex, PresetPOV))
 	{
 		ApplyRuntimeCameraPOV(PresetPOV);
-		ResetInteractiveOrbit(PresetPOV, !IsInteriorCameraPreset(CurrentCameraIndex));
+		ResetInteractiveOrbit(PresetPOV, !IsCurrentCameraInterior());
 	}
 }
 
@@ -750,7 +899,7 @@ void AConfigShowroomPlayerController::RotateInteractiveCamera(
 	FMinimalViewInfo POV = bInteractiveSmoothingActive
 		? InteractiveTargetPOV
 		: Camera->GetCameraPOV();
-	if (IsInteriorCameraPreset(CurrentCameraIndex))
+	if (IsCurrentCameraInterior())
 	{
 		POV.Rotation.Yaw = FRotator::NormalizeAxis(POV.Rotation.Yaw + YawDegrees);
 		POV.Rotation.Pitch = FMath::Clamp(
@@ -775,7 +924,7 @@ void AConfigShowroomPlayerController::PanInteractiveCamera(
 	const float Vertical)
 {
 	AConfigRuntimeCameraActor* Camera = GetInteractiveCamera();
-	if (!IsValid(Camera) || !IsCameraPanAllowed(CurrentCameraIndex))
+	if (!IsValid(Camera) || IsCurrentCameraInterior())
 	{
 		return;
 	}
@@ -802,10 +951,10 @@ void AConfigShowroomPlayerController::DollyInteractiveCamera(const float Amount)
 		: Camera->GetCameraPOV();
 	const FVector Candidate =
 		POV.Location + POV.Rotation.RotateVector(FVector::ForwardVector) * Amount;
-	if (IsInteriorCameraPreset(CurrentCameraIndex))
+	if (IsCurrentCameraInterior())
 	{
 		FMinimalViewInfo PresetPOV;
-		if (GetCameraPresetPOV(CurrentCameraIndex, PresetPOV))
+		if (GetCameraPresetPOV(CurrentCameraPreset, PresetPOV))
 		{
 			POV.Location = ClampInteriorCameraLocation(
 				PresetPOV.Location, Candidate, 120.0f);

@@ -1,22 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { fetchCatalog } from './api'
+import type { CatalogCameraId, CatalogInteractionCamera } from './types'
 import {
   executeUeControl,
   getUeBridge,
   getUePresentationState,
-  type UeCameraIndex,
   type UeControlCommand,
+  type UeCameraIndex,
   type UePresentationState,
   type UeQualityLevel,
 } from './ueBridge'
-
-const CAMERA_PRESETS: Array<{ index: UeCameraIndex; label: string }> = [
-  { index: 0, label: '正前' },
-  { index: 1, label: '左前' },
-  { index: 2, label: '侧面' },
-  { index: 3, label: '右后' },
-  { index: 4, label: '驾驶位' },
-  { index: 5, label: '副驾位' },
-]
 
 const QUALITY_LEVELS: Array<{ value: UeQualityLevel; label: string }> = [
   { value: 'low', label: '低' },
@@ -32,7 +25,9 @@ interface ExperienceControlsProps {
 export default function ExperienceControls({ ueEnabled = false }: ExperienceControlsProps) {
   const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
   const [qualityMenuOpen, setQualityMenuOpen] = useState(false)
-  const [cameraIndex, setCameraIndex] = useState<UeCameraIndex>(1)
+  const [cameras, setCameras] = useState<CatalogInteractionCamera[]>([])
+  const [cameraId, setCameraId] = useState<CatalogCameraId | null>(null)
+  const [cameraIndex, setCameraIndex] = useState<UeCameraIndex | null>(null)
   const [animationEnabled, setAnimationEnabled] = useState(false)
   const [lightPreset, setLightPreset] = useState<'studio' | 'outdoor'>('studio')
   const [renderMode, setRenderMode] = useState<'realtime' | 'path-tracing'>('realtime')
@@ -67,7 +62,8 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   }, [keepToolbarAwake])
 
   const applyState = (state: UePresentationState) => {
-    setCameraIndex(state.cameraIndex)
+    setCameraId(state.cameraId ?? null)
+    setCameraIndex(state.cameraIndex ?? null)
     setAnimationEnabled(state.animationEnabled)
     setLightPreset(state.lightPreset)
     setRenderMode(state.renderMode)
@@ -78,6 +74,17 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   useEffect(() => {
     if (!ueEnabled) return
     let active = true
+    const controller = new AbortController()
+    void fetchCatalog(controller.signal)
+      .then((catalog) => {
+        if (!active) return
+        setCameras((catalog.interactionCameras ?? [])
+          .slice()
+          .sort((left, right) => left.order - right.order))
+      })
+      .catch(() => {
+        if (active && !controller.signal.aborted) setError('无法读取镜头目录')
+      })
     void getUePresentationState(getUeBridge(true)).then((state) => {
       if (!active) return
       if (state) {
@@ -89,6 +96,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     })
     return () => {
       active = false
+      controller.abort()
     }
   }, [ueEnabled])
 
@@ -116,20 +124,28 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
           </button>
           {cameraMenuOpen && (
             <div className="control-popover camera-popover" role="menu" aria-label="镜头预设">
-              {CAMERA_PRESETS.map((preset) => (
+              {cameras.map((camera) => (
                 <button
-                  key={preset.index}
+                  key={String(camera.cameraId)}
                   role="menuitemradio"
-                  aria-checked={cameraIndex === preset.index}
+                  aria-checked={cameraId !== null
+                    ? cameraId === camera.cameraId
+                    : cameraIndex !== null && cameraIndex === camera.legacyIndex}
                   onClick={() => void run(
-                    { type: 'camera', cameraIndex: preset.index },
+                    {
+                      type: 'camera',
+                      cameraId: camera.cameraId,
+                      legacyIndex: camera.legacyIndex,
+                    },
                     () => {
-                      setCameraIndex(preset.index)
+                      setCameraId(camera.cameraId)
+                      setCameraIndex(camera.legacyIndex ?? null)
                       setCameraMenuOpen(false)
                     },
                   )}
                 >
-                  {preset.label}
+                  <img src={camera.iconUrl} alt="" />
+                  {camera.displayName}
                 </button>
               ))}
             </div>

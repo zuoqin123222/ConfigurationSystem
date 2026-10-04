@@ -82,6 +82,48 @@
     "embroidered-logo": "embroidered-logo-standard",
     "engine-bay-cover": "engine-cover-silver"
   },
+  "interactionCameras": [
+    {
+      "cameraId": "exterior",
+      "legacyIndex": 0,
+      "zone": "exterior",
+      "order": 0,
+      "displayName": "外观",
+      "iconUrl": "/sc01/option-icons/default.svg"
+    },
+    {
+      "cameraId": "wheel",
+      "legacyIndex": 2,
+      "zone": "exterior",
+      "order": 1,
+      "displayName": "轮毂",
+      "iconUrl": "/sc01/option-icons/default.svg"
+    },
+    {
+      "cameraId": "driver",
+      "legacyIndex": 4,
+      "zone": "interior",
+      "order": 2,
+      "displayName": "驾驶位",
+      "iconUrl": "/sc01/option-icons/default.svg"
+    },
+    {
+      "cameraId": "seat",
+      "legacyIndex": null,
+      "zone": "interior",
+      "order": 3,
+      "displayName": "座椅",
+      "iconUrl": "/sc01/option-icons/default.svg"
+    },
+    {
+      "cameraId": "front-cabin",
+      "legacyIndex": 5,
+      "zone": "interior",
+      "order": 4,
+      "displayName": "前舱",
+      "iconUrl": "/sc01/option-icons/default.svg"
+    }
+  ],
   "regions": [
     {
       "regionId": "exterior",
@@ -133,6 +175,13 @@
       "categoryId": "exterior",
       "regionId": "exterior",
       "displayName": "外饰",
+      "ui": {
+        "order": 0,
+        "iconUrl": "/sc01/option-icons/default.svg",
+        "cameraId": "exterior",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -145,6 +194,13 @@
       "categoryId": "interior",
       "regionId": "interior",
       "displayName": "内饰",
+      "ui": {
+        "order": 1,
+        "iconUrl": "/sc01/option-icons/default.svg",
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -157,6 +213,13 @@
       "categoryId": "performance",
       "regionId": "performance",
       "displayName": "性能",
+      "ui": {
+        "order": 2,
+        "iconUrl": "/sc01/option-icons/default.svg",
+        "cameraId": "exterior",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -169,6 +232,13 @@
       "categoryId": "personalization",
       "regionId": "personalization",
       "displayName": "个性化",
+      "ui": {
+        "order": 3,
+        "iconUrl": "/sc01/option-icons/default.svg",
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -183,6 +253,7 @@
       "componentId": "car-paint",
       "categoryId": "exterior",
       "displayName": "车漆",
+      "ui": { "order": 0, "cameraId": "exterior", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -195,6 +266,7 @@
       "componentId": "chassis",
       "categoryId": "exterior",
       "displayName": "车架",
+      "ui": { "order": 1, "cameraId": "exterior", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -207,6 +279,7 @@
       "componentId": "wheel",
       "categoryId": "exterior",
       "displayName": "轮毂",
+      "ui": { "order": 2, "cameraId": "wheel", "navigationMode": "none", "layout": "stack" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -219,6 +292,7 @@
       "componentId": "caliper",
       "categoryId": "exterior",
       "displayName": "卡钳",
+      "ui": { "order": 3, "cameraId": "wheel", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -231,6 +305,7 @@
       "componentId": "steering-wheel",
       "categoryId": "interior",
       "displayName": "方向盘",
+      "ui": { "order": 0, "cameraId": "driver", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -243,6 +318,7 @@
       "componentId": "seat",
       "categoryId": "interior",
       "displayName": "座椅",
+      "ui": { "order": 1, "cameraId": "seat", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -255,6 +331,7 @@
       "componentId": "door-trim",
       "categoryId": "interior",
       "displayName": "门板",
+      "ui": { "order": 2, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -267,6 +344,7 @@
       "componentId": "instrument-panel",
       "categoryId": "interior",
       "displayName": "仪表台",
+      "ui": { "order": 3, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -279,6 +357,7 @@
       "componentId": "storage-box",
       "categoryId": "interior",
       "displayName": "储物盒盖",
+      "ui": { "order": 4, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -291,6 +370,7 @@
       "componentId": "center-console",
       "categoryId": "interior",
       "displayName": "副仪表台",
+      "ui": { "order": 5, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -303,6 +383,7 @@
       "componentId": "roof",
       "categoryId": "interior",
       "displayName": "车顶",
+      "ui": { "order": 6, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -315,6 +396,7 @@
       "componentId": "a-pillar",
       "categoryId": "interior",
       "displayName": "A柱",
+      "ui": { "order": 7, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -327,6 +409,7 @@
       "componentId": "underbody",
       "categoryId": "performance",
       "displayName": "下护板",
+      "ui": { "order": 0, "cameraId": "exterior", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -339,6 +422,7 @@
       "componentId": "personalization-trim",
       "categoryId": "personalization",
       "displayName": "饰件",
+      "ui": { "order": 0, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -351,6 +435,7 @@
       "componentId": "personalization-stitching",
       "categoryId": "personalization",
       "displayName": "缝线与徽标",
+      "ui": { "order": 1, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -363,6 +448,7 @@
       "componentId": "personalization-controls",
       "categoryId": "personalization",
       "displayName": "操控与脚垫",
+      "ui": { "order": 2, "cameraId": "driver", "navigationMode": "tabs", "layout": "single" },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -6473,6 +6559,19 @@
       },
       "thumbnailUrl": null,
       "reviewRequired": false,
+      "ui": {
+        "order": 2,
+        "iconUrl": "/sc01/option-icons/rainbow.svg",
+        "control": "color-picker",
+        "defaultParameters": {
+          "colorHex": "#A61D24",
+          "metallic": 0.35,
+          "roughness": 0.18,
+          "clearCoat": 0.8,
+          "orangePeel": 0.15,
+          "flakeIntensity": 0.25
+        }
+      },
       "pricing": {
         "unitPriceMinor": 960000,
         "quantity": 1,
@@ -7288,6 +7387,19 @@
       },
       "thumbnailUrl": null,
       "reviewRequired": false,
+      "ui": {
+        "order": 1,
+        "iconUrl": "/sc01/option-icons/rainbow.svg",
+        "control": "color-picker",
+        "defaultParameters": {
+          "colorHex": "#A61D24",
+          "metallic": 0.35,
+          "roughness": 0.28,
+          "clearCoat": 0.8,
+          "orangePeel": 0.15,
+          "flakeIntensity": 0.25
+        }
+      },
       "pricing": {
         "unitPriceMinor": 480000,
         "quantity": 1,
@@ -8041,6 +8153,19 @@
       },
       "thumbnailUrl": null,
       "reviewRequired": false,
+      "ui": {
+        "order": 1,
+        "iconUrl": "/sc01/option-icons/rainbow.svg",
+        "control": "color-picker",
+        "defaultParameters": {
+          "colorHex": "#A61D24",
+          "metallic": 0.35,
+          "roughness": 0.18,
+          "clearCoat": 0.8,
+          "orangePeel": 0.15,
+          "flakeIntensity": 0.25
+        }
+      },
       "pricing": {
         "unitPriceMinor": 168000,
         "quantity": 2,

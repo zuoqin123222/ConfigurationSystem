@@ -12,6 +12,28 @@ bool UConfiguratorWebBridge::IsSupportedCameraIndex(const int32 CameraIndex)
 	return CameraIndex >= 0 && CameraIndex <= 5;
 }
 
+bool UConfiguratorWebBridge::IsSupportedCameraId(const FString& CameraId)
+{
+	if (CameraId.IsEmpty() || CameraId.Len() > 64)
+	{
+		return false;
+	}
+	if (CameraId.Equals(TEXT("interior"), ESearchCase::IgnoreCase))
+	{
+		return false;
+	}
+	for (const TCHAR Character : CameraId)
+	{
+		if (!FChar::IsLower(Character)
+			&& !FChar::IsDigit(Character)
+			&& Character != TEXT('-'))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 bool UConfiguratorWebBridge::IsSupportedLightPreset(const FString& Preset)
 {
 	return Preset == TEXT("studio") || Preset == TEXT("outdoor");
@@ -66,6 +88,13 @@ bool UConfiguratorWebBridge::SetCamera(const int32 CameraIndex)
 	return Owner != nullptr
 		&& IsSupportedCameraIndex(CameraIndex)
 		&& Owner->SetExperienceCamera(CameraIndex);
+}
+
+bool UConfiguratorWebBridge::SetCameraId(const FString& CameraId)
+{
+	return Owner != nullptr
+		&& IsSupportedCameraId(CameraId)
+		&& Owner->SetExperienceCameraId(CameraId);
 }
 
 bool UConfiguratorWebBridge::SetAnimationEnabled(const bool bEnabled)

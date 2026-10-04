@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cameraIdForSelection,
+  categoriesInUiOrder,
   componentsForCategory,
   createCanonicalKey,
+  createDefaultPaintCustomization,
   createInitialSelections,
   createRenderCanonicalKey,
   materialGroupsForSurface,
   normalizeCustomizations,
   normalizeSelections,
+  optionsForSurface,
   renderRelevantSelections,
   surfacesForComponent,
 } from './configurator'
@@ -67,6 +71,62 @@ describe('v2 动态选配逻辑', () => {
       { materialFamilyId: 'aluminum-alloy', optionIds: ['wheel-aluminum-alloy'] },
       { materialFamilyId: 'magnesium-alloy', optionIds: ['wheel-magnesium-alloy'] },
     ])
+  })
+
+  it('由 ui.order 排序且旧目录缺少 ui 时保持原数组顺序', () => {
+    const catalog = structuredClone(catalogFixture)
+    catalog.components = catalog.components.map((component) => ({
+      ...component,
+      ui: component.componentId === 'caliper'
+        ? { order: 0 }
+        : component.componentId === 'car-paint'
+          ? { order: 10 }
+          : component.ui,
+    }))
+    expect(componentsForCategory(catalog, 'exterior').map((item) => item.componentId))
+      .toEqual(['caliper', 'chassis', 'wheel', 'car-paint'])
+
+    const legacy = structuredClone(catalogFixture)
+    legacy.components.forEach((component) => delete component.ui)
+    expect(componentsForCategory(legacy, 'exterior').map((item) => item.componentId))
+      .toEqual(['car-paint', 'chassis', 'wheel', 'caliper'])
+
+    catalog.categories[0].ui = { order: 10 }
+    expect(categoriesInUiOrder(catalog).map((item) => item.categoryId))
+      .toEqual(['interior', 'performance', 'personalization', 'exterior'])
+  })
+
+  it('镜头按 surface、component、category 优先级解析并兼容数字 cameraId', () => {
+    const catalog = structuredClone(catalogFixture)
+    const surface = catalog.surfaces.find((item) => item.surfaceId === 'wheel-material')!
+    surface.ui = { cameraId: 4 }
+
+    expect(cameraIdForSelection(catalog, {
+      categoryId: 'exterior',
+      componentId: 'wheel',
+      surfaceId: 'wheel-material',
+    })).toBe(4)
+    delete surface.ui
+    expect(cameraIdForSelection(catalog, {
+      categoryId: 'exterior',
+      componentId: 'wheel',
+      surfaceId: 'wheel-material',
+    })).toBe('wheel')
+    expect(cameraIdForSelection(catalog, { categoryId: 'exterior' })).toBe('exterior')
+  })
+
+  it('option ui 驱动排序和自定义参数默认值', () => {
+    const options = optionsForSurface(catalogFixture, 'exterior-body-cover')
+    expect(options.map((option) => option.optionId)).toEqual([
+      'body-cover-red',
+      'body-cover-silver',
+      'body-cover-custom',
+    ])
+    const custom = options.find((option) => option.optionId === 'body-cover-custom')!
+    expect(createDefaultPaintCustomization(custom)).toMatchObject({
+      colorHex: '#A61D24',
+      roughness: 0.28,
+    })
   })
 
   it('只把 renderRelevant 选项纳入渲染选择', () => {

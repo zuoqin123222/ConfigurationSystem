@@ -20,14 +20,36 @@ export interface CatalogNode {
   displayName: string
 }
 
+export type CatalogCameraId = string | number
+export type CatalogNavigationMode = 'tabs' | 'list' | 'none'
+export type CatalogLayout = 'single' | 'stack' | 'grid'
+
+export interface CatalogNodeUi {
+  order?: number
+  iconUrl?: string | null
+  cameraId?: CatalogCameraId | null
+  navigationMode?: CatalogNavigationMode
+  layout?: CatalogLayout
+}
+
+export interface CatalogInteractionCamera extends CatalogNode {
+  cameraId: CatalogCameraId
+  legacyIndex?: 0 | 1 | 2 | 3 | 4 | 5 | null
+  zone: string
+  order: number
+  iconUrl: string
+}
+
 export interface CatalogCategory extends CatalogNode {
   categoryId: string
   regionId: string
+  ui?: CatalogNodeUi
 }
 
 export interface CatalogComponent extends CatalogNode {
   componentId: string
   categoryId: string
+  ui?: CatalogNodeUi
 }
 
 export interface CatalogSurface extends CatalogNode {
@@ -35,6 +57,7 @@ export interface CatalogSurface extends CatalogNode {
   componentId: string
   required: boolean
   reviewRequired: boolean
+  ui?: CatalogNodeUi
 }
 
 export interface CatalogMaterialFamily extends CatalogNode {
@@ -71,6 +94,12 @@ export interface CatalogOption extends CatalogNode {
   pricing: CatalogPricing
   reviewRequired: boolean
   thumbnailUrl: string | null
+  ui?: {
+    order?: number
+    iconUrl?: string | null
+    control?: 'swatch' | 'thumbnail' | 'color-picker' | 'material-variant'
+    defaultParameters?: Partial<PaintCustomization>
+  }
 }
 
 export interface CatalogMaterialVariant extends CatalogNode {
@@ -95,6 +124,7 @@ export interface CatalogV2 {
   }
   selectionOrder: string[]
   defaultSelections: Selections
+  interactionCameras?: CatalogInteractionCamera[]
   regions: Array<CatalogNode & { regionId: string }>
   categories: CatalogCategory[]
   components: CatalogComponent[]

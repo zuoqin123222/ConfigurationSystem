@@ -5,6 +5,8 @@ import type {
   CatalogOption,
   CatalogSurface,
   CatalogV2,
+  CatalogCameraId,
+  CatalogCategory,
   Customizations,
   PaintCustomization,
   Selections,
@@ -53,7 +55,7 @@ const PAINT_KEYS: Array<keyof PaintCustomization> = [
   'flakeIntensity',
 ]
 
-export function createDefaultPaintCustomization(): PaintCustomization {
+export function createDefaultPaintCustomization(option?: CatalogOption): PaintCustomization {
   return {
     colorHex: '#A61D24',
     metallic: 0.35,
@@ -61,6 +63,7 @@ export function createDefaultPaintCustomization(): PaintCustomization {
     clearCoat: 0.8,
     orangePeel: 0.15,
     flakeIntensity: 0.25,
+    ...option?.ui?.defaultParameters,
   }
 }
 
@@ -76,7 +79,7 @@ export function normalizeCustomizations(
     if (!option) continue
     if (!customization) {
       if (option.parameters.color?.mode === 'custom') {
-        normalized[surfaceId] = createDefaultPaintCustomization()
+        normalized[surfaceId] = createDefaultPaintCustomization(option)
       }
       continue
     }
@@ -130,34 +133,65 @@ export function componentsForCategory(
   catalog: CatalogV2,
   categoryId: string,
 ): CatalogComponent[] {
-  const order = [
-    'car-paint',
-    'chassis',
-    'wheel',
-    'caliper',
-    'steering-wheel',
-    'instrument-panel',
-    'a-pillar',
-    'seat',
-    'door-trim',
-    'storage-box',
-    'center-console',
-    'roof',
-    'underbody',
-    'personalization',
-  ]
   return catalog.components
     .filter((component) => component.categoryId === categoryId)
+    .map((component, index) => ({ component, index }))
     .sort((left, right) =>
-      order.indexOf(left.componentId) - order.indexOf(right.componentId),
+      (left.component.ui?.order ?? left.index) - (right.component.ui?.order ?? right.index),
     )
+    .map(({ component }) => component)
 }
 
 export function surfacesForComponent(
   catalog: CatalogV2,
   componentId: string,
 ): CatalogSurface[] {
-  return catalog.surfaces.filter((surface) => componentId === 'all' || surface.componentId === componentId)
+  return catalog.surfaces
+    .filter((surface) => componentId === 'all' || surface.componentId === componentId)
+    .map((surface, index) => ({ surface, index }))
+    .sort((left, right) =>
+      (left.surface.ui?.order ?? left.index) - (right.surface.ui?.order ?? right.index),
+    )
+    .map(({ surface }) => surface)
+}
+
+export function optionsForSurface(catalog: CatalogV2, surfaceId: string): CatalogOption[] {
+  return catalog.options
+    .filter((option) => option.surfaceId === surfaceId)
+    .map((option, index) => ({ option, index }))
+    .sort((left, right) =>
+      (left.option.ui?.order ?? left.index) - (right.option.ui?.order ?? right.index),
+    )
+    .map(({ option }) => option)
+}
+
+export function categoriesInUiOrder(catalog: CatalogV2): CatalogCategory[] {
+  return catalog.categories
+    .map((category, index) => ({ category, index }))
+    .sort((left, right) =>
+      (left.category.ui?.order ?? left.index) - (right.category.ui?.order ?? right.index),
+    )
+    .map(({ category }) => category)
+}
+
+export function cameraIdForSelection(
+  catalog: CatalogV2,
+  selection: {
+    categoryId?: string
+    componentId?: string
+    surfaceId?: string
+  },
+): CatalogCameraId | null {
+  const surfaceCamera = catalog.surfaces.find(
+    (surface) => surface.surfaceId === selection.surfaceId,
+  )?.ui?.cameraId
+  const componentCamera = catalog.components.find(
+    (component) => component.componentId === selection.componentId,
+  )?.ui?.cameraId
+  const categoryCamera = catalog.categories.find(
+    (category) => category.categoryId === selection.categoryId,
+  )?.ui?.cameraId
+  return surfaceCamera ?? componentCamera ?? categoryCamera ?? null
 }
 
 export interface MaterialOptionGroup {
@@ -166,7 +200,8 @@ export interface MaterialOptionGroup {
 }
 
 export function supportsMaterialVariants(option: CatalogOption): boolean {
-  return option.parameters.color?.mode === 'variant'
+  return (option.ui?.control === 'material-variant'
+    || (!option.ui?.control && option.parameters.color?.mode === 'variant'))
     && option.materialFamilyId !== null
 }
 

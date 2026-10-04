@@ -811,6 +811,13 @@ float UConfiguratorPanel::CalculateStageProjectionOffsetX(
 		0.95f);
 }
 
+bool UConfiguratorPanel::SetExperienceCameraId(const FString& CameraId)
+{
+	AConfigShowroomPlayerController* Controller =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
+	return Controller != nullptr && Controller->SetCameraId(CameraId);
+}
+
 float UConfiguratorPanel::GetStageProjectionOffsetX() const
 {
 	if (bWebFullscreen)
@@ -912,6 +919,7 @@ FString UConfiguratorPanel::GetExperienceStateJson()
 	State->SetNumberField(
 		TEXT("cameraIndex"),
 		FMath::Clamp(Controller->GetCurrentCameraIndex(), 0, 5));
+	State->SetStringField(TEXT("cameraId"), Controller->GetCurrentCameraId());
 	State->SetBoolField(
 		TEXT("animationEnabled"),
 		Controller->IsAnimationEnabled());

@@ -56,6 +56,10 @@
       "propertyNames": { "$ref": "#/$defs/id" },
       "additionalProperties": { "$ref": "#/$defs/id" }
     },
+    "interactionCameras": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/interactionCamera" }
+    },
     "regions": {
       "type": "array",
       "minItems": 1,
@@ -104,6 +108,79 @@
       "type": "string",
       "minLength": 1
     },
+    "cameraId": {
+      "anyOf": [
+        { "$ref": "#/$defs/id" },
+        { "type": "integer", "minimum": 0 }
+      ]
+    },
+    "nodeUi": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "order": { "type": "integer", "minimum": 0 },
+        "iconUrl": {
+          "anyOf": [
+            { "type": "string", "pattern": "^/" },
+            { "type": "null" }
+          ]
+        },
+        "cameraId": {
+          "anyOf": [
+            { "$ref": "#/$defs/cameraId" },
+            { "type": "null" }
+          ]
+        },
+        "navigationMode": { "enum": ["tabs", "list", "none"] },
+        "layout": { "enum": ["single", "stack", "grid"] }
+      }
+    },
+    "interactionCamera": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cameraId", "zone", "order", "displayName", "iconUrl"],
+      "properties": {
+        "cameraId": { "$ref": "#/$defs/cameraId" },
+        "legacyIndex": {
+          "anyOf": [
+            { "type": "integer", "minimum": 0, "maximum": 5 },
+            { "type": "null" }
+          ]
+        },
+        "zone": { "$ref": "#/$defs/id" },
+        "order": { "type": "integer", "minimum": 0 },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "iconUrl": { "type": "string", "pattern": "^/" }
+      }
+    },
+    "optionUi": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "order": { "type": "integer", "minimum": 0 },
+        "iconUrl": {
+          "anyOf": [
+            { "type": "string", "pattern": "^/" },
+            { "type": "null" }
+          ]
+        },
+        "control": {
+          "enum": ["swatch", "thumbnail", "color-picker", "material-variant"]
+        },
+        "defaultParameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "colorHex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "metallic": { "type": "number", "minimum": 0, "maximum": 1 },
+            "roughness": { "type": "number", "minimum": 0, "maximum": 1 },
+            "clearCoat": { "type": "number", "minimum": 0, "maximum": 1 },
+            "orangePeel": { "type": "number", "minimum": 0, "maximum": 1 },
+            "flakeIntensity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    },
     "sourceRef": {
       "type": "object",
       "additionalProperties": false,
@@ -136,6 +213,7 @@
         "categoryId": { "$ref": "#/$defs/id" },
         "regionId": { "$ref": "#/$defs/id" },
         "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "ui": { "$ref": "#/$defs/nodeUi" },
         "sourceRefs": {
           "type": "array",
           "minItems": 1,
@@ -151,6 +229,7 @@
         "componentId": { "$ref": "#/$defs/id" },
         "categoryId": { "$ref": "#/$defs/id" },
         "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "ui": { "$ref": "#/$defs/nodeUi" },
         "sourceRefs": {
           "type": "array",
           "minItems": 1,
@@ -168,6 +247,7 @@
         "displayName": { "$ref": "#/$defs/nonEmptyString" },
         "required": { "type": "boolean" },
         "reviewRequired": { "type": "boolean" },
+        "ui": { "$ref": "#/$defs/nodeUi" },
         "sourceRefs": {
           "type": "array",
           "minItems": 1,
@@ -353,6 +433,7 @@
         },
         "reviewRequired": { "type": "boolean" },
         "pricing": { "$ref": "#/$defs/pricing" },
+        "ui": { "$ref": "#/$defs/optionUi" },
         "sourceRefs": {
           "type": "array",
           "minItems": 1,

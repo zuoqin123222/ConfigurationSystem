@@ -30,6 +30,44 @@ function assertExactKeys(value, expected, label) {
   );
 }
 
+function assertAllowedKeys(value, required, optional, label) {
+  check(isRecord(value), `${label} 必须是 object`);
+  const actual = Object.keys(value);
+  check(required.every((key) => Object.hasOwn(value, key)), `${label} 缺少必填字段`);
+  check(
+    actual.every((key) => required.includes(key) || optional.includes(key)),
+    `${label} 包含未知字段`
+  );
+}
+
+function validateNodeUi(ui, cameras, label) {
+  if (ui === undefined) return;
+  check(isRecord(ui), `${label}.ui 必须是 object`);
+  check(
+    ui.order === undefined || (Number.isInteger(ui.order) && ui.order >= 0),
+    `${label}.ui.order 非法`
+  );
+  check(
+    ui.iconUrl === undefined || ui.iconUrl === null
+      || (typeof ui.iconUrl === "string" && ui.iconUrl.startsWith("/")),
+    `${label}.ui.iconUrl 非法`
+  );
+  if (ui.cameraId !== undefined && ui.cameraId !== null) {
+    check(
+      cameras.has(`${typeof ui.cameraId}:${ui.cameraId}`),
+      `${ui.cameraId} 引用了未知 interactionCamera`
+    );
+  }
+  check(
+    ui.navigationMode === undefined || ["tabs", "list", "none"].includes(ui.navigationMode),
+    `${label}.ui.navigationMode 非法`
+  );
+  check(
+    ui.layout === undefined || ["single", "stack", "grid"].includes(ui.layout),
+    `${label}.ui.layout 非法`
+  );
+}
+
 function uniqueIndex(items, key, label) {
   check(Array.isArray(items) && items.length > 0, `${label} 必须是非空数组`);
   const result = new Map();
@@ -147,7 +185,7 @@ export function deriveConfigurationIdentity(catalog, selections, customizations 
 
 export function validateCatalog(catalog) {
   check(isRecord(catalog), "catalog 根节点必须是 object");
-  assertExactKeys(catalog, [
+  assertAllowedKeys(catalog, [
     "schemaVersion",
     "catalogVersion",
     "lifecycle",
@@ -164,7 +202,7 @@ export function validateCatalog(catalog) {
     "materialVariants",
     "assetManifest",
     "options"
-  ], "catalog");
+  ], ["interactionCameras"], "catalog");
   check(catalog.schemaVersion === "2.0.0", "catalog.schemaVersion 必须为 2.0.0");
   check(catalog.lifecycle === "draft", "车型目录 v2 当前仅允许 draft");
   check(catalog.currency === "CNY", "currency 必须为 CNY");
@@ -197,6 +235,36 @@ export function validateCatalog(catalog) {
     "materialVariants"
   );
   const options = uniqueIndex(catalog.options, "optionId", "options");
+  const cameras = new Map();
+  for (const camera of catalog.interactionCameras ?? []) {
+    check(isRecord(camera), "interactionCamera 必须是 object");
+    assertAllowedKeys(
+      camera,
+      ["cameraId", "zone", "order", "displayName", "iconUrl"],
+      ["legacyIndex"],
+      "interactionCamera"
+    );
+    check(
+      (typeof camera.cameraId === "string" && ID.test(camera.cameraId))
+        || (Number.isInteger(camera.cameraId) && camera.cameraId >= 0),
+      "interactionCamera.cameraId 非法"
+    );
+    check(
+      camera.legacyIndex === undefined
+        || camera.legacyIndex === null
+        || (Number.isInteger(camera.legacyIndex)
+          && camera.legacyIndex >= 0
+          && camera.legacyIndex <= 5),
+      "interactionCamera.legacyIndex 非法"
+    );
+    const key = `${typeof camera.cameraId}:${camera.cameraId}`;
+    check(!cameras.has(key), `interactionCameras 存在重复 cameraId：${camera.cameraId}`);
+    check(typeof camera.zone === "string" && ID.test(camera.zone), "interactionCamera.zone 非法");
+    check(Number.isInteger(camera.order) && camera.order >= 0, "interactionCamera.order 非法");
+    check(typeof camera.displayName === "string" && camera.displayName.length > 0, "interactionCamera.displayName 非法");
+    check(typeof camera.iconUrl === "string" && camera.iconUrl.startsWith("/"), "interactionCamera.iconUrl 非法");
+    cameras.set(key, camera);
+  }
   check(isRecord(catalog.optionIdAliases), "optionIdAliases 必须是 object");
   for (const [legacyOptionId, optionId] of Object.entries(catalog.optionIdAliases)) {
     check(ID.test(legacyOptionId), `旧 optionId 非法：${legacyOptionId}`);
@@ -222,6 +290,17 @@ export function validateCatalog(catalog) {
   }
   for (const surface of surfaces.values()) {
     check(components.has(surface.componentId), `${surface.surfaceId} 引用了未知 componentId`);
+  }
+  for (const item of [
+    ...categories.values(),
+    ...components.values(),
+    ...surfaces.values()
+  ]) {
+    validateNodeUi(
+      item.ui,
+      cameras,
+      item.categoryId ?? item.componentId ?? item.surfaceId
+    );
   }
 
   const optionIdsBySurface = new Map(
@@ -256,6 +335,37 @@ export function validateCatalog(catalog) {
       `${option.optionId} pricingUnit 非法`
     );
     check(typeof option.renderRelevant === "boolean", `${option.optionId} renderRelevant 必须为 boolean`);
+    if (option.ui !== undefined) {
+      check(isRecord(option.ui), `${option.optionId}.ui 必须是 object`);
+      check(
+        option.ui.order === undefined
+          || (Number.isInteger(option.ui.order) && option.ui.order >= 0),
+        `${option.optionId}.ui.order 非法`
+      );
+      check(
+        option.ui.iconUrl === undefined || option.ui.iconUrl === null
+          || (typeof option.ui.iconUrl === "string" && option.ui.iconUrl.startsWith("/")),
+        `${option.optionId}.ui.iconUrl 非法`
+      );
+      check(
+        option.ui.control === undefined
+          || ["swatch", "thumbnail", "color-picker", "material-variant"]
+            .includes(option.ui.control),
+        `${option.optionId}.ui.control 非法`
+      );
+      if (option.ui.defaultParameters !== undefined) {
+        check(isRecord(option.ui.defaultParameters), `${option.optionId}.ui.defaultParameters 非法`);
+        for (const [key, value] of Object.entries(option.ui.defaultParameters)) {
+          check(PAINT_KEYS.includes(key), `${option.optionId}.ui.defaultParameters.${key} 未知`);
+          check(
+            key === "colorHex"
+              ? typeof value === "string" && /^#[0-9A-Fa-f]{6}$/.test(value)
+              : typeof value === "number" && value >= 0 && value <= 1,
+            `${option.optionId}.ui.defaultParameters.${key} 非法`
+          );
+        }
+      }
+    }
     if (option.parameters?.color?.mode === "variant") {
       check(
         option.materialFamilyId !== null

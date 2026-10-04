@@ -20,7 +20,7 @@
 - `fixtures/vehicle-*.invalid.json`：验证器必须拒绝的负向样例。
 - `fixtures/content-pack.valid.json` / `content-pack.invalid.json`：内容包 manifest 正反样例。
 - `fixtures/reference-asset-normalization.example.json`：参考资产 FBX 规范化作业清单示例，不对应仓库内真实资产。
-- `fixtures/sc01.catalog.draft.v2.json`：只含来源可确认信息的 SC01 契约原子样本。
+- `fixtures/sc01.catalog.draft.v2.json`：SC01 产品、UI 展示与页签镜头绑定的统一配置源。
 - `fixtures/sc01.configuration.*.v2.json`：SC01 v2 有效与无效配置。
 - `fixtures/sc01.price-result.v2.json`：禁止报价的价格结果。
 - `fixtures/sc01.identity-golden.v2.json`：稳定配置身份与渲染键黄金向量。
@@ -94,10 +94,30 @@ SC01 不复用 v1 的固定四分区和固定价差模型。v2 使用
 `renderRelevant=true` 的选项，因此完整配置变化不一定要求生成新图片；
 `renderViewId` 不进入配置身份或渲染投影。
 
-当前 SC01 fixture 是 `draft`。来源清单中的金额尚未完成业务确认，因此基础价、
-单价、小计和总价均为 `null`，`quoteAllowed=false`。来源映射与字段理由见
+当前 SC01 fixture 是 `draft`。基础价与现阶段已确认的选装价格用于参考总价，
+但正式报价仍关闭，`quoteAllowed=false`。来源映射与字段理由见
 `docs/product-data/sc01/SOURCE_MAPPING_V2.md` 和
 `docs/product-data/sc01/FIELD_DECISIONS_V2.md`。
+
+## SC01 UI 与镜头配置
+
+`fixtures/sc01.catalog.draft.v2.json` 是 SC01 选配界面的唯一配置入口：
+
+- `categories/components/surfaces/options[].displayName` 配置阶段、部件、子项和选装项名称。
+- `options[].pricing` 配置单价、数量、计价单位和是否标配。
+- 各层 `ui.order`、`ui.iconUrl` 配置顺序和图标。
+- `components[].ui.navigationMode/layout` 配置子项导航与同屏布局。
+- `options[].ui.control/defaultParameters` 配置色块、图片、材料色卡或调色板及默认参数。
+- `interactionCameras[]` 配置可用语义机位；category/component/surface 的
+  `ui.cameraId` 按 `surface → component → category` 优先级绑定页签镜头。
+
+UE 主场景中的相机使用 `Configurator.Camera.<cameraId>` Actor Tag 与 Catalog
+对接；车内相机额外添加 `Configurator.Camera.Interior`，切换时自动使用黑屏，
+其余机位使用绕车圆弧过渡。增加机位时，在 Catalog 的 `interactionCameras`
+登记并在地图放置同名 Tag 即可；`legacyIndex` 仅用于兼容旧 UE 的数字接口。
+
+`Configurator.Camera.underbody` 目前只在地图生成器源码中预留注释。底盘构图、
+补光和底板显隐逻辑完成前，不得在 Catalog 或地图中启用该机位。
 
 ## 验证
 

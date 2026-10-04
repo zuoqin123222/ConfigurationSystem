@@ -43,6 +43,57 @@ test("catalog 使用显式 defaultSelections 消除多标配项的顺序歧义",
   );
 });
 
+test("catalog 声明五个语义交互镜头并校验层级 cameraId 引用", async () => {
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  assert.deepEqual(
+    catalog.interactionCameras.map((camera) => camera.cameraId),
+    ["exterior", "wheel", "driver", "seat", "front-cabin"]
+  );
+  assert.deepEqual(
+    catalog.interactionCameras.map((camera) => camera.legacyIndex),
+    [0, 2, 4, null, 5]
+  );
+  assert.ok(catalog.interactionCameras.every((camera, index) =>
+    camera.order === index
+      && typeof camera.zone === "string"
+      && camera.displayName.length > 0
+      && camera.iconUrl.startsWith("/")
+  ));
+  assert.equal(
+    catalog.components.find((component) => component.componentId === "wheel").ui.cameraId,
+    "wheel"
+  );
+
+  const invalid = structuredClone(catalog);
+  invalid.components[0].ui.cameraId = "missing-camera";
+  assert.throws(() => validateCatalog(invalid), /未知 interactionCamera/);
+
+  const invalidLegacyIndex = structuredClone(catalog);
+  invalidLegacyIndex.interactionCameras[0].legacyIndex = 6;
+  assert.throws(() => validateCatalog(invalidLegacyIndex), /legacyIndex 非法/);
+});
+
+test("catalog UI 扩展保持向后兼容并接受旧数字 cameraId", async () => {
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  delete catalog.interactionCameras;
+  for (const collection of [catalog.categories, catalog.components, catalog.surfaces]) {
+    for (const item of collection) delete item.ui;
+  }
+  for (const option of catalog.options) delete option.ui;
+  assert.doesNotThrow(() => validateCatalog(catalog));
+
+  catalog.interactionCameras = [{
+    cameraId: 4,
+    legacyIndex: null,
+    zone: "interior",
+    order: 0,
+    displayName: "旧驾驶位",
+    iconUrl: "/camera-driver.svg"
+  }];
+  catalog.categories[0].ui = { cameraId: 4 };
+  assert.doesNotThrow(() => validateCatalog(catalog));
+});
+
 test("configurationId 与 renderKey 不受 selections 对象属性顺序影响", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const valid = await fixture("sc01.configuration.valid.v2.json");

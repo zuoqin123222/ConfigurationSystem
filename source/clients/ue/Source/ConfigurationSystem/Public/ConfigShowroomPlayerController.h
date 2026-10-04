@@ -35,7 +35,7 @@ private:
 	FMinimalViewInfo CameraPOV;
 };
 
-/** 纯 C++ 展厅控制器：六机位切换、自由镜头、双环境、交互部件与原子快照。 */
+/** 纯 C++ 展厅控制器：语义机位切换、自由镜头、双环境、交互部件与原子快照。 */
 UCLASS()
 class CONFIGURATIONSYSTEM_API AConfigShowroomPlayerController final
 	: public APlayerController
@@ -59,6 +59,19 @@ public:
 	/** 原生体验 UI 的明确 Set 入口；保留 SwitchCamera 兼容既有调用。 */
 	UFUNCTION(BlueprintCallable, Category="Configurator|Camera")
 	bool SetCamera(int32 CameraIndex);
+
+	/** 按地图中的 Configurator.Camera.<id> 语义标签切换机位。 */
+	UFUNCTION(BlueprintCallable, Category="Configurator|Camera")
+	bool SetCameraId(const FString& CameraId);
+
+	/** 解析合法的小写语义机位标签；Interior companion tag 不会被当作 id。 */
+	static bool TryParseCameraIdTag(FName Tag, FString& OutCameraId);
+
+	/** Interior companion tag 决定是否跨区黑屏，与 id 命名无关。 */
+	static bool ShouldUseBlackCameraTransition(
+		bool bFromInterior,
+		bool bToInterior,
+		bool bSameCamera);
 
 	/** 外部机位围绕 Pivot 按最短方位角弧线插值，供运行时和自动化测试共用。 */
 	static FVector InterpolateOrbitLocation(
@@ -166,6 +179,9 @@ public:
 	UFUNCTION(BlueprintPure, Category="Configurator|Camera")
 	int32 GetCurrentCameraIndex() const { return CurrentCameraIndex; }
 
+	UFUNCTION(BlueprintPure, Category="Configurator|Camera")
+	FString GetCurrentCameraId() const { return CurrentCameraId; }
+
 	UFUNCTION(BlueprintPure, Category="Configurator|Environment")
 	int32 GetCurrentEnvironmentIndex() const;
 
@@ -179,12 +195,18 @@ private:
 	void FlushPersistentConfiguration();
 
 	void Camera0(); void Camera1(); void Camera2(); void Camera3(); void Camera4(); void Camera5();
+	void DiscoverCameraPresets();
+	bool SwitchToCamera(ACameraActor* Camera, int32 LegacyCameraIndex, const FString& CameraId);
+	bool IsInteriorCamera(const ACameraActor* Camera) const;
+	bool IsCurrentCameraInterior() const;
+	FString FindSemanticCameraId(const ACameraActor* Camera) const;
 	void HandleCameraHorizontal(float Value);
 	void HandleCameraVertical(float Value);
 	void HandleCameraZoom(float Value);
 	void HandleOrbitPressed();
 	AConfigRuntimeCameraActor* GetInteractiveCamera() const;
 	bool GetCameraPresetPOV(int32 CameraIndex, FMinimalViewInfo& OutPOV) const;
+	bool GetCameraPresetPOV(const ACameraActor* Camera, FMinimalViewInfo& OutPOV) const;
 	void RotateInteractiveCamera(float YawDegrees, float PitchDegrees);
 	void PanInteractiveCamera(float Horizontal, float Vertical);
 	void DollyInteractiveCamera(float Amount);
@@ -210,6 +232,15 @@ private:
 	TArray<TObjectPtr<ACameraActor>> ShowroomCameras;
 
 	UPROPERTY(Transient)
+	TMap<FString, TObjectPtr<ACameraActor>> ShowroomCamerasById;
+
+	UPROPERTY(Transient)
+	TObjectPtr<ACameraActor> CurrentCameraPreset;
+
+	UPROPERTY(Transient)
+	TObjectPtr<ACameraActor> PendingCameraPreset;
+
+	UPROPERTY(Transient)
 	TObjectPtr<AShowroomEnvironmentActor> Environment;
 
 	UPROPERTY(Transient)
@@ -220,6 +251,8 @@ private:
 
 	int32 CurrentCameraIndex = INDEX_NONE;
 	int32 PendingCameraIndex = INDEX_NONE;
+	FString CurrentCameraId;
+	FString PendingCameraId;
 	FMinimalViewInfo CameraTransitionStartPOV;
 	FMinimalViewInfo CameraTransitionEndPOV;
 	FVector CameraTransitionPivot = FVector::ZeroVector;

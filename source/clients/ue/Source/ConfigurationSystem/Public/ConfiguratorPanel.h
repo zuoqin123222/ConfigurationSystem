@@ -43,6 +43,7 @@ public:
 
 	void ApplyWebConfigurationJson(const FString& ConfigurationJson);
 	bool SetExperienceCamera(int32 CameraIndex);
+	bool SetExperienceCameraId(const FString& CameraId);
 	bool SetExperienceAnimationEnabled(bool bEnabled);
 	bool SetExperienceLightPreset(const FString& Preset);
 	bool SetExperienceRenderMode(const FString& Mode);

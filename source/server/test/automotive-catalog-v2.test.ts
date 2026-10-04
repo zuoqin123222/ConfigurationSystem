@@ -80,6 +80,24 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
     (surface: { required: boolean }) => !surface.required,
   ).length, 8);
   assert.equal(response.json().materialVariants.length, 352);
+  assert.deepEqual(
+    response.json().interactionCameras.map(
+      (camera: { cameraId: string }) => camera.cameraId,
+    ),
+    ["exterior", "wheel", "driver", "seat", "front-cabin"],
+  );
+  assert.deepEqual(
+    response.json().interactionCameras.map(
+      (camera: { legacyIndex: number | null }) => camera.legacyIndex,
+    ),
+    [0, 2, 4, null, 5],
+  );
+  assert.equal(
+    response.json().components.find(
+      (component: { componentId: string }) => component.componentId === "wheel",
+    ).ui.cameraId,
+    "wheel",
+  );
 });
 
 test("创建配置返回稳定身份、revision 与禁止报价价格明细", async (t) => {

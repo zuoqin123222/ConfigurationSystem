@@ -6,6 +6,25 @@ import { RequestError } from "./data.js";
 
 export const CATALOG_SCHEMA_VERSION = "2.0.0";
 
+export type CatalogCameraId = string | number;
+
+export interface CatalogNodeUi {
+  order?: number;
+  iconUrl?: string | null;
+  cameraId?: CatalogCameraId | null;
+  navigationMode?: "tabs" | "list" | "none";
+  layout?: "single" | "stack" | "grid";
+}
+
+export interface CatalogInteractionCamera {
+  cameraId: CatalogCameraId;
+  legacyIndex?: 0 | 1 | 2 | 3 | 4 | 5 | null;
+  zone: string;
+  order: number;
+  displayName: string;
+  iconUrl: string;
+}
+
 export interface CatalogPricing {
   unitPriceMinor: number | null;
   quantity: number | null;
@@ -56,7 +75,16 @@ export interface AutomotiveCatalog {
   selectionOrder: string[];
   defaultSelections: Record<string, string>;
   optionIdAliases: Record<string, string>;
-  surfaces: Array<{ surfaceId: string; required: boolean; [key: string]: unknown }>;
+  interactionCameras?: CatalogInteractionCamera[];
+  categories: Array<{ categoryId: string; ui?: CatalogNodeUi; [key: string]: unknown }>;
+  components: Array<{ componentId: string; ui?: CatalogNodeUi; [key: string]: unknown }>;
+  surfaces: Array<{
+    surfaceId: string;
+    componentId: string;
+    required: boolean;
+    ui?: CatalogNodeUi;
+    [key: string]: unknown;
+  }>;
   materialVariants: CatalogMaterialVariant[];
   options: CatalogOption[];
   [key: string]: unknown;
@@ -135,6 +163,94 @@ function defaultContractRoot(): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function cameraKey(cameraId: CatalogCameraId): string {
+  return `${typeof cameraId}:${cameraId}`;
+}
+
+function validateCatalogUi(catalog: AutomotiveCatalog): void {
+  if (catalog.interactionCameras !== undefined && !Array.isArray(catalog.interactionCameras)) {
+    throw new Error("车型目录 v2 interactionCameras 必须是数组");
+  }
+  const cameraIds = new Set<string>();
+  for (const camera of catalog.interactionCameras ?? []) {
+    if (
+      !isRecord(camera)
+      || !(typeof camera.cameraId === "string" || Number.isInteger(camera.cameraId))
+      || (camera.legacyIndex !== undefined
+        && camera.legacyIndex !== null
+        && (!Number.isInteger(camera.legacyIndex)
+          || Number(camera.legacyIndex) < 0
+          || Number(camera.legacyIndex) > 5))
+      || typeof camera.zone !== "string"
+      || !Number.isInteger(camera.order)
+      || typeof camera.displayName !== "string"
+      || typeof camera.iconUrl !== "string"
+      || !camera.iconUrl.startsWith("/")
+    ) {
+      throw new Error("车型目录 v2 interactionCamera 字段非法");
+    }
+    const key = cameraKey(camera.cameraId as CatalogCameraId);
+    if (cameraIds.has(key)) {
+      throw new Error(`车型目录 v2 cameraId 重复：${String(camera.cameraId)}`);
+    }
+    cameraIds.add(key);
+  }
+  for (const item of [
+    ...catalog.categories,
+    ...catalog.components,
+    ...catalog.surfaces,
+  ]) {
+    if (item.ui !== undefined && !isRecord(item.ui)) {
+      throw new Error("车型目录 v2 ui 必须是对象");
+    }
+    if (item.ui?.order !== undefined
+      && (!Number.isInteger(item.ui.order) || Number(item.ui.order) < 0)) {
+      throw new Error("车型目录 v2 ui.order 非法");
+    }
+    if (item.ui?.iconUrl !== undefined
+      && item.ui.iconUrl !== null
+      && (typeof item.ui.iconUrl !== "string" || !item.ui.iconUrl.startsWith("/"))) {
+      throw new Error("车型目录 v2 ui.iconUrl 非法");
+    }
+    const cameraId = item.ui?.cameraId;
+    if (cameraId !== undefined && cameraId !== null) {
+      if (!(typeof cameraId === "string" || Number.isInteger(cameraId))
+        || !cameraIds.has(cameraKey(cameraId as CatalogCameraId))) {
+        throw new Error(`车型目录 v2 ui.cameraId 不存在：${String(cameraId)}`);
+      }
+    }
+  }
+  for (const option of catalog.options) {
+    const ui = option.ui;
+    if (ui === undefined) continue;
+    if (!isRecord(ui)
+      || (ui.order !== undefined && (!Number.isInteger(ui.order) || Number(ui.order) < 0))
+      || (ui.iconUrl !== undefined
+        && ui.iconUrl !== null
+        && (typeof ui.iconUrl !== "string" || !ui.iconUrl.startsWith("/")))
+      || (ui.control !== undefined
+        && !["swatch", "thumbnail", "color-picker", "material-variant"].includes(String(ui.control)))) {
+      throw new Error(`车型目录 v2 选项 ${option.optionId} ui 非法`);
+    }
+    if (ui.defaultParameters !== undefined) {
+      if (!isRecord(ui.defaultParameters)) {
+        throw new Error(`车型目录 v2 选项 ${option.optionId} ui.defaultParameters 非法`);
+      }
+      for (const [key, parameter] of Object.entries(ui.defaultParameters)) {
+        if (!PAINT_KEYS.includes(key as typeof PAINT_KEYS[number])
+          || (key === "colorHex"
+            ? typeof parameter !== "string" || !/^#[0-9a-fA-F]{6}$/.test(parameter)
+            : typeof parameter !== "number"
+              || !Number.isFinite(parameter)
+              || parameter < 0
+              || parameter > 1)) {
+          throw new Error(`车型目录 v2 选项 ${option.optionId} ui.defaultParameters 非法`);
+        }
+      }
+    }
+  }
 }
 
 function digest24(value: string): string {
@@ -529,6 +645,7 @@ export function loadAutomotiveCatalog(contractRoot = defaultContractRoot()): Aut
       );
     }
   }
+  validateCatalogUi(catalog);
   for (const variant of catalog.materialVariants) {
     if (materialVariants.has(variant.variantId)) {
       throw new Error(`车型目录 v2 variantId 重复：${variant.variantId}`);

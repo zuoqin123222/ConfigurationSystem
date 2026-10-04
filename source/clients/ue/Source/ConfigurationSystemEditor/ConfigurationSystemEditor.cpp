@@ -608,7 +608,8 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 	const TCHAR* CameraLabels[] = {
 		TEXT("ShowroomCamera"), TEXT("ShowroomCameraRear"), TEXT("ShowroomCameraLeft"),
 		TEXT("ShowroomCameraRight"), TEXT("ShowroomCameraInterior"),
-		TEXT("ShowroomCameraInteriorPassenger")
+		TEXT("ShowroomCameraInteriorPassenger"), TEXT("ShowroomCameraSeats"),
+		TEXT("ShowroomCameraWheel")
 	};
 	const FTransform CameraTransforms[] = {
 		FTransform(FRotator(-14.0, -150.0, 0.0), FVector(920.0, 520.0, 310.0)),
@@ -617,7 +618,22 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		FTransform(FRotator(-10.0, 90.0, 0.0), FVector(0.0, -880.0, 250.0)),
 		// Audi 资产约定 +X 为车头、左驾位于 Y<0；机位放在真实眼点并朝前。
 		FTransform(FRotator(-4.0, 0.0, 0.0), FVector(-15.0, -42.0, 122.0)),
-		FTransform(FRotator(-4.0, 0.0, 0.0), FVector(-15.0, 42.0, 122.0))
+		// 副驾眼点向左看主驾与仪表台，作为更完整的前舱内饰全景。
+		FTransform(FRotator(-6.0, -28.0, 0.0), FVector(-15.0, 48.0, 126.0)),
+		// 从前挡外侧回看前排双座，避免与任一单席视点重合。
+		FTransform(FRotator(-5.0, 180.0, 0.0), FVector(185.0, 0.0, 138.0)),
+		// 右前轮近景；独立于旧 2 号侧面机位，便于新 UI 精看轮毂。
+		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(155.0, 410.0, 92.0))
+	};
+	const float CameraFovs[] = {
+		42.0f, 42.0f, 42.0f, 42.0f, 64.0f, 76.0f, 64.0f, 38.0f
+	};
+	const TCHAR* SemanticCameraIds[] = {
+		TEXT("exterior"), nullptr, nullptr, nullptr,
+		TEXT("driver"), TEXT("front-cabin"), TEXT("seat"), TEXT("wheel")
+	};
+	const bool bInteriorCameras[] = {
+		false, false, false, false, true, true, true, false
 	};
 	bool bAllCamerasCreated = true;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(CameraLabels); ++Index)
@@ -627,12 +643,25 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		bAllCamerasCreated &= Camera != nullptr;
 		if (Camera != nullptr)
 		{
-			Camera->GetCameraComponent()->SetFieldOfView(Index >= 4 ? 64.0f : 42.0f);
-			Camera->Tags.AddUnique(FName(
-				*FString::Printf(TEXT("Configurator.Camera.%d"), Index)));
+			Camera->GetCameraComponent()->SetFieldOfView(CameraFovs[Index]);
+			if (Index < 6)
+			{
+				Camera->Tags.AddUnique(FName(
+					*FString::Printf(TEXT("Configurator.Camera.%d"), Index)));
+			}
+			if (SemanticCameraIds[Index] != nullptr)
+			{
+				Camera->Tags.AddUnique(FName(*FString::Printf(
+					TEXT("Configurator.Camera.%s"), SemanticCameraIds[Index])));
+			}
+			if (bInteriorCameras[Index])
+			{
+				Camera->Tags.AddUnique(TEXT("Configurator.Camera.Interior"));
+			}
 			Camera->Tags.AddUnique(AConfiguratorVehicleActor::TemporaryResourceTag);
 		}
 	}
+	// 预留 Configurator.Camera.underbody；当前不生成机位，待底盘资产与碰撞边界稳定后启用。
 
 	AShowroomEnvironmentActor* Environment =
 		FindOrSpawnActor<AShowroomEnvironmentActor>(

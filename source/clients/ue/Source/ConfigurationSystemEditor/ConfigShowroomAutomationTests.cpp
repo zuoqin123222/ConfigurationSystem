@@ -129,15 +129,19 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 			World, TEXT("ConfiguratorPlaceholderVehicle_TEMP")),
 		1);
 	TestEqual(
-		TEXT("四个车外与驾驶位、副驾位六个产品机位完整"),
+		TEXT("六个兼容机位与两个独立语义近景机位完整"),
 		ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCamera"))
 			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraRear"))
 			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraLeft"))
 			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraRight"))
 			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraInterior"))
 			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(
-				World, TEXT("ShowroomCameraInteriorPassenger")),
-		6);
+				World, TEXT("ShowroomCameraInteriorPassenger"))
+			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(
+				World, TEXT("ShowroomCameraSeats"))
+			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(
+				World, TEXT("ShowroomCameraWheel")),
+		8);
 	TSet<const AActor*> TaggedCameras;
 	for (int32 CameraIndex = 0; CameraIndex < 6; ++CameraIndex)
 	{
@@ -150,11 +154,48 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 			1);
 	}
 	TestEqual(TEXT("六个机位标签分别指向不同相机"), TaggedCameras.Num(), 6);
+	const struct
+	{
+		const TCHAR* CameraId;
+		int32 LegacyIndex;
+		bool bInterior;
+	} SemanticCameras[] = {
+		{TEXT("exterior"), 0, false},
+		{TEXT("wheel"), INDEX_NONE, false},
+		{TEXT("driver"), 4, true},
+		{TEXT("front-cabin"), 5, true},
+		{TEXT("seat"), INDEX_NONE, true}
+	};
+	for (const auto& Expected : SemanticCameras)
+	{
+		const FName SemanticTag(*FString::Printf(
+			TEXT("Configurator.Camera.%s"), Expected.CameraId));
+		ACameraActor* Camera =
+			ConfigShowroomAutomation::FindCameraByTag(World, SemanticTag);
+		if (!TestNotNull(
+			*FString::Printf(TEXT("语义机位 %s 存在"), Expected.CameraId),
+			Camera))
+		{
+			continue;
+		}
+		if (Expected.LegacyIndex != INDEX_NONE)
+		{
+			TestTrue(
+				*FString::Printf(TEXT("语义机位 %s 保留数字绑定"), Expected.CameraId),
+				Camera->ActorHasTag(FName(*FString::Printf(
+					TEXT("Configurator.Camera.%d"), Expected.LegacyIndex))));
+		}
+		TestEqual(
+			*FString::Printf(TEXT("语义机位 %s 的 Interior companion tag"), Expected.CameraId),
+			Camera->ActorHasTag(TEXT("Configurator.Camera.Interior")),
+			Expected.bInterior);
+	}
 
 	const TCHAR* ExpectedCameraLabels[] = {
 		TEXT("ShowroomCamera"), TEXT("ShowroomCameraRear"), TEXT("ShowroomCameraLeft"),
 		TEXT("ShowroomCameraRight"), TEXT("ShowroomCameraInterior"),
-		TEXT("ShowroomCameraInteriorPassenger")
+		TEXT("ShowroomCameraInteriorPassenger"), TEXT("ShowroomCameraSeats"),
+		TEXT("ShowroomCameraWheel")
 	};
 	const FTransform ExpectedCameraTransforms[] = {
 		FTransform(FRotator(-14.0, -150.0, 0.0), FVector(920.0, 520.0, 310.0)),
@@ -162,15 +203,18 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 		FTransform(FRotator(-10.0, -90.0, 0.0), FVector(0.0, 880.0, 250.0)),
 		FTransform(FRotator(-10.0, 90.0, 0.0), FVector(0.0, -880.0, 250.0)),
 		FTransform(FRotator(-4.0, 0.0, 0.0), FVector(-15.0, -42.0, 122.0)),
-		FTransform(FRotator(-4.0, 0.0, 0.0), FVector(-15.0, 42.0, 122.0))
+		FTransform(FRotator(-6.0, -28.0, 0.0), FVector(-15.0, 48.0, 126.0)),
+		FTransform(FRotator(-5.0, 180.0, 0.0), FVector(185.0, 0.0, 138.0)),
+		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(155.0, 410.0, 92.0))
+	};
+	const float ExpectedCameraFovs[] = {
+		42.0f, 42.0f, 42.0f, 42.0f, 64.0f, 76.0f, 64.0f, 38.0f
 	};
 	for (int32 CameraIndex = 0; CameraIndex < UE_ARRAY_COUNT(ExpectedCameraLabels);
 		++CameraIndex)
 	{
-		const FName CameraTag(*FString::Printf(
-			TEXT("Configurator.Camera.%d"), CameraIndex));
-		ACameraActor* Camera =
-			ConfigShowroomAutomation::FindCameraByTag(World, CameraTag);
+		ACameraActor* Camera = ConfigShowroomAutomation::FindByLabel<ACameraActor>(
+			World, ExpectedCameraLabels[CameraIndex]);
 		if (!TestNotNull(
 			*FString::Printf(TEXT("机位 %d 可按标签定位"), CameraIndex),
 			Camera))
@@ -190,7 +234,7 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 			*FString::Printf(TEXT("机位 %d FOV 正确"), CameraIndex),
 			FMath::IsNearlyEqual(
 				Camera->GetCameraComponent()->FieldOfView,
-				CameraIndex >= 4 ? 64.0f : 42.0f,
+				ExpectedCameraFovs[CameraIndex],
 				0.1f));
 	}
 	ACameraActor* DriverCamera = ConfigShowroomAutomation::FindCameraByTag(
@@ -203,9 +247,11 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 			DriverCamera->GetActorLocation().Y < 0.0);
 		TestTrue(TEXT("副驾位位于右侧 Y>0"),
 			PassengerCamera->GetActorLocation().Y > 0.0);
-		TestTrue(TEXT("主副驾目视方向均朝 Audi +X 车头"),
-			DriverCamera->GetActorForwardVector().X > 0.99
-				&& PassengerCamera->GetActorForwardVector().X > 0.99);
+		TestTrue(TEXT("主驾机位朝 Audi +X 车头"),
+			DriverCamera->GetActorForwardVector().X > 0.99);
+		TestTrue(TEXT("副驾全景机位朝车头且明显转向 Y<0 主驾侧"),
+			PassengerCamera->GetActorForwardVector().X > 0.8
+				&& PassengerCamera->GetActorForwardVector().Y < -0.3);
 	}
 	TestEqual(
 		TEXT("流式环境控制器唯一"),

@@ -214,9 +214,11 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .filter-group > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .filter-group button {
+  display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid #d8d6ce; border-radius: 4px; padding: 7px 11px;
   color: #555850; background: #fff; cursor: pointer; font-size: 13px;
 }
+.filter-group button img { width: 16px; height: 16px; object-fit: contain; }
 .filter-group button.active { border-color: #282b26; color: #fff; background: #282b26; }
 
 .none-option {
@@ -540,11 +542,20 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   min-width: 0;
 }
 .camera-popover button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-width: 52px;
   padding-right: 9px;
   padding-left: 9px;
   text-align: center;
   white-space: nowrap;
+}
+.camera-popover button img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 .quality-control { position: fixed; z-index: 22; top: 20px; right: 20px; }
 .icon-button {
@@ -832,6 +843,13 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   overflow: visible;
   scrollbar-width: none;
 }
+.header-stage button img {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  object-fit: contain;
+  vertical-align: middle;
+}
 .controls-view .experience-toolbar::-webkit-scrollbar {
   display: none;
 }
@@ -851,8 +869,7 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   box-shadow: none;
 }
 .app-shell.embedded .config-panel::before { display: none; }
-.app-shell.embedded .panel-head,
-.app-shell.embedded .filter-group-stage { display: none; }
+.app-shell.embedded .panel-head { display: none; }
 .app-shell.embedded .part-selector,
 .app-shell.embedded .options,
 .app-shell.embedded .paint-editor {

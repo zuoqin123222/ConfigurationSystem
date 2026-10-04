@@ -181,6 +181,18 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		UConfiguratorWebBridge::IsSupportedCameraIndex(5));
 	TestFalse(TEXT("bridge 拒绝越界镜头"),
 		UConfiguratorWebBridge::IsSupportedCameraIndex(6));
+	TestTrue(TEXT("bridge 接受动态语义镜头 id"),
+		UConfiguratorWebBridge::IsSupportedCameraId(TEXT("front-cabin")));
+	TestFalse(TEXT("bridge 拒绝含点号的镜头 id"),
+		UConfiguratorWebBridge::IsSupportedCameraId(TEXT("front.cabin")));
+	FString ParsedCameraId;
+	TestTrue(TEXT("controller 可解析语义镜头标签"),
+		AConfigShowroomPlayerController::TryParseCameraIdTag(
+			TEXT("Configurator.Camera.seat"), ParsedCameraId));
+	TestEqual(TEXT("语义镜头标签保留 id"), ParsedCameraId, FString(TEXT("seat")));
+	TestFalse(TEXT("Interior companion tag 不被误识别为镜头 id"),
+		AConfigShowroomPlayerController::TryParseCameraIdTag(
+			TEXT("Configurator.Camera.Interior"), ParsedCameraId));
 	TestTrue(TEXT("bridge 接受户外灯光白名单"),
 		UConfiguratorWebBridge::IsSupportedLightPreset(TEXT("outdoor")));
 	TestFalse(TEXT("bridge 拒绝未知灯光预设"),
@@ -399,6 +411,12 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(4, 5));
 	TestFalse(TEXT("重复选择同一车内机位不触发黑屏"),
 		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(4, 4));
+	TestTrue(TEXT("任意动态 Interior companion 机位切换使用黑屏"),
+		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(
+			false, true, false));
+	TestFalse(TEXT("任意动态非 Interior 机位间使用车外圆弧"),
+		AConfigShowroomPlayerController::ShouldUseBlackCameraTransition(
+			false, false, false));
 	TestTrue(TEXT("副驾位属于车内预设"),
 		AConfigShowroomPlayerController::IsInteriorCameraPreset(5));
 	TestTrue(TEXT("车外允许平移"),

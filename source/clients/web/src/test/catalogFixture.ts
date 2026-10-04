@@ -149,6 +149,13 @@ export const catalogFixture: CatalogV2 = {
     'a-pillar-surface': 'a-pillar-woven',
     'embroidered-logo': 'embroidered-logo-standard',
   },
+  interactionCameras: [
+    { cameraId: 'exterior', legacyIndex: 0, zone: 'exterior', order: 0, displayName: '外观', iconUrl: '/camera-exterior.svg' },
+    { cameraId: 'wheel', legacyIndex: 2, zone: 'exterior', order: 1, displayName: '轮毂', iconUrl: '/camera-wheel.svg' },
+    { cameraId: 'driver', legacyIndex: 4, zone: 'interior', order: 2, displayName: '驾驶位', iconUrl: '/camera-driver.svg' },
+    { cameraId: 'seat', legacyIndex: null, zone: 'interior', order: 3, displayName: '座椅', iconUrl: '/camera-seat.svg' },
+    { cameraId: 'front-cabin', legacyIndex: 5, zone: 'interior', order: 4, displayName: '前舱', iconUrl: '/camera-front-cabin.svg' },
+  ],
   regions: [
     { regionId: 'exterior', displayName: '外观' },
     { regionId: 'interior', displayName: '内饰部件' },
@@ -156,20 +163,20 @@ export const catalogFixture: CatalogV2 = {
     { regionId: 'personalization', displayName: '其他个性化配置' },
   ],
   categories: [
-    { categoryId: 'exterior', regionId: 'exterior', displayName: '外饰' },
-    { categoryId: 'interior', regionId: 'interior', displayName: '内饰' },
-    { categoryId: 'performance', regionId: 'performance', displayName: '性能' },
-    { categoryId: 'personalization', regionId: 'personalization', displayName: '个性化' },
+    { categoryId: 'exterior', regionId: 'exterior', displayName: '外饰', ui: { order: 0, iconUrl: '/category-exterior.svg', cameraId: 'exterior', navigationMode: 'tabs', layout: 'single' } },
+    { categoryId: 'interior', regionId: 'interior', displayName: '内饰', ui: { order: 1, iconUrl: '/category-interior.svg', cameraId: 'front-cabin', navigationMode: 'tabs', layout: 'single' } },
+    { categoryId: 'performance', regionId: 'performance', displayName: '性能', ui: { order: 2, iconUrl: '/category-performance.svg', cameraId: 'exterior', navigationMode: 'tabs', layout: 'single' } },
+    { categoryId: 'personalization', regionId: 'personalization', displayName: '个性化', ui: { order: 3, iconUrl: '/category-personalization.svg', cameraId: 'front-cabin', navigationMode: 'tabs', layout: 'single' } },
   ],
   components: [
     { componentId: 'car-paint', categoryId: 'exterior', displayName: '车漆' },
     { componentId: 'chassis', categoryId: 'exterior', displayName: '车架' },
-    { componentId: 'wheel', categoryId: 'exterior', displayName: '轮毂' },
+    { componentId: 'wheel', categoryId: 'exterior', displayName: '轮毂', ui: { order: 2, cameraId: 'wheel', navigationMode: 'none', layout: 'stack' } },
     { componentId: 'caliper', categoryId: 'exterior', displayName: '卡钳' },
-    { componentId: 'steering-wheel', categoryId: 'interior', displayName: '方向盘' },
+    { componentId: 'steering-wheel', categoryId: 'interior', displayName: '方向盘', ui: { order: 0, cameraId: 'driver', navigationMode: 'tabs', layout: 'single' } },
     { componentId: 'instrument-panel', categoryId: 'interior', displayName: '仪表台' },
     { componentId: 'a-pillar', categoryId: 'interior', displayName: 'A柱' },
-    { componentId: 'seat', categoryId: 'interior', displayName: '座椅' },
+    { componentId: 'seat', categoryId: 'interior', displayName: '座椅', ui: { order: 3, cameraId: 'seat', navigationMode: 'tabs', layout: 'single' } },
     { componentId: 'door-trim', categoryId: 'interior', displayName: '门板' },
     { componentId: 'storage-box', categoryId: 'interior', displayName: '储物盒盖' },
     { componentId: 'center-console', categoryId: 'interior', displayName: '副仪表台' },
@@ -251,6 +258,19 @@ export const catalogFixture: CatalogV2 = {
     },
     {
       ...option('body-cover-custom', 'exterior-body-cover', 'paint', '自定义车漆', false),
+      ui: {
+        order: 2,
+        iconUrl: '/sc01/option-icons/rainbow.svg',
+        control: 'color-picker',
+        defaultParameters: {
+          colorHex: '#A61D24',
+          metallic: 0.35,
+          roughness: 0.28,
+          clearCoat: 0.8,
+          orangePeel: 0.15,
+          flakeIntensity: 0.25,
+        },
+      },
       parameters: {
         color: { mode: 'custom', value: null, required: true },
         material: { materialFamilyId: 'paint', variantId: null },
@@ -331,6 +351,19 @@ export const catalogFixture: CatalogV2 = {
         '自定义颜色(PPG涂层)',
         false,
       ),
+      ui: {
+        order: 1,
+        iconUrl: '/sc01/option-icons/rainbow.svg',
+        control: 'color-picker',
+        defaultParameters: {
+          colorHex: '#A61D24',
+          metallic: 0.35,
+          roughness: 0.28,
+          clearCoat: 0.8,
+          orangePeel: 0.15,
+          flakeIntensity: 0.25,
+        },
+      },
       parameters: {
         color: { mode: 'custom' as const, value: null, required: true },
         material: { materialFamilyId: 'paint', variantId: null },
@@ -345,6 +378,19 @@ export const catalogFixture: CatalogV2 = {
     },
     {
       ...option('seat-shell-custom', 'seat-shell-back', 'paint', '自定义取色', false),
+      ui: {
+        order: 1,
+        iconUrl: '/sc01/option-icons/rainbow.svg',
+        control: 'color-picker',
+        defaultParameters: {
+          colorHex: '#A61D24',
+          metallic: 0.35,
+          roughness: 0.18,
+          clearCoat: 0.8,
+          orangePeel: 0.15,
+          flakeIntensity: 0.25,
+        },
+      },
       parameters: {
         color: { mode: 'custom' as const, value: null, required: true },
         material: { materialFamilyId: 'paint', variantId: null },
