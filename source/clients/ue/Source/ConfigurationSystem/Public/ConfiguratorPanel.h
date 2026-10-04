@@ -39,6 +39,10 @@ public:
 		float ViewportWidth,
 		float LeftInset,
 		float RightInset);
+	/** 计算可见舞台占完整视口的宽度比例，并对异常布局做防御性限幅。 */
+	static float CalculateStageVisibleWidthRatio(
+		float ViewportWidth,
+		float OccludedWidth);
 	static constexpr int32 MaxHealthProbeAttempts = 5;
 
 	void ApplyWebConfigurationJson(const FString& ConfigurationJson);
@@ -64,6 +68,12 @@ public:
 	 * 普通模式考虑右侧 480px 面板；全屏模式返回 0。
 	 */
 	float GetStageProjectionOffsetX() const;
+
+	/**
+	 * 返回可见舞台占完整窗口的宽度比例。
+	 * 普通模式扣除右侧 480px 面板；全屏模式返回 1。
+	 */
+	float GetStageVisibleWidthRatio() const;
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;

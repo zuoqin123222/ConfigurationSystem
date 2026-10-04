@@ -282,6 +282,26 @@ FVector AConfigShowroomPlayerController::ClampInteriorCameraLocation(
 	return PresetLocation + Offset.GetClampedToMaxSize(FMath::Max(0.0f, MaxDistance));
 }
 
+float AConfigShowroomPlayerController::CalculateStageAwareHorizontalFOV(
+	const float OriginalHorizontalFOV,
+	const float VisibleStageWidthRatio)
+{
+	if (!FMath::IsFinite(OriginalHorizontalFOV)
+		|| OriginalHorizontalFOV <= KINDA_SMALL_NUMBER
+		|| OriginalHorizontalFOV >= 180.0f)
+	{
+		return OriginalHorizontalFOV;
+	}
+
+	const float SafeWidthRatio = FMath::IsFinite(VisibleStageWidthRatio)
+		? FMath::Clamp(VisibleStageWidthRatio, 0.05f, 1.0f)
+		: 1.0f;
+	const float HalfFOVRadians =
+		FMath::DegreesToRadians(OriginalHorizontalFOV) * 0.5f;
+	return FMath::RadiansToDegrees(
+		2.0f * FMath::Atan(FMath::Tan(HalfFOVRadians) * SafeWidthRatio));
+}
+
 void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -351,9 +371,13 @@ void AConfigShowroomPlayerController::UpdateCameraManager(
 	}
 
 	// 必须在 UE 完成默认 ViewTarget/CameraModifier 更新后再写入；若只把
-	// OffCenterProjectionOffset 存在 RuntimeCamera 中，UE 5.8 的默认
-	// PlayerCameraManager 会在同帧最终缓存中将该高级字段重置为零。
+	// 舞台投影参数存在 RuntimeCamera 中，UE 5.8 的默认 PlayerCameraManager
+	// 会重置高级字段；FOV 还会在下一帧重复缩放。这里只修改最终缓存，
+	// 因而每帧始终基于场景相机输出的原始水平 FOV 计算。
 	FMinimalViewInfo FinalPOV = PlayerCameraManager->GetCameraCacheView();
+	FinalPOV.FOV = CalculateStageAwareHorizontalFOV(
+		FinalPOV.FOV,
+		CurrentStageVisibleWidthRatio);
 	FinalPOV.OffCenterProjectionOffset.X = CurrentStageProjectionOffsetX;
 	PlayerCameraManager->SetCameraCachePOV(FinalPOV);
 }
@@ -367,6 +391,10 @@ void AConfigShowroomPlayerController::UpdateStageProjectionOffset(
 		&& IsValid(ConfiguratorPanel)
 		? ConfiguratorPanel->GetStageProjectionOffsetX()
 		: 0.0f;
+	const float TargetVisibleWidthRatio = bStageAwareProjectionEnabled
+		&& IsValid(ConfiguratorPanel)
+		? ConfiguratorPanel->GetStageVisibleWidthRatio()
+		: 1.0f;
 
 	// UI 显隐时平滑改变构图，避免车体在全屏按钮点击后横向跳变。
 	CurrentStageProjectionOffsetX = FMath::FInterpTo(
@@ -378,6 +406,18 @@ void AConfigShowroomPlayerController::UpdateStageProjectionOffset(
 	{
 		CurrentStageProjectionOffsetX = TargetOffset;
 	}
+	CurrentStageVisibleWidthRatio = FMath::FInterpTo(
+		CurrentStageVisibleWidthRatio,
+		TargetVisibleWidthRatio,
+		DeltaSeconds,
+		StageProjectionInterpolationSpeed);
+	if (FMath::IsNearlyEqual(
+		CurrentStageVisibleWidthRatio,
+		TargetVisibleWidthRatio,
+		0.0001f))
+	{
+		CurrentStageVisibleWidthRatio = TargetVisibleWidthRatio;
+	}
 }
 
 void AConfigShowroomPlayerController::ApplyRuntimeCameraPOV(
@@ -388,12 +428,9 @@ void AConfigShowroomPlayerController::ApplyRuntimeCameraPOV(
 		return;
 	}
 
-	// 只覆盖投影中心，不修改 Location、Rotation、FOV 或 OrbitPivot。
-	// 所有镜头路径都必须经过这里；关闭 CVar 后该值平滑回到 0，
-	// 即恢复改动前的全视口居中投影。
-	FMinimalViewInfo StageAwarePOV = POV;
-	StageAwarePOV.OffCenterProjectionOffset.X = CurrentStageProjectionOffsetX;
-	RuntimeCamera->ApplyCameraPOV(StageAwarePOV);
+	// RuntimeCamera 永远保留场景镜头原始 POV。舞台 FOV 与投影中心只在
+	// UpdateCameraManager 的最终缓存阶段应用，避免逐帧叠加。
+	RuntimeCamera->ApplyCameraPOV(POV);
 }
 
 void AConfigShowroomPlayerController::DiscoverCameraPresets()

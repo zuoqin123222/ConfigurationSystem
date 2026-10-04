@@ -137,6 +137,14 @@ public:
 		const FVector& CandidateLocation,
 		float MaxDistance);
 
+	/**
+	 * 按可见舞台宽度比例换算水平 FOV。
+	 * 输入必须始终是场景相机原始 FOV，避免跨帧重复缩放。
+	 */
+	static float CalculateStageAwareHorizontalFOV(
+		float OriginalHorizontalFOV,
+		float VisibleStageWidthRatio);
+
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	void ToggleEnvironment();
 
@@ -275,6 +283,8 @@ private:
 	float CameraTransitionDuration = 0.85f;
 	/** 当前非对称投影补偿；独立于机位 Transform，便于关闭后无损回退。 */
 	float CurrentStageProjectionOffsetX = 0.0f;
+	/** 当前可见舞台宽度比例；仅用于最终 CameraManager POV，不写回运行时相机。 */
+	float CurrentStageVisibleWidthRatio = 1.0f;
 	FTimerHandle InitialRevealTimer;
 	FTimerHandle CameraZoneTransitionTimer;
 	FTimerHandle PersistenceDebounceTimer;
