@@ -26,14 +26,14 @@ node tools/generate-published-configurations.mjs `
 生成器不会截取少量车漆或模板；任一分区无选项、目录无视角时会直接失败。UE 运行时还会
 校验 `expectedRenderCount` 与实际任务数完全一致，并校验每个配置具有完整视角集合。
 
-2K 桌面基准为 2560 × 1440：顶部 88 px、右侧配置栏 420 px、左舞台四周
-18 px，因此实际可见左舞台是 **2104 × 1316（526:329）**，不是 16:9。Batch Bake
+2K 桌面基准为 2560 × 1440：顶部 76 px、右侧配置栏 480 px、左舞台四周
+18 px，因此实际可见左舞台是 **2044 × 1328（511:332）**，不是 16:9。Batch Bake
 按这个实际舞台比例提供两档原始输出：
 
 | 档位 | 分辨率 | Path Tracing SPP | 默认场景 |
 | --- | ---: | ---: | --- |
-| `debug` | 1052 × 658 | 64 | Editor/Development 半尺寸快速验证 |
-| `shipping` | 2104 × 1316 | 512 | 正式 2K 左舞台原尺寸发布 |
+| `debug` | 1022 × 664 | 64 | Editor/Development 等比半尺寸快速验证 |
+| `shipping` | 2044 × 1328 | 512 | 正式 2K 左舞台原尺寸发布 |
 
 命令行参数：
 
@@ -45,7 +45,7 @@ node tools/generate-published-configurations.mjs `
 -ConfigurationBakeHeight=<360..4320>
 ```
 
-自定义宽高必须为 526:329。未显式指定档位时，Shipping 构建采用 `shipping`，其他构建采用
+自定义宽高必须为 511:332。未显式指定档位时，Shipping 构建采用 `shipping`，其他构建采用
 `debug`。Path Tracing 默认开启，同时启用 Denoiser、最高后处理抗锯齿质量和 100%
 Screen Percentage；关闭后使用 Lit，并等待稳定帧再回读。PNG 回读显式执行线性到 sRGB
 转换，manifest 记录渲染模式、采样数、原始宽高和 Denoiser 状态。Web 车辆图片使用
@@ -86,14 +86,20 @@ node tools/generate-published-configurations.mjs `
 
 ## 自动化结果
 
-- 2026-10-05 本分支验证：Tools 49/49、Web 65/65、Server 42/42 通过，
-  `ConfigurationSystemEditor Win64 Development` 编译成功。
+- 2026-10-05 本分支验证：契约聚合校验、Web 67/67、Server 45/45、UE BatchBake
+  6/6 通过，`ConfigurationSystemEditor Win64 Development` 编译成功。
 - 使用 `-RenderOffscreen -ForceRes` 实跑 v2 `0/469` 分片，Lit Debug 模式成功输出
-  1 个配置 × 4 个视角，manifest 全部为 `ready`，原图均为 1052 × 658 RGBA。
-- 变基到 `c05e70b` 后再次实跑同一 v2 分片，骨骼代理资产已恢复正常车身朝向，
-  4 个视角均成功输出。V2 Binder 目前仍只实现车漆和单一内饰代理槽，因此 469 套计划
-  虽已可执行，但在正式模型完成其余 renderRelevant surface 绑定前，不能宣称 1876 张
-  图片具备完整视觉差异。
+  1 个配置 × 4 个视角，manifest 全部为 `ready`，原图均为 1022 × 664 RGBA。
+- 变基到 `a31ab41` 后再次实跑 Shipping canary，4 张原图尺寸均为 2044 × 1328；
+  但骨骼网格引用的 8 个 `/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_*`
+  材质包仍被仓库规则忽略，常规 worktree 中缺失。即使从主工作区临时同步这些本机依赖，
+  canary 画面仍呈灰色检查块，因此该 canary 与未完成的旧全量批次均已删除，未进入
+  Server 发布目录。
+- Batch 新增材质预检：可见骨骼车辆任一槽为空、使用 `DefaultMaterial` 或
+  `WorldGridMaterial` 时，将全部任务写为 `failed` 且不输出 PNG；交互式 Path Tracing
+  RTPSO 预热在 Batch 模式下跳过，避免 manifest 完成后的关机竞态崩溃。
+- V2 Binder 目前仍只实现车漆和单一内饰代理槽。因此正式材质依赖补齐后，仍需验证
+  469 套覆盖配置是否产生预期视觉差异，不能仅以 1876 个文件数量代替内容验收。
 - UE Batch Bake：16 个 canonical configuration × 4 个 RenderView，共 64 个任务。
 - Server：19 个测试全部通过。
 - Web：18 个测试全部通过，Vite production build 成功。

@@ -32,8 +32,8 @@ struct CONFIGURATIONSYSTEM_API FConfigurationBakeTask
 struct CONFIGURATIONSYSTEM_API FConfigurationBakeOutputSettings
 {
 	FString Profile;
-	int32 Width = 1052;
-	int32 Height = 658;
+	int32 Width = 1022;
+	int32 Height = 664;
 	int32 SamplesPerPixel = 64;
 	bool bPathTracing = true;
 	bool bDenoiser = true;
@@ -113,8 +113,8 @@ private:
 	TWeakObjectPtr<AConfiguratorVehicleActor> Vehicle;
 	int32 CurrentTaskIndex = 0;
 	uint32 SamplesPerPixel = 16;
-	int32 OutputWidth = 1052;
-	int32 OutputHeight = 658;
+	int32 OutputWidth = 1022;
+	int32 OutputHeight = 664;
 	int32 RealtimeFramesBeforeCapture = 8;
 	int32 RealtimeFramesRendered = 0;
 	double RunStartedAt = 0.0;

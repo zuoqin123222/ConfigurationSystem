@@ -189,7 +189,7 @@ paths:
               $ref: "#/components/schemas/ResolveRenderRequestV2"
       responses:
         "200":
-          description: 渲染投影解析成功；SC01 草案不承诺已发布 imageUrl
+          description: 渲染投影解析成功；配置独立 v2 bake manifest 时按 renderKey 与视角返回 imageUrl
           content:
             application/json:
               schema:
@@ -200,6 +200,30 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/VersionConflict"
+  /assets/v2/renders/{publicationVersion}/{vehicleId}/{renderKey}/{renderViewId}.png:
+    get:
+      operationId: getRenderV2
+      summary: 获取 v2 bake manifest 中已发布的透明 PNG
+      parameters:
+        - $ref: "#/components/parameters/PublicationVersion"
+        - $ref: "#/components/parameters/VehicleId"
+        - name: renderKey
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-z0-9-]+__[a-z0-9-]+__render-[a-f0-9]{24}$
+        - $ref: "#/components/parameters/RenderViewId"
+      responses:
+        "200":
+          description: v2 manifest 已校验的 sRGB straight-alpha PNG
+          content:
+            image/png:
+              schema:
+                type: string
+                contentEncoding: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
   /assets/renders/{publicationVersion}/{vehicleId}/{configurationKey}/{renderViewId}.png:
     get:
       operationId: getRender
@@ -416,7 +440,7 @@ components:
         customizations:
           $ref: "#/components/schemas/CustomizationsV2"
         renderViewId:
-          $ref: "#/components/schemas/StableId"
+          $ref: "#/components/schemas/RenderViewId"
     ResolveRenderResponseV2:
       type: object
       additionalProperties: false
@@ -435,7 +459,10 @@ components:
           type: string
           pattern: ^[a-z0-9-]+__[a-z0-9-]+__render-[a-f0-9]{24}$
         renderViewId:
-          $ref: "#/components/schemas/StableId"
+          $ref: "#/components/schemas/RenderViewId"
+        imageUrl:
+          type: string
+          pattern: ^/assets/v2/renders/
     StableId:
       type: string
       pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$

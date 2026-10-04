@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
@@ -62,6 +62,75 @@ const request = {
   vehicleId: "sc01",
   selections,
 };
+
+async function createV2BakeRoot(): Promise<{
+  root: string;
+  renderKey: string;
+  png: Buffer;
+}> {
+  const root = await mkdtemp(resolve(tmpdir(), "automotive-v2-bake-"));
+  const data = loadAutomotiveCatalog();
+  const renderKey = deriveVehicleConfiguration(selections, data).renderKey;
+  const repositoryRoot = resolve(import.meta.dirname, "../../../..");
+  const sourcePng = resolve(
+    repositoryRoot,
+    "contracts/fixtures/bake.valid/renders/mvp-v1/demo-car",
+    "paint-red__wheel-sport__interior-dark__frame-black/front.png",
+  );
+  const sourceManifest = JSON.parse(await readFile(
+    resolve(repositoryRoot, "contracts/fixtures/bake.valid/bake-manifest.json"),
+    "utf8",
+  ));
+  const sourceRender = sourceManifest.renders[0];
+  const views = ["front", "front-left", "side", "rear-right"];
+  const renders = [];
+  for (const renderViewId of views) {
+    const relativePath =
+      `renders/sc01-v2/sc01/${renderKey}/${renderViewId}.png`;
+    const destination = resolve(root, relativePath);
+    await mkdir(resolve(destination, ".."), { recursive: true });
+    await cp(sourcePng, destination);
+    renders.push({
+      renderKey,
+      renderViewId,
+      path: relativePath,
+      width: sourceRender.width,
+      height: sourceRender.height,
+      format: "png",
+      colorSpace: "sRGB",
+      alphaMode: "straight",
+      coverageInverted: sourceRender.coverageInverted,
+      normalizationRequired: sourceRender.normalizationRequired,
+      glowRecoveredPixels: sourceRender.glowRecoveredPixels,
+      sha256: sourceRender.sha256,
+      status: "ready",
+    });
+  }
+  await writeFile(resolve(root, "bake-manifest.json"), `${JSON.stringify({
+    schemaVersion: "2.0.0",
+    manifestVersion: "sc01-v2",
+    catalogVersion: data.catalog.catalogVersion,
+    publicationVersion: "sc01-v2",
+    vehicleId: data.catalog.vehicle.vehicleId,
+    generatedAt: "2026-10-05T00:00:00.000Z",
+    renderer: {
+      engineVersion: "5.8.0",
+      mode: "path-tracing",
+      samplesPerPixel: 512,
+      outputWidth: 2044,
+      outputHeight: 1328,
+      denoiser: true,
+    },
+    alphaProcessing: {
+      alphaMode: "straight",
+      autoDetectCoverageInversion: true,
+      clearTransparentRgb: true,
+      glowPolicy: "synthetic-alpha",
+    },
+    renders,
+  }, null, 2)}\n`);
+  return { root, renderKey, png: await readFile(sourcePng) };
+}
 
 test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   const app = buildApp();
@@ -585,7 +654,7 @@ test("旧 optionId 迁移到规范 ID，且自定义色按 option 能力验证",
   assert.deepEqual(chassis.customizations["engine-bay-cover"], paint);
 });
 
-test("草案拒绝报价请求，render resolve 只返回投影标识", async (t) => {
+test("未配置 v2 bake 时草案 resolve 只返回投影标识", async (t) => {
   const app = buildApp();
   t.after(() => app.close());
   const quote = await app.inject({
@@ -605,6 +674,66 @@ test("草案拒绝报价请求，render resolve 只返回投影标识", async (t
   assert.match(render.json().renderKey, /__render-[a-f0-9]{24}$/);
   assert.equal(render.json().renderViewId, "front-left");
   assert.equal(Object.hasOwn(render.json(), "imageUrl"), false);
+});
+
+test("独立 v2 bake manifest 按 renderKey 与视角解析并安全托管图片", async (t) => {
+  const fixture = await createV2BakeRoot();
+  t.after(() => rm(fixture.root, { recursive: true, force: true }));
+  const app = buildApp({ v2BakeRoot: fixture.root, webRoot: false });
+  t.after(() => app.close());
+
+  const resolved = await app.inject({
+    method: "POST",
+    url: "/api/v2/renders/resolve",
+    payload: { ...request, renderViewId: "front-left" },
+  });
+  assert.equal(resolved.statusCode, 200);
+  assert.equal(resolved.json().renderKey, fixture.renderKey);
+  assert.equal(
+    resolved.json().imageUrl,
+    `/assets/v2/renders/sc01-v2/sc01/${fixture.renderKey}/front-left.png`,
+  );
+
+  const image = await app.inject({
+    method: "GET",
+    url: resolved.json().imageUrl,
+  });
+  assert.equal(image.statusCode, 200);
+  assert.equal(image.headers["content-type"], "image/png");
+  assert.equal(
+    image.headers["cache-control"],
+    "public, max-age=31536000, immutable",
+  );
+  assert.equal(image.headers["x-content-type-options"], "nosniff");
+  assert.deepEqual(image.rawPayload, fixture.png);
+
+  for (const url of [
+    `/assets/v2/renders/sc01-v2/sc01/not-a-render-key/front.png`,
+    `/assets/v2/renders/sc01-v2/sc01/${fixture.renderKey}/unknown.png`,
+    "/assets/v2/renders/sc01-v2/sc01/%2e%2e/front.png",
+  ]) {
+    const rejected = await app.inject({ method: "GET", url });
+    assert.notEqual(rejected.statusCode, 200);
+  }
+});
+
+test("配置 v2 bake 后 resolve 对未发布 renderKey 返回 404", async (t) => {
+  const fixture = await createV2BakeRoot();
+  t.after(() => rm(fixture.root, { recursive: true, force: true }));
+  const app = buildApp({ v2BakeRoot: fixture.root, webRoot: false });
+  t.after(() => app.close());
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v2/renders/resolve",
+    payload: {
+      ...request,
+      selections: changedSelections,
+      renderViewId: "front-left",
+    },
+  });
+  assert.equal(response.statusCode, 404);
+  assert.equal(response.json().code, "RENDER_NOT_FOUND");
 });
 
 test("原子 JSON 快照在重启后恢复配置与幂等索引", async (t) => {

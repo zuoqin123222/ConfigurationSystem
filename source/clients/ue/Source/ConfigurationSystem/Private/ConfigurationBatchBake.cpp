@@ -3,6 +3,7 @@
 #include "Algo/AnyOf.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "CarConfiguratorSubsystem.h"
 #include "Components/PointLightComponent.h"
 #include "ContentPackMountService.h"
@@ -33,6 +34,9 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
+#if WITH_EDITOR
+#include "ShaderCompiler.h"
+#endif
 #include "UnrealClient.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogConfigurationBatchBake, Log, All);
@@ -180,8 +184,8 @@ bool FConfigurationBakeOutputSettings::Resolve(
 	{
 		OutSettings = FConfigurationBakeOutputSettings();
 		OutSettings.Profile = TEXT("debug");
-		OutSettings.Width = 1052;
-		OutSettings.Height = 658;
+		OutSettings.Width = 1022;
+		OutSettings.Height = 664;
 		OutSettings.SamplesPerPixel = 64;
 		return true;
 	}
@@ -189,8 +193,8 @@ bool FConfigurationBakeOutputSettings::Resolve(
 	{
 		OutSettings = FConfigurationBakeOutputSettings();
 		OutSettings.Profile = TEXT("shipping");
-		OutSettings.Width = 2104;
-		OutSettings.Height = 1316;
+		OutSettings.Width = 2044;
+		OutSettings.Height = 1328;
 		OutSettings.SamplesPerPixel = 512;
 		return true;
 	}
@@ -204,7 +208,7 @@ bool FConfigurationBakeOutputSettings::HasDesktopStageAspectRatio() const
 {
 	return Width > 0
 		&& Height > 0
-		&& static_cast<int64>(Width) * 1316 == static_cast<int64>(Height) * 2104;
+		&& static_cast<int64>(Width) * 1328 == static_cast<int64>(Height) * 2044;
 }
 
 class FConfigurationBatchBakeViewExtension final : public FSceneViewExtensionBase
@@ -413,9 +417,9 @@ void FConfigurationBatchBake::Start(bool bInExitOnComplete)
 	{
 		OutputHeight = FMath::Clamp(ParsedHeight, 360, 4320);
 	}
-	if (static_cast<int64>(OutputWidth) * 1316 != static_cast<int64>(OutputHeight) * 2104)
+	if (static_cast<int64>(OutputWidth) * 1328 != static_cast<int64>(OutputHeight) * 2044)
 	{
-		Finish(TEXT("Bake 输出必须保持 2K 桌面左舞台 2104:1316 比例。"));
+		Finish(TEXT("Bake 输出必须保持 2K 桌面左舞台 2044:1328 比例。"));
 		return;
 	}
 	int32 ParsedSamples = SamplesPerPixel;
@@ -473,6 +477,18 @@ bool FConfigurationBatchBake::Tick(float DeltaTime)
 {
 	(void)DeltaTime;
 	const double Now = FPlatformTime::Seconds();
+#if WITH_EDITOR
+	if (GShaderCompilingManager != nullptr
+		&& GShaderCompilingManager->IsCompiling())
+	{
+		if (RunStartedAt > 0.0 && Now - RunStartedAt > TaskTimeoutSeconds)
+		{
+			Finish(TEXT("等待 Bake 材质 Shader 编译超时。"));
+			return false;
+		}
+		return true;
+	}
+#endif
 	if (State == EState::WaitingForViewport)
 	{
 		if (RunStartedAt > 0.0 && Now - RunStartedAt > TaskTimeoutSeconds)
@@ -564,6 +580,31 @@ bool FConfigurationBatchBake::SetupScene(FString& OutError)
 		SpawnedActors.Add(BakeVehicle);
 	}
 	Vehicle=BakeVehicle;
+	TInlineComponentArray<USkeletalMeshComponent*> SkeletalMeshes(BakeVehicle);
+	for (const USkeletalMeshComponent* SkeletalMesh : SkeletalMeshes)
+	{
+		if (!IsValid(SkeletalMesh)
+			|| !IsValid(SkeletalMesh->GetSkeletalMeshAsset()))
+		{
+			continue;
+		}
+		for (int32 MaterialIndex = 0;
+			MaterialIndex < SkeletalMesh->GetNumMaterials();
+			++MaterialIndex)
+		{
+			const UMaterialInterface* Material = SkeletalMesh->GetMaterial(MaterialIndex);
+			if (Material == nullptr
+				|| Material->GetPathName().Contains(TEXT("WorldGridMaterial"))
+				|| Material->GetPathName().Contains(TEXT("DefaultMaterial")))
+			{
+				OutError = FString::Printf(
+					TEXT("Bake 材质预检失败：%s 的材质槽 %d 仍为空或使用引擎回退材质。请先提交完整车辆材质依赖。"),
+					*SkeletalMesh->GetPathName(),
+					MaterialIndex);
+				return false;
+			}
+		}
+	}
 	for (const FConfigurationBakeCamera& Definition : Plan.Cameras)
 	{
 		ACameraActor* Camera=World->SpawnActor<ACameraActor>(Definition.Transform.GetLocation(),Definition.Transform.Rotator());
@@ -699,7 +740,10 @@ bool FConfigurationBatchBake::CaptureCurrentTask(FViewport& Viewport, FString& O
 		return false;
 	}
 	TSharedRef<FJsonObject> Json=MakeShared<FJsonObject>();
-	Json->SetStringField(TEXT("configurationKey"),Task.ConfigurationKey); Json->SetStringField(TEXT("renderViewId"),Task.RenderViewId); Json->SetStringField(TEXT("path"),Task.RelativePath.Replace(TEXT("\\"),TEXT("/")));
+	Json->SetStringField(
+		Plan.SchemaVersion == TEXT("2.0.0") ? TEXT("renderKey") : TEXT("configurationKey"),
+		Task.ConfigurationKey);
+	Json->SetStringField(TEXT("renderViewId"),Task.RenderViewId); Json->SetStringField(TEXT("path"),Task.RelativePath.Replace(TEXT("\\"),TEXT("/")));
 	Json->SetNumberField(TEXT("width"),Size.X); Json->SetNumberField(TEXT("height"),Size.Y); Json->SetStringField(TEXT("format"),TEXT("png")); Json->SetStringField(TEXT("colorSpace"),TEXT("sRGB")); Json->SetStringField(TEXT("alphaMode"),TEXT("straight"));
 	Json->SetBoolField(TEXT("coverageInverted"),bInverted); Json->SetBoolField(TEXT("normalizationRequired"),bNormalizationRequired); Json->SetNumberField(TEXT("glowRecoveredPixels"),static_cast<double>(GlowRecovered)); Json->SetStringField(TEXT("sha256"),Hash); Json->SetStringField(TEXT("status"),TEXT("ready"));
 	RenderResults.Add(MakeShared<FJsonValueObject>(Json));
@@ -711,7 +755,10 @@ void FConfigurationBatchBake::CompleteCurrentTask(bool bSuccess, const FString& 
 	if (!bSuccess)
 	{
 		const FConfigurationBakeTask& Task=Plan.Tasks[CurrentTaskIndex]; TSharedRef<FJsonObject> Json=MakeShared<FJsonObject>();
-		Json->SetStringField(TEXT("configurationKey"),Task.ConfigurationKey); Json->SetStringField(TEXT("renderViewId"),Task.RenderViewId); Json->SetStringField(TEXT("path"),Task.RelativePath.Replace(TEXT("\\"),TEXT("/"))); Json->SetStringField(TEXT("status"),TEXT("failed")); Json->SetStringField(TEXT("error"),Error.IsEmpty()?TEXT("未知 Bake 错误。"):Error);
+		Json->SetStringField(
+			Plan.SchemaVersion == TEXT("2.0.0") ? TEXT("renderKey") : TEXT("configurationKey"),
+			Task.ConfigurationKey);
+		Json->SetStringField(TEXT("renderViewId"),Task.RenderViewId); Json->SetStringField(TEXT("path"),Task.RelativePath.Replace(TEXT("\\"),TEXT("/"))); Json->SetStringField(TEXT("status"),TEXT("failed")); Json->SetStringField(TEXT("error"),Error.IsEmpty()?TEXT("未知 Bake 错误。"):Error);
 		RenderResults.Add(MakeShared<FJsonValueObject>(Json));
 	}
 	++CurrentTaskIndex; State=CurrentTaskIndex<Plan.Tasks.Num()?EState::PreparingTask:EState::Finished;
@@ -723,11 +770,14 @@ bool FConfigurationBatchBake::WriteManifest(const FString& FatalError)
 	while (RenderResults.Num()<Plan.Tasks.Num())
 	{
 		const FConfigurationBakeTask& Task=Plan.Tasks[RenderResults.Num()]; TSharedRef<FJsonObject> Item=MakeShared<FJsonObject>();
-		Item->SetStringField(TEXT("configurationKey"),Task.ConfigurationKey); Item->SetStringField(TEXT("renderViewId"),Task.RenderViewId); Item->SetStringField(TEXT("path"),Task.RelativePath); Item->SetStringField(TEXT("status"),TEXT("failed")); Item->SetStringField(TEXT("error"),FatalError.IsEmpty()?TEXT("Bake 未执行。"):FatalError); RenderResults.Add(MakeShared<FJsonValueObject>(Item));
+		Item->SetStringField(
+			Plan.SchemaVersion == TEXT("2.0.0") ? TEXT("renderKey") : TEXT("configurationKey"),
+			Task.ConfigurationKey);
+		Item->SetStringField(TEXT("renderViewId"),Task.RenderViewId); Item->SetStringField(TEXT("path"),Task.RelativePath); Item->SetStringField(TEXT("status"),TEXT("failed")); Item->SetStringField(TEXT("error"),FatalError.IsEmpty()?TEXT("Bake 未执行。"):FatalError); RenderResults.Add(MakeShared<FJsonValueObject>(Item));
 	}
 	TSharedRef<FJsonObject> Renderer=MakeShared<FJsonObject>(); Renderer->SetStringField(TEXT("engineVersion"),FEngineVersion::Current().ToString()); Renderer->SetStringField(TEXT("mode"),bUsePathTracing?TEXT("path-tracing"):TEXT("realtime")); Renderer->SetNumberField(TEXT("samplesPerPixel"),bUsePathTracing?SamplesPerPixel:0); Renderer->SetNumberField(TEXT("outputWidth"),OutputWidth); Renderer->SetNumberField(TEXT("outputHeight"),OutputHeight); Renderer->SetBoolField(TEXT("denoiser"),bUsePathTracing&&bUseDenoiser);
 	TSharedRef<FJsonObject> Alpha=MakeShared<FJsonObject>(); Alpha->SetStringField(TEXT("alphaMode"),TEXT("straight")); Alpha->SetBoolField(TEXT("autoDetectCoverageInversion"),true); Alpha->SetBoolField(TEXT("clearTransparentRgb"),true); Alpha->SetStringField(TEXT("glowPolicy"),TEXT("synthetic-alpha"));
-	TSharedRef<FJsonObject> Root=MakeShared<FJsonObject>(); Root->SetStringField(TEXT("schemaVersion"),TEXT("1.0.0")); Root->SetStringField(TEXT("manifestVersion"),Plan.PublicationVersion); Root->SetStringField(TEXT("catalogVersion"),Plan.CatalogVersion); Root->SetStringField(TEXT("publicationVersion"),Plan.PublicationVersion); Root->SetStringField(TEXT("vehicleId"),Plan.VehicleId); Root->SetStringField(TEXT("generatedAt"),FDateTime::UtcNow().ToIso8601()); Root->SetObjectField(TEXT("renderer"),Renderer); Root->SetObjectField(TEXT("alphaProcessing"),Alpha); Root->SetArrayField(TEXT("renders"),RenderResults);
+	TSharedRef<FJsonObject> Root=MakeShared<FJsonObject>(); Root->SetStringField(TEXT("schemaVersion"),Plan.SchemaVersion); Root->SetStringField(TEXT("manifestVersion"),Plan.PublicationVersion); Root->SetStringField(TEXT("catalogVersion"),Plan.CatalogVersion); Root->SetStringField(TEXT("publicationVersion"),Plan.PublicationVersion); Root->SetStringField(TEXT("vehicleId"),Plan.VehicleId); Root->SetStringField(TEXT("generatedAt"),FDateTime::UtcNow().ToIso8601()); Root->SetObjectField(TEXT("renderer"),Renderer); Root->SetObjectField(TEXT("alphaProcessing"),Alpha); Root->SetArrayField(TEXT("renders"),RenderResults);
 	FString Text; const bool bSerialized=FJsonSerializer::Serialize(Root,TJsonWriterFactory<>::Create(&Text)); IFileManager::Get().MakeDirectory(*StagingDirectory,true);
 	return bSerialized && FFileHelper::SaveStringToFile(Text,*FPaths::Combine(StagingDirectory,TEXT("bake-manifest.json")),FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }

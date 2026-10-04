@@ -16,7 +16,7 @@
     "renders"
   ],
   "properties": {
-    "schemaVersion": { "const": "1.0.0" },
+    "schemaVersion": { "enum": ["1.0.0", "2.0.0"] },
     "manifestVersion": { "$ref": "#/$defs/id" },
     "catalogVersion": { "$ref": "#/$defs/id" },
     "publicationVersion": { "$ref": "#/$defs/id" },
@@ -80,27 +80,27 @@
       "type": "string",
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
     },
-    "configurationKey": {
+    "renderIdentity": {
       "type": "string",
-      "pattern": "^paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+$"
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:__[a-z0-9]+(?:-[a-z0-9]+)*)+$"
     },
     "render": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "configurationKey",
         "renderViewId",
         "path",
         "status"
       ],
       "properties": {
-        "configurationKey": { "$ref": "#/$defs/configurationKey" },
+        "configurationKey": { "$ref": "#/$defs/renderIdentity" },
+        "renderKey": { "$ref": "#/$defs/renderIdentity" },
         "renderViewId": {
           "enum": ["front", "front-left", "side", "rear-right"]
         },
         "path": {
           "type": "string",
-          "pattern": "^renders/[a-z0-9-]+/[a-z0-9-]+/paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+/(front|front-left|side|rear-right)\\.png$"
+          "pattern": "^renders/[a-z0-9-]+/[a-z0-9-]+/[a-z0-9]+(?:-[a-z0-9]+)*(?:__[a-z0-9]+(?:-[a-z0-9]+)*)+/(front|front-left|side|rear-right)\\.png$"
         },
         "width": {
           "type": "integer",
@@ -139,6 +139,18 @@
       },
       "allOf": [
         {
+          "oneOf": [
+            {
+              "required": ["configurationKey"],
+              "not": { "required": ["renderKey"] }
+            },
+            {
+              "required": ["renderKey"],
+              "not": { "required": ["configurationKey"] }
+            }
+          ]
+        },
+        {
           "if": {
             "properties": { "status": { "const": "ready" } },
             "required": ["status"]
@@ -166,5 +178,49 @@
         }
       ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "schemaVersion": { "const": "1.0.0" } },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "properties": {
+          "renders": {
+            "items": {
+              "allOf": [
+                { "$ref": "#/$defs/render" },
+                {
+                  "required": ["configurationKey"],
+                  "not": { "required": ["renderKey"] }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "schemaVersion": { "const": "2.0.0" } },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "properties": {
+          "renders": {
+            "items": {
+              "allOf": [
+                { "$ref": "#/$defs/render" },
+                {
+                  "required": ["renderKey"],
+                  "not": { "required": ["configurationKey"] }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
 }

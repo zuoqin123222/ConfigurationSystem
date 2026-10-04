@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from './App'
+import App, { STANDALONE_LAYOUT } from './App'
 import {
   catalogFixture,
   initialSelections,
@@ -37,7 +37,7 @@ function configuration(selections = initialSelections, revision = 1, customizati
   }
 }
 
-function mockApi() {
+function mockApi(options: { v2ImageUrl?: string } = {}) {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (url === '/api/v2/catalog') return Promise.resolve(jsonResponse(catalogFixture))
     if (url === '/api/v1/catalog') return Promise.resolve(jsonResponse(legacyCatalogFixture))
@@ -60,6 +60,7 @@ function mockApi() {
         configurationId: `cfg-${request.selections['exterior-body-cover']}`,
         renderKey: `render-${request.selections['exterior-body-cover']}`,
         renderViewId: request.renderViewId,
+        ...(options.v2ImageUrl ? { imageUrl: options.v2ImageUrl } : {}),
       }))
     }
     if (url === '/api/v2/configurations') {
@@ -130,6 +131,17 @@ describe('App v2', () => {
     expect(document.querySelector('.option-card')).toBeNull()
     expect(document.querySelector('.material-family-title')).toBeNull()
     expect(document.querySelectorAll('.color-choice')).toHaveLength(3)
+    const shell = document.querySelector<HTMLElement>('.app-shell.standalone')
+    expect(STANDALONE_LAYOUT).toEqual({
+      headerHeight: 76,
+      panelWidth: 480,
+      stageMargin: 18,
+      stageRadius: 24,
+    })
+    expect(shell?.style.getPropertyValue('--standalone-header-height')).toBe('76px')
+    expect(shell?.style.getPropertyValue('--standalone-panel-width')).toBe('480px')
+    expect(shell?.style.getPropertyValue('--standalone-stage-margin')).toBe('18px')
+    expect(shell?.style.getPropertyValue('--standalone-stage-radius')).toBe('24px')
     expect(within(screen.getByRole('group', { name: '车辆视角' }))
       .getAllByRole('button')).toHaveLength(4)
     expect(catalogFixture.selectionOrder).toHaveLength(38)
@@ -557,6 +569,18 @@ describe('App v2', () => {
       expect(document.querySelector('.vehicle-image-preload')).not.toBeNull()
     })
     expect(screen.getByAltText('SC01 车辆预览')).toBeInTheDocument()
+  })
+
+  it('v2 resolve 返回 imageUrl 时直接使用 v2 Bake 图片且不请求 v1 代理', async () => {
+    const imageUrl = '/assets/v2/renders/sc01-v2/sc01/render-default/front-left.png'
+    const fetchMock = mockApi({ v2ImageUrl: imageUrl })
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+    await loadProxy()
+
+    expect(screen.getByAltText('SC01 车辆预览')).toHaveAttribute('src', imageUrl)
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/renders/resolve')).toBe(false)
+    expect(fetchMock.mock.calls.some(([url]) => url === '/health')).toBe(false)
   })
 
   it('保存配置并生成可分享链接', async () => {

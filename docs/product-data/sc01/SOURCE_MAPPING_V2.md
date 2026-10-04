@@ -43,3 +43,10 @@
 ## 可追溯要求
 
 catalog 中每个分类、部件、表面、材料族和选项都带至少一个 `sourceRefs`。`documentId` 必须能映射到本文件中的来源，页码按 PDF 页码计数，`locator` 使用可在页面上人工复核的表头路径。没有来源定位的业务值不得进入 SC01 v2 草案。
+
+## 定制项目图片
+
+- Web 部件参考图直接提取自 `source/SC01-定制选配清单.pdf` 第 1–4 页“定制项目”列中的内嵌原图，不经过页面截图、AI 重绘或插值放大。
+- 共提取 29 张，原始宽度均为 1280px；以 WebP 质量 95 保存到 `source/clients/web/public/sc01/interior-parts/`。
+- 文件名使用对应的 `surfaceId`，Web 通过 `interiorPartImages.ts` 做显式映射。
+- `steering-wheel-addon`（方向盘“加粗”）在原清单中没有独立图片，因此不复用方向盘其他图片，界面显示纯黑参考区域。

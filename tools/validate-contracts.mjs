@@ -89,6 +89,19 @@ if (bakeManifestSchema) {
     (rule) => rule.if?.properties?.status?.const === "ready"
   );
 
+  check(
+    sameArray(bakeManifestSchema.properties?.schemaVersion?.enum, ["1.0.0", "2.0.0"]),
+    "bake manifest 必须同时声明 v1/v2 schemaVersion"
+  );
+  check(
+    Boolean(render?.properties?.configurationKey)
+      && Boolean(render?.properties?.renderKey),
+    "bake render 必须声明 v1 configurationKey 与 v2 renderKey"
+  );
+  check(
+    bakeManifestSchema.allOf?.length === 2,
+    "bake manifest 必须按 schemaVersion 约束 render 身份字段"
+  );
   check(rootRequired.includes("renderer"), "bake manifest 顶层必须要求 renderer");
   check(
     rootRequired.includes("alphaProcessing"),

@@ -16,7 +16,8 @@ import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { inflateSync } from "node:zlib";
 
 export interface BakeRender {
-  configurationKey: string;
+  configurationKey?: string;
+  renderKey?: string;
   renderViewId: string;
   path: string;
   width: number;
@@ -32,7 +33,7 @@ export interface BakeRender {
 }
 
 export interface BakeManifest {
-  schemaVersion: "1.0.0";
+  schemaVersion: "1.0.0" | "2.0.0";
   manifestVersion: string;
   catalogVersion: string;
   publicationVersion: string;
@@ -251,7 +252,10 @@ export function validateBakeManifest(
 ): ValidatedBakeManifest {
   const parsed: unknown = JSON.parse(readFileSync(manifestPath, "utf8"));
   assert(isRecord(parsed), "根节点必须是对象");
-  assert(parsed.schemaVersion === "1.0.0", "schemaVersion 必须为 1.0.0");
+  assert(
+    parsed.schemaVersion === "1.0.0" || parsed.schemaVersion === "2.0.0",
+    "schemaVersion 必须为 1.0.0 或 2.0.0",
+  );
   for (const field of ["manifestVersion", "catalogVersion", "publicationVersion", "vehicleId"]) {
     assert(typeof parsed[field] === "string" && ID.test(parsed[field]), `${field} 非法`);
   }
@@ -291,11 +295,25 @@ export function validateBakeManifest(
   for (const [index, render] of manifest.renders.entries()) {
     assert(isRecord(render), `renders[${index}] 必须是对象`);
     assert(render.status === "ready", `renders[${index}] 必须为 ready`);
-    assert(typeof render.configurationKey === "string" && CONFIGURATION_KEY.test(render.configurationKey), `renders[${index}] configurationKey 非法`);
+    const identityField = manifest.schemaVersion === "2.0.0"
+      ? "renderKey"
+      : "configurationKey";
+    const forbiddenIdentityField = manifest.schemaVersion === "2.0.0"
+      ? "configurationKey"
+      : "renderKey";
+    const identity = render[identityField];
+    assert(
+      typeof identity === "string" && CONFIGURATION_KEY.test(identity),
+      `renders[${index}] ${identityField} 非法`,
+    );
+    assert(
+      !Object.hasOwn(render, forbiddenIdentityField),
+      `renders[${index}] 不得包含 ${forbiddenIdentityField}`,
+    );
     assert(typeof render.renderViewId === "string" && ID.test(render.renderViewId), `renders[${index}] renderViewId 非法`);
-    const key = renderKey(render.configurationKey, render.renderViewId);
-    assert(!entries.has(key), `组合重复：${render.configurationKey}/${render.renderViewId}`);
-    const expectedPath = `renders/${manifest.publicationVersion}/${manifest.vehicleId}/${render.configurationKey}/${render.renderViewId}.png`;
+    const key = renderKey(identity, render.renderViewId);
+    assert(!entries.has(key), `组合重复：${identity}/${render.renderViewId}`);
+    const expectedPath = `renders/${manifest.publicationVersion}/${manifest.vehicleId}/${identity}/${render.renderViewId}.png`;
     assert(render.path === expectedPath, `路径不符合 canonical 规则：${render.path}`);
     assert(render.format === "png" && render.colorSpace === "sRGB" && render.alphaMode === "straight", `renders[${index}] 图片元数据非法`);
     assert(
@@ -312,9 +330,9 @@ export function validateBakeManifest(
     assert(png.hasTransparentPixel && png.hasVisiblePixel, `Alpha 必须同时包含透明与可见像素：${render.path}`);
     assert(createHash("sha256").update(bytes).digest("hex") === render.sha256, `SHA256 不匹配：${render.path}`);
     entries.set(key, render as unknown as BakeRender);
-    const views = viewsByConfiguration.get(render.configurationKey) ?? new Set<string>();
+    const views = viewsByConfiguration.get(identity) ?? new Set<string>();
     views.add(render.renderViewId);
-    viewsByConfiguration.set(render.configurationKey, views);
+    viewsByConfiguration.set(identity, views);
   }
   const expectedViews = new Set(manifest.renders.map((render) => render.renderViewId));
   for (const [configurationKey, views] of viewsByConfiguration) {

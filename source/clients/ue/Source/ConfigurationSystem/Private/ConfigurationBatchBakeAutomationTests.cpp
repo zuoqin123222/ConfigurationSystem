@@ -122,15 +122,15 @@ bool FConfigurationBatchBakeOutputProfileTest::RunTest(const FString& Parameters
 	FString Error;
 	TestTrue(TEXT("Debug 档位可解析"),
 		FConfigurationBakeOutputSettings::Resolve(TEXT("debug"), false, Settings, Error));
-	TestEqual(TEXT("Debug 输出宽度"), Settings.Width, 1052);
-	TestEqual(TEXT("Debug 输出高度"), Settings.Height, 658);
+	TestEqual(TEXT("Debug 输出宽度"), Settings.Width, 1022);
+	TestEqual(TEXT("Debug 输出高度"), Settings.Height, 664);
 	TestEqual(TEXT("Debug 样本数"), Settings.SamplesPerPixel, 64);
 	TestTrue(TEXT("Debug 保持桌面左舞台比例"), Settings.HasDesktopStageAspectRatio());
 
 	TestTrue(TEXT("Shipping 档位可解析"),
 		FConfigurationBakeOutputSettings::Resolve(TEXT("shipping"), false, Settings, Error));
-	TestEqual(TEXT("Shipping 输出适配 2K 左舞台"), Settings.Width, 2104);
-	TestEqual(TEXT("Shipping 输出高度"), Settings.Height, 1316);
+	TestEqual(TEXT("Shipping 输出适配 2K 左舞台"), Settings.Width, 2044);
+	TestEqual(TEXT("Shipping 输出高度"), Settings.Height, 1328);
 	TestEqual(TEXT("Shipping 使用高采样"), Settings.SamplesPerPixel, 512);
 	TestTrue(TEXT("Shipping 默认启用 Path Tracing"), Settings.bPathTracing);
 	TestTrue(TEXT("Shipping 默认启用降噪"), Settings.bDenoiser);
@@ -138,7 +138,7 @@ bool FConfigurationBatchBakeOutputProfileTest::RunTest(const FString& Parameters
 
 	TestTrue(TEXT("Shipping 构建默认选择 Shipping 档位"),
 		FConfigurationBakeOutputSettings::Resolve(TEXT(""), true, Settings, Error));
-	TestEqual(TEXT("默认 Shipping 输出宽度"), Settings.Width, 2104);
+	TestEqual(TEXT("默认 Shipping 输出宽度"), Settings.Width, 2044);
 	TestFalse(TEXT("未知档位被拒绝"),
 		FConfigurationBakeOutputSettings::Resolve(TEXT("cinema"), false, Settings, Error));
 	TestFalse(TEXT("未知档位提供错误"), Error.IsEmpty());

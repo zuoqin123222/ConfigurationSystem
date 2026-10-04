@@ -6,6 +6,8 @@
 #include "Engine/World.h"
 #include "HAL/IConsoleManager.h"
 #include "HAL/PlatformTime.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "PipelineStateCache.h"
 #include "RHI.h"
 #include "RHIGlobals.h"
@@ -309,6 +311,10 @@ float UPathTracingExperienceSubsystem::GetProgress01() const
 void UPathTracingExperienceSubsystem::Tick(const float DeltaTime)
 {
 	(void)DeltaTime;
+	if (FParse::Param(FCommandLine::Get(), TEXT("ConfigurationBatchBake")))
+	{
+		return;
+	}
 	if (WarmupState == EPathTracingWarmupState::Idle
 		&& GEngine != nullptr
 		&& GEngine->GameViewport != nullptr)

@@ -42,6 +42,9 @@ export interface BuildAppOptions {
   bakeRoot?: string;
   manifestPath?: string;
   bake?: ValidatedBakeManifest;
+  v2BakeRoot?: string;
+  v2ManifestPath?: string;
+  v2Bake?: ValidatedBakeManifest;
   data?: ContractData;
   automotiveCatalog?: AutomotiveCatalogData;
   configurationStoreV2?: ConfigurationStoreV2;
@@ -49,6 +52,7 @@ export interface BuildAppOptions {
 }
 
 const STABLE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const RENDER_VIEW_IDS = new Set(["front", "front-left", "side", "rear-right"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -255,6 +259,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         : resolve(bakeRoot, "bake-manifest.json")),
   );
   const bake = options.bake ?? validateBakeManifest(manifestPath, bakeRoot);
+  if (bake.manifest.schemaVersion !== "1.0.0") {
+    throw new Error("v1 bake manifest 的 schemaVersion 必须为 1.0.0");
+  }
   if (
     bake.manifest.catalogVersion !== data.catalog.catalogVersion ||
     bake.manifest.publicationVersion !== data.publication.publicationVersion ||
@@ -263,6 +270,36 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     throw new Error("bake manifest 与 catalog/publication 版本不一致");
   }
   const renderRoot = resolve(bake.assetRoot, "renders");
+  const configuredV2BakeRoot = options.v2BakeRoot ?? process.env.V2_BAKE_ROOT;
+  const configuredV2ManifestPath =
+    options.v2ManifestPath ?? process.env.V2_BAKE_MANIFEST;
+  const v2BakeRoot = configuredV2BakeRoot
+    ? resolve(configuredV2BakeRoot)
+    : configuredV2ManifestPath
+      ? dirname(resolve(configuredV2ManifestPath))
+      : undefined;
+  const v2Bake = options.v2Bake ?? (
+    v2BakeRoot
+      ? validateBakeManifest(
+          resolve(configuredV2ManifestPath ?? resolve(v2BakeRoot, "bake-manifest.json")),
+          v2BakeRoot,
+        )
+      : undefined
+  );
+  if (v2Bake) {
+    if (v2Bake.manifest.schemaVersion !== "2.0.0") {
+      throw new Error("v2 bake manifest 的 schemaVersion 必须为 2.0.0");
+    }
+    if (
+      v2Bake.manifest.catalogVersion !== automotiveCatalog.catalog.catalogVersion ||
+      v2Bake.manifest.vehicleId !== automotiveCatalog.catalog.vehicle.vehicleId
+    ) {
+      throw new Error("v2 bake manifest 与 v2 catalog 版本或车型不一致");
+    }
+  }
+  const v2RenderRoot = v2Bake
+    ? resolve(v2Bake.assetRoot, "renders")
+    : undefined;
   const webRoot = options.webRoot === false
     ? undefined
     : resolve(options.webRoot ?? defaultWebRoot());
@@ -479,15 +516,30 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       automotiveCatalog,
       body.customizations,
     );
+    const renderViewId = typeof body.renderViewId === "string"
+      ? body.renderViewId
+      : undefined;
+    if (renderViewId !== undefined && !RENDER_VIEW_IDS.has(renderViewId)) {
+      throw new RequestError(400, "INVALID_RENDER_VIEW", "渲染视角非法");
+    }
+    const render = renderViewId === undefined || !v2Bake
+      ? undefined
+      : findReadyRender(v2Bake, configuration.renderKey, renderViewId);
+    if (v2Bake && renderViewId !== undefined && !render) {
+      throw new RequestError(404, "RENDER_NOT_FOUND", "v2 渲染图片不存在");
+    }
     return {
       schemaVersion: configuration.schemaVersion,
       catalogVersion: configuration.catalogVersion,
       vehicleId: configuration.vehicleId,
       configurationId: configuration.configurationId,
       renderKey: configuration.renderKey,
-      ...(body.renderViewId === undefined
+      ...(renderViewId === undefined
         ? {}
-        : { renderViewId: body.renderViewId }),
+        : {
+            renderViewId,
+            ...(render ? { imageUrl: `/assets/v2/${render.path}` } : {}),
+          }),
     };
   });
 
@@ -608,6 +660,50 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       }
       return reply
         .header("Cache-Control", "public, max-age=31536000, immutable")
+        .type("image/png")
+        .send(createReadStream(filePath));
+    },
+  );
+
+  app.get<{
+    Params: {
+      publicationVersion: string;
+      vehicleId: string;
+      renderKey: string;
+      renderViewId: string;
+    };
+  }>(
+    "/assets/v2/renders/:publicationVersion/:vehicleId/:renderKey/:renderViewId.png",
+    async (request, reply) => {
+      if (!v2Bake || !v2RenderRoot) {
+        throw new RequestError(404, "RENDER_NOT_FOUND", "v2 渲染图片不存在");
+      }
+      const {
+        publicationVersion: requestedPublicationVersion,
+        vehicleId,
+        renderKey,
+        renderViewId,
+      } = request.params;
+      if (
+        requestedPublicationVersion !== v2Bake.manifest.publicationVersion ||
+        vehicleId !== v2Bake.manifest.vehicleId ||
+        !findReadyRender(v2Bake, renderKey, renderViewId)
+      ) {
+        throw new RequestError(404, "RENDER_NOT_FOUND", "v2 渲染图片不存在");
+      }
+      const filePath = await safeRenderPath(
+        v2RenderRoot,
+        requestedPublicationVersion,
+        vehicleId,
+        renderKey,
+        renderViewId,
+      );
+      if (!filePath) {
+        throw new RequestError(404, "RENDER_NOT_FOUND", "v2 渲染图片不存在");
+      }
+      return reply
+        .header("Cache-Control", "public, max-age=31536000, immutable")
+        .header("X-Content-Type-Options", "nosniff")
         .type("image/png")
         .send(createReadStream(filePath));
     },
