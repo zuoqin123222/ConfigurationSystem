@@ -90,11 +90,13 @@ node tools/generate-published-configurations.mjs `
   6/6 通过，`ConfigurationSystemEditor Win64 Development` 编译成功。
 - 使用 `-RenderOffscreen -ForceRes` 实跑 v2 `0/469` 分片，Lit Debug 模式成功输出
   1 个配置 × 4 个视角，manifest 全部为 `ready`，原图均为 1022 × 664 RGBA。
-- 变基到 `a31ab41` 后再次实跑 Shipping canary，4 张原图尺寸均为 2044 × 1328；
-  但骨骼网格引用的 8 个 `/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_*`
-  材质包仍被仓库规则忽略，常规 worktree 中缺失。即使从主工作区临时同步这些本机依赖，
-  canary 画面仍呈灰色检查块，因此该 canary 与未完成的旧全量批次均已删除，未进入
-  Server 发布目录。
+- 变基到 `b547706` 后将骨骼网格使用的 8 个材质通过 UE AssetTools 正式迁移到
+  `/Game/SC01/Materials/VehicleProxy/M_SC01_Vehicle_*`。骨骼网格本体的 8 个
+  `CS_Validation_*` 槽和运行时硬引用均已改写到新路径；清空被忽略的旧
+  `AuthorizedAudiA5/Materials` 目录后，全新 UE 进程不再产生旧材质 LoadErrors，
+  Lit Debug canary 仍可输出 4/4 `ready` PNG。
+- 独立 Development Cook/Stage/Pak 成功；IoStore 清单逐项包含 8 个
+  `M_SC01_Vehicle_*` 材质包，证明离线客户端不依赖编辑器缓存或被忽略目录。
 - Batch 新增材质预检：可见骨骼车辆任一槽为空、使用 `DefaultMaterial` 或
   `WorldGridMaterial` 时，将全部任务写为 `failed` 且不输出 PNG；交互式 Path Tracing
   RTPSO 预热在 Batch 模式下跳过，避免 manifest 完成后的关机竞态崩溃。

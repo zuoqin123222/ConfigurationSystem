@@ -5,18 +5,24 @@
 #include "ConfiguratorWebBridge.h"
 #include "ConfiguratorVehicleActor.h"
 #include "ConfigShowroomPlayerController.h"
+#include "PathTracingLightingRig.h"
 #include "PathTracingExperienceSubsystem.h"
 #include "ReversiblePartActuatorComponent.h"
 #include "SmoothWheelControllerComponent.h"
 #include "VehicleAnimSequencePlayerComponent.h"
 
 #include "Components/SceneComponent.h"
+#include "Components/PostProcessComponent.h"
+#include "Components/SkyLightComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
 #include "HAL/FileManager.h"
+#include "Materials/MaterialInterface.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
+#include "Misc/PackageName.h"
 #include "UObject/UObjectGlobals.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -368,6 +374,8 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 			0.1f));
 	TestTrue(TEXT("首次 Reveal 始终看向车辆 Pivot"),
 		RevealStart.Rotation.Equals((Pivot - RevealStart.Location).Rotation(), 0.1f));
+	TestTrue(TEXT("首次 Reveal 保留目标机位 FOV"),
+		FMath::IsNearlyEqual(RevealStart.FOV, RevealTarget.FOV));
 	FMinimalViewInfo OffAxisPOV = RevealTarget;
 	OffAxisPOV.Rotation += FRotator(3.0f, -2.0f, 0.0f);
 	const FVector ViewAlignedPivot =
@@ -652,11 +660,77 @@ bool FVehicleAnimSequenceFramePlayerAutomationTest::RunTest(
 		AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(false, true));
 	TestTrue(TEXT("缺少 sequence 时允许静态代理回退"),
 		AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(true, false));
+	const TPair<FName, FName> ExpectedSkeletalMaterials[] = {
+		{TEXT("CS_Validation_LightRed"), TEXT("M_SC01_Vehicle_LightRed")},
+		{TEXT("CS_Validation_Glass"), TEXT("M_SC01_Vehicle_Glass")},
+		{TEXT("CS_Validation_Paint"), TEXT("M_SC01_Vehicle_Paint")},
+		{TEXT("CS_Validation_Plastic"), TEXT("M_SC01_Vehicle_Plastic")},
+		{TEXT("CS_Validation_Interior"), TEXT("M_SC01_Vehicle_Interior")},
+		{TEXT("CS_Validation_Rubber"), TEXT("M_SC01_Vehicle_Rubber")},
+		{TEXT("CS_Validation_Metal"), TEXT("M_SC01_Vehicle_Metal")},
+		{TEXT("CS_Validation_LightClear"), TEXT("M_SC01_Vehicle_LightClear")}
+	};
+	for (const TPair<FName, FName>& Expected : ExpectedSkeletalMaterials)
+	{
+		TestEqual(
+			*FString::Printf(TEXT("%s 按 slot 名解析材质"), *Expected.Key.ToString()),
+			AConfiguratorVehicleActor::GetOfflineMaterialNameForSkeletalSlot(Expected.Key),
+			Expected.Value);
+	}
+	TestTrue(
+		TEXT("未知 slot 不按数组序号误配材质"),
+		AConfiguratorVehicleActor::GetOfflineMaterialNameForSkeletalSlot(
+			TEXT("UnknownSlot")).IsNone());
 	AutomotiveCatalog::FCatalog InvalidIdCatalog = Catalog;
 	InvalidIdCatalog.Animations[0].AnimationId = TEXT("hood--open");
 	TestFalse(TEXT("UE 在配置播放器前拒绝非 stable animation ID"),
 		AConfiguratorVehicleActor::BuildAnimationClips(
 			InvalidIdCatalog, CatalogClips));
+
+	AutomotiveCatalog::FCatalog AssetCatalog = Catalog;
+	AssetCatalog.SkeletalMeshPath = TEXT(
+		"/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
+		"automotive-configurator-audi-a5-rigged-v2."
+		"automotive-configurator-audi-a5-rigged-v2");
+	AssetCatalog.SequencePath = TEXT(
+		"/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
+		"automotive-configurator-audi-a5-rigged-v2_Anim."
+		"automotive-configurator-audi-a5-rigged-v2_Anim");
+	AConfiguratorVehicleActor* AnimatedVehicle =
+		NewObject<AConfiguratorVehicleActor>();
+	TestTrue(
+		TEXT("真实骨骼网格与动画可配置"),
+		AnimatedVehicle->ConfigureAnimationFromCatalog(AssetCatalog));
+	USkeletalMeshComponent* SkeletalVehicle =
+		FindObjectFast<USkeletalMeshComponent>(AnimatedVehicle, TEXT("SkeletalVehicle"));
+	if (TestNotNull(TEXT("动画车辆包含骨骼网格组件"), SkeletalVehicle))
+	{
+		for (const TPair<FName, FName>& Expected : ExpectedSkeletalMaterials)
+		{
+			const int32 SlotIndex = SkeletalVehicle->GetMaterialIndex(Expected.Key);
+			TestTrue(
+				*FString::Printf(TEXT("骨骼网格包含实际 slot %s"), *Expected.Key.ToString()),
+				SlotIndex != INDEX_NONE);
+			if (SlotIndex != INDEX_NONE)
+			{
+				const UMaterialInterface* Material =
+					SkeletalVehicle->GetMaterial(SlotIndex);
+				TestTrue(
+					*FString::Printf(
+						TEXT("slot %s 绑定 %s"),
+						*Expected.Key.ToString(),
+						*Expected.Value.ToString()),
+					Material != nullptr && Material->GetFName() == Expected.Value);
+				TestTrue(
+					*FString::Printf(
+						TEXT("slot %s 使用可离线追踪的 SC01 材质路径"),
+						*Expected.Key.ToString()),
+					Material != nullptr
+						&& Material->GetPathName().StartsWith(
+							TEXT("/Game/SC01/Materials/VehicleProxy/")));
+			}
+		}
+	}
 
 	AConfiguratorVehicleActor* Vehicle =
 		NewObject<AConfiguratorVehicleActor>();
@@ -697,6 +771,97 @@ bool FVehicleAnimSequenceFramePlayerAutomationTest::RunTest(
 			Vehicle->GetActiveVehicleAnimationId().IsNone());
 		TestFalse(TEXT("冻结后车轮立即停止"),
 			Vehicle->IsWheelAnimationEnabled());
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FPathTracingLightingRigAutomationTest,
+	"ConfigurationSystem.Runtime.Experience.PathTracingLightingRig",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
+bool FPathTracingLightingRigAutomationTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	const FPathTracingLightingPreset Studio =
+		FPathTracingLightingPreset::ForEnvironment(0);
+	const FPathTracingLightingPreset Outdoor =
+		FPathTracingLightingPreset::ForEnvironment(1);
+	const FPathTracingLightingPreset ClampedOutdoor =
+		FPathTracingLightingPreset::ForEnvironment(99);
+
+	TestEqual(
+		TEXT("Studio 使用 Studio_02 Cubemap"),
+		Studio.CubemapPath,
+		FString(TEXT("/Game/Library/HDRIs/Studio_02.Studio_02")));
+	TestEqual(
+		TEXT("Outdoor 使用 008 Cubemap"),
+		Outdoor.CubemapPath,
+		FString(TEXT("/Game/Library/HDRIs/008.008")));
+	TestEqual(
+		TEXT("越界环境索引归一化为 Outdoor"),
+		ClampedOutdoor.CubemapPath,
+		Outdoor.CubemapPath);
+	TestTrue(
+		TEXT("Studio 与 Outdoor 有独立方向光参数"),
+		!FMath::IsNearlyEqual(
+			Studio.DirectionalIntensity,
+			Outdoor.DirectionalIntensity));
+	TestTrue(
+		TEXT("PT 预设同时定义 Point 与 Rect 补光"),
+		Studio.PointIntensity > 0.0f && Studio.RectIntensity > 0.0f
+			&& Outdoor.PointIntensity > 0.0f && Outdoor.RectIntensity > 0.0f);
+
+	TestNotNull(
+		TEXT("Rig CDO 可用"),
+		GetDefault<APathTracingLightingRig>());
+	TestTrue(
+		TEXT("Studio_02 Cubemap 包存在"),
+		FPackageName::DoesPackageExist(TEXT("/Game/Library/HDRIs/Studio_02")));
+	TestTrue(
+		TEXT("008 Cubemap 包存在"),
+		FPackageName::DoesPackageExist(TEXT("/Game/Library/HDRIs/008")));
+
+	const APathTracingLightingRig* RigCDO = GetDefault<APathTracingLightingRig>();
+	if (RigCDO != nullptr)
+	{
+		TestNotNull(TEXT("Rig 包含 SkyLight"), RigCDO->GetSkyLightComponent());
+		TestNotNull(
+			TEXT("Rig 包含 DirectionalLight"),
+			RigCDO->GetDirectionalLightComponent());
+		TestNotNull(TEXT("Rig 包含 PointLight"), RigCDO->GetPointLightComponent());
+		TestNotNull(TEXT("Rig 包含 RectLight"), RigCDO->GetRectLightComponent());
+		const UStaticMeshComponent* Floor = RigCDO->GetFloorComponent();
+		if (TestNotNull(TEXT("Rig 包含仅随自身生命周期存在的 PT 地板"), Floor))
+		{
+			TestTrue(TEXT("PT 地板由 Rig 拥有并挂在 Rig 根组件"),
+				Floor->GetOwner() == RigCDO
+					&& Floor->GetAttachParent() == RigCDO->GetRootComponent());
+			TestTrue(TEXT("PT 地板使用 Engine Cube"),
+				Floor->GetStaticMesh() != nullptr
+					&& Floor->GetStaticMesh()->GetFName() == TEXT("Cube"));
+			TestTrue(TEXT("PT 地板水平尺寸为 18m × 18m"),
+				FMath::IsNearlyEqual(
+					Floor->GetStaticMesh()->GetBounds().BoxExtent.X
+						* Floor->GetRelativeScale3D().X * 2.0,
+					1800.0,
+					0.01)
+					&& FMath::IsNearlyEqual(
+						Floor->GetStaticMesh()->GetBounds().BoxExtent.Y
+							* Floor->GetRelativeScale3D().Y * 2.0,
+						1800.0,
+						0.01));
+			TestTrue(TEXT("PT 薄地板顶面位于 Z=0"),
+				FMath::IsNearlyZero(
+					Floor->GetRelativeLocation().Z
+						+ Floor->GetStaticMesh()->GetBounds().BoxExtent.Z
+							* Floor->GetRelativeScale3D().Z,
+					0.01));
+			const UMaterialInterface* FloorMaterial = Floor->GetMaterial(0);
+			TestTrue(TEXT("PT 地板显式使用 BasicShapeMaterial"),
+				FloorMaterial != nullptr
+					&& FloorMaterial->GetFName() == TEXT("BasicShapeMaterial"));
+		}
 	}
 	return true;
 }
