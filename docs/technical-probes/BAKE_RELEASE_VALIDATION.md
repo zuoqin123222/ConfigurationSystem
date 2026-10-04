@@ -11,8 +11,89 @@
 `Configurator.Resource.Temporary` 占位车辆，仅用于流水线与交互验收，不代表最终车辆
 资产或最终产品画质。
 
+## 当前 Bake 运行参数
+
+发布配置不再写死为 16 个配置或 64 个任务。先从目录生成全部分区选项的笛卡尔积，
+再乘以目录声明的全部 RenderView：
+
+```powershell
+node tools/generate-published-configurations.mjs `
+  contracts/fixtures/catalog.mvp.json `
+  contracts/fixtures/published-configurations.mvp.json `
+  mvp-v1
+```
+
+生成器不会截取少量车漆或模板；任一分区无选项、目录无视角时会直接失败。UE 运行时还会
+校验 `expectedRenderCount` 与实际任务数完全一致，并校验每个配置具有完整视角集合。
+
+2K 桌面基准为 2560 × 1440：顶部 88 px、右侧配置栏 420 px、左舞台四周
+18 px，因此实际可见左舞台是 **2104 × 1316（526:329）**，不是 16:9。Batch Bake
+按这个实际舞台比例提供两档原始输出：
+
+| 档位 | 分辨率 | Path Tracing SPP | 默认场景 |
+| --- | ---: | ---: | --- |
+| `debug` | 1052 × 658 | 64 | Editor/Development 半尺寸快速验证 |
+| `shipping` | 2104 × 1316 | 512 | 正式 2K 左舞台原尺寸发布 |
+
+命令行参数：
+
+```text
+-ConfigurationBakeProfile=debug|shipping
+-ConfigurationBakePathTracing=true|false
+-ConfigurationBakeSamples=<1..4096>
+-ConfigurationBakeWidth=<640..7680>
+-ConfigurationBakeHeight=<360..4320>
+```
+
+自定义宽高必须为 526:329。未显式指定档位时，Shipping 构建采用 `shipping`，其他构建采用
+`debug`。Path Tracing 默认开启，同时启用 Denoiser、最高后处理抗锯齿质量和 100%
+Screen Percentage；关闭后使用 Lit，并等待稳定帧再回读。PNG 回读显式执行线性到 sRGB
+转换，manifest 记录渲染模式、采样数、原始宽高和 Denoiser 状态。Web 车辆图片使用
+容器 `width: 100%`、`height: 100%` 与 `object-fit: contain`，不再使用 900/520 px
+上限，也不裁切或二次放大填充。
+
+### v1/v2 发布配置生成策略
+
+- v1 使用 `--mode exhaustive`，完整枚举有限笛卡尔积。
+- v2 默认只执行 `estimate`。SC01 当前完整空间为
+  `391820820480000000000`（约 3.9e20）个配置，生成器明确拒绝 `exhaustive`。
+- v2 `coverage` 从默认/首选基线生成去重集合，保证每个 `renderRelevant` 选项以及每个
+  可被已定价色卡选项消费的 `materialVariant` 至少出现一次。当前 SC01 覆盖 154 个相关
+  选项和 352 个可用材料色卡，去重后得到 469 个配置；按 4 个视角为 1876 个渲染任务，
+  30 秒/张时预计 56280 秒（15.6 小时）。
+- v2 `shard` 对 coverage 集合做确定性取模分片，`--shard=0/4` 到 `3/4` 合并后不重不漏。
+- v2 coverage/shard 输出固定声明四个 `renderViewIds`，并对每项写出
+  `configurationKey = renderKey`。`FConfigurationBakePlan::Load` 同时读取通用
+  `selections/customizations`；执行时 v1 继续映射旧四分区，v2 则通过
+  `UCarConfiguratorSubsystem` 取得 `UAutomotiveConfigurationState` 并调用
+  `ApplyTransaction`，由状态广播驱动已绑定的材质 Binder。
+- 输出及控制台同时记录完整规模、选项/材料色卡覆盖数、渲染任务数和按
+  `--seconds-per-render` 计算的预计耗时。
+
+```powershell
+node tools/generate-published-configurations.mjs `
+  contracts/fixtures/sc01.catalog.draft.v2.json unused.json sc01-v2 `
+  --mode estimate --views 4 --seconds-per-render 30
+
+node tools/generate-published-configurations.mjs `
+  contracts/fixtures/sc01.catalog.draft.v2.json staging/sc01-coverage.json sc01-v2 `
+  --mode coverage --views 4 --seconds-per-render 30
+
+node tools/generate-published-configurations.mjs `
+  contracts/fixtures/sc01.catalog.draft.v2.json staging/sc01-shard-0.json sc01-v2 `
+  --mode shard --shard=0/4 --views 4 --seconds-per-render 30
+```
+
 ## 自动化结果
 
+- 2026-10-05 本分支验证：Tools 49/49、Web 65/65、Server 42/42 通过，
+  `ConfigurationSystemEditor Win64 Development` 编译成功。
+- 使用 `-RenderOffscreen -ForceRes` 实跑 v2 `0/469` 分片，Lit Debug 模式成功输出
+  1 个配置 × 4 个视角，manifest 全部为 `ready`，原图均为 1052 × 658 RGBA。
+- 变基到 `c05e70b` 后再次实跑同一 v2 分片，骨骼代理资产已恢复正常车身朝向，
+  4 个视角均成功输出。V2 Binder 目前仍只实现车漆和单一内饰代理槽，因此 469 套计划
+  虽已可执行，但在正式模型完成其余 renderRelevant surface 绑定前，不能宣称 1876 张
+  图片具备完整视觉差异。
 - UE Batch Bake：16 个 canonical configuration × 4 个 RenderView，共 64 个任务。
 - Server：19 个测试全部通过。
 - Web：18 个测试全部通过，Vite production build 成功。
@@ -64,7 +145,7 @@
 ## 发布边界
 
 - `mvp-v1` 不可覆盖；正式车辆接入后必须发布新版本目录。
-- 当前图片规格为 640 × 360、16 SPP，仅用于流水线验收。
+- 历史 `mvp-v1` 验收图片仍是 640 × 360 的流水线证据，不代表当前默认输出参数。
 - 正式发布前必须重新检查真实车辆层级、Pivot、材质槽、玻璃、穿模、动作和构图，并
-  使用正式分辨率与采样数重新生成 64 图。
+  用 `shipping` 档位重新生成全部配置与视角。
 - Runtime 仅接收通过 manifest、版本、路径、大小和 SHA-256 校验的标准 `.pak`。

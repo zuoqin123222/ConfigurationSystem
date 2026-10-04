@@ -1,0 +1,174 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  enumerateValidConfigurations,
+  estimateV2Scale,
+  generatePublishedConfigurations,
+  generateV2Coverage,
+  generateV2Plan,
+  shardV2Coverage
+} from "./generate-published-configurations.mjs";
+
+const catalog = {
+  schemaVersion: "1.0.0",
+  catalogVersion: "catalog-v2",
+  vehicle: { vehicleId: "car", basePriceMinor: 1000 },
+  parts: [
+    {
+      partId: "paint",
+      displayOrder: 0,
+      options: [
+        { optionId: "paint-red", priceDeltaMinor: 0 },
+        { optionId: "paint-blue", priceDeltaMinor: 100 },
+        { optionId: "paint-green", priceDeltaMinor: 200 }
+      ]
+    },
+    {
+      partId: "wheel",
+      displayOrder: 1,
+      options: [
+        { optionId: "wheel-a", priceDeltaMinor: 0 },
+        { optionId: "wheel-b", priceDeltaMinor: 50 }
+      ]
+    }
+  ],
+  renderViews: [
+    { renderViewId: "front" },
+    { renderViewId: "side" }
+  ]
+};
+
+test("枚举每个分区的全部有效选项笛卡尔积，而不是截取少量颜色", () => {
+  const result = enumerateValidConfigurations(catalog);
+  assert.deepEqual(result.order, ["paint", "wheel"]);
+  assert.equal(result.configurations.length, 6);
+  assert.deepEqual(
+    result.configurations.map((configuration) => configuration.configurationKey),
+    [
+      "paint-red__wheel-a",
+      "paint-red__wheel-b",
+      "paint-blue__wheel-a",
+      "paint-blue__wheel-b",
+      "paint-green__wheel-a",
+      "paint-green__wheel-b"
+    ]
+  );
+  assert.equal(result.configurations.at(-1).totalPriceMinor, 1250);
+});
+
+test("发布任务数由全部组合乘全部视角动态计算", () => {
+  const published = generatePublishedConfigurations(catalog, "release-2");
+  assert.equal(published.configurations.length, 6);
+  assert.equal(published.expectedRenderCount, 12);
+  assert.deepEqual(published.renderViewIds, ["front", "side"]);
+});
+
+test("空分区和无视角目录被明确拒绝", () => {
+  assert.throws(
+    () => enumerateValidConfigurations({ ...catalog, parts: [] }),
+    /每个分区/
+  );
+  assert.throws(
+    () => generatePublishedConfigurations({ ...catalog, renderViews: [] }, "release-2"),
+    /RenderView/
+  );
+});
+
+const v2Catalog = {
+  schemaVersion: "2.0.0",
+  catalogVersion: "catalog-v2",
+  vehicle: { vehicleId: "car" },
+  selectionOrder: ["paint", "wheel", "trim"],
+  defaultSelections: {
+    paint: "paint-red",
+    wheel: "wheel-a"
+  },
+  options: [
+    { optionId: "paint-red", surfaceId: "paint", renderRelevant: true },
+    { optionId: "paint-blue", surfaceId: "paint", renderRelevant: true },
+    { optionId: "wheel-a", surfaceId: "wheel", renderRelevant: true },
+    {
+      optionId: "wheel-b",
+      surfaceId: "wheel",
+      materialFamilyId: "wheel-finish",
+      renderRelevant: true,
+      parameters: { color: { mode: "variant" } },
+      pricing: { isStandard: false, unitPriceMinor: 100 }
+    },
+    { optionId: "trim-none", surfaceId: "trim", renderRelevant: false },
+    { optionId: "trim-carbon", surfaceId: "trim", renderRelevant: true }
+  ],
+  materialVariants: [
+    { variantId: "wheel-black", materialFamilyId: "wheel-finish" },
+    { variantId: "wheel-gold", materialFamilyId: "wheel-finish" },
+    { variantId: "unused-blue", materialFamilyId: "unused-family" }
+  ]
+};
+
+test("v2 只估算 BigInt 全空间，不直接展开笛卡尔积", () => {
+  const scale = estimateV2Scale(v2Catalog, {
+    viewCount: 4,
+    secondsPerRender: 10
+  });
+  assert.deepEqual(scale, {
+    configurationCount: "8",
+    renderCount: "32",
+    viewCount: 4,
+    secondsPerRender: 10,
+    estimatedSeconds: "320",
+    estimatedYears: "0"
+  });
+  assert.throws(() => enumerateValidConfigurations(v2Catalog), /v2 请使用/);
+});
+
+test("v2 coverage 保证每个 renderRelevant 选项至少出现一次", () => {
+  const coverage = generateV2Coverage(v2Catalog);
+  const covered = new Set(
+    coverage.configurations.flatMap(({ selections }) => Object.values(selections))
+  );
+  for (const option of v2Catalog.options.filter(({ renderRelevant }) => renderRelevant)) {
+    assert.ok(covered.has(option.optionId), `${option.optionId} 应被 coverage 覆盖`);
+  }
+  assert.equal(coverage.coveredRenderRelevantOptionCount, 5);
+  assert.equal(coverage.availableMaterialVariantCount, 2);
+  assert.equal(coverage.coveredMaterialVariantCount, 2);
+  assert.equal(coverage.configurations.length, 6);
+  assert.deepEqual(
+    new Set(
+      coverage.configurations.flatMap(({ customizations }) =>
+        Object.values(customizations).map(({ materialVariantId }) => materialVariantId)
+      )
+    ),
+    new Set(["wheel-black", "wheel-gold"])
+  );
+  for (const configuration of coverage.configurations) {
+    assert.equal(configuration.configurationKey, configuration.renderKey);
+  }
+});
+
+test("v2 shard 确定性拆分 coverage，合并后不重不漏", () => {
+  const coverage = generateV2Coverage(v2Catalog).configurations;
+  const shards = [0, 1].flatMap((index) => shardV2Coverage(coverage, index, 2));
+  assert.equal(shards.length, coverage.length);
+  assert.deepEqual(
+    new Set(shards.map(({ renderKey }) => renderKey)),
+    new Set(coverage.map(({ renderKey }) => renderKey))
+  );
+  const plan = generateV2Plan(v2Catalog, "release-v2", {
+    mode: "shard",
+    shardIndex: 1,
+    shardCount: 2,
+    viewCount: 4,
+    secondsPerRender: 10
+  });
+  assert.deepEqual(plan.shard, { index: 1, count: 2 });
+  assert.deepEqual(plan.renderViewIds, ["front", "front-left", "side", "rear-right"]);
+  assert.ok(
+    plan.configurations.every(({ configurationKey, renderKey }) =>
+      configurationKey === renderKey
+    )
+  );
+  assert.equal(plan.expectedRenderCount, plan.configurations.length * 4);
+  assert.equal(plan.estimatedSeconds, String(plan.expectedRenderCount * 10));
+  assert.throws(() => shardV2Coverage(coverage, 2, 2), /shardIndex/);
+});

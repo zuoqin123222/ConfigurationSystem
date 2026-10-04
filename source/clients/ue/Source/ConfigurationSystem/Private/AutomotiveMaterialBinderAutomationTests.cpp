@@ -69,11 +69,6 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			Binder->GetInteriorComponent()->GetMaterial(0) == Case.Expected);
 	}
 
-	TestTrue(
-		TEXT("选择自定义车漆 option"),
-		State->SelectOption(
-			UAutomotiveMaterialBinder::PaintSurfaceId,
-			TEXT("body-cover-custom")));
 	FAutomotivePaintCustomization Paint;
 	Paint.ColorHex = TEXT("#336699");
 	Paint.Metallic = 0.45;
@@ -81,9 +76,21 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	Paint.ClearCoat = 0.9;
 	Paint.OrangePeel = 0.12;
 	Paint.FlakeIntensity = 0.3;
+	TMap<FString, FString> TransactionSelections = State->GetSelections();
+	TransactionSelections.Add(
+		UAutomotiveMaterialBinder::PaintSurfaceId,
+		TEXT("body-cover-custom"));
+	TMap<FString, FAutomotiveCustomization> TransactionCustomizations =
+		State->GetCustomizations();
+	FAutomotiveCustomization PaintCustomization;
+	PaintCustomization.Kind = EAutomotiveCustomizationKind::Paint;
+	PaintCustomization.Paint = Paint;
+	TransactionCustomizations.Add(
+		UAutomotiveMaterialBinder::PaintSurfaceId,
+		PaintCustomization);
 	TestTrue(
-		TEXT("提交 v2 自定义车漆"),
-		State->SetPaintCustomization(UAutomotiveMaterialBinder::PaintSurfaceId, Paint));
+		TEXT("ApplyTransaction 原子提交 v2 selections/customizations"),
+		State->ApplyTransaction(TransactionSelections, TransactionCustomizations));
 
 	UMaterialInstanceDynamic* PaintInstance = Binder->GetPaintMaterialInstance();
 	TestNotNull(TEXT("车身代理使用动态车漆实例"), PaintInstance);

@@ -28,17 +28,27 @@
     "renderer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["engineVersion", "mode", "samplesPerPixel"],
+      "required": [
+        "engineVersion",
+        "mode",
+        "samplesPerPixel",
+        "outputWidth",
+        "outputHeight",
+        "denoiser"
+      ],
       "properties": {
         "engineVersion": {
           "type": "string",
           "minLength": 1
         },
-        "mode": { "const": "path-tracing" },
+        "mode": { "enum": ["realtime", "path-tracing"] },
         "samplesPerPixel": {
           "type": "integer",
-          "minimum": 1
-        }
+          "minimum": 0
+        },
+        "outputWidth": { "type": "integer", "minimum": 640 },
+        "outputHeight": { "type": "integer", "minimum": 360 },
+        "denoiser": { "type": "boolean" }
       }
     },
     "alphaProcessing": {
@@ -61,8 +71,7 @@
     },
     "renders": {
       "type": "array",
-      "minItems": 64,
-      "maxItems": 64,
+      "minItems": 4,
       "items": { "$ref": "#/$defs/render" }
     }
   },

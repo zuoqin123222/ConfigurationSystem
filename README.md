@@ -66,9 +66,25 @@ ConfigurationSystem/
 node tools/validate-contracts.mjs
 ```
 
-验证器检查 10 个 Schema、车辆模型/动画 sidecar，以及 v1 产品 ID、16 个唯一
-配置、4 个视角和 64 个图片期望；同时检查 SC01 v2 草案的多层引用、正反配置、
+验证器检查 11 个 Schema、车辆模型/动画 sidecar，以及 v1 产品 ID、目录全部选项的
+笛卡尔积、全部视角和动态图片期望；同时检查 SC01 v2 草案的多层引用、正反配置、
 稳定 `configurationId`/`renderKey` 黄金向量和禁止报价结果。
+
+生成完整 v1 发布配置（不会截取颜色或模板）：
+
+```powershell
+node tools/generate-published-configurations.mjs --mode exhaustive
+```
+
+v2 不允许直接展开 SC01 约 3.9e20 个组合，支持规模/耗时估算、renderRelevant
+选项覆盖和确定性分片：
+
+```powershell
+node tools/generate-published-configurations.mjs contracts/fixtures/sc01.catalog.draft.v2.json unused.json sc01-v2 --mode estimate
+node tools/generate-published-configurations.mjs contracts/fixtures/sc01.catalog.draft.v2.json staging/sc01-coverage.json sc01-v2 --mode coverage
+node tools/generate-published-configurations.mjs contracts/fixtures/sc01.catalog.draft.v2.json staging/sc01-shard-0.json sc01-v2 --mode shard --shard=0/4
+node --test tools/generate-published-configurations.test.mjs
+```
 
 车辆 sidecar 的独立验证和测试命令：
 

@@ -246,7 +246,9 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
           灯光
         </button>
         <button
+          className="path-tracing-toggle"
           aria-pressed={renderMode === 'path-tracing'}
+          aria-label="Path Tracing"
           onClick={() => {
             void run(
               (state) => ({
@@ -260,7 +262,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
           }}
         >
           <span aria-hidden="true">◇</span>
-          渲染
+          Path Tracing
         </button>
         <div className="toolbar-item">
           <button

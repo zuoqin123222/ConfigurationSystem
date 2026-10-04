@@ -21,6 +21,21 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"ConfigurationSystem.Runtime.BatchBake.Sha256",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FConfigurationBatchBakeOutputProfileTest,
+	"ConfigurationSystem.Runtime.BatchBake.OutputProfiles",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FConfigurationBatchBakeDynamicCountTest,
+	"ConfigurationSystem.Runtime.BatchBake.DynamicTaskCount",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FConfigurationBatchBakeV2PlanTest,
+	"ConfigurationSystem.Runtime.BatchBake.V2Plan",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
 namespace ConfigurationBatchBakeAutomation
 {
 	FString FixturePath()
@@ -97,6 +112,137 @@ bool FConfigurationBatchBakeCameraTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("四个 RenderView 定义完整"), ViewIds.Num(), 4);
 	TestEqual(TEXT("四个相机标签唯一"), Tags.Num(), 4);
 	TestEqual(TEXT("四个相机 Transform 唯一"), Transforms.Num(), 4);
+	return true;
+}
+
+bool FConfigurationBatchBakeOutputProfileTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	FConfigurationBakeOutputSettings Settings;
+	FString Error;
+	TestTrue(TEXT("Debug 档位可解析"),
+		FConfigurationBakeOutputSettings::Resolve(TEXT("debug"), false, Settings, Error));
+	TestEqual(TEXT("Debug 输出宽度"), Settings.Width, 1052);
+	TestEqual(TEXT("Debug 输出高度"), Settings.Height, 658);
+	TestEqual(TEXT("Debug 样本数"), Settings.SamplesPerPixel, 64);
+	TestTrue(TEXT("Debug 保持桌面左舞台比例"), Settings.HasDesktopStageAspectRatio());
+
+	TestTrue(TEXT("Shipping 档位可解析"),
+		FConfigurationBakeOutputSettings::Resolve(TEXT("shipping"), false, Settings, Error));
+	TestEqual(TEXT("Shipping 输出适配 2K 左舞台"), Settings.Width, 2104);
+	TestEqual(TEXT("Shipping 输出高度"), Settings.Height, 1316);
+	TestEqual(TEXT("Shipping 使用高采样"), Settings.SamplesPerPixel, 512);
+	TestTrue(TEXT("Shipping 默认启用 Path Tracing"), Settings.bPathTracing);
+	TestTrue(TEXT("Shipping 默认启用降噪"), Settings.bDenoiser);
+	TestTrue(TEXT("Shipping 保持桌面左舞台比例"), Settings.HasDesktopStageAspectRatio());
+
+	TestTrue(TEXT("Shipping 构建默认选择 Shipping 档位"),
+		FConfigurationBakeOutputSettings::Resolve(TEXT(""), true, Settings, Error));
+	TestEqual(TEXT("默认 Shipping 输出宽度"), Settings.Width, 2104);
+	TestFalse(TEXT("未知档位被拒绝"),
+		FConfigurationBakeOutputSettings::Resolve(TEXT("cinema"), false, Settings, Error));
+	TestFalse(TEXT("未知档位提供错误"), Error.IsEmpty());
+	return true;
+}
+
+bool FConfigurationBatchBakeDynamicCountTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	FConfigurationBakePlan Plan;
+	Plan.SchemaVersion = TEXT("1.0.0");
+	Plan.ExpectedRenderCount = 4;
+	Plan.RenderViewIds = {TEXT("front"), TEXT("front-left"), TEXT("side"), TEXT("rear-right")};
+	const FVector Locations[] = {
+		FVector(1.0, 0.0, 0.0),
+		FVector(0.0, 1.0, 0.0),
+		FVector(-1.0, 0.0, 0.0),
+		FVector(0.0, -1.0, 0.0)
+	};
+	for (int32 Index = 0; Index < Plan.RenderViewIds.Num(); ++Index)
+	{
+		FConfigurationBakeCamera& Camera = Plan.Cameras.AddDefaulted_GetRef();
+		Camera.RenderViewId = Plan.RenderViewIds[Index];
+		Camera.ActorTag = FName(*FString::Printf(TEXT("RenderView.%s"), *Camera.RenderViewId));
+		Camera.Transform = FTransform(FRotator::ZeroRotator, Locations[Index]);
+		FConfigurationBakeTask& Task = Plan.Tasks.AddDefaulted_GetRef();
+		Task.ConfigurationKey = TEXT("paint-red__wheel-a__interior-dark__frame-black");
+		Task.RenderViewId = Camera.RenderViewId;
+		Task.Selections.Add(TEXT("paint"), TEXT("paint-red"));
+	}
+	TArray<FString> Errors;
+	TestTrue(
+		*FString::Printf(TEXT("单配置完整视角不受历史 64 项限制：%s"),
+			*FString::Join(Errors, TEXT(" "))),
+		Plan.Validate(Errors));
+	Plan.ExpectedRenderCount = 64;
+	TestFalse(TEXT("声明数量与动态任务数不一致时拒绝"), Plan.Validate(Errors));
+	return true;
+}
+
+bool FConfigurationBatchBakeV2PlanTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	const FString TestDirectory = FPaths::Combine(
+		FPaths::ProjectIntermediateDir(),
+		TEXT("BatchBakeTests"),
+		FGuid::NewGuid().ToString(EGuidFormats::Digits));
+	IFileManager::Get().MakeDirectory(*TestDirectory, true);
+	const FString PlanPath = FPaths::Combine(TestDirectory, TEXT("v2-plan.json"));
+	const FString RenderKey =
+		TEXT("sc01__sc01-draft-20260121__render-0123456789abcdef01234567");
+	const FString Json = FString::Printf(TEXT(R"JSON({
+		"schemaVersion":"2.0.0",
+		"publicationVersion":"sc01-v2",
+		"catalogVersion":"sc01-draft-20260121",
+		"vehicleId":"sc01",
+		"renderViewIds":["front","front-left","side","rear-right"],
+		"expectedRenderCount":4,
+		"configurations":[{
+			"configurationKey":"%s",
+			"configurationId":"cfg-0123456789abcdef01234567",
+			"renderKey":"%s",
+			"selections":{
+				"exterior-body-cover":"body-cover-red",
+				"door-middle":"door-middle-leather"
+			},
+			"customizations":{
+				"door-middle":{"materialVariantId":"leather-p10-1217"},
+				"exterior-body-cover":{
+					"colorHex":"#112233",
+					"metallic":0.8,
+					"roughness":0.2,
+					"clearCoat":0.9,
+					"orangePeel":0.1,
+					"flakeIntensity":0.7
+				}
+			}
+		}]
+	})JSON"), *RenderKey, *RenderKey);
+	TestTrue(TEXT("写入 v2 published plan"), FFileHelper::SaveStringToFile(Json, *PlanPath));
+
+	FConfigurationBakePlan Plan;
+	TArray<FString> Errors;
+	TestTrue(
+		*FString::Printf(TEXT("FConfigurationBakePlan::Load 可读取 v2：%s"),
+			*FString::Join(Errors, TEXT(" "))),
+		FConfigurationBakePlan::Load(PlanPath, Plan, Errors));
+	TestEqual(TEXT("v2 生成四个视角任务"), Plan.Tasks.Num(), 4);
+	if (!Plan.Tasks.IsEmpty())
+	{
+		const FConfigurationBakeTask& Task = Plan.Tasks[0];
+		TestEqual(TEXT("configurationKey 保持 renderKey"), Task.ConfigurationKey, RenderKey);
+		TestEqual(TEXT("通用 selections 被读取"), Task.Selections.Num(), 2);
+		TestEqual(TEXT("通用 customizations 被读取"), Task.Customizations.Num(), 2);
+		TestEqual(
+			TEXT("materialVariant customization 被读取"),
+			Task.Customizations.FindChecked(TEXT("door-middle")).MaterialVariantId,
+			FString(TEXT("leather-p10-1217")));
+		TestEqual(
+			TEXT("paint customization 被读取"),
+			Task.Customizations.FindChecked(TEXT("exterior-body-cover")).Paint.ColorHex,
+			FString(TEXT("#112233")));
+	}
+	IFileManager::Get().DeleteDirectory(*TestDirectory, false, true);
 	return true;
 }
 

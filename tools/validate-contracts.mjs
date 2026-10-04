@@ -7,6 +7,12 @@ import { validateSourceAssets } from "./validate-source-assets.mjs";
 import {
   validateAutomotiveCatalogFixtures,
 } from "./validate-automotive-catalog-v2.mjs";
+import {
+  enumerateValidConfigurations,
+  estimateV2Scale,
+  generateV2Coverage,
+  generateV2Plan,
+} from "./generate-published-configurations.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const schemaDir = resolve(root, "contracts", "schemas");
@@ -93,24 +99,36 @@ if (bakeManifestSchema) {
     renderer?.type === "object" && renderer.additionalProperties === false,
     "renderer 必须是禁止额外字段的 object"
   );
-  check(
-    sameArray(renderer?.required, ["engineVersion", "mode", "samplesPerPixel"]),
-    "renderer 必须要求 engineVersion、mode、samplesPerPixel"
-  );
+  for (const field of [
+    "engineVersion",
+    "mode",
+    "samplesPerPixel",
+    "outputWidth",
+    "outputHeight",
+    "denoiser"
+  ]) {
+    check(renderer?.required?.includes(field), `renderer 必须要求 ${field}`);
+  }
   check(
     renderer?.properties?.engineVersion?.type === "string" &&
       renderer.properties.engineVersion.minLength === 1,
     "renderer.engineVersion 必须是非空字符串"
   );
   check(
-    renderer?.properties?.mode?.const === "path-tracing",
-    "renderer.mode 必须固定为 path-tracing"
+    sameArray(renderer?.properties?.mode?.enum, ["realtime", "path-tracing"]),
+    "renderer.mode 必须支持 realtime 与 path-tracing"
   );
   check(
     renderer?.properties?.samplesPerPixel?.type === "integer" &&
-      renderer.properties.samplesPerPixel.minimum === 1,
-    "renderer.samplesPerPixel 必须是正整数"
+      renderer.properties.samplesPerPixel.minimum === 0,
+    "renderer.samplesPerPixel 必须是非负整数"
   );
+  check(
+    renderer?.properties?.outputWidth?.minimum === 640
+      && renderer?.properties?.outputHeight?.minimum === 360,
+    "renderer 必须声明输出原始分辨率"
+  );
+  check(renderer?.properties?.denoiser?.type === "boolean", "renderer 必须声明降噪状态");
 
   check(
     alphaProcessing?.type === "object" &&
@@ -275,14 +293,18 @@ if (catalog && published) {
   check(published.vehicleId === catalog.vehicle.vehicleId, "vehicleId 引用不一致");
 
   const generated = cartesian(optionIdsByPart, order);
+  const generatedByPublisher = enumerateValidConfigurations(catalog).configurations;
   const expectedKeys = new Set(
     generated.map((selection) => order.map((partId) => selection[partId]).join("__"))
   );
   const actualKeys = new Set();
-  check(generated.length === 16, `catalog 笛卡尔积应为 16，实际为 ${generated.length}`);
   check(
-    published.configurations?.length === 16,
-    `published configurations 应为 16，实际为 ${published.configurations?.length ?? 0}`
+    published.configurations?.length === generated.length,
+    `published configurations 应覆盖全部 ${generated.length} 项，实际为 ${published.configurations?.length ?? 0}`
+  );
+  check(
+    generatedByPublisher.length === generated.length,
+    "发布生成器必须枚举 catalog 的全部有效笛卡尔积"
   );
 
   for (const configuration of published.configurations ?? []) {
@@ -328,7 +350,7 @@ if (catalog && published) {
   check(
     actualKeys.size === expectedKeys.size &&
       [...expectedKeys].every((key) => actualKeys.has(key)),
-    "published fixture 未完整覆盖 16 个笛卡尔组合"
+    `published fixture 未完整覆盖 ${expectedKeys.size} 个笛卡尔组合`
   );
   const expectedRenderPaths = new Set();
   for (const key of actualKeys) {
@@ -338,7 +360,6 @@ if (catalog && published) {
       );
     }
   }
-  check(expectedRenderPaths.size === 64, `图片期望应为 64，实际为 ${expectedRenderPaths.size}`);
   check(
     published.expectedRenderCount === expectedRenderPaths.size,
     `expectedRenderCount 应为 ${expectedRenderPaths.size}`
@@ -402,6 +423,33 @@ try {
 
 try {
   await validateAutomotiveCatalogFixtures(root);
+  const v2Catalog = await readJson(resolve(fixtureDir, "sc01.catalog.draft.v2.json"));
+  const scale = estimateV2Scale(v2Catalog);
+  const coverage = generateV2Coverage(v2Catalog);
+  const plan = generateV2Plan(v2Catalog, "sc01-v2");
+  check(
+    scale.configurationCount === "391820820480000000000",
+    "SC01 v2 完整组合规模估算必须稳定且不得直接展开"
+  );
+  check(
+    coverage.coveredRenderRelevantOptionCount
+      === v2Catalog.options.filter((option) => option.renderRelevant).length,
+    "SC01 v2 coverage 必须覆盖每个 renderRelevant 选项"
+  );
+  check(
+    coverage.availableMaterialVariantCount === coverage.coveredMaterialVariantCount,
+    "SC01 v2 coverage 必须覆盖每个可用 materialVariant"
+  );
+  check(
+    sameArray(plan.renderViewIds, ["front", "front-left", "side", "rear-right"]),
+    "SC01 v2 published plan 必须声明标准 renderViewIds"
+  );
+  check(
+    plan.configurations.every(
+      (configuration) => configuration.configurationKey === configuration.renderKey
+    ),
+    "SC01 v2 published plan 的 configurationKey 必须等于 renderKey"
+  );
 } catch (error) {
   failures.push(`车型目录 v2 契约验证失败 (${error.message})`);
 }
@@ -416,5 +464,5 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log("契约验证通过：11 个 Schema JSON；v1 保持 8 个选项、2 个模板、16 个组合、4 个视角与 64 个图片期望；SC01 v2 草案通过有效/无效配置、禁止报价 price-result 与 2 个稳定身份黄金向量；参考资产、content-pack、P0-3 与车辆 sidecar 验证通过。");
+  console.log("契约验证通过：11 个 Schema JSON；v1 发布配置完整覆盖目录笛卡尔积与全部视角并校验动态任务规模；SC01 v2 草案通过有效/无效配置、禁止报价 price-result、稳定身份黄金向量与 coverage 生成校验；参考资产、content-pack、P0-3 与车辆 sidecar 验证通过。");
 }
