@@ -811,24 +811,6 @@ float UConfiguratorPanel::CalculateStageProjectionOffsetX(
 		0.95f);
 }
 
-float UConfiguratorPanel::CalculateStageVisibleWidthRatio(
-	const float ViewportWidth,
-	const float OccludedWidth)
-{
-	if (!FMath::IsFinite(ViewportWidth)
-		|| ViewportWidth <= KINDA_SMALL_NUMBER
-		|| !FMath::IsFinite(OccludedWidth))
-	{
-		return 1.0f;
-	}
-
-	const float SafeOccludedWidth = FMath::Max(OccludedWidth, 0.0f);
-	return FMath::Clamp(
-		(ViewportWidth - SafeOccludedWidth) / ViewportWidth,
-		0.05f,
-		1.0f);
-}
-
 bool UConfiguratorPanel::PlayExperienceAnimation(const FString& AnimationId)
 {
 	AConfigShowroomPlayerController* Controller =
@@ -879,18 +861,6 @@ float UConfiguratorPanel::GetStageProjectionOffsetX() const
 	return CalculateStageProjectionOffsetX(
 		ViewportWidth,
 		0.0f,
-		ExpandedPanelWidth);
-}
-
-float UConfiguratorPanel::GetStageVisibleWidthRatio() const
-{
-	if (bWebFullscreen)
-	{
-		return 1.0f;
-	}
-
-	return CalculateStageVisibleWidthRatio(
-		GetCachedGeometry().GetLocalSize().X,
 		ExpandedPanelWidth);
 }
 

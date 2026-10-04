@@ -184,30 +184,6 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyZero(
 			UConfiguratorPanel::CalculateStageProjectionOffsetX(
 				0.0f, 0.0f, 480.0f)));
-	TestTrue(
-		TEXT("1600px 视口扣除右侧 480px 面板后可见舞台比例为 0.7"),
-		FMath::IsNearlyEqual(
-			UConfiguratorPanel::CalculateStageVisibleWidthRatio(
-				1600.0f, 480.0f),
-			0.7f));
-	TestTrue(
-		TEXT("无遮挡时可见舞台比例为 1"),
-		FMath::IsNearlyEqual(
-			UConfiguratorPanel::CalculateStageVisibleWidthRatio(
-				1600.0f, 0.0f),
-			1.0f));
-	TestTrue(
-		TEXT("面板宽于视口时可见舞台比例防御限幅"),
-		FMath::IsNearlyEqual(
-			UConfiguratorPanel::CalculateStageVisibleWidthRatio(
-				320.0f, 480.0f),
-			0.05f));
-	TestTrue(
-		TEXT("无效视口宽度回退为完整舞台"),
-		FMath::IsNearlyEqual(
-			UConfiguratorPanel::CalculateStageVisibleWidthRatio(
-				0.0f, 480.0f),
-			1.0f));
 	TestTrue(TEXT("bridge 接受六个固定镜头中的最后一个"),
 		UConfiguratorWebBridge::IsSupportedCameraIndex(5));
 	TestFalse(TEXT("bridge 拒绝越界镜头"),
@@ -575,42 +551,6 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("过渡视图保留正交近裁剪面"), AppliedPOV.OrthoNearClipPlane, EndPOV.OrthoNearClipPlane);
 	TestEqual(TEXT("过渡视图保留正交远裁剪面"), AppliedPOV.OrthoFarClipPlane, EndPOV.OrthoFarClipPlane);
 	TestFalse(TEXT("过渡视图保留 FOV LOD 开关"), AppliedPOV.bUseFieldOfViewForLOD);
-	const float OriginalHorizontalFOV = 70.0f;
-	const float StageAwareFOV =
-		AConfigShowroomPlayerController::CalculateStageAwareHorizontalFOV(
-			OriginalHorizontalFOV,
-			0.7f);
-	TestTrue(
-		TEXT("普通模式按可见舞台比例缩小水平 FOV"),
-		FMath::IsNearlyEqual(StageAwareFOV, 52.22313f, 0.0001f));
-	TestTrue(
-		TEXT("全屏模式恢复场景相机原始水平 FOV"),
-		FMath::IsNearlyEqual(
-			AConfigShowroomPlayerController::CalculateStageAwareHorizontalFOV(
-				OriginalHorizontalFOV,
-				1.0f),
-			OriginalHorizontalFOV,
-			0.0001f));
-	FMinimalViewInfo OriginalRuntimePOV;
-	OriginalRuntimePOV.FOV = OriginalHorizontalFOV;
-	RuntimeCamera->ApplyCameraPOV(OriginalRuntimePOV);
-	const float FirstFrameFOV =
-		AConfigShowroomPlayerController::CalculateStageAwareHorizontalFOV(
-			RuntimeCamera->GetCameraPOV().FOV,
-			0.7f);
-	const float SecondFrameFOV =
-		AConfigShowroomPlayerController::CalculateStageAwareHorizontalFOV(
-			RuntimeCamera->GetCameraPOV().FOV,
-			0.7f);
-	TestTrue(
-		TEXT("连续帧都基于原始 FOV 得到相同结果"),
-		FMath::IsNearlyEqual(FirstFrameFOV, SecondFrameFOV, 0.0001f));
-	TestTrue(
-		TEXT("舞台 FOV 计算不写回 RuntimeCamera，连续帧保持原始 FOV"),
-		FMath::IsNearlyEqual(
-			RuntimeCamera->GetCameraPOV().FOV,
-			OriginalHorizontalFOV,
-			0.0001f));
 	return true;
 }
 
