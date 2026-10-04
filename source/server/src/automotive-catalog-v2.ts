@@ -12,7 +12,7 @@ export interface CatalogNodeUi {
   order?: number;
   iconUrl?: string | null;
   cameraId?: CatalogCameraId | null;
-  navigationMode?: "tabs" | "list" | "none";
+  navigationMode?: "tabs" | "list" | "none" | "surfaces-as-components";
   layout?: "single" | "stack" | "grid";
 }
 
@@ -57,6 +57,9 @@ export interface CatalogOption {
 export interface CatalogMaterialVariant {
   variantId: string;
   materialFamilyId: string;
+  ui?: {
+    sortColorHex?: string;
+  };
   [key: string]: unknown;
 }
 
@@ -85,6 +88,7 @@ export interface AutomotiveCatalog {
     ui?: CatalogNodeUi;
     [key: string]: unknown;
   }>;
+  materialFamilies: CatalogMaterialFamily[];
   materialVariants: CatalogMaterialVariant[];
   options: CatalogOption[];
   [key: string]: unknown;
@@ -169,6 +173,14 @@ function cameraKey(cameraId: CatalogCameraId): string {
   return `${typeof cameraId}:${cameraId}`;
 }
 
+export interface CatalogMaterialFamily {
+  materialFamilyId: string;
+  ui?: {
+    variantSort?: "achromatic-then-rainbow";
+  };
+  [key: string]: unknown;
+}
+
 function validateCatalogUi(catalog: AutomotiveCatalog): void {
   if (catalog.interactionCameras !== undefined && !Array.isArray(catalog.interactionCameras)) {
     throw new Error("车型目录 v2 interactionCameras 必须是数组");
@@ -214,12 +226,48 @@ function validateCatalogUi(catalog: AutomotiveCatalog): void {
       && (typeof item.ui.iconUrl !== "string" || !item.ui.iconUrl.startsWith("/"))) {
       throw new Error("车型目录 v2 ui.iconUrl 非法");
     }
+    if (item.ui?.navigationMode !== undefined
+      && (typeof item.ui.navigationMode !== "string"
+        || !["tabs", "list", "none", "surfaces-as-components"].includes(
+          item.ui.navigationMode,
+        ))) {
+      throw new Error("车型目录 v2 ui.navigationMode 非法");
+    }
     const cameraId = item.ui?.cameraId;
     if (cameraId !== undefined && cameraId !== null) {
       if (!(typeof cameraId === "string" || Number.isInteger(cameraId))
         || !cameraIds.has(cameraKey(cameraId as CatalogCameraId))) {
         throw new Error(`车型目录 v2 ui.cameraId 不存在：${String(cameraId)}`);
       }
+    }
+  }
+  for (const family of catalog.materialFamilies) {
+    if (family.ui !== undefined
+      && (!isRecord(family.ui)
+        || (family.ui.variantSort !== undefined
+          && family.ui.variantSort !== "achromatic-then-rainbow")
+        || Object.keys(family.ui).some((key) => key !== "variantSort"))) {
+      throw new Error(`车型目录 v2 材料族 ${family.materialFamilyId} ui 非法`);
+    }
+  }
+  const sortedFamilyIds = new Set(
+    catalog.materialFamilies
+      .filter((family) => family.ui?.variantSort === "achromatic-then-rainbow")
+      .map((family) => family.materialFamilyId),
+  );
+  for (const variant of catalog.materialVariants) {
+    const sortColorHex = variant.ui?.sortColorHex;
+    if (variant.ui !== undefined
+      && (!isRecord(variant.ui)
+        || Object.keys(variant.ui).some((key) => key !== "sortColorHex")
+        || (sortColorHex !== undefined
+          && (typeof sortColorHex !== "string"
+            || !/^#[0-9a-fA-F]{6}$/.test(sortColorHex))))) {
+      throw new Error(`车型目录 v2 材料色卡 ${variant.variantId} ui 非法`);
+    }
+    if (sortedFamilyIds.has(variant.materialFamilyId)
+      && (typeof sortColorHex !== "string" || !/^#[0-9a-fA-F]{6}$/.test(sortColorHex))) {
+      throw new Error(`车型目录 v2 材料色卡 ${variant.variantId} 缺少合法 ui.sortColorHex`);
     }
   }
   for (const option of catalog.options) {

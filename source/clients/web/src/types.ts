@@ -21,8 +21,9 @@ export interface CatalogNode {
 }
 
 export type CatalogCameraId = string | number
-export type CatalogNavigationMode = 'tabs' | 'list' | 'none'
+export type CatalogNavigationMode = 'tabs' | 'list' | 'none' | 'surfaces-as-components'
 export type CatalogLayout = 'single' | 'stack' | 'grid'
+export type CatalogVariantSort = 'achromatic-then-rainbow'
 
 export interface CatalogNodeUi {
   order?: number
@@ -62,6 +63,9 @@ export interface CatalogSurface extends CatalogNode {
 
 export interface CatalogMaterialFamily extends CatalogNode {
   materialFamilyId: string
+  ui?: {
+    variantSort?: CatalogVariantSort
+  }
 }
 
 export interface CatalogPricing {
@@ -106,6 +110,9 @@ export interface CatalogMaterialVariant extends CatalogNode {
   variantId: string
   materialFamilyId: string
   colorCode: string | null
+  ui?: {
+    sortColorHex?: string
+  }
   thumbnailUrl: string
   reviewRequired: boolean
 }

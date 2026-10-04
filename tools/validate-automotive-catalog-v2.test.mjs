@@ -94,6 +94,34 @@ test("catalog UI 扩展保持向后兼容并接受旧数字 cameraId", async () 
   assert.doesNotThrow(() => validateCatalog(catalog));
 });
 
+test("启用色相排序的材料族要求每个 variant 提供合法 sortColorHex", async () => {
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  const sortedFamilyIds = new Set(
+    catalog.materialFamilies
+      .filter((family) => family.ui?.variantSort === "achromatic-then-rainbow")
+      .map((family) => family.materialFamilyId)
+  );
+  const sortedVariants = catalog.materialVariants.filter(
+    (variant) => sortedFamilyIds.has(variant.materialFamilyId)
+  );
+  assert.equal(sortedVariants.length, 336);
+  assert.ok(sortedVariants.every((variant) =>
+    /^#[0-9A-F]{6}$/.test(variant.ui?.sortColorHex ?? "")
+  ));
+
+  const missing = structuredClone(catalog);
+  delete missing.materialVariants.find(
+    (variant) => sortedFamilyIds.has(variant.materialFamilyId)
+  ).ui;
+  assert.throws(() => validateCatalog(missing), /缺少合法 ui\.sortColorHex/);
+
+  const invalid = structuredClone(catalog);
+  invalid.materialVariants.find(
+    (variant) => sortedFamilyIds.has(variant.materialFamilyId)
+  ).ui.sortColorHex = "#12345G";
+  assert.throws(() => validateCatalog(invalid), /sortColorHex 非法/);
+});
+
 test("configurationId 与 renderKey 不受 selections 对象属性顺序影响", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const valid = await fixture("sc01.configuration.valid.v2.json");
@@ -277,6 +305,17 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
       .filter((component) => component.categoryId === "personalization")
       .map((component) => component.displayName),
     ["饰件", "缝线与徽标", "操控与脚垫"]
+  );
+  assert.equal(
+    catalog.categories.find((category) => category.categoryId === "personalization")
+      .ui.navigationMode,
+    "surfaces-as-components"
+  );
+  assert.deepEqual(
+    catalog.materialFamilies
+      .filter((family) => family.ui?.variantSort === "achromatic-then-rainbow")
+      .map((family) => family.materialFamilyId),
+    ["ultrasuede", "alcantara", "leather", "microfiber"]
   );
   assert.deepEqual(
     catalog.options

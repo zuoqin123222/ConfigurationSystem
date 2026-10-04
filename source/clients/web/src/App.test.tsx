@@ -119,7 +119,7 @@ describe('App v2', () => {
     expect(within(stageNavigation).getAllByRole('button').map((button) => button.textContent))
       .toEqual(['01外饰', '02内饰', '03性能', '04个性化'])
     expect(within(stageNavigation).getByRole('button', { name: '外饰' }).querySelector('img'))
-      .toHaveAttribute('src', '/category-exterior.svg')
+      .toBeNull()
     expect(screen.queryByText('DRAFT · 不可报价')).not.toBeInTheDocument()
     expect(document.querySelector('.brand')).toBeNull()
     expect(document.querySelector('.vehicle-title')).toBeNull()
@@ -267,7 +267,7 @@ describe('App v2', () => {
     expect(within(navigation).getAllByRole('button').map((button) => button.textContent))
       .toEqual(['01外饰', '02内饰', '03性能', '04个性化'])
     expect(within(navigation).getByRole('button', { name: '内饰' }).querySelector('img'))
-      .toHaveAttribute('src', '/category-interior.svg')
+      .toBeNull()
     await user.click(within(navigation).getByRole('button', { name: '内饰' }))
     expect(setconfiguratorcategory).toHaveBeenCalledWith('interior')
 
@@ -394,10 +394,10 @@ describe('App v2', () => {
     await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
       .getByRole('button', { name: '个性化' }))
     const personalizationParts = await screen.findByRole('region', { name: '部件筛选' })
-    expect(personalizationParts).toHaveTextContent('个性化')
-    expect(screen.getByRole('region', { name: '子项筛选' })).toHaveTextContent(
-      '内饰全车黑色喷漆件缝线徽标中面板横饰板换挡刹车脚垫',
+    expect(personalizationParts).toHaveTextContent(
+      '内饰全车黑色喷漆件门板口袋缝线徽标中面板横饰板换挡刹车脚垫',
     )
+    expect(screen.queryByRole('region', { name: '子项筛选' })).not.toBeInTheDocument()
   })
 
   it('不为未声明 variant 色彩能力的付费材质选项展示色卡', async () => {

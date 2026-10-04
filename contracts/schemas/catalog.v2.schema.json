@@ -131,8 +131,22 @@
             { "type": "null" }
           ]
         },
-        "navigationMode": { "enum": ["tabs", "list", "none"] },
+        "navigationMode": { "enum": ["tabs", "list", "none", "surfaces-as-components"] },
         "layout": { "enum": ["single", "stack", "grid"] }
+      }
+    },
+    "materialFamilyUi": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "variantSort": { "enum": ["achromatic-then-rainbow"] }
+      }
+    },
+    "materialVariantUi": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sortColorHex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
       }
     },
     "interactionCamera": {
@@ -262,6 +276,7 @@
       "properties": {
         "materialFamilyId": { "$ref": "#/$defs/id" },
         "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "ui": { "$ref": "#/$defs/materialFamilyUi" },
         "sourceRefs": {
           "type": "array",
           "minItems": 1,
@@ -272,6 +287,23 @@
     "materialVariant": {
       "type": "object",
       "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "materialFamilyId": {
+                "enum": ["ultrasuede", "alcantara", "leather", "microfiber"]
+              }
+            }
+          },
+          "then": {
+            "required": ["ui"],
+            "properties": {
+              "ui": { "required": ["sortColorHex"] }
+            }
+          }
+        }
+      ],
       "required": [
         "variantId",
         "materialFamilyId",
@@ -291,6 +323,7 @@
             { "type": "null" }
           ]
         },
+        "ui": { "$ref": "#/$defs/materialVariantUi" },
         "thumbnailUrl": { "type": "string", "pattern": "^/" },
         "reviewRequired": { "type": "boolean" },
         "sourceRefs": {

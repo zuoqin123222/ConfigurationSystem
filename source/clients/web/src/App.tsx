@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type SyntheticEvent,
+} from 'react'
 import {
   ApiError,
   fetchCatalog,
@@ -20,6 +28,7 @@ import {
   normalizeCustomizations,
   normalizeSelections,
   optionsForSurface,
+  sortMaterialVariants,
   supportsMaterialVariants,
   surfacesForComponent,
 } from './configurator'
@@ -52,6 +61,7 @@ import ExperienceControls from './ExperienceControls'
 import InlineColorPicker from './InlineColorPicker'
 
 const CACHE_KEY = 'automotive-v2-configurator'
+const DEFAULT_IMAGE_URL = '/sc01/option-icons/default.svg'
 const SRGB_TO_LINEAR_TABLE = Array.from({ length: 256 }, (_, index) => {
   const value = index / 255
   return value <= 0.04045
@@ -87,6 +97,11 @@ function optionSwatch(option: CatalogV2['options'][number]): string {
   if (color && /^#[0-9a-f]{6}$/i.test(color)) return color
   if (option.pricing.isStandard) return '#171817'
   return '#8b8d88'
+}
+
+function useDefaultImage(event: SyntheticEvent<HTMLImageElement>) {
+  const image = event.currentTarget
+  if (!image.src.endsWith(DEFAULT_IMAGE_URL)) image.src = DEFAULT_IMAGE_URL
 }
 
 function Showroom() {
@@ -269,7 +284,6 @@ function ConfiguratorTopBar({
               onClick={() => onSelectCategory(category.categoryId)}
             >
               <span>{String(index + 1).padStart(2, '0')}</span>
-              {category.ui?.iconUrl && <img src={category.ui.iconUrl} alt="" />}
               {category.displayName}
             </button>
           </div>
@@ -479,15 +493,18 @@ function Configurator({
     savedConfiguration ? 'saved' : 'idle',
   )
   const [syncMessage, setSyncMessage] = useState('')
-
+  const currentCategory = catalog.categories.find((category) => category.categoryId === categoryId)
+  const surfacesAsComponents = currentCategory?.ui?.navigationMode === 'surfaces-as-components'
   const components = useMemo(
     () => componentsForCategory(catalog, categoryId),
     [catalog, categoryId],
   )
   const surfaces = useMemo(
-    () => surfacesForComponent(catalog, componentId)
-        .filter((surface) => components.some((component) => component.componentId === surface.componentId)),
-    [catalog, componentId, components],
+    () => surfacesAsComponents
+      ? catalog.surfaces.filter((surface) => surface.surfaceId === componentId)
+      : surfacesForComponent(catalog, componentId)
+          .filter((surface) => components.some((component) => component.componentId === surface.componentId)),
+    [catalog, componentId, components, surfacesAsComponents],
   )
   const categories = useMemo(
     () => categoriesInUiOrder(catalog),
@@ -532,10 +549,12 @@ function Configurator({
 
   const selectComponent = (nextComponentId: string) => {
     setComponentId(nextComponentId)
+    if (surfacesAsComponents) setSurfaceId(nextComponentId)
     if (embedded) {
       void setUeCameraId(getUeBridge(true), cameraIdForSelection(catalog, {
         categoryId,
-        componentId: nextComponentId,
+        componentId: surfacesAsComponents ? undefined : nextComponentId,
+        surfaceId: surfacesAsComponents ? nextComponentId : undefined,
       }))
     }
   }
@@ -803,7 +822,12 @@ function Configurator({
           aria-label={`${displayName}，${optionPrice(option)}`}
         >
           {(option.ui?.iconUrl ?? thumbnailUrl)
-            ? <img src={option.ui?.iconUrl ?? thumbnailUrl ?? ''} alt="" loading="lazy" />
+            ? <img
+                src={option.ui?.iconUrl ?? thumbnailUrl ?? DEFAULT_IMAGE_URL}
+                alt=""
+                loading="lazy"
+                onError={useDefaultImage}
+              />
             : <span
                 className="color-choice-swatch"
                 style={{ background: optionSwatch(option) }}
@@ -829,7 +853,7 @@ function Configurator({
                 aria-pressed={!selections[surface.surfaceId]}
                 aria-label="默认，免费"
               >
-                <span className="color-choice-swatch" aria-hidden="true" />
+                <img src={DEFAULT_IMAGE_URL} alt="" />
                 <span className="color-choice-name">默认</span>
                 <small>免费</small>
               </button>
@@ -850,7 +874,10 @@ function Configurator({
             )
             const variantOptions = familyOptions.filter(supportsMaterialVariants)
             const variantChoices = variantOptions.flatMap((option) =>
-              materialVariantsForOption(catalog, option)
+              sortMaterialVariants(
+                materialVariantsForOption(catalog, option),
+                materialFamily.ui?.variantSort,
+              )
                 .map((variant) => ({ option, variant })))
             const remainingFamilyOptions = familyOptions.filter(
               (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
@@ -906,7 +933,12 @@ function Configurator({
                         aria-pressed={Boolean(variantSelected)}
                         aria-label={`${variant.displayName}，${materialFamily.displayName}，${optionPrice(option)}`}
                       >
-                        <img src={variant.thumbnailUrl} alt="" loading="lazy" />
+                        <img
+                          src={variant.thumbnailUrl}
+                          alt=""
+                          loading="lazy"
+                          onError={useDefaultImage}
+                        />
                         <span className="color-choice-name">{variant.displayName}</span>
                         <small>{optionPrice(option)}</small>
                       </button>
@@ -1054,7 +1086,9 @@ function Configurator({
               name: item.displayName,
               iconUrl: item.ui?.iconUrl,
             }))} value={componentId} onChange={selectComponent} />
-            {surfaces.length > 1 && currentComponent?.ui?.navigationMode !== 'none' && (
+            {!surfacesAsComponents
+              && surfaces.length > 1
+              && currentComponent?.ui?.navigationMode !== 'none' && (
               <FilterGroup label="子项" items={surfaces.map((item) => ({
                 id: item.surfaceId,
                 name: item.displayName,
@@ -1097,7 +1131,7 @@ function FilterGroup({
             onClick={() => onChange(item.id)}
             aria-pressed={value === item.id}
           >
-            {item.iconUrl && <img src={item.iconUrl} alt="" />}
+            <img src={item.iconUrl ?? DEFAULT_IMAGE_URL} alt="" onError={useDefaultImage} />
             {item.name}
           </button>
         ))}

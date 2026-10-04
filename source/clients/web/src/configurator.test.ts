@@ -12,6 +12,7 @@ import {
   normalizeSelections,
   optionsForSurface,
   renderRelevantSelections,
+  sortMaterialVariants,
   surfacesForComponent,
 } from './configurator'
 import { catalogFixture, initialSelections } from './test/catalogFixture'
@@ -94,6 +95,62 @@ describe('v2 动态选配逻辑', () => {
     catalog.categories[0].ui = { order: 10 }
     expect(categoriesInUiOrder(catalog).map((item) => item.categoryId))
       .toEqual(['interior', 'performance', 'personalization', 'exterior'])
+  })
+
+  it('由 category surfaces-as-components 配置把 surface 平铺为部件入口', () => {
+    expect(componentsForCategory(catalogFixture, 'personalization').map((item) => item.displayName))
+      .toEqual(['内饰全车黑色喷漆件', '门板口袋', '缝线徽标', '中面板横饰板', '换挡', '刹车', '脚垫'])
+  })
+
+  it('中性色先按亮度排序，其余颜色按红橙黄绿青蓝紫色相排序', () => {
+    const variants = [
+      { variantId: 'blue' },
+      { variantId: 'white' },
+      { variantId: 'red-wrap' },
+      { variantId: 'red' },
+      { variantId: 'orange' },
+      { variantId: 'black' },
+      { variantId: 'green' },
+      { variantId: 'gray' },
+      { variantId: 'chroma-at-threshold' },
+      { variantId: 'violet' },
+    ].map(({ variantId }) => ({
+      variantId,
+      materialFamilyId: 'ultrasuede',
+      displayName: variantId,
+      colorCode: `vendor-${variantId}`,
+      ui: { sortColorHex: '#000000' },
+      thumbnailUrl: `/${variantId}.webp`,
+      reviewRequired: false,
+    }))
+    const colors = new Map<string, string>([
+      ['blue', '#0000ff'],
+      ['white', '#ffffff'],
+      ['red-wrap', '#ff002b'],
+      ['red', '#ff0000'],
+      ['orange', '#ff8000'],
+      ['black', '#000000'],
+      ['green', '#00ff00'],
+      ['gray', '#777777'],
+      ['chroma-at-threshold', '#8a7777'],
+      ['violet', '#8000ff'],
+    ])
+    for (const variant of variants) variant.ui.sortColorHex = colors.get(variant.variantId)!
+
+    expect(sortMaterialVariants(variants, 'achromatic-then-rainbow')
+      .map((variant) => variant.variantId))
+      .toEqual([
+        'black',
+        'gray',
+        'chroma-at-threshold',
+        'white',
+        'red-wrap',
+        'red',
+        'orange',
+        'green',
+        'blue',
+        'violet',
+      ])
   })
 
   it('镜头按 surface、component、category 优先级解析并兼容数字 cameraId', () => {

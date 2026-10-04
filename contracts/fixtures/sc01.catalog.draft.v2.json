@@ -236,7 +236,7 @@
         "order": 3,
         "iconUrl": "/sc01/option-icons/default.svg",
         "cameraId": "front-cabin",
-        "navigationMode": "tabs",
+        "navigationMode": "surfaces-as-components",
         "layout": "single"
       },
       "sourceRefs": [
@@ -1062,6 +1062,7 @@
     {
       "materialFamilyId": "ultrasuede",
       "displayName": "奥司维",
+      "ui": { "variantSort": "achromatic-then-rainbow" },
       "sourceRefs": [
         {
           "documentId": "sc01-color-card",
@@ -1073,6 +1074,7 @@
     {
       "materialFamilyId": "alcantara",
       "displayName": "Alcantara",
+      "ui": { "variantSort": "achromatic-then-rainbow" },
       "sourceRefs": [
         {
           "documentId": "sc01-color-card",
@@ -1084,6 +1086,7 @@
     {
       "materialFamilyId": "leather",
       "displayName": "牛皮",
+      "ui": { "variantSort": "achromatic-then-rainbow" },
       "sourceRefs": [
         {
           "documentId": "sc01-color-card",
@@ -1095,6 +1098,7 @@
     {
       "materialFamilyId": "microfiber",
       "displayName": "超纤皮",
+      "ui": { "variantSort": "achromatic-then-rainbow" },
       "sourceRefs": [
         {
           "documentId": "sc01-color-card",
@@ -1187,6 +1191,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2911",
       "colorCode": "2911",
+      "ui": { "sortColorHex": "#DFDBBE" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2911.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1202,6 +1207,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2901",
       "colorCode": "2901",
+      "ui": { "sortColorHex": "#BCB092" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2901.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1217,6 +1223,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1112",
       "colorCode": "1112",
+      "ui": { "sortColorHex": "#908063" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1112.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1232,6 +1239,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2293",
       "colorCode": "2293",
+      "ui": { "sortColorHex": "#978F7A" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2293.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1247,6 +1255,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2100",
       "colorCode": "2100",
+      "ui": { "sortColorHex": "#C3B798" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2100.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1262,6 +1271,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1510",
       "colorCode": "1510",
+      "ui": { "sortColorHex": "#C3AB94" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1510.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1277,6 +1287,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1108",
       "colorCode": "1108",
+      "ui": { "sortColorHex": "#D2B491" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1108.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1292,6 +1303,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2292",
       "colorCode": "2292",
+      "ui": { "sortColorHex": "#BF9D6D" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2292.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1307,6 +1319,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1594",
       "colorCode": "1594",
+      "ui": { "sortColorHex": "#D7CB9E" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1594.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1322,6 +1335,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2974",
       "colorCode": "2974",
+      "ui": { "sortColorHex": "#B0A174" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2974.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1337,6 +1351,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1110",
       "colorCode": "1110",
+      "ui": { "sortColorHex": "#C2B58E" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1110.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1352,6 +1367,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2909",
       "colorCode": "2909",
+      "ui": { "sortColorHex": "#CCBA86" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2909.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1367,6 +1383,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2940",
       "colorCode": "2940",
+      "ui": { "sortColorHex": "#B99F67" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2940.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1382,6 +1399,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "4415",
       "colorCode": "4415",
+      "ui": { "sortColorHex": "#9E805E" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-4415.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1397,6 +1415,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "4914",
       "colorCode": "4914",
+      "ui": { "sortColorHex": "#8D7351" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-4914.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1412,6 +1431,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2930",
       "colorCode": "2930",
+      "ui": { "sortColorHex": "#8E7361" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2930.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1427,6 +1447,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1125",
       "colorCode": "1125",
+      "ui": { "sortColorHex": "#B89637" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1125.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1442,6 +1463,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1452",
       "colorCode": "1452",
+      "ui": { "sortColorHex": "#CDC11B" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1452.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1457,6 +1479,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1045",
       "colorCode": "1045",
+      "ui": { "sortColorHex": "#CAD076" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1045.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1472,6 +1495,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1581",
       "colorCode": "1581",
+      "ui": { "sortColorHex": "#6A9E22" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1581.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1487,6 +1511,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "3314",
       "colorCode": "3314",
+      "ui": { "sortColorHex": "#637135" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-3314.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1502,6 +1527,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "3322",
       "colorCode": "3322",
+      "ui": { "sortColorHex": "#837F52" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-3322.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1517,6 +1543,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "6676",
       "colorCode": "6676",
+      "ui": { "sortColorHex": "#676E55" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-6676.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1532,6 +1559,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9073",
       "colorCode": "9073",
+      "ui": { "sortColorHex": "#5B6759" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-9073.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1547,6 +1575,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1041",
       "colorCode": "1041",
+      "ui": { "sortColorHex": "#E6E787" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-1041.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1562,6 +1591,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1352",
       "colorCode": "1352",
+      "ui": { "sortColorHex": "#E0C21A" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-1352.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1577,6 +1607,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2969",
       "colorCode": "2969",
+      "ui": { "sortColorHex": "#D5782E" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2969.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1592,6 +1623,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2014",
       "colorCode": "2014",
+      "ui": { "sortColorHex": "#B2542C" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2014.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1607,6 +1639,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "4996",
       "colorCode": "4996",
+      "ui": { "sortColorHex": "#AD3939" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-4996.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1622,6 +1655,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "3679",
       "colorCode": "3679",
+      "ui": { "sortColorHex": "#9F3D36" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-3679.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1637,6 +1671,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2916",
       "colorCode": "2916",
+      "ui": { "sortColorHex": "#864541" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2916.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1652,6 +1687,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9076",
       "colorCode": "9076",
+      "ui": { "sortColorHex": "#72444B" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9076.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1667,6 +1703,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2846",
       "colorCode": "2846",
+      "ui": { "sortColorHex": "#702820" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2846.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1682,6 +1719,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2439",
       "colorCode": "2439",
+      "ui": { "sortColorHex": "#6D3E34" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2439.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1697,6 +1735,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "4897",
       "colorCode": "4897",
+      "ui": { "sortColorHex": "#5C4632" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-4897.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1712,6 +1751,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "4859",
       "colorCode": "4859",
+      "ui": { "sortColorHex": "#5D5145" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-4859.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1727,6 +1767,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2910",
       "colorCode": "2910",
+      "ui": { "sortColorHex": "#57463C" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2910.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1742,6 +1783,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "6833",
       "colorCode": "6833",
+      "ui": { "sortColorHex": "#4D4439" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-6833.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1757,6 +1799,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9714",
       "colorCode": "9714",
+      "ui": { "sortColorHex": "#5D5249" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9714.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1772,6 +1815,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9500",
       "colorCode": "9500",
+      "ui": { "sortColorHex": "#4D4240" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9500.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1787,6 +1831,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9036",
       "colorCode": "9036",
+      "ui": { "sortColorHex": "#3B2827" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9036.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1802,6 +1847,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "5226",
       "colorCode": "5226",
+      "ui": { "sortColorHex": "#422835" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-5226.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1817,6 +1863,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "8813",
       "colorCode": "8813",
+      "ui": { "sortColorHex": "#413E36" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-8813.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1832,6 +1879,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9980",
       "colorCode": "9980",
+      "ui": { "sortColorHex": "#2E3230" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9980.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1847,6 +1895,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9041",
       "colorCode": "9041",
+      "ui": { "sortColorHex": "#313542" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9041.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1862,6 +1911,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "6408",
       "colorCode": "6408",
+      "ui": { "sortColorHex": "#39446C" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-6408.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1877,6 +1927,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9022",
       "colorCode": "9022",
+      "ui": { "sortColorHex": "#555B75" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9022.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1892,6 +1943,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "5432",
       "colorCode": "5432",
+      "ui": { "sortColorHex": "#696970" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-5432.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1907,6 +1959,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1363",
       "colorCode": "1363",
+      "ui": { "sortColorHex": "#84C1A6" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-1363.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1922,6 +1975,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1259",
       "colorCode": "1259",
+      "ui": { "sortColorHex": "#288096" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-1259.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1937,6 +1991,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1934",
       "colorCode": "1934",
+      "ui": { "sortColorHex": "#1D75A2" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-1934.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1952,6 +2007,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2853",
       "colorCode": "2853",
+      "ui": { "sortColorHex": "#345D89" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2853.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1967,6 +2023,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "7586",
       "colorCode": "7586",
+      "ui": { "sortColorHex": "#456B8A" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-7586.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1982,6 +2039,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "7687",
       "colorCode": "7687",
+      "ui": { "sortColorHex": "#496B88" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-7687.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1997,6 +2055,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "5751",
       "colorCode": "5751",
+      "ui": { "sortColorHex": "#526675" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-5751.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2012,6 +2071,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "6632",
       "colorCode": "6632",
+      "ui": { "sortColorHex": "#56585D" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-6632.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2027,6 +2087,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2156",
       "colorCode": "2156",
+      "ui": { "sortColorHex": "#7E8E74" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2156.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2042,6 +2103,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2932",
       "colorCode": "2932",
+      "ui": { "sortColorHex": "#6E7972" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2932.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2057,6 +2119,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2938",
       "colorCode": "2938",
+      "ui": { "sortColorHex": "#686A63" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2938.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2072,6 +2135,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "5919",
       "colorCode": "5919",
+      "ui": { "sortColorHex": "#909280" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-5919.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2087,6 +2151,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2957",
       "colorCode": "2957",
+      "ui": { "sortColorHex": "#626462" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2957.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2102,6 +2167,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "6609",
       "colorCode": "6609",
+      "ui": { "sortColorHex": "#4A494E" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-6609.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2117,6 +2183,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "6406",
       "colorCode": "6406",
+      "ui": { "sortColorHex": "#4E575B" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-6406.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2132,6 +2199,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9040",
       "colorCode": "9040",
+      "ui": { "sortColorHex": "#434343" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-9040.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2147,6 +2215,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "1398",
       "colorCode": "1398",
+      "ui": { "sortColorHex": "#AAACA2" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-1398.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2162,6 +2231,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "4978",
       "colorCode": "4978",
+      "ui": { "sortColorHex": "#ADAD9E" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-4978.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2177,6 +2247,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "2934",
       "colorCode": "2934",
+      "ui": { "sortColorHex": "#8A8C80" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2934.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2192,6 +2263,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "7052",
       "colorCode": "7052",
+      "ui": { "sortColorHex": "#545654" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-7052.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2207,6 +2279,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9052",
       "colorCode": "9052",
+      "ui": { "sortColorHex": "#4D4B4A" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-9052.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2222,6 +2295,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9806",
       "colorCode": "9806",
+      "ui": { "sortColorHex": "#4F4E4C" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-9806.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2237,6 +2311,7 @@
       "materialFamilyId": "alcantara",
       "displayName": "9002",
       "colorCode": "9002",
+      "ui": { "sortColorHex": "#4E4E4E" },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-9002.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2252,6 +2327,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Black UF7",
       "colorCode": "UF7",
+      "ui": { "sortColorHex": "#292C29" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-uf7.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2267,6 +2343,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Camel SF4",
       "colorCode": "SF4",
+      "ui": { "sortColorHex": "#E77230" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sf4.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2282,6 +2359,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Silver Pearl SF5",
       "colorCode": "SF5",
+      "ui": { "sortColorHex": "#2F4D79" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sf5.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2297,6 +2375,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Orange SF8",
       "colorCode": "SF8",
+      "ui": { "sortColorHex": "#B27042" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sf8.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2312,6 +2391,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Coffee Bean UF8",
       "colorCode": "UF8",
+      "ui": { "sortColorHex": "#C69C6B" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-uf8.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2327,6 +2407,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Bordeaux SG5",
       "colorCode": "SG5",
+      "ui": { "sortColorHex": "#4C423B" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg5.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2342,6 +2423,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Jazz Blue UF9",
       "colorCode": "UF9",
+      "ui": { "sortColorHex": "#C83A49" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-uf9.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2357,6 +2439,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Red SG7",
       "colorCode": "SG7",
+      "ui": { "sortColorHex": "#674E4E" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg7.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2372,6 +2455,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Violine UG2",
       "colorCode": "UG2",
+      "ui": { "sortColorHex": "#D5D7CC" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-ug2.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2387,6 +2471,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Clove SG2",
       "colorCode": "SG2",
+      "ui": { "sortColorHex": "#A04248" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg2.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2402,6 +2487,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Burgundy SG0",
       "colorCode": "SG0",
+      "ui": { "sortColorHex": "#5C5A5C" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg0.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2417,6 +2503,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Sunshine SG4",
       "colorCode": "SG4",
+      "ui": { "sortColorHex": "#F8DE49" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg4.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2432,6 +2519,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "BK575",
       "colorCode": "BK575",
+      "ui": { "sortColorHex": "#1C2120" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-bk575.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2447,6 +2535,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "BEG1",
       "colorCode": "BEG1",
+      "ui": { "sortColorHex": "#A98167" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-beg1.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2462,6 +2551,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "GRY1",
       "colorCode": "GRY1",
+      "ui": { "sortColorHex": "#E8D4B4" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-gry1.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2477,6 +2567,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "LBRW1",
       "colorCode": "LBRW1",
+      "ui": { "sortColorHex": "#4C4D4A" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-lbrw1.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2492,6 +2583,7 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "BK905",
       "colorCode": "BK905",
+      "ui": { "sortColorHex": "#D2CBBA" },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-bk905.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2507,6 +2599,7 @@
       "materialFamilyId": "leather",
       "displayName": "2978 Bianco Polar",
       "colorCode": "2978",
+      "ui": { "sortColorHex": "#CDD5BE" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-2978.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2522,6 +2615,7 @@
       "materialFamilyId": "leather",
       "displayName": "9259 Blu Amon",
       "colorCode": "9259",
+      "ui": { "sortColorHex": "#3F5EAA" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-9259.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2537,6 +2631,7 @@
       "materialFamilyId": "leather",
       "displayName": "1280 Verde Ulysses",
       "colorCode": "1280",
+      "ui": { "sortColorHex": "#8BC62A" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-1280.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2552,6 +2647,7 @@
       "materialFamilyId": "leather",
       "displayName": "9572 Arancia Dryope",
       "colorCode": "9572",
+      "ui": { "sortColorHex": "#ED5625" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-9572.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2567,6 +2663,7 @@
       "materialFamilyId": "leather",
       "displayName": "3622 Marrone Janus",
       "colorCode": "3622",
+      "ui": { "sortColorHex": "#473B30" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-3622.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2582,6 +2679,7 @@
       "materialFamilyId": "leather",
       "displayName": "6927 Giallo Taurus",
       "colorCode": "6927",
+      "ui": { "sortColorHex": "#D3AC16" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-6927.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2597,6 +2695,7 @@
       "materialFamilyId": "leather",
       "displayName": "0308 Blu Cepheus",
       "colorCode": "0308",
+      "ui": { "sortColorHex": "#1687CE" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-0308.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2612,6 +2711,7 @@
       "materialFamilyId": "leather",
       "displayName": "9504 New Verde",
       "colorCode": "9504",
+      "ui": { "sortColorHex": "#B7DE35" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-9504.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2627,6 +2727,7 @@
       "materialFamilyId": "leather",
       "displayName": "1281 Verde Sagitta",
       "colorCode": "1281",
+      "ui": { "sortColorHex": "#314E3B" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-1281.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2642,6 +2743,7 @@
       "materialFamilyId": "leather",
       "displayName": "9743 Nero",
       "colorCode": "9743",
+      "ui": { "sortColorHex": "#18191A" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-9743.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2657,6 +2759,7 @@
       "materialFamilyId": "leather",
       "displayName": "1253 Kieselgrau",
       "colorCode": "1253",
+      "ui": { "sortColorHex": "#9DA99D" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1253.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2672,6 +2775,7 @@
       "materialFamilyId": "leather",
       "displayName": "2054 Luxorbeige",
       "colorCode": "2054",
+      "ui": { "sortColorHex": "#796D4B" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-2054.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2687,6 +2791,7 @@
       "materialFamilyId": "leather",
       "displayName": "3024 Achatgrau",
       "colorCode": "3024",
+      "ui": { "sortColorHex": "#262625" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-3024.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2702,6 +2807,7 @@
       "materialFamilyId": "leather",
       "displayName": "8526 Kreide",
       "colorCode": "8526",
+      "ui": { "sortColorHex": "#2C2C2C" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-8526.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2717,6 +2823,7 @@
       "materialFamilyId": "leather",
       "displayName": "1262 Mojave",
       "colorCode": "1262",
+      "ui": { "sortColorHex": "#8E9386" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1262.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2732,6 +2839,7 @@
       "materialFamilyId": "leather",
       "displayName": "1265 Schiefergrau",
       "colorCode": "1265",
+      "ui": { "sortColorHex": "#6E674D" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1265.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2747,6 +2855,7 @@
       "materialFamilyId": "leather",
       "displayName": "1242 Granatrot",
       "colorCode": "1242",
+      "ui": { "sortColorHex": "#232422" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1242.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2762,6 +2871,7 @@
       "materialFamilyId": "leather",
       "displayName": "8776 Bordeaux",
       "colorCode": "8776",
+      "ui": { "sortColorHex": "#292929" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-8776.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2777,6 +2887,7 @@
       "materialFamilyId": "leather",
       "displayName": "1217 Nachtblau",
       "colorCode": "1217",
+      "ui": { "sortColorHex": "#632C2D" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1217.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2792,6 +2903,7 @@
       "materialFamilyId": "leather",
       "displayName": "9743 Nero",
       "colorCode": "9743",
+      "ui": { "sortColorHex": "#3C2727" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-9743.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2807,6 +2919,7 @@
       "materialFamilyId": "leather",
       "displayName": "2588 Linen",
       "colorCode": "2588",
+      "ui": { "sortColorHex": "#D4CFB3" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-2588.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2822,6 +2935,7 @@
       "materialFamilyId": "leather",
       "displayName": "9764 Saddle",
       "colorCode": "9764",
+      "ui": { "sortColorHex": "#8F683D" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9764.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2837,6 +2951,7 @@
       "materialFamilyId": "leather",
       "displayName": "9193 Hotspur",
       "colorCode": "9193",
+      "ui": { "sortColorHex": "#843A35" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9193.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2852,6 +2967,7 @@
       "materialFamilyId": "leather",
       "displayName": "9747 Magnolia",
       "colorCode": "9747",
+      "ui": { "sortColorHex": "#DED795" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9747.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2867,6 +2983,7 @@
       "materialFamilyId": "leather",
       "displayName": "9206 Portland",
       "colorCode": "9206",
+      "ui": { "sortColorHex": "#9E9D7A" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9206.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2882,6 +2999,7 @@
       "materialFamilyId": "leather",
       "displayName": "9767 Windsor Blue",
       "colorCode": "9767",
+      "ui": { "sortColorHex": "#303B3E" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9767.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2897,6 +3015,7 @@
       "materialFamilyId": "leather",
       "displayName": "9748 Newmarket Tan",
       "colorCode": "9748",
+      "ui": { "sortColorHex": "#8A5C2E" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9748.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2912,6 +3031,7 @@
       "materialFamilyId": "leather",
       "displayName": "9765 Bourbon",
       "colorCode": "9765",
+      "ui": { "sortColorHex": "#675033" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9765.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2927,6 +3047,7 @@
       "materialFamilyId": "leather",
       "displayName": "9189 Burnt Oak",
       "colorCode": "9189",
+      "ui": { "sortColorHex": "#36322F" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9189.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2942,6 +3063,7 @@
       "materialFamilyId": "leather",
       "displayName": "9766 Saffron",
       "colorCode": "9766",
+      "ui": { "sortColorHex": "#C0AE61" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9766.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2957,6 +3079,7 @@
       "materialFamilyId": "leather",
       "displayName": "9225 Slate",
       "colorCode": "9225",
+      "ui": { "sortColorHex": "#4E5148" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9225.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2972,6 +3095,7 @@
       "materialFamilyId": "leather",
       "displayName": "9762 Imperial Blue",
       "colorCode": "9762",
+      "ui": { "sortColorHex": "#23282C" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9762.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2987,6 +3111,7 @@
       "materialFamilyId": "leather",
       "displayName": "3997 Crema",
       "colorCode": "3997",
+      "ui": { "sortColorHex": "#E7DFA1" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-3997.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3002,6 +3127,7 @@
       "materialFamilyId": "leather",
       "displayName": "4208 Tradizione Beige",
       "colorCode": "4208",
+      "ui": { "sortColorHex": "#C8A054" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4208.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3017,6 +3143,7 @@
       "materialFamilyId": "leather",
       "displayName": "4210 Rosso",
       "colorCode": "4210",
+      "ui": { "sortColorHex": "#A22A27" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4210.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3032,6 +3159,7 @@
       "materialFamilyId": "leather",
       "displayName": "4481 Bordeaux",
       "colorCode": "4481",
+      "ui": { "sortColorHex": "#643132" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4481.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3047,6 +3175,7 @@
       "materialFamilyId": "leather",
       "displayName": "4806 Blu Medio",
       "colorCode": "4806",
+      "ui": { "sortColorHex": "#2C3A40" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4806.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3062,6 +3191,7 @@
       "materialFamilyId": "leather",
       "displayName": "4008 Blu Sterling",
       "colorCode": "4008",
+      "ui": { "sortColorHex": "#252A33" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4008.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3077,6 +3207,7 @@
       "materialFamilyId": "leather",
       "displayName": "3998 Sabbia",
       "colorCode": "3998",
+      "ui": { "sortColorHex": "#CDBF84" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-3998.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3092,6 +3223,7 @@
       "materialFamilyId": "leather",
       "displayName": "4225 Tortora",
       "colorCode": "4225",
+      "ui": { "sortColorHex": "#918A69" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4225.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3107,6 +3239,7 @@
       "materialFamilyId": "leather",
       "displayName": "4609 Cuoio",
       "colorCode": "4609",
+      "ui": { "sortColorHex": "#825930" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4609.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3122,6 +3255,7 @@
       "materialFamilyId": "leather",
       "displayName": "4610 Iroko",
       "colorCode": "4610",
+      "ui": { "sortColorHex": "#483927" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4610.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3137,6 +3271,7 @@
       "materialFamilyId": "leather",
       "displayName": "4296 Cioccolato",
       "colorCode": "4296",
+      "ui": { "sortColorHex": "#372C25" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4296.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3152,6 +3287,7 @@
       "materialFamilyId": "leather",
       "displayName": "4128 Charcoal",
       "colorCode": "4128",
+      "ui": { "sortColorHex": "#313234" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4128.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3167,6 +3303,7 @@
       "materialFamilyId": "leather",
       "displayName": "3251 Arctic White",
       "colorCode": "3251",
+      "ui": { "sortColorHex": "#E8EAE6" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3251.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3182,6 +3319,7 @@
       "materialFamilyId": "leather",
       "displayName": "3105 Charles Blue",
       "colorCode": "3105",
+      "ui": { "sortColorHex": "#BFD9DF" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3105.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3197,6 +3335,7 @@
       "materialFamilyId": "leather",
       "displayName": "2233 Powder Blue",
       "colorCode": "2233",
+      "ui": { "sortColorHex": "#C1CDC8" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-2233.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3212,6 +3351,7 @@
       "materialFamilyId": "leather",
       "displayName": "3252 Turchese",
       "colorCode": "3252",
+      "ui": { "sortColorHex": "#016691" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3252.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3227,6 +3367,7 @@
       "materialFamilyId": "leather",
       "displayName": "0343 Cobalto Blue",
       "colorCode": "0343",
+      "ui": { "sortColorHex": "#374789" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-0343.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3242,6 +3383,7 @@
       "materialFamilyId": "leather",
       "displayName": "0342 Dyson Blue",
       "colorCode": "0342",
+      "ui": { "sortColorHex": "#2F2F50" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-0342.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3257,6 +3399,7 @@
       "materialFamilyId": "leather",
       "displayName": "5372 Blushing Pink",
       "colorCode": "5372",
+      "ui": { "sortColorHex": "#EAA4B8" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-5372.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3272,6 +3415,7 @@
       "materialFamilyId": "leather",
       "displayName": "1855 Peony Pink",
       "colorCode": "1855",
+      "ui": { "sortColorHex": "#903E56" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1855.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3287,6 +3431,7 @@
       "materialFamilyId": "leather",
       "displayName": "9591 Sunset",
       "colorCode": "9591",
+      "ui": { "sortColorHex": "#C46746" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-9591.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3302,6 +3447,7 @@
       "materialFamilyId": "leather",
       "displayName": "3106 Forge Yellow",
       "colorCode": "3106",
+      "ui": { "sortColorHex": "#E2A009" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3106.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3317,6 +3463,7 @@
       "materialFamilyId": "leather",
       "displayName": "9592 Mandarin",
       "colorCode": "9592",
+      "ui": { "sortColorHex": "#E07E08" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-9592.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3332,6 +3479,7 @@
       "materialFamilyId": "leather",
       "displayName": "1645 Ardent Red",
       "colorCode": "1645",
+      "ui": { "sortColorHex": "#462B27" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1645.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3347,6 +3495,7 @@
       "materialFamilyId": "leather",
       "displayName": "1616 Aequus Green",
       "colorCode": "1616",
+      "ui": { "sortColorHex": "#90CB93" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1616.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3362,6 +3511,7 @@
       "materialFamilyId": "leather",
       "displayName": "3636 Emerald Green",
       "colorCode": "3636",
+      "ui": { "sortColorHex": "#016A41" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3636.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3377,6 +3527,7 @@
       "materialFamilyId": "leather",
       "displayName": "3345 Dark Turquoise",
       "colorCode": "3345",
+      "ui": { "sortColorHex": "#2E4A52" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3345.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3392,6 +3543,7 @@
       "materialFamilyId": "leather",
       "displayName": "1386 Tailored Purple",
       "colorCode": "1386",
+      "ui": { "sortColorHex": "#4C3147" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1386.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3407,6 +3559,7 @@
       "materialFamilyId": "leather",
       "displayName": "1387 Purple Silk",
       "colorCode": "1387",
+      "ui": { "sortColorHex": "#30282F" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1387.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3422,6 +3575,7 @@
       "materialFamilyId": "leather",
       "displayName": "2234 Blue Grey",
       "colorCode": "2234",
+      "ui": { "sortColorHex": "#667674" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-2234.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3437,6 +3591,7 @@
       "materialFamilyId": "leather",
       "displayName": "8463 Opal Weiss",
       "colorCode": "8463",
+      "ui": { "sortColorHex": "#B8B9AF" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-8463.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3452,6 +3607,7 @@
       "materialFamilyId": "leather",
       "displayName": "3800 Tiffany Blue",
       "colorCode": "3800",
+      "ui": { "sortColorHex": "#4B7A72" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-3800.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3467,6 +3623,7 @@
       "materialFamilyId": "leather",
       "displayName": "1811 Magmarot",
       "colorCode": "1811",
+      "ui": { "sortColorHex": "#251A19" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-1811.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3482,6 +3639,7 @@
       "materialFamilyId": "leather",
       "displayName": "2979 Beige",
       "colorCode": "2979",
+      "ui": { "sortColorHex": "#1C1E1F" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-2979.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3497,6 +3655,7 @@
       "materialFamilyId": "leather",
       "displayName": "3928 Flaxen",
       "colorCode": "3928",
+      "ui": { "sortColorHex": "#A29F75" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-3928.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3512,6 +3671,7 @@
       "materialFamilyId": "leather",
       "displayName": "5226 Coffee",
       "colorCode": "5226",
+      "ui": { "sortColorHex": "#5C4E33" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-5226.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3527,6 +3687,7 @@
       "materialFamilyId": "leather",
       "displayName": "1185 Seidenbeige Silk",
       "colorCode": "1185",
+      "ui": { "sortColorHex": "#1A1918" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-1185.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3542,6 +3703,7 @@
       "materialFamilyId": "leather",
       "displayName": "6468 Hermes Orange",
       "colorCode": "6468",
+      "ui": { "sortColorHex": "#1C1D1F" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-6468.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3557,6 +3719,7 @@
       "materialFamilyId": "leather",
       "displayName": "1164 Muschelgrau",
       "colorCode": "1164",
+      "ui": { "sortColorHex": "#938C73" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-1164.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3572,6 +3735,7 @@
       "materialFamilyId": "leather",
       "displayName": "3030 Steering Wheel",
       "colorCode": "3030",
+      "ui": { "sortColorHex": "#814720" },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-3030.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3587,6 +3751,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3001（名称待复核）",
       "colorCode": "NP-3001",
+      "ui": { "sortColorHex": "#FFFFFF" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3001.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3602,6 +3767,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3002（名称待复核）",
       "colorCode": "NP-3002",
+      "ui": { "sortColorHex": "#F7F7F7" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3002.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3617,6 +3783,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3003（名称待复核）",
       "colorCode": "NP-3003",
+      "ui": { "sortColorHex": "#E0E0E0" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3003.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3632,6 +3799,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3004（名称待复核）",
       "colorCode": "NP-3004",
+      "ui": { "sortColorHex": "#C0BFBD" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3004.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3647,6 +3815,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3005（名称待复核）",
       "colorCode": "NP-3005",
+      "ui": { "sortColorHex": "#BBBBBB" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3005.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3662,6 +3831,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3006（名称待复核）",
       "colorCode": "NP-3006",
+      "ui": { "sortColorHex": "#D1CBAD" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3006.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3677,6 +3847,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3007（名称待复核）",
       "colorCode": "NP-3007",
+      "ui": { "sortColorHex": "#ABA998" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3007.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3692,6 +3863,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3008（名称待复核）",
       "colorCode": "NP-3008",
+      "ui": { "sortColorHex": "#CCB67B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3008.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3707,6 +3879,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3009（名称待复核）",
       "colorCode": "NP-3009",
+      "ui": { "sortColorHex": "#C2BE9F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3009.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3722,6 +3895,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3010（名称待复核）",
       "colorCode": "NP-3010",
+      "ui": { "sortColorHex": "#928468" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3010.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3737,6 +3911,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3011（名称待复核）",
       "colorCode": "NP-3011",
+      "ui": { "sortColorHex": "#827561" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3011.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3752,6 +3927,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3012（名称待复核）",
       "colorCode": "NP-3012",
+      "ui": { "sortColorHex": "#888166" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3012.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3767,6 +3943,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3013（名称待复核）",
       "colorCode": "NP-3013",
+      "ui": { "sortColorHex": "#928769" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3013.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3782,6 +3959,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3014（名称待复核）",
       "colorCode": "NP-3014",
+      "ui": { "sortColorHex": "#968B61" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3014.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3797,6 +3975,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3015（名称待复核）",
       "colorCode": "NP-3015",
+      "ui": { "sortColorHex": "#7E623E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3015.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3812,6 +3991,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3016（名称待复核）",
       "colorCode": "NP-3016",
+      "ui": { "sortColorHex": "#70593F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3016.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3827,6 +4007,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3017（名称待复核）",
       "colorCode": "NP-3017",
+      "ui": { "sortColorHex": "#8A5E28" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3017.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3842,6 +4023,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3018（名称待复核）",
       "colorCode": "NP-3018",
+      "ui": { "sortColorHex": "#754825" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3018.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3857,6 +4039,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3019（名称待复核）",
       "colorCode": "NP-3019",
+      "ui": { "sortColorHex": "#7B4621" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3019.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3872,6 +4055,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3020（名称待复核）",
       "colorCode": "NP-3020",
+      "ui": { "sortColorHex": "#814824" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3020.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3887,6 +4071,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3021（名称待复核）",
       "colorCode": "NP-3021",
+      "ui": { "sortColorHex": "#944922" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3021.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3902,6 +4087,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3022（名称待复核）",
       "colorCode": "NP-3022",
+      "ui": { "sortColorHex": "#793320" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3022.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3917,6 +4103,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3023（名称待复核）",
       "colorCode": "NP-3023",
+      "ui": { "sortColorHex": "#673015" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3023.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3932,6 +4119,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3024（名称待复核）",
       "colorCode": "NP-3024",
+      "ui": { "sortColorHex": "#5E2B16" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3024.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3947,6 +4135,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3025（名称待复核）",
       "colorCode": "NP-3025",
+      "ui": { "sortColorHex": "#543E37" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3025.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3962,6 +4151,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3026（名称待复核）",
       "colorCode": "NP-3026",
+      "ui": { "sortColorHex": "#4A3A2E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3026.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3977,6 +4167,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3027（名称待复核）",
       "colorCode": "NP-3027",
+      "ui": { "sortColorHex": "#573D28" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3027.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3992,6 +4183,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3028（名称待复核）",
       "colorCode": "NP-3028",
+      "ui": { "sortColorHex": "#552E22" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3028.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4007,6 +4199,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3029（名称待复核）",
       "colorCode": "NP-3029",
+      "ui": { "sortColorHex": "#65321D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3029.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4022,6 +4215,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3030（名称待复核）",
       "colorCode": "NP-3030",
+      "ui": { "sortColorHex": "#5F311A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3030.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4037,6 +4231,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3031（名称待复核）",
       "colorCode": "NP-3031",
+      "ui": { "sortColorHex": "#7B2C1E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3031.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4052,6 +4247,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3032（名称待复核）",
       "colorCode": "NP-3032",
+      "ui": { "sortColorHex": "#591815" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3032.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4067,6 +4263,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3033（名称待复核）",
       "colorCode": "NP-3033",
+      "ui": { "sortColorHex": "#5D403B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3033.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4082,6 +4279,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3034（名称待复核）",
       "colorCode": "NP-3034",
+      "ui": { "sortColorHex": "#523735" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3034.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4097,6 +4295,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3035（名称待复核）",
       "colorCode": "NP-3035",
+      "ui": { "sortColorHex": "#513B37" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3035.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4112,6 +4311,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3036（名称待复核）",
       "colorCode": "NP-3036",
+      "ui": { "sortColorHex": "#392E2D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3036.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4127,6 +4327,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3037（名称待复核）",
       "colorCode": "NP-3037",
+      "ui": { "sortColorHex": "#312829" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3037.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4142,6 +4343,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3038（名称待复核）",
       "colorCode": "NP-3038",
+      "ui": { "sortColorHex": "#312421" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3038.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4157,6 +4359,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3039（名称待复核）",
       "colorCode": "NP-3039",
+      "ui": { "sortColorHex": "#34251E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3039.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4172,6 +4375,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3040（名称待复核）",
       "colorCode": "NP-3040",
+      "ui": { "sortColorHex": "#2B221C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3040.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4187,6 +4391,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3041（名称待复核）",
       "colorCode": "NP-3041",
+      "ui": { "sortColorHex": "#898D8D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3041.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4202,6 +4407,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3042（名称待复核）",
       "colorCode": "NP-3042",
+      "ui": { "sortColorHex": "#737471" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3042.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4217,6 +4423,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3043（名称待复核）",
       "colorCode": "NP-3043",
+      "ui": { "sortColorHex": "#646E78" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3043.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4232,6 +4439,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3044（名称待复核）",
       "colorCode": "NP-3044",
+      "ui": { "sortColorHex": "#464E57" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3044.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4247,6 +4455,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3045（名称待复核）",
       "colorCode": "NP-3045",
+      "ui": { "sortColorHex": "#4F4F51" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3045.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4262,6 +4471,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3046（名称待复核）",
       "colorCode": "NP-3046",
+      "ui": { "sortColorHex": "#444746" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3046.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4277,6 +4487,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3047（名称待复核）",
       "colorCode": "NP-3047",
+      "ui": { "sortColorHex": "#2C2D31" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3047.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4292,6 +4503,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3048（名称待复核）",
       "colorCode": "NP-3048",
+      "ui": { "sortColorHex": "#0F1112" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3048.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4307,6 +4519,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3049（名称待复核）",
       "colorCode": "NP-3049",
+      "ui": { "sortColorHex": "#B4651D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3049.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4322,6 +4535,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3050（名称待复核）",
       "colorCode": "NP-3050",
+      "ui": { "sortColorHex": "#CD8140" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3050.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4337,6 +4551,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3051（名称待复核）",
       "colorCode": "NP-3051",
+      "ui": { "sortColorHex": "#DCAA4E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3051.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4352,6 +4567,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3052（名称待复核）",
       "colorCode": "NP-3052",
+      "ui": { "sortColorHex": "#BD9342" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3052.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4367,6 +4583,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3053（名称待复核）",
       "colorCode": "NP-3053",
+      "ui": { "sortColorHex": "#E5BC6C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3053.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4382,6 +4599,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3054（名称待复核）",
       "colorCode": "NP-3054",
+      "ui": { "sortColorHex": "#C9A532" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3054.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4397,6 +4615,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3055（名称待复核）",
       "colorCode": "NP-3055",
+      "ui": { "sortColorHex": "#EEBB19" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3055.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4412,6 +4631,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3056（名称待复核）",
       "colorCode": "NP-3056",
+      "ui": { "sortColorHex": "#C06C34" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3056.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4427,6 +4647,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3057（名称待复核）",
       "colorCode": "NP-3057",
+      "ui": { "sortColorHex": "#751F2A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3057.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4442,6 +4663,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3058（名称待复核）",
       "colorCode": "NP-3058",
+      "ui": { "sortColorHex": "#9B1D23" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3058.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4457,6 +4679,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3059（名称待复核）",
       "colorCode": "NP-3059",
+      "ui": { "sortColorHex": "#BF222B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3059.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4472,6 +4695,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3060（名称待复核）",
       "colorCode": "NP-3060",
+      "ui": { "sortColorHex": "#E01810" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3060.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4487,6 +4711,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3061（名称待复核）",
       "colorCode": "NP-3061",
+      "ui": { "sortColorHex": "#C81619" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3061.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4502,6 +4727,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3062（名称待复核）",
       "colorCode": "NP-3062",
+      "ui": { "sortColorHex": "#852C1C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3062.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4517,6 +4743,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3063（名称待复核）",
       "colorCode": "NP-3063",
+      "ui": { "sortColorHex": "#A73C1E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3063.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4532,6 +4759,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3064（名称待复核）",
       "colorCode": "NP-3064",
+      "ui": { "sortColorHex": "#AB3025" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3064.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4547,6 +4775,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3065（名称待复核）",
       "colorCode": "NP-3065",
+      "ui": { "sortColorHex": "#492C28" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3065.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4562,6 +4791,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3066（名称待复核）",
       "colorCode": "NP-3066",
+      "ui": { "sortColorHex": "#432D36" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3066.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4577,6 +4807,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3067（名称待复核）",
       "colorCode": "NP-3067",
+      "ui": { "sortColorHex": "#552357" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3067.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4592,6 +4823,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3068（名称待复核）",
       "colorCode": "NP-3068",
+      "ui": { "sortColorHex": "#7C2279" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3068.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4607,6 +4839,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3069（名称待复核）",
       "colorCode": "NP-3069",
+      "ui": { "sortColorHex": "#785D86" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3069.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4622,6 +4855,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3070（名称待复核）",
       "colorCode": "NP-3070",
+      "ui": { "sortColorHex": "#4D5B76" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3070.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4637,6 +4871,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3071（名称待复核）",
       "colorCode": "NP-3071",
+      "ui": { "sortColorHex": "#4265A4" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3071.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4652,6 +4887,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3072（名称待复核）",
       "colorCode": "NP-3072",
+      "ui": { "sortColorHex": "#5D7191" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3072.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4667,6 +4903,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3073（名称待复核）",
       "colorCode": "NP-3073",
+      "ui": { "sortColorHex": "#151B3A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3073.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4682,6 +4919,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3074（名称待复核）",
       "colorCode": "NP-3074",
+      "ui": { "sortColorHex": "#1C2A5C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3074.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4697,6 +4935,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3075（名称待复核）",
       "colorCode": "NP-3075",
+      "ui": { "sortColorHex": "#2F3852" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3075.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4712,6 +4951,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3076（名称待复核）",
       "colorCode": "NP-3076",
+      "ui": { "sortColorHex": "#3E4555" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3076.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4727,6 +4967,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3077（名称待复核）",
       "colorCode": "NP-3077",
+      "ui": { "sortColorHex": "#113187" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3077.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4742,6 +4983,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3078（名称待复核）",
       "colorCode": "NP-3078",
+      "ui": { "sortColorHex": "#1E4081" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3078.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4757,6 +4999,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3079（名称待复核）",
       "colorCode": "NP-3079",
+      "ui": { "sortColorHex": "#1567B5" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3079.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4772,6 +5015,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3080（名称待复核）",
       "colorCode": "NP-3080",
+      "ui": { "sortColorHex": "#189ECF" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3080.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4787,6 +5031,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3081（名称待复核）",
       "colorCode": "NP-3081",
+      "ui": { "sortColorHex": "#0B757E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3081.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4802,6 +5047,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3082（名称待复核）",
       "colorCode": "NP-3082",
+      "ui": { "sortColorHex": "#16A2AF" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3082.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4817,6 +5063,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3083（名称待复核）",
       "colorCode": "NP-3083",
+      "ui": { "sortColorHex": "#15A397" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3083.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4832,6 +5079,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3084（名称待复核）",
       "colorCode": "NP-3084",
+      "ui": { "sortColorHex": "#6AC6D9" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3084.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4847,6 +5095,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3085（名称待复核）",
       "colorCode": "NP-3085",
+      "ui": { "sortColorHex": "#7ACACC" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3085.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4862,6 +5111,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3086（名称待复核）",
       "colorCode": "NP-3086",
+      "ui": { "sortColorHex": "#87C1BB" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3086.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4877,6 +5127,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3087（名称待复核）",
       "colorCode": "NP-3087",
+      "ui": { "sortColorHex": "#6EAC99" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3087.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4892,6 +5143,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3088（名称待复核）",
       "colorCode": "NP-3088",
+      "ui": { "sortColorHex": "#BAE1E8" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3088.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4907,6 +5159,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3089（名称待复核）",
       "colorCode": "NP-3089",
+      "ui": { "sortColorHex": "#154224" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3089.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4922,6 +5175,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3090（名称待复核）",
       "colorCode": "NP-3090",
+      "ui": { "sortColorHex": "#495B4E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3090.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4937,6 +5191,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3091（名称待复核）",
       "colorCode": "NP-3091",
+      "ui": { "sortColorHex": "#4D868E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3091.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4952,6 +5207,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3092（名称待复核）",
       "colorCode": "NP-3092",
+      "ui": { "sortColorHex": "#1F7036" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3092.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4967,6 +5223,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3093（名称待复核）",
       "colorCode": "NP-3093",
+      "ui": { "sortColorHex": "#5EB42F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3093.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4982,6 +5239,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3094（名称待复核）",
       "colorCode": "NP-3094",
+      "ui": { "sortColorHex": "#C1D428" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3094.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4997,6 +5255,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3095（名称待复核）",
       "colorCode": "NP-3095",
+      "ui": { "sortColorHex": "#81B66C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3095.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5012,6 +5271,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3096（名称待复核）",
       "colorCode": "NP-3096",
+      "ui": { "sortColorHex": "#92B97C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3096.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5027,6 +5287,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3097（名称待复核）",
       "colorCode": "NP-3097",
+      "ui": { "sortColorHex": "#93938F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3097.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5042,6 +5303,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3098（名称待复核）",
       "colorCode": "NP-3098",
+      "ui": { "sortColorHex": "#888379" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3098.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5057,6 +5319,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3099（名称待复核）",
       "colorCode": "NP-3099",
+      "ui": { "sortColorHex": "#6D6F63" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3099.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5072,6 +5335,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3100（名称待复核）",
       "colorCode": "NP-3100",
+      "ui": { "sortColorHex": "#6E6D5B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3100.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5087,6 +5351,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3101（名称待复核）",
       "colorCode": "NP-3101",
+      "ui": { "sortColorHex": "#6A6653" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3101.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5102,6 +5367,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3102（名称待复核）",
       "colorCode": "NP-3102",
+      "ui": { "sortColorHex": "#525450" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3102.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5117,6 +5383,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3103（名称待复核）",
       "colorCode": "NP-3103",
+      "ui": { "sortColorHex": "#6E736F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3103.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5132,6 +5399,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3104（名称待复核）",
       "colorCode": "NP-3104",
+      "ui": { "sortColorHex": "#545253" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3104.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5147,6 +5415,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3105（名称待复核）",
       "colorCode": "NP-3105",
+      "ui": { "sortColorHex": "#C9A9AB" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3105.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5162,6 +5431,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3106（名称待复核）",
       "colorCode": "NP-3106",
+      "ui": { "sortColorHex": "#BD7169" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3106.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5177,6 +5447,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3107（名称待复核）",
       "colorCode": "NP-3107",
+      "ui": { "sortColorHex": "#B5504B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3107.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5192,6 +5463,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3108（名称待复核）",
       "colorCode": "NP-3108",
+      "ui": { "sortColorHex": "#8E5151" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3108.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5207,6 +5479,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3109（名称待复核）",
       "colorCode": "NP-3109",
+      "ui": { "sortColorHex": "#856259" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3109.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5222,6 +5495,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3110（名称待复核）",
       "colorCode": "NP-3110",
+      "ui": { "sortColorHex": "#604931" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3110.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5237,6 +5511,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3111（名称待复核）",
       "colorCode": "NP-3111",
+      "ui": { "sortColorHex": "#889396" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3111.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5252,6 +5527,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3112（名称待复核）",
       "colorCode": "NP-3112",
+      "ui": { "sortColorHex": "#4C545D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3112.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5267,6 +5543,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3113（名称待复核）",
       "colorCode": "NP-3113",
+      "ui": { "sortColorHex": "#772246" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3113.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5282,6 +5559,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3114（名称待复核）",
       "colorCode": "NP-3114",
+      "ui": { "sortColorHex": "#B33B5E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3114.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5297,6 +5575,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3115（名称待复核）",
       "colorCode": "NP-3115",
+      "ui": { "sortColorHex": "#98485A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3115.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5312,6 +5591,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3116（名称待复核）",
       "colorCode": "NP-3116",
+      "ui": { "sortColorHex": "#905A63" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3116.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5327,6 +5607,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 1 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R01C1",
+      "ui": { "sortColorHex": "#D3D5CC" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r01c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5342,6 +5623,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 1 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R01C2",
+      "ui": { "sortColorHex": "#978564" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r01c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5357,6 +5639,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 2 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R02C1",
+      "ui": { "sortColorHex": "#D9D5C0" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r02c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5372,6 +5655,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 2 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R02C2",
+      "ui": { "sortColorHex": "#CE8E44" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r02c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5387,6 +5671,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 3 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R03C1",
+      "ui": { "sortColorHex": "#C8BFA3" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r03c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5402,6 +5687,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 3 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R03C2",
+      "ui": { "sortColorHex": "#C18027" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r03c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5417,6 +5703,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 4 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R04C1",
+      "ui": { "sortColorHex": "#9B917D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r04c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5432,6 +5719,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 4 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R04C2",
+      "ui": { "sortColorHex": "#8B5423" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r04c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5447,6 +5735,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 5 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R05C1",
+      "ui": { "sortColorHex": "#907F6E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r05c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5462,6 +5751,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 5 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R05C2",
+      "ui": { "sortColorHex": "#894C25" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r05c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5477,6 +5767,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 6 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R06C1",
+      "ui": { "sortColorHex": "#957D61" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r06c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5492,6 +5783,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 6 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R06C2",
+      "ui": { "sortColorHex": "#5C290C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r06c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5507,6 +5799,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 7 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R07C1",
+      "ui": { "sortColorHex": "#91754D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r07c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5522,6 +5815,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 7 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R07C2",
+      "ui": { "sortColorHex": "#662814" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r07c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5537,6 +5831,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 8 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R08C1",
+      "ui": { "sortColorHex": "#AA7B54" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r08c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5552,6 +5847,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 8 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R08C2",
+      "ui": { "sortColorHex": "#B1880D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r08c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5567,6 +5863,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 9 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R09C1",
+      "ui": { "sortColorHex": "#AD8882" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r09c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5582,6 +5879,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 9 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R09C2",
+      "ui": { "sortColorHex": "#D96638" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r09c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5597,6 +5895,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 10 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R10C1",
+      "ui": { "sortColorHex": "#C88C8E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r10c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5612,6 +5911,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 10 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R10C2",
+      "ui": { "sortColorHex": "#A84433" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r10c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5627,6 +5927,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 11 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R11C1",
+      "ui": { "sortColorHex": "#D5877A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r11c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5642,6 +5943,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 11 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R11C2",
+      "ui": { "sortColorHex": "#982B35" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r11c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5657,6 +5959,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 12 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R12C1",
+      "ui": { "sortColorHex": "#E17898" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r12c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5672,6 +5975,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 12 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R12C2",
+      "ui": { "sortColorHex": "#BA4046" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r12c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5687,6 +5991,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 13 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R13C1",
+      "ui": { "sortColorHex": "#AF3F97" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r13c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5702,6 +6007,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 13 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R13C2",
+      "ui": { "sortColorHex": "#933F44" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r13c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5717,6 +6023,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 14 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R14C1",
+      "ui": { "sortColorHex": "#412935" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r14c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5732,6 +6039,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 14 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R14C2",
+      "ui": { "sortColorHex": "#804345" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r14c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5747,6 +6055,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 15 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R15C1",
+      "ui": { "sortColorHex": "#705E58" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r15c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5762,6 +6071,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 15 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R15C2",
+      "ui": { "sortColorHex": "#5C3A38" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r15c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5777,6 +6087,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 16 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R16C1",
+      "ui": { "sortColorHex": "#5D5150" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r16c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5792,6 +6103,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 16 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R16C2",
+      "ui": { "sortColorHex": "#DADF37" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r16c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5807,6 +6119,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 17 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R17C1",
+      "ui": { "sortColorHex": "#99BCBA" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r17c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5822,6 +6135,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 17 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R17C2",
+      "ui": { "sortColorHex": "#9DC937" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r17c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5837,6 +6151,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 18 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R18C1",
+      "ui": { "sortColorHex": "#67BEC3" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r18c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5852,6 +6167,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 18 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R18C2",
+      "ui": { "sortColorHex": "#478758" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r18c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5867,6 +6183,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 19 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R19C1",
+      "ui": { "sortColorHex": "#7CC3B8" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r19c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5882,6 +6199,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 19 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R19C2",
+      "ui": { "sortColorHex": "#52685A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r19c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5897,6 +6215,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 20 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R20C1",
+      "ui": { "sortColorHex": "#647BA2" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r20c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5912,6 +6231,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 20 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R20C2",
+      "ui": { "sortColorHex": "#656350" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r20c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5927,6 +6247,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 21 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R21C1",
+      "ui": { "sortColorHex": "#415A8D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r21c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5942,6 +6263,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 21 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R21C2",
+      "ui": { "sortColorHex": "#595246" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r21c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5957,6 +6279,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 22 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R22C1",
+      "ui": { "sortColorHex": "#3F5372" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r22c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5972,6 +6295,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 22 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R22C2",
+      "ui": { "sortColorHex": "#66619C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r22c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5987,6 +6311,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 23 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R23C1",
+      "ui": { "sortColorHex": "#2A3354" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r23c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6002,6 +6327,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 23 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R23C2",
+      "ui": { "sortColorHex": "#272676" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r23c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6017,6 +6343,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 24 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R24C1",
+      "ui": { "sortColorHex": "#2D304B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r24c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6032,6 +6359,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 24 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R24C2",
+      "ui": { "sortColorHex": "#78777B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r24c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6047,6 +6375,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 25 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R25C1",
+      "ui": { "sortColorHex": "#C3BEBD" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r25c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6062,6 +6391,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 25 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R25C2",
+      "ui": { "sortColorHex": "#4D4D4C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r25c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6077,6 +6407,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 26 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R26C1",
+      "ui": { "sortColorHex": "#B9BCB5" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r26c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6092,6 +6423,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 26 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R26C2",
+      "ui": { "sortColorHex": "#5B5B5B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r26c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6107,6 +6439,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 27 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R27C1",
+      "ui": { "sortColorHex": "#BCC0BB" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r27c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6122,6 +6455,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 27 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R27C2",
+      "ui": { "sortColorHex": "#494343" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r27c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6137,6 +6471,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 28 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R28C1",
+      "ui": { "sortColorHex": "#A5A398" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r28c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6152,6 +6487,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 28 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R28C2",
+      "ui": { "sortColorHex": "#474C4E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r28c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6167,6 +6503,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 29 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R29C1",
+      "ui": { "sortColorHex": "#BBBCB8" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r29c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6182,6 +6519,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 29 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R29C2",
+      "ui": { "sortColorHex": "#313235" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r29c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6197,6 +6535,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 30 行第 1 列（待复核）",
       "colorCode": "KJ-P17-R30C1",
+      "ui": { "sortColorHex": "#787B83" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r30c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6212,6 +6551,7 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ 色卡第 30 行第 2 列（待复核）",
       "colorCode": "KJ-P17-R30C2",
+      "ui": { "sortColorHex": "#FEFEFE" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r30c2.webp",
       "reviewRequired": true,
       "sourceRefs": [

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
@@ -97,6 +97,52 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
       (component: { componentId: string }) => component.componentId === "wheel",
     ).ui.cameraId,
     "wheel",
+  );
+  assert.equal(
+    response.json().categories.find(
+      (category: { categoryId: string }) => category.categoryId === "personalization",
+    ).ui.navigationMode,
+    "surfaces-as-components",
+  );
+  assert.deepEqual(
+    response.json().materialFamilies
+      .filter((family: { ui?: { variantSort?: string } }) =>
+        family.ui?.variantSort === "achromatic-then-rainbow")
+      .map((family: { materialFamilyId: string }) => family.materialFamilyId),
+    ["ultrasuede", "alcantara", "leather", "microfiber"],
+  );
+});
+
+test("Server 拒绝启用色相排序但缺少 sortColorHex 的材料 variant", async (t) => {
+  const directory = await mkdtemp(resolve(tmpdir(), "automotive-v2-catalog-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const fixtures = resolve(directory, "fixtures");
+  await mkdir(fixtures);
+  const catalog = structuredClone(loadAutomotiveCatalog().catalog);
+  const variant = catalog.materialVariants.find(
+    (item) => item.materialFamilyId === "ultrasuede",
+  )!;
+  delete variant.ui;
+  await writeFile(
+    resolve(fixtures, "sc01.catalog.draft.v2.json"),
+    JSON.stringify(catalog),
+    "utf8",
+  );
+
+  assert.throws(
+    () => loadAutomotiveCatalog(directory),
+    /缺少合法 ui\.sortColorHex/,
+  );
+
+  variant.ui = { sortColorHex: "#12345G" };
+  await writeFile(
+    resolve(fixtures, "sc01.catalog.draft.v2.json"),
+    JSON.stringify(catalog),
+    "utf8",
+  );
+  assert.throws(
+    () => loadAutomotiveCatalog(directory),
+    /ui 非法/,
   );
 });
 

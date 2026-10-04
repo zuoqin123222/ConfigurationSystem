@@ -7,6 +7,7 @@ import type {
   CatalogV2,
   CatalogCameraId,
   CatalogCategory,
+  CatalogVariantSort,
   Customizations,
   PaintCustomization,
   Selections,
@@ -133,6 +134,26 @@ export function componentsForCategory(
   catalog: CatalogV2,
   categoryId: string,
 ): CatalogComponent[] {
+  const category = catalog.categories.find((item) => item.categoryId === categoryId)
+  if (category?.ui?.navigationMode === 'surfaces-as-components') {
+    const componentIds = new Set(
+      catalog.components
+        .filter((component) => component.categoryId === categoryId)
+        .map((component) => component.componentId),
+    )
+    return catalog.surfaces
+      .filter((surface) => componentIds.has(surface.componentId))
+      .map((surface, index) => ({ surface, index }))
+      .sort((left, right) =>
+        (left.surface.ui?.order ?? left.index) - (right.surface.ui?.order ?? right.index),
+      )
+      .map(({ surface }) => ({
+        componentId: surface.surfaceId,
+        categoryId,
+        displayName: surface.displayName,
+        ui: surface.ui,
+      }))
+  }
   return catalog.components
     .filter((component) => component.categoryId === categoryId)
     .map((component, index) => ({ component, index }))
@@ -213,6 +234,53 @@ export function materialVariantsForOption(
   return catalog.materialVariants.filter(
     (variant) => variant.materialFamilyId === option.materialFamilyId,
   )
+}
+
+function colorMetrics(color: string) {
+  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color)
+  if (!match) return null
+  const [red, green, blue] = match.slice(1).map((value) => Number.parseInt(value, 16) / 255)
+  const max = Math.max(red, green, blue)
+  const min = Math.min(red, green, blue)
+  const delta = max - min
+  const brightness = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+  let hue = 0
+  if (delta !== 0) {
+    if (max === red) hue = 60 * (((green - blue) / delta) % 6)
+    else if (max === green) hue = 60 * ((blue - red) / delta + 2)
+    else hue = 60 * ((red - green) / delta + 4)
+  }
+  const normalizedHue = hue < 0 ? hue + 360 : hue
+  return {
+    hue: normalizedHue >= 345 ? normalizedHue - 360 : normalizedHue,
+    brightness,
+    chroma: delta,
+  }
+}
+
+export function sortMaterialVariants(
+  variants: CatalogMaterialVariant[],
+  variantSort: CatalogVariantSort | undefined,
+): CatalogMaterialVariant[] {
+  if (variantSort !== 'achromatic-then-rainbow') return variants
+  return variants
+    .map((variant, index) => ({
+      variant,
+      index,
+      metrics: colorMetrics(variant.ui?.sortColorHex ?? ''),
+    }))
+    .sort((left, right) => {
+      if (!left.metrics || !right.metrics) return left.index - right.index
+      // 直接比较 RGB 通道差，避免近白色因 HSL 分母过小被误判为高饱和色。
+      const leftAchromatic = left.metrics.chroma <= 0.08
+      const rightAchromatic = right.metrics.chroma <= 0.08
+      if (leftAchromatic !== rightAchromatic) return leftAchromatic ? -1 : 1
+      const difference = leftAchromatic
+        ? left.metrics.brightness - right.metrics.brightness
+        : left.metrics.hue - right.metrics.hue
+      return difference || left.index - right.index
+    })
+    .map(({ variant }) => variant)
 }
 
 export function materialGroupsForSurface(

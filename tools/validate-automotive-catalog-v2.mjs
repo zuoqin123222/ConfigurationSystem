@@ -59,7 +59,8 @@ function validateNodeUi(ui, cameras, label) {
     );
   }
   check(
-    ui.navigationMode === undefined || ["tabs", "list", "none"].includes(ui.navigationMode),
+    ui.navigationMode === undefined
+      || ["tabs", "list", "none", "surfaces-as-components"].includes(ui.navigationMode),
     `${label}.ui.navigationMode 非法`
   );
   check(
@@ -290,6 +291,35 @@ export function validateCatalog(catalog) {
   }
   for (const surface of surfaces.values()) {
     check(components.has(surface.componentId), `${surface.surfaceId} 引用了未知 componentId`);
+  }
+  for (const family of materialFamilies.values()) {
+    if (family.ui === undefined) continue;
+    assertAllowedKeys(family.ui, [], ["variantSort"], `${family.materialFamilyId}.ui`);
+    check(
+      family.ui.variantSort === undefined
+        || family.ui.variantSort === "achromatic-then-rainbow",
+      `${family.materialFamilyId}.ui.variantSort 非法`
+    );
+  }
+  const sortedFamilyIds = new Set(
+    [...materialFamilies.values()]
+      .filter((family) => family.ui?.variantSort === "achromatic-then-rainbow")
+      .map((family) => family.materialFamilyId)
+  );
+  for (const variant of materialVariants.values()) {
+    if (variant.ui !== undefined) {
+      assertAllowedKeys(variant.ui, [], ["sortColorHex"], `${variant.variantId}.ui`);
+      check(
+        variant.ui.sortColorHex === undefined
+          || /^#[0-9a-fA-F]{6}$/.test(variant.ui.sortColorHex),
+        `${variant.variantId}.ui.sortColorHex 非法`
+      );
+    }
+    check(
+      !sortedFamilyIds.has(variant.materialFamilyId)
+        || /^#[0-9a-fA-F]{6}$/.test(variant.ui?.sortColorHex ?? ""),
+      `${variant.variantId} 缺少合法 ui.sortColorHex`
+    );
   }
   for (const item of [
     ...categories.values(),

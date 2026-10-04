@@ -83,6 +83,7 @@ const optionalSurfaceIds = new Set([
 ])
 
 function componentForSurface(surfaceId: string): string {
+  if (surfaceId === 'door-sill') return 'personalization'
   if (surfaceId.startsWith('wheel-')) return 'wheel'
   if (surfaceId === 'lower-skirt') return 'underbody'
   if (surfaceId.includes('caliper')) return 'caliper'
@@ -166,7 +167,7 @@ export const catalogFixture: CatalogV2 = {
     { categoryId: 'exterior', regionId: 'exterior', displayName: '外饰', ui: { order: 0, iconUrl: '/category-exterior.svg', cameraId: 'exterior', navigationMode: 'tabs', layout: 'single' } },
     { categoryId: 'interior', regionId: 'interior', displayName: '内饰', ui: { order: 1, iconUrl: '/category-interior.svg', cameraId: 'front-cabin', navigationMode: 'tabs', layout: 'single' } },
     { categoryId: 'performance', regionId: 'performance', displayName: '性能', ui: { order: 2, iconUrl: '/category-performance.svg', cameraId: 'exterior', navigationMode: 'tabs', layout: 'single' } },
-    { categoryId: 'personalization', regionId: 'personalization', displayName: '个性化', ui: { order: 3, iconUrl: '/category-personalization.svg', cameraId: 'front-cabin', navigationMode: 'tabs', layout: 'single' } },
+    { categoryId: 'personalization', regionId: 'personalization', displayName: '个性化', ui: { order: 3, iconUrl: '/category-personalization.svg', cameraId: 'front-cabin', navigationMode: 'surfaces-as-components', layout: 'single' } },
   ],
   components: [
     { componentId: 'car-paint', categoryId: 'exterior', displayName: '车漆' },
@@ -207,10 +208,10 @@ export const catalogFixture: CatalogV2 = {
     { materialFamilyId: 'paint', displayName: '喷漆' },
     { materialFamilyId: 'aluminum-alloy', displayName: '铝合金' },
     { materialFamilyId: 'magnesium-alloy', displayName: '镁合金' },
-    { materialFamilyId: 'ultrasuede', displayName: '奥司维' },
-    { materialFamilyId: 'alcantara', displayName: 'Alcantara' },
-    { materialFamilyId: 'leather', displayName: '牛皮' },
-    { materialFamilyId: 'microfiber', displayName: '超纤皮' },
+    { materialFamilyId: 'ultrasuede', displayName: '奥司维', ui: { variantSort: 'achromatic-then-rainbow' } },
+    { materialFamilyId: 'alcantara', displayName: 'Alcantara', ui: { variantSort: 'achromatic-then-rainbow' } },
+    { materialFamilyId: 'leather', displayName: '牛皮', ui: { variantSort: 'achromatic-then-rainbow' } },
+    { materialFamilyId: 'microfiber', displayName: '超纤皮', ui: { variantSort: 'achromatic-then-rainbow' } },
   ],
   materialVariants: [
     {
