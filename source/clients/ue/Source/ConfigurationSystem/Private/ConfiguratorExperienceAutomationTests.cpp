@@ -278,6 +278,23 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(Mid.X, Mid.Y, 0.1));
 	TestTrue(TEXT("外部镜头高度平滑插值"),
 		FMath::IsNearlyEqual(Mid.Z, 250.0, 0.1));
+	FMinimalViewInfo SidePOV;
+	SidePOV.Location = FVector(0.0, 880.0, 250.0);
+	SidePOV.Rotation = FRotator(-10.0, -90.0, 0.0);
+	FMinimalViewInfo OppositeSidePOV;
+	OppositeSidePOV.Location = FVector(0.0, -880.0, 250.0);
+	OppositeSidePOV.Rotation = FRotator(-10.0, 90.0, 0.0);
+	const FMinimalViewInfo OppositeMidPOV =
+		AConfigShowroomPlayerController::InterpolateCameraPOV(
+			SidePOV, OppositeSidePOV, Pivot, 0.5f);
+	TestTrue(TEXT("对向外部机位中点仍沿半圆而非穿过车辆"),
+		FVector2D(
+			OppositeMidPOV.Location.X - Pivot.X,
+			OppositeMidPOV.Location.Y - Pivot.Y).Size() > 870.0f);
+	TestTrue(TEXT("侧面到右后过渡中点持续朝向车辆而非朝向圆弧外侧"),
+		FVector::DotProduct(
+			OppositeMidPOV.Rotation.Vector().GetSafeNormal(),
+			(Pivot - OppositeMidPOV.Location).GetSafeNormal()) > 0.99f);
 	TestTrue(TEXT("轨迹起点稳定"),
 		AConfigShowroomPlayerController::InterpolateOrbitLocation(
 			Start, End, Pivot, 0.0f).Equals(Start, 0.1));

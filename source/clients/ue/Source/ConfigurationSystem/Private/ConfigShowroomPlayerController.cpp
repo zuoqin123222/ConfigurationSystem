@@ -107,10 +107,18 @@ FMinimalViewInfo AConfigShowroomPlayerController::InterpolateCameraPOV(
 	FMinimalViewInfo BlendTarget = End;
 	Result.BlendViewInfo(BlendTarget, Eased);
 	Result.Location = InterpolateOrbitLocation(Start.Location, End.Location, Pivot, Alpha);
-	Result.Rotation = FQuat::Slerp(
-		Start.Rotation.Quaternion(),
-		End.Rotation.Quaternion(),
-		Eased).Rotator();
+	// 不能直接 Slerp 两个机位的朝向：当机位位于车辆两侧、方位角
+	// 相差约 180 度时，朝向最短路与位置圆弧会选择相反半圆，导致
+	// 镜头在过渡中点朝向车外。分别还原起终点的构图焦点，再平滑
+	// 插值焦点，可保证整个圆弧过程中始终围绕车辆构图。
+	const FVector StartFocus = Start.Location
+		+ Start.Rotation.Vector() * FVector::Distance(Start.Location, Pivot);
+	const FVector EndFocus = End.Location
+		+ End.Rotation.Vector() * FVector::Distance(End.Location, Pivot);
+	const FVector Focus = FMath::Lerp(StartFocus, EndFocus, Eased);
+	Result.Rotation = (Focus - Result.Location).Rotation();
+	Result.Rotation.Roll = FMath::Lerp(
+		Start.Rotation.Roll, End.Rotation.Roll, Eased);
 	Result.FOV = FMath::Lerp(Start.FOV, End.FOV, Eased);
 	return Result;
 }
