@@ -1,14 +1,12 @@
 #include "PathTracingExperienceSubsystem.h"
 
 #include "DataDrivenShaderPlatformInfo.h"
-#include "DynamicRHI.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "HAL/IConsoleManager.h"
 #include "HAL/PlatformTime.h"
 #include "PipelineStateCache.h"
-#include "PathTracingLightingRig.h"
 #include "RHI.h"
 #include "RHIGlobals.h"
 #include "RenderUtils.h"
@@ -27,15 +25,6 @@ void PreparePathTracingRTPSO();
 
 namespace
 {
-	uint64 GetDedicatedVideoMemoryBytes()
-	{
-		FTextureMemoryStats MemoryStats;
-		RHIGetTextureMemoryStats(MemoryStats);
-		return MemoryStats.DedicatedVideoMemory > 0
-			? static_cast<uint64>(MemoryStats.DedicatedVideoMemory)
-			: 0;
-	}
-
 	void DispatchPathTracingRTPSOWarmup()
 	{
 #if UE_BUILD_SHIPPING && RHI_RAYTRACING
@@ -88,7 +77,6 @@ void UPathTracingExperienceSubsystem::Deinitialize()
 	bPathTracingRequested = false;
 	FString IgnoredFailureReason;
 	ApplyViewMode(false, IgnoredFailureReason);
-	DestroyLightingRig();
 	ViewExtension.Reset();
 	Super::Deinitialize();
 }
@@ -173,28 +161,6 @@ bool UPathTracingExperienceSubsystem::SetPathTracingEnabled(
 	return true;
 }
 
-bool UPathTracingExperienceSubsystem::RefreshLightingRig(
-	const int32 EnvironmentIndex,
-	FString& OutFailureReason)
-{
-	OutFailureReason.Reset();
-	LightingEnvironmentIndex = FMath::Clamp(EnvironmentIndex, 0, 1);
-	if (!bPathTracingEnabled)
-	{
-		return true;
-	}
-	if (!IsValid(LightingRig))
-	{
-		return EnsureLightingRig(OutFailureReason);
-	}
-	if (!LightingRig->ApplyEnvironment(LightingEnvironmentIndex))
-	{
-		OutFailureReason = TEXT("无法加载 Path Tracing 环境 Cubemap。");
-		return false;
-	}
-	return true;
-}
-
 bool UPathTracingExperienceSubsystem::IsPreparingPathTracing() const
 {
 	return WarmupState == EPathTracingWarmupState::Starting
@@ -222,7 +188,7 @@ bool UPathTracingExperienceSubsystem::ValidatePathTracingSupport(
 		return false;
 	}
 	if (!FPathTracingWarmupPolicy::HasEnoughVideoMemory(
-		GetDedicatedVideoMemoryBytes()))
+		GRHIGlobals.GpuInfo.DedicatedVideoMemory))
 	{
 		OutFailureReason = TEXT("Path Tracing 至少需要 6 GB 独立显存。");
 		return false;
@@ -245,15 +211,6 @@ bool UPathTracingExperienceSubsystem::ApplyViewMode(
 	const bool bEnabled,
 	FString& OutFailureReason)
 {
-	if (!bEnabled)
-	{
-		// 即使视口正在销毁，也要先移除 PT 专用曝光和灯光，保证 Lit 状态无残留。
-		DestroyLightingRig();
-		bPathTracingEnabled = false;
-		CurrentSample = 0;
-		TargetSamples = 0;
-		OnProgressChanged.Broadcast(CurrentSample, TargetSamples);
-	}
 	UGameViewportClient* Viewport = GEngine != nullptr ? GEngine->GameViewport : nullptr;
 	if (Viewport == nullptr)
 	{
@@ -262,10 +219,6 @@ bool UPathTracingExperienceSubsystem::ApplyViewMode(
 	}
 	if (bEnabled)
 	{
-		if (!EnsureLightingRig(OutFailureReason))
-		{
-			return false;
-		}
 		if (IConsoleVariable* Samples =
 			IConsoleManager::Get().FindConsoleVariable(TEXT("r.PathTracing.SamplesPerPixel")))
 		{
@@ -280,7 +233,6 @@ bool UPathTracingExperienceSubsystem::ApplyViewMode(
 		::ApplyViewMode(VMI_PathTracing, true, Viewport->EngineShowFlags);
 		if (!Viewport->EngineShowFlags.PathTracing)
 		{
-			DestroyLightingRig();
 			OutFailureReason = TEXT("运行时视图策略拒绝启用 Path Tracing。");
 			return false;
 		}
@@ -302,45 +254,6 @@ bool UPathTracingExperienceSubsystem::ApplyViewMode(
 	return true;
 }
 
-bool UPathTracingExperienceSubsystem::EnsureLightingRig(FString& OutFailureReason)
-{
-	UWorld* World = GetWorld();
-	if (!IsValid(World))
-	{
-		OutFailureReason = TEXT("当前场景不可用，无法创建 Path Tracing 灯光。");
-		return false;
-	}
-	if (!IsValid(LightingRig))
-	{
-		FActorSpawnParameters SpawnParameters;
-		SpawnParameters.Name = TEXT("PathTracingLightingRig");
-		SpawnParameters.ObjectFlags |= RF_Transient;
-		SpawnParameters.SpawnCollisionHandlingOverride =
-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		LightingRig = World->SpawnActor<APathTracingLightingRig>(
-			APathTracingLightingRig::StaticClass(),
-			FTransform::Identity,
-			SpawnParameters);
-	}
-	if (!IsValid(LightingRig)
-		|| !LightingRig->ApplyEnvironment(LightingEnvironmentIndex))
-	{
-		DestroyLightingRig();
-		OutFailureReason = TEXT("无法创建 Path Tracing 灯光 Rig 或加载指定 Cubemap。");
-		return false;
-	}
-	return true;
-}
-
-void UPathTracingExperienceSubsystem::DestroyLightingRig()
-{
-	if (IsValid(LightingRig))
-	{
-		LightingRig->Destroy();
-	}
-	LightingRig = nullptr;
-}
-
 void UPathTracingExperienceSubsystem::StartPathTracingWarmup()
 {
 	FString IgnoredFailureReason;
@@ -353,7 +266,7 @@ void UPathTracingExperienceSubsystem::StartPathTracingWarmup()
 		Display,
 		TEXT("开始后台预热 UE5.8 Path Tracing RTPSO；保持 Lit 画面。GPU=%s，独立显存=%.2f GiB。"),
 		*GRHIGlobals.GpuInfo.AdapterName,
-		static_cast<double>(GetDedicatedVideoMemoryBytes())
+		static_cast<double>(GRHIGlobals.GpuInfo.DedicatedVideoMemory)
 			/ (1024.0 * 1024.0 * 1024.0));
 	// 入口自身只向渲染线程排队，必须在游戏线程直接调用，避免引入无意义的
 	// 通用线程池竞态。Fence 排在预热命令之后，完成时所有 RTPSO 请求均已提交。

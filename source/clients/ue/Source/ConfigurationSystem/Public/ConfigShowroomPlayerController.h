@@ -228,7 +228,6 @@ private:
 	void ApplyRuntimeCameraPOV(const FMinimalViewInfo& POV);
 	void ToggleEnvironmentInput();
 	void TogglePathTracingInput();
-	void RefreshPathTracingLighting();
 	void SaveInput();
 	void LoadInput();
 	void ToggleLeftDoor(); void ToggleRightDoor(); void ToggleHood(); void ToggleTrunk();

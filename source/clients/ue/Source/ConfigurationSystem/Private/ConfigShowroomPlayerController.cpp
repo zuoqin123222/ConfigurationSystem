@@ -480,7 +480,6 @@ void AConfigShowroomPlayerController::BeginPlay()
 		Vehicle = *It;
 		break;
 	}
-	RefreshPathTracingLighting();
 
 	RuntimeCamera = GetWorld()->SpawnActor<AConfigRuntimeCameraActor>();
 	FMinimalViewInfo InitialCameraPOV;
@@ -1045,7 +1044,6 @@ void AConfigShowroomPlayerController::ToggleEnvironment()
 	if (IsValid(Environment))
 	{
 		Environment->ToggleEnvironment();
-		RefreshPathTracingLighting();
 		FString IgnoredSaveError;
 		SaveExperience(IgnoredSaveError);
 	}
@@ -1106,7 +1104,6 @@ bool AConfigShowroomPlayerController::SetLightPreset(const FString& Preset)
 	{
 		return false;
 	}
-	RefreshPathTracingLighting();
 	FString IgnoredSaveError;
 	SaveExperience(IgnoredSaveError);
 	return GetLightPreset() == Preset;
@@ -1142,16 +1139,6 @@ bool AConfigShowroomPlayerController::SetRenderMode(
 	}
 	UPathTracingExperienceSubsystem* PathTracing =
 		GameInstance->GetSubsystem<UPathTracingExperienceSubsystem>();
-	if (IsValid(PathTracing) && bEnablePathTracing)
-	{
-		FString LightingFailureReason;
-		if (!PathTracing->RefreshLightingRig(
-			GetCurrentEnvironmentIndex(), LightingFailureReason))
-		{
-			OutFailureReason = LightingFailureReason;
-			return false;
-		}
-	}
 	if (IsValid(PathTracing) && bEnablePathTracing && IsValid(Vehicle))
 	{
 		// Path Tracing 从本帧开始累积，不能等待反播或平滑减速结束。
@@ -1272,7 +1259,6 @@ bool AConfigShowroomPlayerController::LoadExperience(FString& OutError)
 		return false;
 	}
 	Environment->SetEnvironmentIndex(Snapshot->EnvironmentIndex);
-	RefreshPathTracingLighting();
 	ConfiguratorPanel->SetVisibility(
 		Snapshot->bPanelVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	bApplyingLoadedSnapshot = false;
@@ -1336,19 +1322,6 @@ void AConfigShowroomPlayerController::TogglePathTracingInput()
 {
 	FString Ignored;
 	TogglePathTracing(Ignored);
-}
-void AConfigShowroomPlayerController::RefreshPathTracingLighting()
-{
-	UGameInstance* GameInstance = GetGameInstance();
-	UPathTracingExperienceSubsystem* PathTracing = IsValid(GameInstance)
-		? GameInstance->GetSubsystem<UPathTracingExperienceSubsystem>()
-		: nullptr;
-	if (IsValid(PathTracing))
-	{
-		FString IgnoredFailureReason;
-		PathTracing->RefreshLightingRig(
-			GetCurrentEnvironmentIndex(), IgnoredFailureReason);
-	}
 }
 void AConfigShowroomPlayerController::SaveInput()
 {
