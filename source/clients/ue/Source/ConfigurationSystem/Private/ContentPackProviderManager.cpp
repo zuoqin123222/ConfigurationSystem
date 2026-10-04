@@ -274,7 +274,7 @@ FContentPackMountResult FContentPackProviderManager::Preflight(
 			|| DeclaredType != Type)
 		{
 			Result.Errors.Add(
-				TEXT("SC01 Provider manifest 必须使用 schemaVersion 2.0.0，且 providerType 与所选类型一致。"));
+				TEXT("车型 Provider manifest 必须使用 schemaVersion 2.0.0，且 providerType 与所选类型一致。"));
 		}
 		else
 		{
@@ -349,7 +349,7 @@ FContentPackProviderActivationResult FContentPackProviderManager::MountAndScan(
 		Type, ManifestPath, PakPath, &bLegacyV1Compatibility);
 	if (bLegacyV1Compatibility)
 	{
-		Result.Errors.Add(TEXT("旧 mvp-v1 manifest 仅支持兼容预检，不能激活为 SC01 Provider。"));
+		Result.Errors.Add(TEXT("旧 mvp-v1 manifest 仅支持兼容预检，不能激活为车型 Provider。"));
 		return Result;
 	}
 	if (!Result.MountResult.bPreflightPassed)

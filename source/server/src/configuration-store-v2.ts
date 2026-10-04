@@ -10,13 +10,13 @@ import {
 import { dirname } from "node:path";
 import { RequestError } from "./data.js";
 import type {
-  Sc01Configuration,
-  Sc01PriceResult,
-} from "./sc01-v2.js";
+  VehicleConfiguration,
+  VehiclePriceResult,
+} from "./automotive-catalog-v2.js";
 
-export interface StoredConfigurationV2 extends Sc01Configuration {
+export interface StoredConfigurationV2 extends VehicleConfiguration {
   revision: number;
-  priceResult: Sc01PriceResult;
+  priceResult: VehiclePriceResult;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,8 +36,8 @@ function copy(value: StoredConfigurationV2): StoredConfigurationV2 {
 }
 
 function fingerprint(
-  configuration: Sc01Configuration,
-  priceResult: Sc01PriceResult,
+  configuration: VehicleConfiguration,
+  priceResult: VehiclePriceResult,
 ): string {
   return createHash("sha256")
     .update(JSON.stringify({ configuration, priceResult }), "utf8")
@@ -46,7 +46,7 @@ function fingerprint(
 
 function configurationValue(
   configuration: StoredConfigurationV2,
-): Sc01Configuration {
+): VehicleConfiguration {
   return {
     schemaVersion: configuration.schemaVersion,
     catalogVersion: configuration.catalogVersion,
@@ -80,7 +80,7 @@ export class ConfigurationStoreV2 {
       snapshot.schemaVersion !== "1.0.0" ||
       !Array.isArray(snapshot.configurations)
     ) {
-      throw new Error("SC01 v2 配置存储快照结构非法");
+      throw new Error("车型目录 v2 配置存储快照结构非法");
     }
     for (const item of snapshot.configurations) {
       if (
@@ -88,7 +88,7 @@ export class ConfigurationStoreV2 {
         item === null ||
         typeof (item as StoredConfigurationV2).configurationId !== "string"
       ) {
-        throw new Error("SC01 v2 配置存储包含非法记录");
+        throw new Error("车型目录 v2 配置存储包含非法记录");
       }
       const configuration = {
         ...(item as StoredConfigurationV2),
@@ -102,7 +102,7 @@ export class ConfigurationStoreV2 {
       this.configurations.set(configuration.configurationId, copy(configuration));
     }
     if (snapshot.idempotency !== undefined && !Array.isArray(snapshot.idempotency)) {
-      throw new Error("SC01 v2 配置存储幂等索引结构非法");
+      throw new Error("车型目录 v2 配置存储幂等索引结构非法");
     }
     for (const item of snapshot.idempotency ?? []) {
       if (
@@ -112,7 +112,7 @@ export class ConfigurationStoreV2 {
         typeof (item as { fingerprint?: unknown }).fingerprint !== "string" ||
         typeof (item as { configurationId?: unknown }).configurationId !== "string"
       ) {
-        throw new Error("SC01 v2 配置存储包含非法幂等记录");
+        throw new Error("车型目录 v2 配置存储包含非法幂等记录");
       }
       const entry = item as {
         key: string;
@@ -160,8 +160,8 @@ export class ConfigurationStoreV2 {
   }
 
   create(
-    configuration: Sc01Configuration,
-    priceResult: Sc01PriceResult,
+    configuration: VehicleConfiguration,
+    priceResult: VehiclePriceResult,
     idempotencyKey?: string,
   ): CreateConfigurationResultV2 {
     const requestFingerprint = fingerprint(configuration, priceResult);
@@ -222,8 +222,8 @@ export class ConfigurationStoreV2 {
   update(
     configurationId: string,
     expectedRevision: number,
-    configuration: Sc01Configuration,
-    priceResult: Sc01PriceResult,
+    configuration: VehicleConfiguration,
+    priceResult: VehiclePriceResult,
   ): StoredConfigurationV2 {
     const existing = this.configurations.get(configurationId);
     if (!existing) {

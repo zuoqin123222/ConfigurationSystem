@@ -171,7 +171,7 @@ float UConfiguratorPanel::GetHealthRetryDelaySeconds(
 bool UConfiguratorPanel::ParseWebConfigurationJson(
 	const FString& ConfigurationJson,
 	TMap<FString, FString>& OutSelections,
-	TMap<FString, FSc01V2Customization>& OutCustomizations,
+	TMap<FString, FAutomotiveCustomization>& OutCustomizations,
 	FString& OutError)
 {
 	OutSelections.Reset();
@@ -260,7 +260,7 @@ bool UConfiguratorPanel::ParseWebConfigurationJson(
 			return false;
 		}
 
-		FSc01V2Customization Customization;
+		FAutomotiveCustomization Customization;
 		if (HasOnlyFields(*ValueObject, MaterialFields)
 			&& (*ValueObject)->Values.Num() == 1)
 		{
@@ -273,13 +273,13 @@ bool UConfiguratorPanel::ParseWebConfigurationJson(
 				OutError = TEXT("materialVariantId 必须是非空字符串。");
 				return false;
 			}
-			Customization.Kind = ESc01V2CustomizationKind::MaterialVariant;
+			Customization.Kind = EAutomotiveCustomizationKind::MaterialVariant;
 		}
 		else if (HasOnlyFields(*ValueObject, PaintFields)
 			&& (*ValueObject)->Values.Num() == PaintFields.Num())
 		{
-			Customization.Kind = ESc01V2CustomizationKind::Paint;
-			FSc01V2PaintCustomization& Paint = Customization.Paint;
+			Customization.Kind = EAutomotiveCustomizationKind::Paint;
+			FAutomotivePaintCustomization& Paint = Customization.Paint;
 			if (!(*ValueObject)->TryGetStringField(TEXT("colorHex"), Paint.ColorHex)
 				|| !(*ValueObject)->TryGetNumberField(TEXT("metallic"), Paint.Metallic)
 				|| !(*ValueObject)->TryGetNumberField(TEXT("roughness"), Paint.Roughness)
@@ -608,7 +608,7 @@ void UConfiguratorPanel::ApplyWebConfigurationJson(
 	const FString& ConfigurationJson)
 {
 	TMap<FString, FString> Selections;
-	TMap<FString, FSc01V2Customization> Customizations;
+	TMap<FString, FAutomotiveCustomization> Customizations;
 	FString Error;
 	if (!ParseWebConfigurationJson(
 		ConfigurationJson, Selections, Customizations, Error))
@@ -621,14 +621,14 @@ void UConfiguratorPanel::ApplyWebConfigurationJson(
 	UCarConfiguratorSubsystem* Configurator = IsValid(GameInstance)
 		? GameInstance->GetSubsystem<UCarConfiguratorSubsystem>()
 		: nullptr;
-	USc01V2ConfigurationState* State = IsValid(Configurator)
-		? Configurator->GetSc01V2State()
+	UAutomotiveConfigurationState* State = IsValid(Configurator)
+		? Configurator->GetAutomotiveConfigurationState()
 		: nullptr;
 	if (!IsValid(State) || !State->ApplyTransaction(Selections, Customizations))
 	{
 		const FString StateError = IsValid(State)
 			? State->GetLastErrorCode()
-			: TEXT("SC01_V2_STATE_UNAVAILABLE");
+			: TEXT("AUTOMOTIVE_STATE_UNAVAILABLE");
 		UE_LOG(
 			LogTemp,
 			Warning,

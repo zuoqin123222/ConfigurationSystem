@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "HttpFwd.h"
-#include "Sc01V2ConfigurationState.h"
+#include "AutomotiveConfigurationState.h"
 #include "ConfiguratorPanel.generated.h"
 
 class UBorder;
@@ -29,7 +29,7 @@ public:
 	static bool ParseWebConfigurationJson(
 		const FString& ConfigurationJson,
 		TMap<FString, FString>& OutSelections,
-		TMap<FString, FSc01V2Customization>& OutCustomizations,
+		TMap<FString, FAutomotiveCustomization>& OutCustomizations,
 		FString& OutError);
 	static bool IsValidConfiguratorHeaderStateJson(
 		const FString& StateJson,

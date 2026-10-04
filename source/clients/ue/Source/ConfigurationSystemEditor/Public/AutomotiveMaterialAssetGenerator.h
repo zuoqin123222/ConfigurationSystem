@@ -3,12 +3,12 @@
 #include "CoreMinimal.h"
 
 class UMaterial;
-class USc01MaterialLibrary;
+class UAutomotiveMaterialLibrary;
 
-struct FSc01MaterialGenerationResult
+struct FAutomotiveMaterialGenerationResult
 {
 	TArray<UMaterial*> Materials;
-	USc01MaterialLibrary* Library = nullptr;
+	UAutomotiveMaterialLibrary* Library = nullptr;
 	int32 CreatedAssetCount = 0;
 	int32 UpdatedAssetCount = 0;
 	TArray<FString> Errors;
@@ -19,8 +19,8 @@ struct FSc01MaterialGenerationResult
 	}
 };
 
-/** Editor-only、公开且幂等的 SC01 Master Material 资产生成入口。 */
-class CONFIGURATIONSYSTEMEDITOR_API FSc01MaterialAssetGenerator final
+/** Editor-only、公开且幂等的车型材质资产生成入口。 */
+class CONFIGURATIONSYSTEMEDITOR_API FAutomotiveMaterialAssetGenerator final
 {
 public:
 	static constexpr TCHAR AssetRoot[] = TEXT("/Game/SC01/Materials");
@@ -31,5 +31,5 @@ public:
 	 * 创建或完全刷新六个材质图和材质库。重复调用复用同一路径，
 	 * 清空旧表达式后重建，不产生重名资产或累积节点。
 	 */
-	static bool Generate(FSc01MaterialGenerationResult& OutResult);
+	static bool Generate(FAutomotiveMaterialGenerationResult& OutResult);
 };

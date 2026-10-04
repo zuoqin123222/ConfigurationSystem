@@ -8,7 +8,7 @@ const CONFIGURATION_ID = /^cfg-[a-f0-9]{24}$/;
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function fail(message) {
-  throw new Error(`SC01 v2 契约校验失败：${message}`);
+  throw new Error(`车型目录 v2 契约校验失败：${message}`);
 }
 
 function check(condition, message) {
@@ -166,7 +166,7 @@ export function validateCatalog(catalog) {
     "options"
   ], "catalog");
   check(catalog.schemaVersion === "2.0.0", "catalog.schemaVersion 必须为 2.0.0");
-  check(catalog.lifecycle === "draft", "SC01 v2 当前仅允许 draft");
+  check(catalog.lifecycle === "draft", "车型目录 v2 当前仅允许 draft");
   check(catalog.currency === "CNY", "currency 必须为 CNY");
   check(
     typeof catalog.catalogVersion === "string" && ID.test(catalog.catalogVersion),
@@ -514,7 +514,10 @@ export async function validateCropManifest(catalog, manifest, publicRoot) {
   check(manifest.schemaVersion === "2.0.0", "crop manifest schemaVersion 必须为 2.0.0");
   check(manifest.vehicleId === catalog.vehicle.vehicleId, "crop manifest vehicleId 不匹配");
   check(
-    manifest.generator === "tools/generate-sc01-thumbnails.py",
+    [
+      "tools/generate-catalog-thumbnails.py",
+      "tools/generate-sc01-thumbnails.py"
+    ].includes(manifest.generator),
     "crop manifest generator 非法"
   );
   check(
@@ -618,7 +621,7 @@ async function readJson(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
 
-export async function validateSc01Fixtures(base = root) {
+export async function validateAutomotiveCatalogFixtures(base = root) {
   const fixtures = resolve(base, "contracts", "fixtures");
   const catalog = await readJson(resolve(fixtures, "sc01.catalog.draft.v2.json"));
   const valid = await readJson(resolve(fixtures, "sc01.configuration.valid.v2.json"));
@@ -668,7 +671,7 @@ const isMain =
 
 if (isMain) {
   try {
-    const result = await validateSc01Fixtures();
+    const result = await validateAutomotiveCatalogFixtures();
     console.log(
       `SC01 v2 契约验证通过：${result.optionCount} 个草案选项、`
       + `有效/无效配置、price-result 禁止报价、${result.vectorCount} 个稳定身份黄金向量。`

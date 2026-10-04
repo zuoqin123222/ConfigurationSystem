@@ -7,7 +7,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "ReversiblePartActuatorComponent.h"
-#include "Sc01MaterialBinder.h"
+#include "AutomotiveMaterialBinder.h"
 #include "SmoothWheelControllerComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectGlobals.h"
@@ -152,9 +152,9 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	}
 	ConfiguratorVehicle::MarkPartition(
 		InteriorCabin, InteriorPartTag, InteriorSlotTag, bAuthorizedInterior);
-	// SC01 v2 最小闭环只驱动这一个明确代理槽，避免把 38 个 surface
+	// 车型目录 v2 最小闭环只驱动这一个明确代理槽，避免把 38 个 surface
 	// 错误地广播到整车所有内饰 Mesh。
-	InteriorCabin->ComponentTags.Add(USc01MaterialBinder::InteriorProxySlotTag);
+	InteriorCabin->ComponentTags.Add(UAutomotiveMaterialBinder::InteriorProxySlotTag);
 
 	Frame = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("InternalFrame"));
 	Frame->SetupAttachment(ContentRoot);
@@ -623,9 +623,9 @@ bool AConfiguratorVehicleActor::HasStablePlaceholderBindings(
 	Validate(PaintBody, PaintPartTag, PaintSlotTag, TEXT("paint"));
 	Validate(InteriorCabin, InteriorPartTag, InteriorSlotTag, TEXT("interior"));
 	if (InteriorCabin == nullptr
-		|| !InteriorCabin->ComponentHasTag(USc01MaterialBinder::InteriorProxySlotTag))
+		|| !InteriorCabin->ComponentHasTag(UAutomotiveMaterialBinder::InteriorProxySlotTag))
 	{
-		OutErrors.Add(TEXT("内饰代理必须包含唯一 SC01 v2 材质槽标签。"));
+		OutErrors.Add(TEXT("内饰代理必须包含唯一车型目录材质槽标签。"));
 	}
 	Validate(Frame, FramePartTag, FrameSlotTag, TEXT("frame"));
 	Validate(WheelGroup, WheelPartTag, WheelSlotTag, TEXT("wheel"));

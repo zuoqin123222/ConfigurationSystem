@@ -1,15 +1,15 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
-#include "Sc01MaterialAssetGenerator.h"
+#include "AutomotiveMaterialAssetGenerator.h"
 
 #include "MaterialEditingLibrary.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
 #include "Misc/AutomationTest.h"
-#include "Sc01MaterialLibrary.h"
+#include "AutomotiveMaterialLibrary.h"
 
-namespace Sc01MaterialAssetAutomation
+namespace AutomotiveMaterialAssetAutomation
 {
 	TSet<FName> ParameterNames(const UMaterial* Material)
 	{
@@ -33,23 +33,23 @@ namespace Sc01MaterialAssetAutomation
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSc01MaterialAssetGenerationAutomationTest,
-	"ConfigurationSystem.Editor.SC01Materials.GenerateIdempotently",
+	FAutomotiveMaterialAssetGenerationAutomationTest,
+	"ConfigurationSystem.Editor.AutomotiveMaterials.GenerateIdempotently",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FSc01MaterialAssetGenerationAutomationTest::RunTest(const FString& Parameters)
+bool FAutomotiveMaterialAssetGenerationAutomationTest::RunTest(const FString& Parameters)
 {
 	(void)Parameters;
-	using namespace Sc01MaterialAssetAutomation;
+	using namespace AutomotiveMaterialAssetAutomation;
 
-	FSc01MaterialGenerationResult First;
-	TestTrue(TEXT("第一次生成六个 Master Material 与材质库"), FSc01MaterialAssetGenerator::Generate(First));
+	FAutomotiveMaterialGenerationResult First;
+	TestTrue(TEXT("第一次生成六个 Master Material 与材质库"), FAutomotiveMaterialAssetGenerator::Generate(First));
 	for (const FString& Error : First.Errors)
 	{
 		AddError(Error);
 	}
 	TestEqual(TEXT("Master Material 数量"), First.Materials.Num(), 6);
-	TestNotNull(TEXT("生成 Sc01MaterialLibrary"), First.Library);
+	TestNotNull(TEXT("生成 AutomotiveMaterialLibrary"), First.Library);
 	if (!First.Succeeded())
 	{
 		return false;
@@ -63,8 +63,8 @@ bool FSc01MaterialAssetGenerationAutomationTest::RunTest(const FString& Paramete
 			UMaterialEditingLibrary::GetNumMaterialExpressions(Material));
 	}
 
-	FSc01MaterialGenerationResult Second;
-	TestTrue(TEXT("第二次生成成功"), FSc01MaterialAssetGenerator::Generate(Second));
+	FAutomotiveMaterialGenerationResult Second;
+	TestTrue(TEXT("第二次生成成功"), FAutomotiveMaterialAssetGenerator::Generate(Second));
 	TestEqual(TEXT("重复生成不创建新资产"), Second.CreatedAssetCount, 0);
 	TestEqual(TEXT("重复生成原位刷新七个资产"), Second.UpdatedAssetCount, 7);
 	TestEqual(TEXT("重复生成仍恰好六个材质"), Second.Materials.Num(), 6);
@@ -114,11 +114,11 @@ bool FSc01MaterialAssetGenerationAutomationTest::RunTest(const FString& Paramete
 	TestEqual(
 		TEXT("材质库 Primary Asset 类型"),
 		Second.Library->GetPrimaryAssetId().PrimaryAssetType,
-		USc01MaterialLibrary::PrimaryAssetType);
+		UAutomotiveMaterialLibrary::PrimaryAssetType);
 	TestEqual(
 		TEXT("材质库 Primary Asset 名称"),
 		Second.Library->GetPrimaryAssetId().PrimaryAssetName,
-		USc01MaterialLibrary::DefaultAssetName);
+		UAutomotiveMaterialLibrary::DefaultAssetName);
 	TestNotNull(TEXT("材质库车漆引用有效"), Second.Library->CarPaint.LoadSynchronous());
 	TestNotNull(TEXT("材质库 Alcantara 引用有效"), Second.Library->Alcantara.LoadSynchronous());
 	TestNotNull(TEXT("材质库 Ultrasuede 引用有效"), Second.Library->Ultrasuede.LoadSynchronous());

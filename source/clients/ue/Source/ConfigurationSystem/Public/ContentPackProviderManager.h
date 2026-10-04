@@ -45,7 +45,7 @@ struct FContentPackProviderActivationResult
 };
 
 /**
- * SC01 Shipping Provider switcher. A candidate is only published to the
+ * Automotive content-provider switcher. A candidate is only published to the
  * in-memory/disk active registry after mount and PrimaryAsset scanning succeed.
  */
 class CONFIGURATIONSYSTEM_API FContentPackProviderManager

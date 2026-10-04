@@ -3,21 +3,21 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Misc/AutomationTest.h"
-#include "Sc01V2CatalogData.h"
-#include "Sc01V2ConfigurationState.h"
+#include "AutomotiveCatalogData.h"
+#include "AutomotiveConfigurationState.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSc01V2PrimaryAssetLoadAutomationTest,
-	"ConfigurationSystem.Runtime.SC01V2.PrimaryAssetLoadAndState",
+	FAutomotiveCatalogPrimaryAssetLoadAutomationTest,
+	"ConfigurationSystem.Runtime.AutomotiveCatalog.PrimaryAssetLoadAndState",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
+bool FAutomotiveCatalogPrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 {
 	(void)Parameters;
 	UAssetManager& AssetManager = UAssetManager::Get();
 	const FPrimaryAssetId AssetId(
-		USc01V2CatalogData::PrimaryAssetType,
-		USc01V2CatalogData::DefaultAssetName);
+		UAutomotiveCatalogData::PrimaryAssetType,
+		UAutomotiveCatalogData::DefaultAssetName);
 	const FSoftObjectPath AssetPath = AssetManager.GetPrimaryAssetPath(AssetId);
 	TestTrue(TEXT("AssetManager 扫描到 DA_SC01Catalog"), AssetPath.IsValid());
 	if (!AssetPath.IsValid())
@@ -31,8 +31,8 @@ bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 	{
 		LoadHandle->WaitUntilComplete();
 	}
-	USc01V2CatalogData* CatalogAsset =
-		Cast<USc01V2CatalogData>(AssetManager.GetPrimaryAssetObject(AssetId));
+	UAutomotiveCatalogData* CatalogAsset =
+		Cast<UAutomotiveCatalogData>(AssetManager.GetPrimaryAssetObject(AssetId));
 	TestNotNull(TEXT("通过 Primary Asset ID 加载 catalog"), CatalogAsset);
 	if (CatalogAsset == nullptr)
 	{
@@ -40,8 +40,8 @@ bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 	}
 	TestFalse(TEXT("catalog JSON 已内嵌"), CatalogAsset->CatalogJson.IsEmpty());
 
-	USc01V2ConfigurationState* State =
-		NewObject<USc01V2ConfigurationState>(GetTransientPackage());
+	UAutomotiveConfigurationState* State =
+		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
 	TestTrue(TEXT("从 Primary Asset 初始化 v2 状态"), State->Initialize(CatalogAsset));
 	TestEqual(TEXT("默认状态包含 30 个显式标配项目"), State->GetSelections().Num(), 30);
 	TestEqual(
@@ -78,17 +78,17 @@ bool FSc01V2PrimaryAssetLoadAutomationTest::RunTest(const FString& Parameters)
 
 	TMap<FString, FString> PaintSelections = Defaults;
 	PaintSelections[TEXT("exterior-body-cover")] = TEXT("body-cover-custom");
-	FSc01V2PaintCustomization Paint;
+	FAutomotivePaintCustomization Paint;
 	Paint.ColorHex = TEXT("#336699");
 	Paint.Metallic = 0.45;
 	Paint.Roughness = 0.25;
 	Paint.ClearCoat = 0.9;
 	Paint.OrangePeel = 0.12;
 	Paint.FlakeIntensity = 0.3;
-	FSc01V2Customization CustomPaint;
-	CustomPaint.Kind = ESc01V2CustomizationKind::Paint;
+	FAutomotiveCustomization CustomPaint;
+	CustomPaint.Kind = EAutomotiveCustomizationKind::Paint;
 	CustomPaint.Paint = Paint;
-	TMap<FString, FSc01V2Customization> Customizations;
+	TMap<FString, FAutomotiveCustomization> Customizations;
 	Customizations.Add(TEXT("exterior-body-cover"), CustomPaint);
 
 	TestTrue(

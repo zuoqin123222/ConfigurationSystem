@@ -16,7 +16,7 @@
 #include "GenericPlatform/GenericApplicationMessageHandler.h"
 #include "InputCoreTypes.h"
 #include "PathTracingExperienceSubsystem.h"
-#include "Sc01V2ConfigurationState.h"
+#include "AutomotiveConfigurationState.h"
 #include "ShowroomEnvironmentActor.h"
 #include "TimerManager.h"
 #include "Widgets/SWindow.h"
@@ -364,9 +364,10 @@ void AConfigShowroomPlayerController::BeginPlay()
 		{
 			Configurator->OnConfigurationChanged.AddDynamic(
 				this, &AConfigShowroomPlayerController::HandlePersistentConfigurationChanged);
-			if (USc01V2ConfigurationState* V2State = Configurator->GetSc01V2State())
+			if (UAutomotiveConfigurationState* CatalogState =
+				Configurator->GetAutomotiveConfigurationState())
 			{
-				V2State->OnChanged.AddDynamic(
+				CatalogState->OnChanged.AddDynamic(
 					this, &AConfigShowroomPlayerController::HandlePersistentConfigurationChanged);
 			}
 		}
@@ -383,9 +384,10 @@ void AConfigShowroomPlayerController::EndPlay(
 		{
 			Configurator->OnConfigurationChanged.RemoveDynamic(
 				this, &AConfigShowroomPlayerController::HandlePersistentConfigurationChanged);
-			if (USc01V2ConfigurationState* V2State = Configurator->GetSc01V2State())
+			if (UAutomotiveConfigurationState* CatalogState =
+				Configurator->GetAutomotiveConfigurationState())
 			{
-				V2State->OnChanged.RemoveDynamic(
+				CatalogState->OnChanged.RemoveDynamic(
 					this, &AConfigShowroomPlayerController::HandlePersistentConfigurationChanged);
 			}
 		}
@@ -949,11 +951,12 @@ bool AConfigShowroomPlayerController::SaveExperience(FString& OutError)
 	UConfiguratorExperienceSaveGame* Snapshot =
 		NewObject<UConfiguratorExperienceSaveGame>(this);
 	Snapshot->Configuration = Configurator->GetSelection();
-	if (USc01V2ConfigurationState* V2State = Configurator->GetSc01V2State())
+	if (UAutomotiveConfigurationState* CatalogState =
+		Configurator->GetAutomotiveConfigurationState())
 	{
-		Snapshot->bHasSc01V2State = V2State->IsInitialized();
-		Snapshot->Sc01V2Selections = V2State->GetSelections();
-		Snapshot->Sc01V2Customizations = V2State->GetCustomizations();
+		Snapshot->bHasAutomotiveState = CatalogState->IsInitialized();
+		Snapshot->AutomotiveSelections = CatalogState->GetSelections();
+		Snapshot->AutomotiveCustomizations = CatalogState->GetCustomizations();
 	}
 	Snapshot->EnvironmentIndex = GetCurrentEnvironmentIndex();
 	Snapshot->bPanelVisible = IsConfiguratorPanelVisible();
@@ -974,17 +977,18 @@ bool AConfigShowroomPlayerController::LoadExperience(FString& OutError)
 		GameInstance->GetSubsystem<UConfiguratorPersistenceSubsystem>();
 	UConfiguratorExperienceSaveGame* Snapshot =
 		IsValid(Persistence) ? Persistence->Load(TEXT("Experience"), OutError) : nullptr;
-	USc01V2ConfigurationState* V2State =
-		IsValid(Configurator) ? Configurator->GetSc01V2State() : nullptr;
+	UAutomotiveConfigurationState* CatalogState = IsValid(Configurator)
+		? Configurator->GetAutomotiveConfigurationState()
+		: nullptr;
 	if (!IsValid(Snapshot) || !IsValid(Configurator)
 		|| !IsValid(Environment) || !IsValid(ConfiguratorPanel)
 		|| Snapshot->EnvironmentIndex < 0 || Snapshot->EnvironmentIndex > 1
 		|| !Configurator->CanApplySelection(Snapshot->Configuration)
-		|| (Snapshot->bHasSc01V2State
-			&& (!IsValid(V2State)
-				|| !V2State->CanApplyTransaction(
-					Snapshot->Sc01V2Selections,
-					Snapshot->Sc01V2Customizations))))
+		|| (Snapshot->bHasAutomotiveState
+			&& (!IsValid(CatalogState)
+				|| !CatalogState->CanApplyTransaction(
+					Snapshot->AutomotiveSelections,
+					Snapshot->AutomotiveCustomizations))))
 	{
 		if (OutError.IsEmpty())
 		{
@@ -1001,13 +1005,13 @@ bool AConfigShowroomPlayerController::LoadExperience(FString& OutError)
 		OutError = TEXT("存档配置应用失败。");
 		return false;
 	}
-	if (Snapshot->bHasSc01V2State
-		&& !V2State->ApplyTransaction(
-			Snapshot->Sc01V2Selections,
-			Snapshot->Sc01V2Customizations))
+	if (Snapshot->bHasAutomotiveState
+		&& !CatalogState->ApplyTransaction(
+			Snapshot->AutomotiveSelections,
+			Snapshot->AutomotiveCustomizations))
 	{
 		bApplyingLoadedSnapshot = false;
-		OutError = TEXT("SC01 v2 存档配置应用失败。");
+		OutError = TEXT("车型目录 v2 存档配置应用失败。");
 		return false;
 	}
 	Environment->SetEnvironmentIndex(Snapshot->EnvironmentIndex);

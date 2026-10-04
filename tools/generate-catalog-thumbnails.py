@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild SC01 material thumbnails from rendered pages and a crop specification."""
+"""Rebuild automotive catalog thumbnails from rendered pages and a crop specification."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ DEFAULT_MAX_TOTAL_BYTES = 64 * 1024 * 1024
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Crop rendered SC01 color-card pages into deterministic 512x512 WebP "
+            "Crop rendered automotive color-card pages into deterministic 512x512 WebP "
             "thumbnails and refresh their manifest and catalog URLs."
         )
     )
@@ -58,7 +58,7 @@ def parse_args() -> argparse.Namespace:
         "--catalog",
         type=Path,
         required=True,
-        help="SC01 catalog JSON whose materialVariants thumbnailUrl values are updated.",
+        help="Catalog JSON whose materialVariants thumbnailUrl values are updated.",
     )
     parser.add_argument("--size", type=int, default=DEFAULT_SIZE)
     parser.add_argument("--quality", type=int, default=DEFAULT_QUALITY)
@@ -258,7 +258,7 @@ def generate(args: argparse.Namespace) -> tuple[int, int]:
         "schemaVersion": "2.0.0",
         "vehicleId": spec.get("vehicleId", "sc01"),
         "generatedFrom": spec.get("generatedFrom", "SC01-选配色卡.pdf"),
-        "generator": "tools/generate-sc01-thumbnails.py",
+        "generator": "tools/generate-catalog-thumbnails.py",
         "target": {
             "width": args.size,
             "height": args.size,
@@ -285,7 +285,7 @@ def main() -> int:
     try:
         count, total_bytes = generate(args)
     except (OSError, ValueError) as error:
-        print(f"SC01 thumbnail generation failed: {error}", file=sys.stderr)
+        print(f"Catalog thumbnail generation failed: {error}", file=sys.stderr)
         return 1
     print(
         f"Generated {count} WebP thumbnails ({total_bytes / 1024 / 1024:.2f} MiB) "

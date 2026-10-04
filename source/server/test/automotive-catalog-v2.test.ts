@@ -6,10 +6,10 @@ import test from "node:test";
 import { buildApp } from "../src/app.js";
 import { ConfigurationStoreV2 } from "../src/configuration-store-v2.js";
 import {
-  buildSc01PriceResult,
-  deriveSc01Configuration,
-  loadSc01V2,
-} from "../src/sc01-v2.js";
+  buildVehiclePriceResult,
+  deriveVehicleConfiguration,
+  loadAutomotiveCatalog,
+} from "../src/automotive-catalog-v2.js";
 
 const selections: Record<string, string> = {
   "exterior-body-cover": "body-cover-red",
@@ -88,7 +88,7 @@ test("创建配置返回稳定身份、revision 与禁止报价价格明细", as
   const response = await app.inject({
     method: "POST",
     url: "/api/v2/configurations",
-    headers: { "idempotency-key": "create-sc01-a" },
+    headers: { "idempotency-key": "create-automotive-a" },
     payload: request,
   });
   assert.equal(response.statusCode, 201);
@@ -104,7 +104,7 @@ test("创建配置返回稳定身份、revision 与禁止报价价格明细", as
 });
 
 test("无显式标配的表面默认不选装，Server 计算参考总价", () => {
-  const data = loadSc01V2();
+  const data = loadAutomotiveCatalog();
   const standardSelections = Object.fromEntries(
     data.catalog.selectionOrder.flatMap((surfaceId) => {
       const standard = data.catalog.options.find(
@@ -120,19 +120,19 @@ test("无显式标配的表面默认不选装，Server 计算参考总价", () =
   )?.required, false);
   assert.equal(Object.hasOwn(standardSelections, "lower-skirt"), false);
 
-  const baseline = deriveSc01Configuration(standardSelections, data);
-  const baselinePrice = buildSc01PriceResult(baseline, data);
+  const baseline = deriveVehicleConfiguration(standardSelections, data);
+  const baselinePrice = buildVehiclePriceResult(baseline, data);
   assert.equal(baselinePrice.totalPriceMinor, 22_980_000);
   assert.equal(baselinePrice.lineItems.some(
     (item) => item.surfaceId === "lower-skirt",
   ), false);
 
-  const configured = deriveSc01Configuration({
+  const configured = deriveVehicleConfiguration({
     ...standardSelections,
     "lower-skirt": "lower-skirt-aluminum",
   }, data);
   assert.equal(
-    buildSc01PriceResult(configured, data).totalPriceMinor,
+    buildVehiclePriceResult(configured, data).totalPriceMinor,
     23_280_000,
   );
 });
@@ -206,15 +206,15 @@ test("revision 冲突不覆盖，成功更新保留 createdAt 并迁移稳定 ID
 });
 
 test("任一有备选项的 surface 变化都会改变 configurationId", () => {
-  const data = loadSc01V2();
-  const baseline = deriveSc01Configuration(selections, data);
+  const data = loadAutomotiveCatalog();
+  const baseline = deriveVehicleConfiguration(selections, data);
   for (const surfaceId of data.catalog.selectionOrder) {
     const alternative = data.catalog.options.find(
       (option) => option.surfaceId === surfaceId
         && option.optionId !== selections[surfaceId],
     );
     if (!alternative) continue;
-    const changed = deriveSc01Configuration(
+    const changed = deriveVehicleConfiguration(
       { ...selections, [surfaceId]: alternative.optionId },
       data,
     );
@@ -226,7 +226,7 @@ test("任一有备选项的 surface 变化都会改变 configurationId", () => {
 });
 
 test("只有非 renderRelevant surface 选择变化才复用 renderKey", () => {
-  const loaded = loadSc01V2();
+  const loaded = loadAutomotiveCatalog();
   const catalog = structuredClone(loaded.catalog);
   for (const option of catalog.options) {
     if (option.surfaceId === "steering-wheel-skin") option.renderRelevant = false;
@@ -237,14 +237,14 @@ test("只有非 renderRelevant surface 选择变化才复用 renderKey", () => {
     materialVariants: loaded.materialVariants,
     optionIdsBySurface: loaded.optionIdsBySurface,
   };
-  const baseline = deriveSc01Configuration(selections, data);
-  const changed = deriveSc01Configuration(changedSelections, data);
+  const baseline = deriveVehicleConfiguration(selections, data);
+  const changed = deriveVehicleConfiguration(changedSelections, data);
   assert.notEqual(changed.configurationId, baseline.configurationId);
   assert.equal(changed.renderKey, baseline.renderKey);
 });
 
 test("customizations 按 surface 与字段固定排序并进入 configurationId/renderKey", () => {
-  const data = loadSc01V2();
+  const data = loadAutomotiveCatalog();
   const paintSelections = {
     ...selections,
     "exterior-body-cover": "body-cover-custom",
@@ -261,15 +261,15 @@ test("customizations 按 surface 与字段固定排序并进入 configurationId/
   const variant = data.catalog.materialVariants.find(
     (item) => item.materialFamilyId === "ultrasuede",
   )!;
-  const first = deriveSc01Configuration(paintSelections, data, {
+  const first = deriveVehicleConfiguration(paintSelections, data, {
     "steering-wheel-skin": { materialVariantId: variant.variantId },
     "exterior-body-cover": paint,
   });
-  const reordered = deriveSc01Configuration(paintSelections, data, {
+  const reordered = deriveVehicleConfiguration(paintSelections, data, {
     "exterior-body-cover": Object.fromEntries(Object.entries(paint).reverse()),
     "steering-wheel-skin": { materialVariantId: variant.variantId },
   });
-  const baseline = deriveSc01Configuration(paintSelections, data);
+  const baseline = deriveVehicleConfiguration(paintSelections, data);
 
   assert.equal(first.configurationId, reordered.configurationId);
   assert.equal(first.renderKey, reordered.renderKey);
@@ -284,7 +284,7 @@ test("customizations 按 surface 与字段固定排序并进入 configurationId/
 test("Server 拒绝材料族不匹配的 materialVariantId 与越界车漆参数", async (t) => {
   const app = buildApp();
   t.after(() => app.close());
-  const data = loadSc01V2();
+  const data = loadAutomotiveCatalog();
   const alcantara = data.catalog.materialVariants.find(
     (item) => item.materialFamilyId === "alcantara",
   )!;
@@ -333,7 +333,7 @@ test("Server 拒绝材料族不匹配的 materialVariantId 与越界车漆参数
 test("Server 将未选可选 surface 的 customization 识别为 400 客户端错误", async (t) => {
   const app = buildApp();
   t.after(() => app.close());
-  const data = loadSc01V2();
+  const data = loadAutomotiveCatalog();
   const leather = data.catalog.materialVariants.find(
     (item) => item.materialFamilyId === "leather",
   )!;
@@ -359,7 +359,7 @@ test("Server 将未选可选 surface 的 customization 识别为 400 客户端�
 test("Server 拒绝不具备 variant 色彩能力的同材料族 option", async (t) => {
   const app = buildApp();
   t.after(() => app.close());
-  const data = loadSc01V2();
+  const data = loadAutomotiveCatalog();
   const microfiber = data.catalog.materialVariants.find(
     (item) => item.materialFamilyId === "microfiber",
   )!;
@@ -418,8 +418,8 @@ test("customizations 可随配置保存并恢复", async (t) => {
 });
 
 test("旧 optionId 迁移到规范 ID，且自定义色按 option 能力验证", () => {
-  const data = loadSc01V2();
-  const migrated = deriveSc01Configuration({
+  const data = loadAutomotiveCatalog();
+  const migrated = deriveVehicleConfiguration({
     ...selections,
     "steering-wheel-skin": "steering-skin-leather-user",
   }, data);
@@ -436,7 +436,7 @@ test("旧 optionId 迁移到规范 ID，且自定义色按 option 能力验证",
     orangePeel: 0.1,
     flakeIntensity: 0.3,
   };
-  const chassis = deriveSc01Configuration(selections, data, {
+  const chassis = deriveVehicleConfiguration(selections, data, {
     "engine-bay-cover": paint,
   });
   assert.deepEqual(chassis.customizations["engine-bay-cover"], paint);
@@ -465,12 +465,12 @@ test("草案拒绝报价请求，render resolve 只返回投影标识", async (t
 });
 
 test("原子 JSON 快照在重启后恢复配置与幂等索引", async (t) => {
-  const directory = await mkdtemp(resolve(tmpdir(), "sc01-v2-store-"));
+  const directory = await mkdtemp(resolve(tmpdir(), "automotive-v2-store-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const snapshotPath = resolve(directory, "configurations-v2.json");
-  const data = loadSc01V2();
-  const configuration = deriveSc01Configuration(selections, data);
-  const priceResult = buildSc01PriceResult(configuration, data);
+  const data = loadAutomotiveCatalog();
+  const configuration = deriveVehicleConfiguration(selections, data);
+  const priceResult = buildVehiclePriceResult(configuration, data);
   const firstStore = new ConfigurationStoreV2(
     () => new Date("2026-10-03T00:00:00.000Z"),
     snapshotPath,

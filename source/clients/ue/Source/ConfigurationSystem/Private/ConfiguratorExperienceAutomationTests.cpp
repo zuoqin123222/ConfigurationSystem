@@ -206,7 +206,7 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 			HeaderStateError));
 
 	TMap<FString, FString> Selections;
-	TMap<FString, FSc01V2Customization> Customizations;
+	TMap<FString, FAutomotiveCustomization> Customizations;
 	FString ParseError;
 	const FString ValidConfigurationJson = TEXT(
 		"{\"schemaVersion\":\"2.0.0\","
@@ -700,19 +700,19 @@ bool FConfiguratorPersistenceAutomationTest::RunTest(const FString& Parameters)
 	Source->Configuration.Frame = TEXT("frame-black");
 	Source->EnvironmentIndex = 1;
 	Source->bPanelVisible = false;
-	Source->bHasSc01V2State = true;
-	Source->Sc01V2Selections.Add(
+	Source->bHasAutomotiveState = true;
+	Source->AutomotiveSelections.Add(
 		TEXT("exterior-body-cover"),
 		TEXT("body-cover-custom"));
-	FSc01V2Customization PaintCustomization;
-	PaintCustomization.Kind = ESc01V2CustomizationKind::Paint;
+	FAutomotiveCustomization PaintCustomization;
+	PaintCustomization.Kind = EAutomotiveCustomizationKind::Paint;
 	PaintCustomization.Paint.ColorHex = TEXT("#336699");
 	PaintCustomization.Paint.Metallic = 0.45;
 	PaintCustomization.Paint.Roughness = 0.25;
 	PaintCustomization.Paint.ClearCoat = 0.9;
 	PaintCustomization.Paint.OrangePeel = 0.12;
 	PaintCustomization.Paint.FlakeIntensity = 0.3;
-	Source->Sc01V2Customizations.Add(
+	Source->AutomotiveCustomizations.Add(
 		TEXT("exterior-body-cover"),
 		PaintCustomization);
 
@@ -727,14 +727,14 @@ bool FConfiguratorPersistenceAutomationTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("恢复配置"), Loaded->Configuration.Paint, FString(TEXT("paint-silver")));
 		TestEqual(TEXT("恢复环境"), Loaded->EnvironmentIndex, 1);
 		TestFalse(TEXT("恢复 UI 显隐"), Loaded->bPanelVisible);
-		TestTrue(TEXT("恢复 SC01 v2 状态标记"), Loaded->bHasSc01V2State);
+		TestTrue(TEXT("恢复车型目录状态标记"), Loaded->bHasAutomotiveState);
 		TestEqual(
-			TEXT("恢复 SC01 v2 selection"),
-			Loaded->Sc01V2Selections.FindRef(TEXT("exterior-body-cover")),
+			TEXT("恢复车型目录 v2 selection"),
+			Loaded->AutomotiveSelections.FindRef(TEXT("exterior-body-cover")),
 			FString(TEXT("body-cover-custom")));
 		TestEqual(
-			TEXT("恢复 SC01 v2 custom paint"),
-			Loaded->Sc01V2Customizations.FindRef(
+			TEXT("恢复车型目录 v2 custom paint"),
+			Loaded->AutomotiveCustomizations.FindRef(
 				TEXT("exterior-body-cover")).Paint.ColorHex,
 			FString(TEXT("#336699")));
 	}

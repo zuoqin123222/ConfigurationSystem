@@ -4,7 +4,9 @@ import { fileURLToPath } from "node:url";
 import { validateSidecarFixtures } from "./validate-vehicle-sidecars.mjs";
 import { validateContentPackManifest } from "./validate-content-pack.mjs";
 import { validateSourceAssets } from "./validate-source-assets.mjs";
-import { validateSc01Fixtures } from "./validate-sc01-v2.mjs";
+import {
+  validateAutomotiveCatalogFixtures,
+} from "./validate-automotive-catalog-v2.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const schemaDir = resolve(root, "contracts", "schemas");
@@ -398,9 +400,9 @@ try {
 }
 
 try {
-  await validateSc01Fixtures(root);
+  await validateAutomotiveCatalogFixtures(root);
 } catch (error) {
-  failures.push(`SC01 v2 契约验证失败 (${error.message})`);
+  failures.push(`车型目录 v2 契约验证失败 (${error.message})`);
 }
 
 const sourceAssetsResult = await validateSourceAssets(

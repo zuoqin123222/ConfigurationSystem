@@ -7,12 +7,12 @@
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
-#include "Sc01V2CatalogData.h"
-#include "Sc01V2Domain.h"
+#include "AutomotiveCatalogData.h"
+#include "AutomotiveCatalogDomain.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
 
-namespace Sc01V2CatalogAssetAutomation
+namespace AutomotiveCatalogAssetAutomation
 {
 	constexpr TCHAR PackageName[] = TEXT("/Game/SC01/DA_SC01Catalog");
 	constexpr TCHAR AssetName[] = TEXT("DA_SC01Catalog");
@@ -26,26 +26,26 @@ namespace Sc01V2CatalogAssetAutomation
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSc01V2GenerateCatalogPrimaryAssetTest,
-	"ConfigurationSystem.Editor.SC01V2.GenerateCatalogPrimaryAsset",
+	FAutomotiveGenerateCatalogPrimaryAssetTest,
+	"ConfigurationSystem.Editor.AutomotiveCatalog.GenerateCatalogPrimaryAsset",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FSc01V2GenerateCatalogPrimaryAssetTest::RunTest(const FString& Parameters)
+bool FAutomotiveGenerateCatalogPrimaryAssetTest::RunTest(const FString& Parameters)
 {
 	(void)Parameters;
-	using namespace Sc01V2CatalogAssetAutomation;
+	using namespace AutomotiveCatalogAssetAutomation;
 
 	FString CatalogJson;
 	TestTrue(
-		TEXT("读取共享 SC01 v2 catalog JSON"),
+		TEXT("读取共享车型目录 v2 JSON"),
 		FFileHelper::LoadFileToString(CatalogJson, *SharedCatalogFilename()));
 	if (CatalogJson.IsEmpty())
 	{
 		return false;
 	}
 
-	Sc01V2::FCatalogIndex Catalog;
-	Sc01V2::FError Error;
+	AutomotiveCatalog::FCatalogIndex Catalog;
+	AutomotiveCatalog::FError Error;
 	TestTrue(TEXT("共享 catalog 可通过 Runtime 校验"), Catalog.LoadJson(CatalogJson, Error));
 	if (!Catalog.IsValid())
 	{
@@ -54,13 +54,13 @@ bool FSc01V2GenerateCatalogPrimaryAssetTest::RunTest(const FString& Parameters)
 	}
 
 	const FString ObjectPath = FString::Printf(TEXT("%s.%s"), PackageName, AssetName);
-	USc01V2CatalogData* Asset =
-		LoadObject<USc01V2CatalogData>(nullptr, *ObjectPath);
+	UAutomotiveCatalogData* Asset =
+		LoadObject<UAutomotiveCatalogData>(nullptr, *ObjectPath);
 	const bool bCreated = Asset == nullptr;
 	if (bCreated)
 	{
 		UPackage* Package = CreatePackage(PackageName);
-		Asset = NewObject<USc01V2CatalogData>(
+		Asset = NewObject<UAutomotiveCatalogData>(
 			Package,
 			AssetName,
 			RF_Public | RF_Standalone);
@@ -95,18 +95,18 @@ bool FSc01V2GenerateCatalogPrimaryAssetTest::RunTest(const FString& Parameters)
 		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	AssetRegistry.Get().ScanPathsSynchronous({TEXT("/Game/SC01")}, true);
 	UAssetManager::Get().ScanPathsForPrimaryAssets(
-		USc01V2CatalogData::PrimaryAssetType,
+		UAutomotiveCatalogData::PrimaryAssetType,
 		{TEXT("/Game/SC01")},
-		USc01V2CatalogData::StaticClass(),
+		UAutomotiveCatalogData::StaticClass(),
 		false,
 		false,
 		true);
 
 	TestEqual(TEXT("内嵌 JSON 字节数"), Asset->CatalogJson.Len(), CatalogJson.Len());
 	TestEqual(TEXT("Primary Asset 类型"), Asset->GetPrimaryAssetId().PrimaryAssetType,
-		USc01V2CatalogData::PrimaryAssetType);
+		UAutomotiveCatalogData::PrimaryAssetType);
 	TestEqual(TEXT("Primary Asset 名称"), Asset->GetPrimaryAssetId().PrimaryAssetName,
-		USc01V2CatalogData::DefaultAssetName);
+		UAutomotiveCatalogData::DefaultAssetName);
 	return true;
 }
 

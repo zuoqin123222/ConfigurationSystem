@@ -2,8 +2,8 @@
 
 #include "CoreMinimal.h"
 
-/** SC01 v2 独立领域层。类型名称与实现均不复用 v1 的四分区状态。 */
-namespace Sc01V2
+/** 车型目录 v2 独立领域层。类型名称与实现均不复用 v1 的四分区状态。 */
+namespace AutomotiveCatalog
 {
 	inline constexpr int32 RequiredSelectionCount = 38;
 	inline constexpr TCHAR SchemaVersion[] = TEXT("2.0.0");
@@ -226,7 +226,7 @@ namespace Sc01V2
 		const FCatalogIndex& Catalog,
 		FError& OutError);
 
-	/** 与 source/server/src/sc01-v2.ts 的规范行、UTF-8 编码及 SHA-256 截断规则一致。 */
+	/** 与 source/server/src/automotive-catalog-v2.ts 的规范行、UTF-8 编码及 SHA-256 截断规则一致。 */
 	CONFIGURATIONSYSTEM_API bool DeriveConfiguration(
 		const FSelections& Selections,
 		const FCustomizations& Customizations,

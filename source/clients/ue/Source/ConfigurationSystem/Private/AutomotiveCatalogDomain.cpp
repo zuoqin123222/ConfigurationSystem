@@ -1,4 +1,4 @@
-#include "Sc01V2Domain.h"
+#include "AutomotiveCatalogDomain.h"
 
 #include "Dom/JsonObject.h"
 #include "HAL/FileManager.h"
@@ -6,7 +6,7 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 
-namespace Sc01V2
+namespace AutomotiveCatalog
 {
 	namespace Private
 	{
@@ -584,7 +584,7 @@ namespace Sc01V2
 		TSet<FString> SurfaceIds;
 		TSet<FString> FamilyIds;
 
-		if (Candidate.SchemaVersion != Sc01V2::SchemaVersion
+		if (Candidate.SchemaVersion != AutomotiveCatalog::SchemaVersion
 			|| Candidate.Lifecycle != TEXT("draft")
 			|| Candidate.Currency != TEXT("CNY")
 			|| Candidate.CatalogVersion.IsEmpty()
@@ -600,7 +600,7 @@ namespace Sc01V2
 			|| Candidate.Surfaces.Num() != RequiredSelectionCount)
 		{
 			Private::SetError(OutError, TEXT("INVALID_CATALOG"),
-				TEXT("SC01 v2 catalog 必须包含 22980000 基础价、38 个有序表面且保持 2.0.0 draft 不可报价"));
+				TEXT("车型目录 v2 必须包含确认基础价、有序表面且保持 2.0.0 draft 不可报价"));
 			return false;
 		}
 
@@ -1060,7 +1060,7 @@ namespace Sc01V2
 		}
 		const FCatalog& Data = Catalog.GetCatalog();
 		TArray<FString> CanonicalLines = {
-			FString::Printf(TEXT("schemaVersion=%s"), Sc01V2::SchemaVersion),
+			FString::Printf(TEXT("schemaVersion=%s"), AutomotiveCatalog::SchemaVersion),
 			FString::Printf(TEXT("catalogVersion=%s"), *Data.CatalogVersion),
 			FString::Printf(TEXT("vehicleId=%s"), *Data.VehicleId)
 		};
@@ -1085,7 +1085,7 @@ namespace Sc01V2
 		Private::AppendCustomizationLines(RenderLines, Data, Customizations, &RenderRelevant);
 
 		FConfiguration Candidate;
-		Candidate.SchemaVersion = Sc01V2::SchemaVersion;
+		Candidate.SchemaVersion = AutomotiveCatalog::SchemaVersion;
 		Candidate.CatalogVersion = Data.CatalogVersion;
 		Candidate.VehicleId = Data.VehicleId;
 		Candidate.ConfigurationId = TEXT("cfg-") + Private::Sha256Digest24(FString::Join(CanonicalLines, TEXT("\n")));

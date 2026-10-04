@@ -1,4 +1,4 @@
-#include "Sc01MaterialAssetGenerator.h"
+#include "AutomotiveMaterialAssetGenerator.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "MaterialEditingLibrary.h"
@@ -11,11 +11,11 @@
 #include "Materials/MaterialExpressionTextureCoordinate.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
 #include "Misc/PackageName.h"
-#include "Sc01MaterialLibrary.h"
+#include "AutomotiveMaterialLibrary.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
 
-namespace Sc01MaterialGeneration
+namespace AutomotiveMaterialGeneration
 {
 	struct FMaterialSpec
 	{
@@ -271,11 +271,11 @@ namespace Sc01MaterialGeneration
 	UMaterial* GenerateMaterial(
 		const FMaterialSpec& Spec,
 		const bool bCarPaint,
-		FSc01MaterialGenerationResult& Result)
+		FAutomotiveMaterialGenerationResult& Result)
 	{
 		const FString AssetName(Spec.Name);
 		const FString PackageName =
-			FString::Printf(TEXT("%s/%s"), FSc01MaterialAssetGenerator::AssetRoot, Spec.Name);
+			FString::Printf(TEXT("%s/%s"), FAutomotiveMaterialAssetGenerator::AssetRoot, Spec.Name);
 		bool bCreated = false;
 		UMaterial* Material =
 			LoadOrCreate<UMaterial>(PackageName, AssetName, bCreated);
@@ -318,11 +318,11 @@ namespace Sc01MaterialGeneration
 	}
 }
 
-bool FSc01MaterialAssetGenerator::Generate(
-	FSc01MaterialGenerationResult& OutResult)
+bool FAutomotiveMaterialAssetGenerator::Generate(
+	FAutomotiveMaterialGenerationResult& OutResult)
 {
-	using namespace Sc01MaterialGeneration;
-	OutResult = FSc01MaterialGenerationResult();
+	using namespace AutomotiveMaterialGeneration;
+	OutResult = FAutomotiveMaterialGenerationResult();
 
 	const FMaterialSpec Specs[] = {
 		{TEXT("M_SC01_CarPaint"), FLinearColor(0.55f, 0.015f, 0.02f), 0.22f, 0, 0, 0, 0},
@@ -349,7 +349,7 @@ bool FSc01MaterialAssetGenerator::Generate(
 
 	const FString LibraryAssetName(TEXT("DA_SC01MaterialLibrary"));
 	bool bLibraryCreated = false;
-	USc01MaterialLibrary* Library = LoadOrCreate<USc01MaterialLibrary>(
+	UAutomotiveMaterialLibrary* Library = LoadOrCreate<UAutomotiveMaterialLibrary>(
 		LibraryPackageName,
 		LibraryAssetName,
 		bLibraryCreated);

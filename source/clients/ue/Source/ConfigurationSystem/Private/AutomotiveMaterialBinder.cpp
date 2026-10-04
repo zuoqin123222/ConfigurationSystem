@@ -1,20 +1,20 @@
-#include "Sc01MaterialBinder.h"
+#include "AutomotiveMaterialBinder.h"
 
 #include "Components/MeshComponent.h"
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
-#include "Sc01MaterialLibrary.h"
-#include "Sc01V2ConfigurationState.h"
+#include "AutomotiveMaterialLibrary.h"
+#include "AutomotiveConfigurationState.h"
 
-const FName USc01MaterialBinder::PaintProxySlotTag(
+const FName UAutomotiveMaterialBinder::PaintProxySlotTag(
 	TEXT("Configurator.Slot.paint_body"));
-const FName USc01MaterialBinder::InteriorProxySlotTag(
-	TEXT("Configurator.Slot.sc01_interior_material_proxy"));
-const FString USc01MaterialBinder::PaintSurfaceId(TEXT("exterior-body-cover"));
-const FString USc01MaterialBinder::InteriorProxySurfaceId(TEXT("door-middle"));
+const FName UAutomotiveMaterialBinder::InteriorProxySlotTag(
+	TEXT("Configurator.Slot.automotive_interior_material_proxy"));
+const FString UAutomotiveMaterialBinder::PaintSurfaceId(TEXT("exterior-body-cover"));
+const FString UAutomotiveMaterialBinder::InteriorProxySurfaceId(TEXT("door-middle"));
 
-UMeshComponent* USc01MaterialBinder::FindUniqueTaggedMesh(
+UMeshComponent* UAutomotiveMaterialBinder::FindUniqueTaggedMesh(
 	AActor* Vehicle,
 	const FName SlotTag,
 	FString& OutError)
@@ -45,9 +45,9 @@ UMeshComponent* USc01MaterialBinder::FindUniqueTaggedMesh(
 	return Match;
 }
 
-bool USc01MaterialBinder::Bind(
-	USc01V2ConfigurationState* InState,
-	USc01MaterialLibrary* InLibrary,
+bool UAutomotiveMaterialBinder::Bind(
+	UAutomotiveConfigurationState* InState,
+	UAutomotiveMaterialLibrary* InLibrary,
 	AActor* InVehicle)
 {
 	Unbind();
@@ -78,11 +78,11 @@ bool USc01MaterialBinder::Bind(
 	Library = InLibrary;
 	PaintComponent = CandidatePaint;
 	InteriorComponent = CandidateInterior;
-	State->OnChangedNative.AddUObject(this, &USc01MaterialBinder::HandleStateChanged);
+	State->OnChangedNative.AddUObject(this, &UAutomotiveMaterialBinder::HandleStateChanged);
 	return ApplyCurrentConfiguration();
 }
 
-void USc01MaterialBinder::Unbind()
+void UAutomotiveMaterialBinder::Unbind()
 {
 	if (IsValid(State))
 	{
@@ -97,18 +97,18 @@ void USc01MaterialBinder::Unbind()
 	LastError.Reset();
 }
 
-void USc01MaterialBinder::BeginDestroy()
+void UAutomotiveMaterialBinder::BeginDestroy()
 {
 	Unbind();
 	Super::BeginDestroy();
 }
 
-void USc01MaterialBinder::HandleStateChanged()
+void UAutomotiveMaterialBinder::HandleStateChanged()
 {
 	ApplyCurrentConfiguration();
 }
 
-bool USc01MaterialBinder::ApplyCurrentConfiguration()
+bool UAutomotiveMaterialBinder::ApplyCurrentConfiguration()
 {
 	if (!IsValid(State) || !IsValid(Library)
 		|| !IsValid(PaintComponent) || !IsValid(InteriorComponent))
@@ -123,12 +123,12 @@ bool USc01MaterialBinder::ApplyCurrentConfiguration()
 	return bPaintApplied && bInteriorApplied;
 }
 
-bool USc01MaterialBinder::ApplyPaint()
+bool UAutomotiveMaterialBinder::ApplyPaint()
 {
 	UMaterialInterface* PaintMaster = Library->CarPaint.LoadSynchronous();
 	if (!IsValid(PaintMaster))
 	{
-		LastError = TEXT("Sc01MaterialLibrary 缺少 CarPaint。");
+		LastError = TEXT("AutomotiveMaterialLibrary 缺少 CarPaint。");
 		return false;
 	}
 
@@ -144,16 +144,16 @@ bool USc01MaterialBinder::ApplyPaint()
 	}
 	PaintComponent->SetMaterial(0, PaintMaterialInstance);
 
-	const TMap<FString, FSc01V2Customization> Customizations =
+	const TMap<FString, FAutomotiveCustomization> Customizations =
 		State->GetCustomizations();
-	const FSc01V2Customization* Customization = Customizations.Find(PaintSurfaceId);
+	const FAutomotiveCustomization* Customization = Customizations.Find(PaintSurfaceId);
 	if (Customization == nullptr
-		|| Customization->Kind != ESc01V2CustomizationKind::Paint)
+		|| Customization->Kind != EAutomotiveCustomizationKind::Paint)
 	{
 		return true;
 	}
 
-	const FSc01V2PaintCustomization& Paint = Customization->Paint;
+	const FAutomotivePaintCustomization& Paint = Customization->Paint;
 	PaintMaterialInstance->SetVectorParameterValue(
 		TEXT("BaseColor"),
 		FLinearColor::FromSRGBColor(FColor::FromHex(Paint.ColorHex)));
@@ -167,11 +167,11 @@ bool USc01MaterialBinder::ApplyPaint()
 	return true;
 }
 
-bool USc01MaterialBinder::ApplyInterior()
+bool UAutomotiveMaterialBinder::ApplyInterior()
 {
 	const FString OptionId =
 		State->GetSelections().FindRef(InteriorProxySurfaceId);
-	const Sc01V2::FOption* Option =
+	const AutomotiveCatalog::FOption* Option =
 		State->GetCatalogIndex().FindOption(OptionId);
 	if (Option == nullptr || !Option->MaterialFamilyId.IsSet())
 	{
@@ -180,14 +180,14 @@ bool USc01MaterialBinder::ApplyInterior()
 	}
 
 	FString FamilyId = Option->MaterialFamilyId.GetValue();
-	const TMap<FString, FSc01V2Customization> Customizations =
+	const TMap<FString, FAutomotiveCustomization> Customizations =
 		State->GetCustomizations();
-	if (const FSc01V2Customization* Customization =
+	if (const FAutomotiveCustomization* Customization =
 		Customizations.Find(InteriorProxySurfaceId))
 	{
-		if (Customization->Kind == ESc01V2CustomizationKind::MaterialVariant)
+		if (Customization->Kind == EAutomotiveCustomizationKind::MaterialVariant)
 		{
-			const Sc01V2::FMaterialVariant* Variant =
+			const AutomotiveCatalog::FMaterialVariant* Variant =
 				State->GetCatalogIndex().FindMaterialVariant(
 					Customization->MaterialVariantId);
 			if (Variant != nullptr)

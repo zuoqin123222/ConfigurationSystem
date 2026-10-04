@@ -112,20 +112,20 @@ bool FAdminImportProviderManagementAutomationTest::RunTest(const FString& Parame
 		FGuid::NewGuid().ToString(EGuidFormats::Digits));
 	IFileManager::Get().MakeDirectory(*Directory, true);
 
-	FString Sc01V1Manifest;
-	FString Sc01V1Pak;
-	FString Sc01V2Manifest;
-	FString Sc01V2Pak;
+	FString CatalogV1Manifest;
+	FString CatalogV1Pak;
+	FString CatalogV2Manifest;
+	FString CatalogV2Pak;
 	FString LegacyManifest;
 	FString LegacyPak;
 	TestTrue(TEXT("创建 SC01 Provider v1"), AdminImportProviderTests::CreatePack(
 		Directory, TEXT("sc01-materials"), TEXT("draft-1"),
 		TEXT("sc01-draft-20260121"), TEXT("material"),
-		Sc01V1Manifest, Sc01V1Pak));
+		CatalogV1Manifest, CatalogV1Pak));
 	TestTrue(TEXT("创建 SC01 Provider v2"), AdminImportProviderTests::CreatePack(
 		Directory, TEXT("sc01-materials"), TEXT("draft-2"),
 		TEXT("sc01-draft-20260121"), TEXT("material"),
-		Sc01V2Manifest, Sc01V2Pak));
+		CatalogV2Manifest, CatalogV2Pak));
 	TestTrue(TEXT("创建旧 mvp-v1 包"), AdminImportProviderTests::CreatePack(
 		Directory, TEXT("legacy-materials"), TEXT("legacy-1"),
 		TEXT("mvp-v1"), FString(), LegacyManifest, LegacyPak));
@@ -138,19 +138,19 @@ bool FAdminImportProviderManagementAutomationTest::RunTest(const FString& Parame
 	AdminImportProviderTests::Configure(Manager, MountCalls);
 
 	bool bLegacy = false;
-	const FContentPackMountResult Sc01Preflight = Manager.Preflight(
+	const FContentPackMountResult CatalogPreflight = Manager.Preflight(
 		EContentPackProviderType::Material,
-		Sc01V1Manifest,
-		Sc01V1Pak,
+		CatalogV1Manifest,
+		CatalogV1Pak,
 		&bLegacy);
-	TestTrue(TEXT("SC01 material 预检通过"), Sc01Preflight.bPreflightPassed);
+	TestTrue(TEXT("SC01 material 预检通过"), CatalogPreflight.bPreflightPassed);
 	TestFalse(TEXT("SC01 不走旧版兼容"), bLegacy);
 	TestFalse(
 		TEXT("所选 environment 与 manifest material 不匹配"),
 		Manager.Preflight(
 			EContentPackProviderType::Environment,
-			Sc01V1Manifest,
-			Sc01V1Pak).bPreflightPassed);
+			CatalogV1Manifest,
+			CatalogV1Pak).bPreflightPassed);
 
 	const FContentPackMountResult LegacyPreflight = Manager.Preflight(
 		EContentPackProviderType::Material,
@@ -171,14 +171,14 @@ bool FAdminImportProviderManagementAutomationTest::RunTest(const FString& Parame
 		TEXT("激活 SC01 current"),
 		Manager.Activate(
 			EContentPackProviderType::Material,
-			Sc01V1Manifest,
-			Sc01V1Pak).bActivated);
+			CatalogV1Manifest,
+			CatalogV1Pak).bActivated);
 	TestTrue(
 		TEXT("激活新版并保留 previous"),
 		Manager.Activate(
 			EContentPackProviderType::Material,
-			Sc01V2Manifest,
-			Sc01V2Pak).bActivated);
+			CatalogV2Manifest,
+			CatalogV2Pak).bActivated);
 	const FContentPackProviderSlot* Slot =
 		Manager.FindActive(EContentPackProviderType::Material);
 	TestTrue(TEXT("material slot 存在"), Slot != nullptr);

@@ -30,12 +30,12 @@ import {
   type StoredConfigurationV2,
 } from "./configuration-store-v2.js";
 import {
-  assertSc01Version,
-  buildSc01PriceResult,
-  deriveSc01Configuration,
-  loadSc01V2,
-  type Sc01V2Data,
-} from "./sc01-v2.js";
+  assertCatalogVersion,
+  buildVehiclePriceResult,
+  deriveVehicleConfiguration,
+  loadAutomotiveCatalog,
+  type AutomotiveCatalogData,
+} from "./automotive-catalog-v2.js";
 
 export interface BuildAppOptions {
   contractRoot?: string;
@@ -43,7 +43,7 @@ export interface BuildAppOptions {
   manifestPath?: string;
   bake?: ValidatedBakeManifest;
   data?: ContractData;
-  sc01V2?: Sc01V2Data;
+  automotiveCatalog?: AutomotiveCatalogData;
   configurationStoreV2?: ConfigurationStoreV2;
   webRoot?: string | false;
 }
@@ -208,7 +208,8 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     logger: false,
   });
   const legacyData = options.data ?? loadContracts(options.contractRoot);
-  const sc01V2 = options.sc01V2 ?? loadSc01V2(options.contractRoot);
+  const automotiveCatalog =
+    options.automotiveCatalog ?? loadAutomotiveCatalog(options.contractRoot);
   const configurationStoreV2 =
     options.configurationStoreV2 ?? new ConfigurationStoreV2();
   const bakeRoot = resolve(
@@ -298,7 +299,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
 
   app.get("/api/v1/catalog", async () => data.catalog);
 
-  app.get("/api/v2/catalog", async () => sc01V2.catalog);
+  app.get("/api/v2/catalog", async () => automotiveCatalog.catalog);
 
   app.post("/api/v2/configurations", async (request, reply) => {
     const body = request.body;
@@ -307,7 +308,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       ["catalogVersion", "vehicleId", "selections"],
       ["customizations", "quoteRequested"],
     );
-    assertSc01Version(body.catalogVersion, body.vehicleId, sc01V2);
+    assertCatalogVersion(body.catalogVersion, body.vehicleId, automotiveCatalog);
     if (
       Object.hasOwn(body, "quoteRequested") &&
       typeof body.quoteRequested !== "boolean"
@@ -318,12 +319,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         "quoteRequested 必须是 boolean",
       );
     }
-    const configuration = deriveSc01Configuration(
+    const configuration = deriveVehicleConfiguration(
       body.selections,
-      sc01V2,
+      automotiveCatalog,
       body.customizations,
     );
-    const priceResult = buildSc01PriceResult(configuration, sc01V2);
+    const priceResult = buildVehiclePriceResult(configuration, automotiveCatalog);
     if (body.quoteRequested === true) {
       return reply.status(422).send({
         code: "PRICE_UNCONFIRMED",
@@ -400,14 +401,14 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         "路径与请求体 configurationId 不一致",
       );
     }
-    assertSc01Version(body.catalogVersion, body.vehicleId, sc01V2);
+    assertCatalogVersion(body.catalogVersion, body.vehicleId, automotiveCatalog);
     const revision = readRevision(body.revision);
-    const configuration = deriveSc01Configuration(
+    const configuration = deriveVehicleConfiguration(
       body.selections,
-      sc01V2,
+      automotiveCatalog,
       body.customizations,
     );
-    const priceResult = buildSc01PriceResult(configuration, sc01V2);
+    const priceResult = buildVehiclePriceResult(configuration, automotiveCatalog);
     if (body.quoteRequested === true) {
       throw new RequestError(
         422,
@@ -462,7 +463,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       ["catalogVersion", "vehicleId", "selections"],
       ["customizations", "renderViewId"],
     );
-    assertSc01Version(body.catalogVersion, body.vehicleId, sc01V2);
+    assertCatalogVersion(body.catalogVersion, body.vehicleId, automotiveCatalog);
     if (
       Object.hasOwn(body, "renderViewId") &&
       typeof body.renderViewId !== "string"
@@ -473,9 +474,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         "renderViewId 必须是字符串",
       );
     }
-    const configuration = deriveSc01Configuration(
+    const configuration = deriveVehicleConfiguration(
       body.selections,
-      sc01V2,
+      automotiveCatalog,
       body.customizations,
     );
     return {

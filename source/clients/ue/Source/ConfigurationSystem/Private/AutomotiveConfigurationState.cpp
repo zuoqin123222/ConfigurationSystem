@@ -1,20 +1,20 @@
-#include "Sc01V2ConfigurationState.h"
+#include "AutomotiveConfigurationState.h"
 
-#include "Sc01V2CatalogData.h"
+#include "AutomotiveCatalogData.h"
 
 namespace
 {
 	bool CustomizationMapsEqual(
-		const TMap<FString, FSc01V2Customization>& Left,
-		const TMap<FString, FSc01V2Customization>& Right)
+		const TMap<FString, FAutomotiveCustomization>& Left,
+		const TMap<FString, FAutomotiveCustomization>& Right)
 	{
 		if (Left.Num() != Right.Num())
 		{
 			return false;
 		}
-		for (const TPair<FString, FSc01V2Customization>& Pair : Left)
+		for (const TPair<FString, FAutomotiveCustomization>& Pair : Left)
 		{
-			const FSc01V2Customization* Other = Right.Find(Pair.Key);
+			const FAutomotiveCustomization* Other = Right.Find(Pair.Key);
 			if (Other == nullptr || !(Pair.Value == *Other))
 			{
 				return false;
@@ -24,8 +24,8 @@ namespace
 	}
 }
 
-bool FSc01V2PaintCustomization::operator==(
-	const FSc01V2PaintCustomization& Other) const
+bool FAutomotivePaintCustomization::operator==(
+	const FAutomotivePaintCustomization& Other) const
 {
 	return ColorHex.Equals(Other.ColorHex, ESearchCase::IgnoreCase)
 		&& Metallic == Other.Metallic
@@ -35,14 +35,14 @@ bool FSc01V2PaintCustomization::operator==(
 		&& FlakeIntensity == Other.FlakeIntensity;
 }
 
-bool FSc01V2Customization::operator==(const FSc01V2Customization& Other) const
+bool FAutomotiveCustomization::operator==(const FAutomotiveCustomization& Other) const
 {
 	return Kind == Other.Kind
 		&& MaterialVariantId == Other.MaterialVariantId
 		&& Paint == Other.Paint;
 }
 
-bool USc01V2ConfigurationState::Initialize(USc01V2CatalogData* InCatalogAsset)
+bool UAutomotiveConfigurationState::Initialize(UAutomotiveCatalogData* InCatalogAsset)
 {
 	if (!IsValid(InCatalogAsset))
 	{
@@ -50,8 +50,8 @@ bool USc01V2ConfigurationState::Initialize(USc01V2CatalogData* InCatalogAsset)
 		return false;
 	}
 
-	Sc01V2::FCatalogIndex CandidateCatalog;
-	Sc01V2::FError Error;
+	AutomotiveCatalog::FCatalogIndex CandidateCatalog;
+	AutomotiveCatalog::FError Error;
 	if (!InCatalogAsset->BuildCatalogIndex(CandidateCatalog, Error))
 	{
 		LastErrorCode = Error.Code;
@@ -61,7 +61,7 @@ bool USc01V2ConfigurationState::Initialize(USc01V2CatalogData* InCatalogAsset)
 	TMap<FString, FString> Defaults = CandidateCatalog.GetCatalog().DefaultSelections;
 	for (const FString& SurfaceId : CandidateCatalog.GetCatalog().SelectionOrder)
 	{
-		const Sc01V2::FSurface* Surface = CandidateCatalog.FindSurface(SurfaceId);
+		const AutomotiveCatalog::FSurface* Surface = CandidateCatalog.FindSurface(SurfaceId);
 		const FString* DefaultOptionId =
 			CandidateCatalog.FindDefaultOptionIdForSurface(SurfaceId);
 		if (Surface == nullptr || (Surface->bRequired && DefaultOptionId == nullptr))
@@ -71,10 +71,10 @@ bool USc01V2ConfigurationState::Initialize(USc01V2CatalogData* InCatalogAsset)
 		}
 	}
 
-	Sc01V2::FConfiguration Derived;
-	if (!Sc01V2::DeriveConfiguration(
+	AutomotiveCatalog::FConfiguration Derived;
+	if (!AutomotiveCatalog::DeriveConfiguration(
 		Defaults,
-		Sc01V2::FCustomizations(),
+		AutomotiveCatalog::FCustomizations(),
 		CandidateCatalog,
 		Derived,
 		Error))
@@ -104,24 +104,24 @@ bool USc01V2ConfigurationState::Initialize(USc01V2CatalogData* InCatalogAsset)
 	return true;
 }
 
-bool USc01V2ConfigurationState::ApplyTransaction(
+bool UAutomotiveConfigurationState::ApplyTransaction(
 	const TMap<FString, FString>& InSelections,
-	const TMap<FString, FSc01V2Customization>& InCustomizations)
+	const TMap<FString, FAutomotiveCustomization>& InCustomizations)
 {
 	return TryCommit(InSelections, InCustomizations, true);
 }
 
-bool USc01V2ConfigurationState::CanApplyTransaction(
+bool UAutomotiveConfigurationState::CanApplyTransaction(
 	const TMap<FString, FString>& InSelections,
-	const TMap<FString, FSc01V2Customization>& InCustomizations) const
+	const TMap<FString, FAutomotiveCustomization>& InCustomizations) const
 {
 	if (!bInitialized)
 	{
 		return false;
 	}
-	Sc01V2::FConfiguration Ignored;
-	Sc01V2::FError Error;
-	return Sc01V2::DeriveConfiguration(
+	AutomotiveCatalog::FConfiguration Ignored;
+	AutomotiveCatalog::FError Error;
+	return AutomotiveCatalog::DeriveConfiguration(
 		InSelections,
 		ToDomainCustomizations(InCustomizations),
 		CatalogIndex,
@@ -129,7 +129,7 @@ bool USc01V2ConfigurationState::CanApplyTransaction(
 		Error);
 }
 
-bool USc01V2ConfigurationState::SelectOption(
+bool UAutomotiveConfigurationState::SelectOption(
 	const FString& SurfaceId,
 	const FString& OptionId)
 {
@@ -139,7 +139,7 @@ bool USc01V2ConfigurationState::SelectOption(
 		return false;
 	}
 	TMap<FString, FString> Candidate = Selections;
-	TMap<FString, FSc01V2Customization> CandidateCustomizations = Customizations;
+	TMap<FString, FAutomotiveCustomization> CandidateCustomizations = Customizations;
 	Candidate.Add(SurfaceId, OptionId);
 	if (Selections.FindRef(SurfaceId) != OptionId)
 	{
@@ -150,27 +150,27 @@ bool USc01V2ConfigurationState::SelectOption(
 	return TryCommit(Candidate, CandidateCustomizations, true);
 }
 
-bool USc01V2ConfigurationState::ClearOptionalSelection(const FString& SurfaceId)
+bool UAutomotiveConfigurationState::ClearOptionalSelection(const FString& SurfaceId)
 {
 	if (!bInitialized)
 	{
 		LastErrorCode = TEXT("STATE_NOT_INITIALIZED");
 		return false;
 	}
-	const Sc01V2::FSurface* Surface = CatalogIndex.FindSurface(SurfaceId);
+	const AutomotiveCatalog::FSurface* Surface = CatalogIndex.FindSurface(SurfaceId);
 	if (Surface == nullptr || Surface->bRequired)
 	{
 		LastErrorCode = TEXT("REQUIRED_SELECTION");
 		return false;
 	}
 	TMap<FString, FString> Candidate = Selections;
-	TMap<FString, FSc01V2Customization> CandidateCustomizations = Customizations;
+	TMap<FString, FAutomotiveCustomization> CandidateCustomizations = Customizations;
 	Candidate.Remove(SurfaceId);
 	CandidateCustomizations.Remove(SurfaceId);
 	return TryCommit(Candidate, CandidateCustomizations, true);
 }
 
-bool USc01V2ConfigurationState::SetMaterialVariant(
+bool UAutomotiveConfigurationState::SetMaterialVariant(
 	const FString& SurfaceId,
 	const FString& MaterialVariantId)
 {
@@ -179,46 +179,46 @@ bool USc01V2ConfigurationState::SetMaterialVariant(
 		LastErrorCode = TEXT("STATE_NOT_INITIALIZED");
 		return false;
 	}
-	TMap<FString, FSc01V2Customization> Candidate = Customizations;
-	FSc01V2Customization Value;
-	Value.Kind = ESc01V2CustomizationKind::MaterialVariant;
+	TMap<FString, FAutomotiveCustomization> Candidate = Customizations;
+	FAutomotiveCustomization Value;
+	Value.Kind = EAutomotiveCustomizationKind::MaterialVariant;
 	Value.MaterialVariantId = MaterialVariantId;
 	Candidate.Add(SurfaceId, MoveTemp(Value));
 	return TryCommit(Selections, Candidate, true);
 }
 
-bool USc01V2ConfigurationState::SetPaintCustomization(
+bool UAutomotiveConfigurationState::SetPaintCustomization(
 	const FString& SurfaceId,
-	const FSc01V2PaintCustomization& Paint)
+	const FAutomotivePaintCustomization& Paint)
 {
 	if (!bInitialized)
 	{
 		LastErrorCode = TEXT("STATE_NOT_INITIALIZED");
 		return false;
 	}
-	TMap<FString, FSc01V2Customization> Candidate = Customizations;
-	FSc01V2Customization Value;
-	Value.Kind = ESc01V2CustomizationKind::Paint;
+	TMap<FString, FAutomotiveCustomization> Candidate = Customizations;
+	FAutomotiveCustomization Value;
+	Value.Kind = EAutomotiveCustomizationKind::Paint;
 	Value.Paint = Paint;
 	Candidate.Add(SurfaceId, MoveTemp(Value));
 	return TryCommit(Selections, Candidate, true);
 }
 
-bool USc01V2ConfigurationState::ClearCustomization(const FString& SurfaceId)
+bool UAutomotiveConfigurationState::ClearCustomization(const FString& SurfaceId)
 {
 	if (!bInitialized)
 	{
 		LastErrorCode = TEXT("STATE_NOT_INITIALIZED");
 		return false;
 	}
-	TMap<FString, FSc01V2Customization> Candidate = Customizations;
+	TMap<FString, FAutomotiveCustomization> Candidate = Customizations;
 	Candidate.Remove(SurfaceId);
 	return TryCommit(Selections, Candidate, true);
 }
 
-bool USc01V2ConfigurationState::TryCommit(
+bool UAutomotiveConfigurationState::TryCommit(
 	const TMap<FString, FString>& CandidateSelections,
-	const TMap<FString, FSc01V2Customization>& CandidateCustomizations,
+	const TMap<FString, FAutomotiveCustomization>& CandidateCustomizations,
 	const bool bBroadcast)
 {
 	if (!bInitialized)
@@ -227,19 +227,19 @@ bool USc01V2ConfigurationState::TryCommit(
 		return false;
 	}
 
-	TMap<FString, FSc01V2Customization> NormalizedCustomizations =
+	TMap<FString, FAutomotiveCustomization> NormalizedCustomizations =
 		CandidateCustomizations;
-	for (TPair<FString, FSc01V2Customization>& Pair : NormalizedCustomizations)
+	for (TPair<FString, FAutomotiveCustomization>& Pair : NormalizedCustomizations)
 	{
-		if (Pair.Value.Kind == ESc01V2CustomizationKind::Paint)
+		if (Pair.Value.Kind == EAutomotiveCustomizationKind::Paint)
 		{
 			Pair.Value.Paint.ColorHex = Pair.Value.Paint.ColorHex.ToUpper();
 		}
 	}
 
-	Sc01V2::FConfiguration Derived;
-	Sc01V2::FError Error;
-	if (!Sc01V2::DeriveConfiguration(
+	AutomotiveCatalog::FConfiguration Derived;
+	AutomotiveCatalog::FError Error;
+	if (!AutomotiveCatalog::DeriveConfiguration(
 		CandidateSelections,
 		ToDomainCustomizations(NormalizedCustomizations),
 		CatalogIndex,
@@ -271,29 +271,29 @@ bool USc01V2ConfigurationState::TryCommit(
 	return true;
 }
 
-Sc01V2::FCustomizations USc01V2ConfigurationState::ToDomainCustomizations(
-	const TMap<FString, FSc01V2Customization>& Values)
+AutomotiveCatalog::FCustomizations UAutomotiveConfigurationState::ToDomainCustomizations(
+	const TMap<FString, FAutomotiveCustomization>& Values)
 {
-	Sc01V2::FCustomizations Result;
-	for (const TPair<FString, FSc01V2Customization>& Pair : Values)
+	AutomotiveCatalog::FCustomizations Result;
+	for (const TPair<FString, FAutomotiveCustomization>& Pair : Values)
 	{
-		if (Pair.Value.Kind == ESc01V2CustomizationKind::MaterialVariant)
+		if (Pair.Value.Kind == EAutomotiveCustomizationKind::MaterialVariant)
 		{
 			Result.Add(
 				Pair.Key,
-				Sc01V2::FCustomization::ForMaterialVariant(
+				AutomotiveCatalog::FCustomization::ForMaterialVariant(
 					Pair.Value.MaterialVariantId));
 			continue;
 		}
 
-		Sc01V2::FPaintCustomization Paint;
+		AutomotiveCatalog::FPaintCustomization Paint;
 		Paint.ColorHex = Pair.Value.Paint.ColorHex;
 		Paint.Metallic = Pair.Value.Paint.Metallic;
 		Paint.Roughness = Pair.Value.Paint.Roughness;
 		Paint.ClearCoat = Pair.Value.Paint.ClearCoat;
 		Paint.OrangePeel = Pair.Value.Paint.OrangePeel;
 		Paint.FlakeIntensity = Pair.Value.Paint.FlakeIntensity;
-		Result.Add(Pair.Key, Sc01V2::FCustomization::ForPaint(Paint));
+		Result.Add(Pair.Key, AutomotiveCatalog::FCustomization::ForPaint(Paint));
 	}
 	return Result;
 }

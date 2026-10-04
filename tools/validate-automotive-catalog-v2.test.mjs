@@ -10,15 +10,15 @@ import {
   validateCropManifest,
   validatePriceResult,
   validateSourceReferences,
-  validateSc01Fixtures
-} from "./validate-sc01-v2.mjs";
+  validateAutomotiveCatalogFixtures
+} from "./validate-automotive-catalog-v2.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const fixture = (name) =>
   readFile(resolve(root, "contracts", "fixtures", name), "utf8").then(JSON.parse);
 
 test("SC01 v2 草案 catalog、正反配置、价格结果与黄金向量聚合通过", async () => {
-  const result = await validateSc01Fixtures(root);
+  const result = await validateAutomotiveCatalogFixtures(root);
   assert.deepEqual(result, { optionCount: 154, vectorCount: 2 });
 });
 
@@ -100,7 +100,7 @@ test("拒绝缺选、跨 surface 选项、未知选项与伪造稳定身份", as
     { ...valid, renderKey: "sc01__forged__render-95c9a67d78364696f55a08dd" }
   ];
   for (const value of cases) {
-    assert.throws(() => validateConfiguration(value, catalog), /SC01 v2 契约校验失败/);
+    assert.throws(() => validateConfiguration(value, catalog), /车型目录 v2 契约校验失败/);
   }
 });
 

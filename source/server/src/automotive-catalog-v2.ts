@@ -4,9 +4,9 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RequestError } from "./data.js";
 
-export const SC01_SCHEMA_VERSION = "2.0.0";
+export const CATALOG_SCHEMA_VERSION = "2.0.0";
 
-export interface Sc01Pricing {
+export interface CatalogPricing {
   unitPriceMinor: number | null;
   quantity: number | null;
   pricingUnit: string;
@@ -15,7 +15,7 @@ export interface Sc01Pricing {
   quotable: false;
 }
 
-export interface Sc01Option {
+export interface CatalogOption {
   optionId: string;
   surfaceId: string;
   materialFamilyId: string | null;
@@ -31,17 +31,17 @@ export interface Sc01Option {
       variantId: string | null;
     } | null;
   };
-  pricing: Sc01Pricing;
+  pricing: CatalogPricing;
   [key: string]: unknown;
 }
 
-export interface Sc01MaterialVariant {
+export interface CatalogMaterialVariant {
   variantId: string;
   materialFamilyId: string;
   [key: string]: unknown;
 }
 
-export interface Sc01Catalog {
+export interface AutomotiveCatalog {
   schemaVersion: "2.0.0";
   catalogVersion: string;
   lifecycle: "draft";
@@ -57,16 +57,16 @@ export interface Sc01Catalog {
   defaultSelections: Record<string, string>;
   optionIdAliases: Record<string, string>;
   surfaces: Array<{ surfaceId: string; required: boolean; [key: string]: unknown }>;
-  materialVariants: Sc01MaterialVariant[];
-  options: Sc01Option[];
+  materialVariants: CatalogMaterialVariant[];
+  options: CatalogOption[];
   [key: string]: unknown;
 }
 
-export type Sc01Selections = Record<string, string>;
-export interface Sc01MaterialCustomization {
+export type CatalogSelections = Record<string, string>;
+export interface MaterialCustomization {
   materialVariantId: string;
 }
-export interface Sc01PaintCustomization {
+export interface PaintCustomization {
   colorHex: string;
   metallic: number;
   roughness: number;
@@ -74,20 +74,20 @@ export interface Sc01PaintCustomization {
   orangePeel: number;
   flakeIntensity: number;
 }
-export type Sc01Customization = Sc01MaterialCustomization | Sc01PaintCustomization;
-export type Sc01Customizations = Record<string, Sc01Customization>;
+export type CatalogCustomization = MaterialCustomization | PaintCustomization;
+export type CatalogCustomizations = Record<string, CatalogCustomization>;
 
-export interface Sc01Configuration {
+export interface VehicleConfiguration {
   schemaVersion: "2.0.0";
   catalogVersion: string;
   vehicleId: string;
   configurationId: string;
   renderKey: string;
-  selections: Sc01Selections;
-  customizations: Sc01Customizations;
+  selections: CatalogSelections;
+  customizations: CatalogCustomizations;
 }
 
-export interface Sc01PriceResult {
+export interface VehiclePriceResult {
   schemaVersion: "2.0.0";
   catalogVersion: string;
   vehicleId: string;
@@ -107,10 +107,10 @@ export interface Sc01PriceResult {
   blockingReasons: ["PRICE_UNCONFIRMED"];
 }
 
-export interface Sc01V2Data {
-  catalog: Sc01Catalog;
-  options: ReadonlyMap<string, Sc01Option>;
-  materialVariants: ReadonlyMap<string, Sc01MaterialVariant>;
+export interface AutomotiveCatalogData {
+  catalog: AutomotiveCatalog;
+  options: ReadonlyMap<string, CatalogOption>;
+  materialVariants: ReadonlyMap<string, CatalogMaterialVariant>;
   optionIdsBySurface: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
@@ -130,7 +130,7 @@ function defaultContractRoot(): string {
       // 兼容源码、编译产物和仓库根目录运行。
     }
   }
-  throw new Error("无法定位根目录 SC01 v2 fixture");
+  throw new Error("无法定位根目录车型目录 v2 fixture");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -141,10 +141,10 @@ function digest24(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex").slice(0, 24);
 }
 
-export function validateSc01Selections(
+export function validateCatalogSelections(
   value: unknown,
-  data: Sc01V2Data,
-): Sc01Selections {
+  data: AutomotiveCatalogData,
+): CatalogSelections {
   if (!isRecord(value)) {
     throw new RequestError(400, "INVALID_SELECTIONS", "selections 必须是对象");
   }
@@ -158,7 +158,7 @@ export function validateSc01Selections(
     );
   }
 
-  const selections: Sc01Selections = {};
+  const selections: CatalogSelections = {};
   for (const surfaceId of expected) {
     const submittedOptionId = value[surfaceId];
     const surface = data.catalog.surfaces.find((item) => item.surfaceId === surfaceId);
@@ -197,17 +197,17 @@ function isUnitInterval(value: unknown): value is number {
     && value <= 1;
 }
 
-export function validateSc01Customizations(
+export function validateCatalogCustomizations(
   value: unknown,
-  selections: Sc01Selections,
-  data: Sc01V2Data,
-): Sc01Customizations {
+  selections: CatalogSelections,
+  data: AutomotiveCatalogData,
+): CatalogCustomizations {
   if (value === undefined) return {};
   if (!isRecord(value)) {
     throw new RequestError(400, "INVALID_CUSTOMIZATIONS", "customizations 必须是对象");
   }
 
-  const result: Sc01Customizations = {};
+  const result: CatalogCustomizations = {};
   for (const surfaceId of data.catalog.selectionOrder) {
     if (!Object.hasOwn(value, surfaceId)) continue;
     const customization = value[surfaceId];
@@ -305,8 +305,8 @@ export function validateSc01Customizations(
 }
 
 function customizationLines(
-  catalog: Sc01Catalog,
-  customizations: Sc01Customizations,
+  catalog: AutomotiveCatalog,
+  customizations: CatalogCustomizations,
   renderRelevant?: ReadonlySet<string>,
 ): string[] {
   return catalog.selectionOrder.flatMap((surfaceId) => {
@@ -322,20 +322,20 @@ function customizationLines(
   });
 }
 
-export function deriveSc01Configuration(
+export function deriveVehicleConfiguration(
   value: unknown,
-  data: Sc01V2Data,
+  data: AutomotiveCatalogData,
   customizationValue?: unknown,
-): Sc01Configuration {
-  const selections = validateSc01Selections(value, data);
-  const customizations = validateSc01Customizations(
+): VehicleConfiguration {
+  const selections = validateCatalogSelections(value, data);
+  const customizations = validateCatalogCustomizations(
     customizationValue,
     selections,
     data,
   );
   const catalog = data.catalog;
   const header = [
-    `schemaVersion=${SC01_SCHEMA_VERSION}`,
+    `schemaVersion=${CATALOG_SCHEMA_VERSION}`,
     `catalogVersion=${catalog.catalogVersion}`,
     `vehicleId=${catalog.vehicle.vehicleId}`,
   ];
@@ -359,7 +359,7 @@ export function deriveSc01Configuration(
   ].join("\n");
 
   return {
-    schemaVersion: SC01_SCHEMA_VERSION,
+    schemaVersion: CATALOG_SCHEMA_VERSION,
     catalogVersion: catalog.catalogVersion,
     vehicleId: catalog.vehicle.vehicleId,
     configurationId: `cfg-${digest24(canonicalInput)}`,
@@ -370,12 +370,12 @@ export function deriveSc01Configuration(
   };
 }
 
-export function buildSc01PriceResult(
-  configuration: Sc01Configuration,
-  data: Sc01V2Data,
-): Sc01PriceResult {
+export function buildVehiclePriceResult(
+  configuration: VehicleConfiguration,
+  data: AutomotiveCatalogData,
+): VehiclePriceResult {
   return {
-    schemaVersion: SC01_SCHEMA_VERSION,
+    schemaVersion: CATALOG_SCHEMA_VERSION,
     catalogVersion: data.catalog.catalogVersion,
     vehicleId: data.catalog.vehicle.vehicleId,
     configurationId: configuration.configurationId,
@@ -420,10 +420,10 @@ export function buildSc01PriceResult(
   };
 }
 
-export function assertSc01Version(
+export function assertCatalogVersion(
   catalogVersion: unknown,
   vehicleId: unknown,
-  data: Sc01V2Data,
+  data: AutomotiveCatalogData,
 ): void {
   if (
     typeof catalogVersion !== "string" ||
@@ -435,7 +435,7 @@ export function assertSc01Version(
     throw new RequestError(
       409,
       "VERSION_CONFLICT",
-      "客户端 catalogVersion 与当前 SC01 v2 catalog 冲突",
+      "客户端 catalogVersion 与当前车型目录 v2 冲突",
     );
   }
   if (vehicleId !== data.catalog.vehicle.vehicleId) {
@@ -443,14 +443,14 @@ export function assertSc01Version(
   }
 }
 
-export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
+export function loadAutomotiveCatalog(contractRoot = defaultContractRoot()): AutomotiveCatalogData {
   const path = resolve(
     contractRoot,
     "fixtures/sc01.catalog.draft.v2.json",
   );
-  const catalog = JSON.parse(readFileSync(path, "utf8")) as Sc01Catalog;
+  const catalog = JSON.parse(readFileSync(path, "utf8")) as AutomotiveCatalog;
   if (
-    catalog.schemaVersion !== SC01_SCHEMA_VERSION ||
+    catalog.schemaVersion !== CATALOG_SCHEMA_VERSION ||
     catalog.lifecycle !== "draft" ||
     catalog.vehicle.basePriceMinor !== 22_980_000 ||
     catalog.vehicle.priceStatus !== "confirmed" ||
@@ -482,19 +482,19 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
     )
   ) {
     throw new Error(
-      "SC01 v2 catalog 必须包含确认基础价、显式标配和完整顺序的 2.0.0 draft",
+      "车型目录 v2 必须包含确认基础价、显式标配和完整顺序的 2.0.0 draft",
     );
   }
 
-  const options = new Map<string, Sc01Option>();
-  const materialVariants = new Map<string, Sc01MaterialVariant>();
+  const options = new Map<string, CatalogOption>();
+  const materialVariants = new Map<string, CatalogMaterialVariant>();
   const optionIdsBySurface = new Map<string, Set<string>>();
   for (const surfaceId of catalog.selectionOrder) {
     optionIdsBySurface.set(surfaceId, new Set());
   }
   for (const option of catalog.options) {
     if (options.has(option.optionId)) {
-      throw new Error(`SC01 v2 optionId 重复：${option.optionId}`);
+      throw new Error(`车型目录 v2 optionId 重复：${option.optionId}`);
     }
     if (
       (
@@ -513,7 +513,7 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
         )
       )
     ) {
-      throw new Error(`SC01 v2 选项 ${option.optionId} 价格状态非法`);
+      throw new Error(`车型目录 v2 选项 ${option.optionId} 价格状态非法`);
     }
     options.set(option.optionId, option);
     optionIdsBySurface.get(option.surfaceId)?.add(option.optionId);
@@ -525,19 +525,19 @@ export function loadSc01V2(contractRoot = defaultContractRoot()): Sc01V2Data {
       || !options.has(optionId)
     ) {
       throw new Error(
-        `SC01 v2 旧 optionId 迁移非法：${legacyOptionId} -> ${String(optionId)}`,
+        `车型目录 v2 旧 optionId 迁移非法：${legacyOptionId} -> ${String(optionId)}`,
       );
     }
   }
   for (const variant of catalog.materialVariants) {
     if (materialVariants.has(variant.variantId)) {
-      throw new Error(`SC01 v2 variantId 重复：${variant.variantId}`);
+      throw new Error(`车型目录 v2 variantId 重复：${variant.variantId}`);
     }
     materialVariants.set(variant.variantId, variant);
   }
   for (const surfaceId of catalog.selectionOrder) {
     if (optionIdsBySurface.get(surfaceId)?.size === 0) {
-      throw new Error(`SC01 v2 必选表面 ${surfaceId} 没有选项`);
+      throw new Error(`车型目录 v2 必选表面 ${surfaceId} 没有选项`);
     }
   }
   return { catalog, options, materialVariants, optionIdsBySurface };

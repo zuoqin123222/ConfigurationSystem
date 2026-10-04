@@ -2,10 +2,10 @@
 
 #include "Engine/AssetManager.h"
 #include "ConfiguratorVehicleActor.h"
-#include "Sc01MaterialBinder.h"
-#include "Sc01MaterialLibrary.h"
-#include "Sc01V2CatalogData.h"
-#include "Sc01V2ConfigurationState.h"
+#include "AutomotiveMaterialBinder.h"
+#include "AutomotiveMaterialLibrary.h"
+#include "AutomotiveCatalogData.h"
+#include "AutomotiveConfigurationState.h"
 
 namespace CarConfiguratorCatalog
 {
@@ -62,28 +62,29 @@ void UCarConfiguratorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		State->Initialize(BasePriceMinor, Options, Templates, Defaults),
 		TEXT("内置 MVP catalog 必须能够初始化 UCarConfigurationState。"));
 
-	const FPrimaryAssetId Sc01CatalogId(
-		USc01V2CatalogData::PrimaryAssetType,
-		USc01V2CatalogData::DefaultAssetName);
-	const FSoftObjectPath Sc01CatalogPath =
-		UAssetManager::Get().GetPrimaryAssetPath(Sc01CatalogId);
-	Sc01V2Catalog = Cast<USc01V2CatalogData>(Sc01CatalogPath.TryLoad());
-	if (IsValid(Sc01V2Catalog))
+const FPrimaryAssetId CatalogAssetId(
+		UAutomotiveCatalogData::PrimaryAssetType,
+		UAutomotiveCatalogData::DefaultAssetName);
+	const FSoftObjectPath CatalogAssetPath =
+		UAssetManager::Get().GetPrimaryAssetPath(CatalogAssetId);
+	AutomotiveCatalogData =
+		Cast<UAutomotiveCatalogData>(CatalogAssetPath.TryLoad());
+	if (IsValid(AutomotiveCatalogData))
 	{
-		Sc01V2State = NewObject<USc01V2ConfigurationState>(this);
-		ensureAlwaysMsgf(
-			Sc01V2State->Initialize(Sc01V2Catalog),
-			TEXT("DA_SC01Catalog 必须能够初始化独立 SC01 v2 状态。"));
+		AutomotiveConfigurationState =
+			NewObject<UAutomotiveConfigurationState>(this);
+		checkf(
+			AutomotiveConfigurationState->Initialize(AutomotiveCatalogData),
+			TEXT("DA_SC01Catalog 必须能够初始化独立车型目录状态。"));
 	}
-
 	const FPrimaryAssetId MaterialLibraryId(
-		USc01MaterialLibrary::PrimaryAssetType,
-		USc01MaterialLibrary::DefaultAssetName);
-	Sc01MaterialLibrary = Cast<USc01MaterialLibrary>(
+		UAutomotiveMaterialLibrary::PrimaryAssetType,
+		UAutomotiveMaterialLibrary::DefaultAssetName);
+	AutomotiveMaterialLibrary = Cast<UAutomotiveMaterialLibrary>(
 		UAssetManager::Get().GetPrimaryAssetPath(MaterialLibraryId).TryLoad());
-	if (IsValid(Sc01V2State) && IsValid(Sc01MaterialLibrary))
+	if (IsValid(AutomotiveConfigurationState) && IsValid(AutomotiveMaterialLibrary))
 	{
-		Sc01MaterialBinder = NewObject<USc01MaterialBinder>(this);
+		AutomotiveMaterialBinder = NewObject<UAutomotiveMaterialBinder>(this);
 	}
 
 	const FText OptionNames[] = {
@@ -122,14 +123,14 @@ void UCarConfiguratorSubsystem::Deinitialize()
 		State->OnChanged.RemoveDynamic(this, &UCarConfiguratorSubsystem::HandleStateChanged);
 	}
 	RegisteredVehicle = nullptr;
-	if (IsValid(Sc01MaterialBinder))
+	if (IsValid(AutomotiveMaterialBinder))
 	{
-		Sc01MaterialBinder->Unbind();
+		AutomotiveMaterialBinder->Unbind();
 	}
-	Sc01MaterialBinder = nullptr;
-	Sc01MaterialLibrary = nullptr;
-	Sc01V2State = nullptr;
-	Sc01V2Catalog = nullptr;
+	AutomotiveMaterialBinder = nullptr;
+	AutomotiveMaterialLibrary = nullptr;
+	AutomotiveConfigurationState = nullptr;
+	AutomotiveCatalogData = nullptr;
 	State = nullptr;
 	DisplayOptions.Reset();
 	DisplayTemplates.Reset();
@@ -183,15 +184,15 @@ void UCarConfiguratorSubsystem::RegisterVehicle(
 	{
 		RegisteredVehicle->ApplyConfiguration(State->GetSelection());
 	}
-	if (IsValid(RegisteredVehicle) && IsValid(Sc01MaterialBinder)
-		&& IsValid(Sc01V2State) && IsValid(Sc01MaterialLibrary))
+if (IsValid(RegisteredVehicle) && IsValid(AutomotiveMaterialBinder)
+		&& IsValid(AutomotiveConfigurationState) && IsValid(AutomotiveMaterialLibrary))
 	{
-		ensureAlwaysMsgf(
-			Sc01MaterialBinder->Bind(
-				Sc01V2State,
-				Sc01MaterialLibrary,
+		checkf(
+			AutomotiveMaterialBinder->Bind(
+				AutomotiveConfigurationState,
+				AutomotiveMaterialLibrary,
 				RegisteredVehicle),
-			TEXT("SC01 v2 材质 Binder 必须能够绑定占位车的明确代理槽。"));
+			TEXT("车型目录材质 Binder 必须能够绑定占位车的明确代理槽。"));
 	}
 }
 
@@ -200,9 +201,9 @@ void UCarConfiguratorSubsystem::UnregisterVehicle(
 {
 	if (RegisteredVehicle == Vehicle)
 	{
-		if (IsValid(Sc01MaterialBinder))
+		if (IsValid(AutomotiveMaterialBinder))
 		{
-			Sc01MaterialBinder->Unbind();
+			AutomotiveMaterialBinder->Unbind();
 		}
 		RegisteredVehicle = nullptr;
 	}

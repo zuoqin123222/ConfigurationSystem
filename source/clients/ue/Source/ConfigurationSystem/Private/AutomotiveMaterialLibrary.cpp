@@ -1,16 +1,17 @@
-#include "Sc01MaterialLibrary.h"
+#include "AutomotiveMaterialLibrary.h"
 
 #include "Materials/MaterialInterface.h"
 
-const FPrimaryAssetType USc01MaterialLibrary::PrimaryAssetType(TEXT("Sc01MaterialLibrary"));
-const FName USc01MaterialLibrary::DefaultAssetName(TEXT("DA_SC01MaterialLibrary"));
+const FPrimaryAssetType UAutomotiveMaterialLibrary::PrimaryAssetType(
+	TEXT("AutomotiveMaterialLibrary"));
+const FName UAutomotiveMaterialLibrary::DefaultAssetName(TEXT("DA_SC01MaterialLibrary"));
 
-FPrimaryAssetId USc01MaterialLibrary::GetPrimaryAssetId() const
+FPrimaryAssetId UAutomotiveMaterialLibrary::GetPrimaryAssetId() const
 {
 	return FPrimaryAssetId(PrimaryAssetType, GetFName());
 }
 
-UMaterialInterface* USc01MaterialLibrary::LoadInteriorMaterial(
+UMaterialInterface* UAutomotiveMaterialLibrary::LoadInteriorMaterial(
 	const FString& MaterialFamilyId) const
 {
 	const TSoftObjectPtr<UMaterialInterface>* Material = nullptr;

@@ -3,7 +3,7 @@
 #include "CarConfigurationState.h"
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
-#include "Sc01V2ConfigurationState.h"
+#include "AutomotiveConfigurationState.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "ConfiguratorExperienceSaveGame.generated.h"
 
@@ -27,13 +27,13 @@ public:
 
 	/** v2 状态可选存在；旧版 schema=1 存档仍按原路径读取。 */
 	UPROPERTY(SaveGame)
-	bool bHasSc01V2State = false;
+	bool bHasAutomotiveState = false;
 
 	UPROPERTY(SaveGame)
-	TMap<FString, FString> Sc01V2Selections;
+	TMap<FString, FString> AutomotiveSelections;
 
 	UPROPERTY(SaveGame)
-	TMap<FString, FSc01V2Customization> Sc01V2Customizations;
+	TMap<FString, FAutomotiveCustomization> AutomotiveCustomizations;
 };
 
 /** 仅将配置、环境与 UI 快照序列化，并通过 final/backup/temp 可靠替换。 */

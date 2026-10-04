@@ -48,7 +48,7 @@ import {
 import ExperienceControls from './ExperienceControls'
 import InlineColorPicker from './InlineColorPicker'
 
-const CACHE_KEY = 'sc01-v2-configurator'
+const CACHE_KEY = 'automotive-v2-configurator'
 const SRGB_TO_LINEAR_TABLE = Array.from({ length: 256 }, (_, index) => {
   const value = index / 255
   return value <= 0.04045

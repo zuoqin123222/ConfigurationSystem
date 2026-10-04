@@ -1,43 +1,43 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
-#include "Sc01MaterialBinder.h"
+#include "AutomotiveMaterialBinder.h"
 
 #include "ConfiguratorVehicleActor.h"
 #include "Components/MeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/AutomationTest.h"
-#include "Sc01MaterialLibrary.h"
-#include "Sc01V2CatalogData.h"
-#include "Sc01V2ConfigurationState.h"
+#include "AutomotiveMaterialLibrary.h"
+#include "AutomotiveCatalogData.h"
+#include "AutomotiveConfigurationState.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSc01MaterialBinderAutomationTest,
-	"ConfigurationSystem.Runtime.SC01Materials.Binder",
+	FAutomotiveMaterialBinderAutomationTest,
+	"ConfigurationSystem.Runtime.AutomotiveMaterials.Binder",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FSc01MaterialBinderAutomationTest::RunTest(const FString& Parameters)
+bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 {
 	(void)Parameters;
-	USc01V2CatalogData* Catalog = LoadObject<USc01V2CatalogData>(
+	UAutomotiveCatalogData* Catalog = LoadObject<UAutomotiveCatalogData>(
 		nullptr,
 		TEXT("/Game/SC01/DA_SC01Catalog.DA_SC01Catalog"));
-	USc01MaterialLibrary* Library = LoadObject<USc01MaterialLibrary>(
+	UAutomotiveMaterialLibrary* Library = LoadObject<UAutomotiveMaterialLibrary>(
 		nullptr,
 		TEXT("/Game/SC01/Materials/DA_SC01MaterialLibrary.DA_SC01MaterialLibrary"));
 	TestNotNull(TEXT("加载 v2 catalog"), Catalog);
-	TestNotNull(TEXT("加载 Sc01MaterialLibrary"), Library);
+	TestNotNull(TEXT("加载 AutomotiveMaterialLibrary"), Library);
 	if (Catalog == nullptr || Library == nullptr)
 	{
 		return false;
 	}
 
-	USc01V2ConfigurationState* State =
-		NewObject<USc01V2ConfigurationState>(GetTransientPackage());
+	UAutomotiveConfigurationState* State =
+		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
 	TestTrue(TEXT("初始化 v2 状态"), State->Initialize(Catalog));
 	AConfiguratorVehicleActor* Vehicle =
 		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
-	USc01MaterialBinder* Binder =
-		NewObject<USc01MaterialBinder>(GetTransientPackage());
+	UAutomotiveMaterialBinder* Binder =
+		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
 	TestTrue(TEXT("绑定明确车漆/内饰代理槽"), Binder->Bind(State, Library, Vehicle));
 	TestNotNull(TEXT("找到车漆代理槽"), Binder->GetPaintComponent());
 	TestNotNull(TEXT("找到唯一内饰代理槽"), Binder->GetInteriorComponent());
@@ -59,7 +59,7 @@ bool FSc01MaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(
 			*FString::Printf(TEXT("选择 %s"), Case.OptionId),
-			State->SelectOption(USc01MaterialBinder::InteriorProxySurfaceId, Case.OptionId));
+			State->SelectOption(UAutomotiveMaterialBinder::InteriorProxySurfaceId, Case.OptionId));
 		TestEqual(
 			*FString::Printf(TEXT("代理槽切换到 %s"), Case.FamilyId),
 			Binder->GetAppliedInteriorFamilyId(),
@@ -72,9 +72,9 @@ bool FSc01MaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("选择自定义车漆 option"),
 		State->SelectOption(
-			USc01MaterialBinder::PaintSurfaceId,
+			UAutomotiveMaterialBinder::PaintSurfaceId,
 			TEXT("body-cover-custom")));
-	FSc01V2PaintCustomization Paint;
+	FAutomotivePaintCustomization Paint;
 	Paint.ColorHex = TEXT("#336699");
 	Paint.Metallic = 0.45;
 	Paint.Roughness = 0.25;
@@ -83,7 +83,7 @@ bool FSc01MaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	Paint.FlakeIntensity = 0.3;
 	TestTrue(
 		TEXT("提交 v2 自定义车漆"),
-		State->SetPaintCustomization(USc01MaterialBinder::PaintSurfaceId, Paint));
+		State->SetPaintCustomization(UAutomotiveMaterialBinder::PaintSurfaceId, Paint));
 
 	UMaterialInstanceDynamic* PaintInstance = Binder->GetPaintMaterialInstance();
 	TestNotNull(TEXT("车身代理使用动态车漆实例"), PaintInstance);
