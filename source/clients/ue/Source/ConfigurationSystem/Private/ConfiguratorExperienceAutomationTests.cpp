@@ -14,10 +14,12 @@
 #include "Components/SceneComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Components/SkyLightComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
 #include "HAL/FileManager.h"
+#include "Materials/MaterialInterface.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "Misc/PackageName.h"
@@ -658,11 +660,70 @@ bool FVehicleAnimSequenceFramePlayerAutomationTest::RunTest(
 		AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(false, true));
 	TestTrue(TEXT("缺少 sequence 时允许静态代理回退"),
 		AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(true, false));
+	const TPair<FName, FName> ExpectedSkeletalMaterials[] = {
+		{TEXT("CS_Validation_LightRed"), TEXT("M_A5_LightRed")},
+		{TEXT("CS_Validation_Glass"), TEXT("M_A5_Glass")},
+		{TEXT("CS_Validation_Paint"), TEXT("M_A5_Paint")},
+		{TEXT("CS_Validation_Plastic"), TEXT("M_A5_Plastic")},
+		{TEXT("CS_Validation_Interior"), TEXT("M_A5_Interior")},
+		{TEXT("CS_Validation_Rubber"), TEXT("M_A5_Rubber")},
+		{TEXT("CS_Validation_Metal"), TEXT("M_A5_Metal")},
+		{TEXT("CS_Validation_LightClear"), TEXT("M_A5_LightClear")}
+	};
+	for (const TPair<FName, FName>& Expected : ExpectedSkeletalMaterials)
+	{
+		TestEqual(
+			*FString::Printf(TEXT("%s 按 slot 名解析材质"), *Expected.Key.ToString()),
+			AConfiguratorVehicleActor::GetAuthorizedMaterialNameForSkeletalSlot(Expected.Key),
+			Expected.Value);
+	}
+	TestTrue(
+		TEXT("未知 slot 不按数组序号误配材质"),
+		AConfiguratorVehicleActor::GetAuthorizedMaterialNameForSkeletalSlot(
+			TEXT("UnknownSlot")).IsNone());
 	AutomotiveCatalog::FCatalog InvalidIdCatalog = Catalog;
 	InvalidIdCatalog.Animations[0].AnimationId = TEXT("hood--open");
 	TestFalse(TEXT("UE 在配置播放器前拒绝非 stable animation ID"),
 		AConfiguratorVehicleActor::BuildAnimationClips(
 			InvalidIdCatalog, CatalogClips));
+
+	AutomotiveCatalog::FCatalog AssetCatalog = Catalog;
+	AssetCatalog.SkeletalMeshPath = TEXT(
+		"/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
+		"automotive-configurator-audi-a5-rigged-v2."
+		"automotive-configurator-audi-a5-rigged-v2");
+	AssetCatalog.SequencePath = TEXT(
+		"/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
+		"automotive-configurator-audi-a5-rigged-v2_Anim."
+		"automotive-configurator-audi-a5-rigged-v2_Anim");
+	AConfiguratorVehicleActor* AnimatedVehicle =
+		NewObject<AConfiguratorVehicleActor>();
+	TestTrue(
+		TEXT("真实骨骼网格与动画可配置"),
+		AnimatedVehicle->ConfigureAnimationFromCatalog(AssetCatalog));
+	USkeletalMeshComponent* SkeletalVehicle =
+		FindObjectFast<USkeletalMeshComponent>(AnimatedVehicle, TEXT("SkeletalVehicle"));
+	if (TestNotNull(TEXT("动画车辆包含骨骼网格组件"), SkeletalVehicle))
+	{
+		for (const TPair<FName, FName>& Expected : ExpectedSkeletalMaterials)
+		{
+			const int32 SlotIndex = SkeletalVehicle->GetMaterialIndex(Expected.Key);
+			TestTrue(
+				*FString::Printf(TEXT("骨骼网格包含实际 slot %s"), *Expected.Key.ToString()),
+				SlotIndex != INDEX_NONE);
+			if (SlotIndex != INDEX_NONE)
+			{
+				const UMaterialInterface* Material =
+					SkeletalVehicle->GetMaterial(SlotIndex);
+				TestTrue(
+					*FString::Printf(
+						TEXT("slot %s 绑定 %s"),
+						*Expected.Key.ToString(),
+						*Expected.Value.ToString()),
+					Material != nullptr && Material->GetFName() == Expected.Value);
+			}
+		}
+	}
 
 	AConfiguratorVehicleActor* Vehicle =
 		NewObject<AConfiguratorVehicleActor>();
@@ -763,13 +824,36 @@ bool FPathTracingLightingRigAutomationTest::RunTest(const FString& Parameters)
 			RigCDO->GetDirectionalLightComponent());
 		TestNotNull(TEXT("Rig 包含 PointLight"), RigCDO->GetPointLightComponent());
 		TestNotNull(TEXT("Rig 包含 RectLight"), RigCDO->GetRectLightComponent());
-		const UPostProcessComponent* Exposure = RigCDO->GetExposureComponent();
-		if (TestNotNull(TEXT("Rig 包含仅随 Actor 生命周期存在的曝光组件"), Exposure))
+		const UStaticMeshComponent* Floor = RigCDO->GetFloorComponent();
+		if (TestNotNull(TEXT("Rig 包含仅随自身生命周期存在的 PT 地板"), Floor))
 		{
-			TestTrue(TEXT("PT 曝光为全局手动曝光"),
-				Exposure->bUnbound
-					&& Exposure->Settings.bOverride_AutoExposureMethod
-					&& Exposure->Settings.AutoExposureMethod == AEM_Manual);
+			TestTrue(TEXT("PT 地板由 Rig 拥有并挂在 Rig 根组件"),
+				Floor->GetOwner() == RigCDO
+					&& Floor->GetAttachParent() == RigCDO->GetRootComponent());
+			TestTrue(TEXT("PT 地板使用 Engine Cube"),
+				Floor->GetStaticMesh() != nullptr
+					&& Floor->GetStaticMesh()->GetFName() == TEXT("Cube"));
+			TestTrue(TEXT("PT 地板水平尺寸为 18m × 18m"),
+				FMath::IsNearlyEqual(
+					Floor->GetStaticMesh()->GetBounds().BoxExtent.X
+						* Floor->GetRelativeScale3D().X * 2.0,
+					1800.0,
+					0.01)
+					&& FMath::IsNearlyEqual(
+						Floor->GetStaticMesh()->GetBounds().BoxExtent.Y
+							* Floor->GetRelativeScale3D().Y * 2.0,
+						1800.0,
+						0.01));
+			TestTrue(TEXT("PT 薄地板顶面位于 Z=0"),
+				FMath::IsNearlyZero(
+					Floor->GetRelativeLocation().Z
+						+ Floor->GetStaticMesh()->GetBounds().BoxExtent.Z
+							* Floor->GetRelativeScale3D().Z,
+					0.01));
+			const UMaterialInterface* FloorMaterial = Floor->GetMaterial(0);
+			TestTrue(TEXT("PT 地板显式使用 BasicShapeMaterial"),
+				FloorMaterial != nullptr
+					&& FloorMaterial->GetFName() == TEXT("BasicShapeMaterial"));
 		}
 	}
 	return true;

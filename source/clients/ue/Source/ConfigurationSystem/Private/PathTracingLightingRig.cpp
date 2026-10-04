@@ -2,11 +2,14 @@
 
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
-#include "Components/PostProcessComponent.h"
 #include "Components/RectLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkyLightComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/TextureCube.h"
+#include "Materials/MaterialInterface.h"
+#include "UObject/ConstructorHelpers.h"
 
 const FName APathTracingLightingRig::RigActorTag(
 	TEXT("Configurator.PathTracing.LightingRig"));
@@ -22,7 +25,6 @@ FPathTracingLightingPreset FPathTracingLightingPreset::ForEnvironment(
 		Preset.DirectionalIntensity = 90000.0f;
 		Preset.PointIntensity = 1800.0f;
 		Preset.RectIntensity = 5000.0f;
-		Preset.ExposureBias = -0.5f;
 		Preset.DirectionalRotation = FRotator(-45.0, -35.0, 0.0);
 	}
 	else
@@ -32,7 +34,6 @@ FPathTracingLightingPreset FPathTracingLightingPreset::ForEnvironment(
 		Preset.DirectionalIntensity = 50000.0f;
 		Preset.PointIntensity = 2500.0f;
 		Preset.RectIntensity = 8000.0f;
-		Preset.ExposureBias = 0.0f;
 		Preset.DirectionalRotation = FRotator(-35.0, -135.0, 0.0);
 	}
 	return Preset;
@@ -80,15 +81,18 @@ APathTracingLightingRig::APathTracingLightingRig()
 	RectLight->SetAttenuationRadius(1200.0f);
 	RectLight->SetCastShadows(true);
 
-	Exposure = CreateDefaultSubobject<UPostProcessComponent>(
-		TEXT("PathTracingExposure"));
-	Exposure->SetupAttachment(SceneRoot);
-	Exposure->bUnbound = true;
-	Exposure->Priority = 10000.0f;
-	Exposure->BlendWeight = 1.0f;
-	Exposure->Settings.bOverride_AutoExposureMethod = true;
-	Exposure->Settings.AutoExposureMethod = AEM_Manual;
-	Exposure->Settings.bOverride_AutoExposureBias = true;
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(
+		TEXT("/Engine/BasicShapes/Cube.Cube"));
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	Floor = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PathTracingFloor"));
+	Floor->SetupAttachment(SceneRoot);
+	Floor->SetMobility(EComponentMobility::Movable);
+	Floor->SetStaticMesh(CubeMesh.Object);
+	Floor->SetMaterial(0, BasicMaterial.Object);
+	Floor->SetRelativeLocation(FVector(0.0, 0.0, -5.0));
+	Floor->SetRelativeScale3D(FVector(18.0, 18.0, 0.1));
+	Floor->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 bool APathTracingLightingRig::ApplyEnvironment(const int32 InEnvironmentIndex)
@@ -109,6 +113,5 @@ bool APathTracingLightingRig::ApplyEnvironment(const int32 InEnvironmentIndex)
 	DirectionalLight->SetIntensity(Preset.DirectionalIntensity);
 	PointLight->SetIntensity(Preset.PointIntensity);
 	RectLight->SetIntensity(Preset.RectIntensity);
-	Exposure->Settings.AutoExposureBias = Preset.ExposureBias;
 	return true;
 }

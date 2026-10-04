@@ -112,6 +112,28 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	SkeletalVehicle->SetupAttachment(ContentRoot);
 	SkeletalVehicle->SetVisibility(false);
 	SkeletalVehicle->SetHiddenInGame(true);
+	const auto AddAuthorizedSkeletalMaterial = [this](
+		const FName SlotName,
+		const TCHAR* MaterialName)
+	{
+		const FString MaterialPath = FString::Printf(
+			TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/%s.%s"),
+			MaterialName,
+			MaterialName);
+		if (UMaterialInterface* Material =
+			ConfiguratorVehicle::LoadOptionalAsset<UMaterialInterface>(*MaterialPath))
+		{
+			AuthorizedSkeletalMaterials.Add(SlotName, Material);
+		}
+	};
+	AddAuthorizedSkeletalMaterial(TEXT("CS_Validation_Paint"), TEXT("M_A5_Paint"));
+	AddAuthorizedSkeletalMaterial(TEXT("CS_Validation_Metal"), TEXT("M_A5_Metal"));
+	AddAuthorizedSkeletalMaterial(TEXT("CS_Validation_Rubber"), TEXT("M_A5_Rubber"));
+	AddAuthorizedSkeletalMaterial(TEXT("CS_Validation_Interior"), TEXT("M_A5_Interior"));
+	AddAuthorizedSkeletalMaterial(TEXT("CS_Validation_Plastic"), TEXT("M_A5_Plastic"));
+	AddAuthorizedSkeletalMaterial(TEXT("CS_Validation_Glass"), TEXT("M_A5_Glass"));
+	AddAuthorizedSkeletalMaterial(TEXT("CS_Validation_LightClear"), TEXT("M_A5_LightClear"));
+	AddAuthorizedSkeletalMaterial(TEXT("CS_Validation_LightRed"), TEXT("M_A5_LightRed"));
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(
 		TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -489,6 +511,7 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 	}
 
 	SkeletalVehicle->SetSkeletalMeshAsset(WholeVehicleMesh);
+	ApplyAuthorizedSkeletalMaterials();
 	TArray<FVehicleAnimationClip> Clips;
 	bAnimationSequenceReady =
 		BuildAnimationClips(Catalog, Clips)
@@ -504,6 +527,43 @@ bool AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(
 	const bool bHasSequence)
 {
 	return !bHasSkeletalMesh || !bHasSequence;
+}
+
+FName AConfiguratorVehicleActor::GetAuthorizedMaterialNameForSkeletalSlot(
+	const FName SlotName)
+{
+	if (SlotName == TEXT("CS_Validation_Paint")) { return TEXT("M_A5_Paint"); }
+	if (SlotName == TEXT("CS_Validation_Metal")) { return TEXT("M_A5_Metal"); }
+	if (SlotName == TEXT("CS_Validation_Rubber")) { return TEXT("M_A5_Rubber"); }
+	if (SlotName == TEXT("CS_Validation_Interior")) { return TEXT("M_A5_Interior"); }
+	if (SlotName == TEXT("CS_Validation_Plastic")) { return TEXT("M_A5_Plastic"); }
+	if (SlotName == TEXT("CS_Validation_Glass")) { return TEXT("M_A5_Glass"); }
+	if (SlotName == TEXT("CS_Validation_LightClear")) { return TEXT("M_A5_LightClear"); }
+	if (SlotName == TEXT("CS_Validation_LightRed")) { return TEXT("M_A5_LightRed"); }
+	return NAME_None;
+}
+
+void AConfiguratorVehicleActor::ApplyAuthorizedSkeletalMaterials()
+{
+	if (!IsValid(SkeletalVehicle) || SkeletalVehicle->GetSkeletalMeshAsset() == nullptr)
+	{
+		return;
+	}
+
+	for (const FName SlotName : SkeletalVehicle->GetMaterialSlotNames())
+	{
+		if (GetAuthorizedMaterialNameForSkeletalSlot(SlotName).IsNone())
+		{
+			continue;
+		}
+		const TObjectPtr<UMaterialInterface>* Material =
+			AuthorizedSkeletalMaterials.Find(SlotName);
+		const int32 SlotIndex = SkeletalVehicle->GetMaterialIndex(SlotName);
+		if (Material != nullptr && IsValid(Material->Get()) && SlotIndex != INDEX_NONE)
+		{
+			SkeletalVehicle->SetMaterial(SlotIndex, Material->Get());
+		}
+	}
 }
 
 void AConfiguratorVehicleActor::SetStaticProxyVisible(const bool bVisible)
