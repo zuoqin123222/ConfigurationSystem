@@ -383,6 +383,32 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   font: 10px ui-monospace, SFMono-Regular, Consolas, monospace;
   text-transform: uppercase;
 }
+.finish-control {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  color: #666a62;
+  font-size: 10px;
+}
+.finish-control > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.finish-control button {
+  min-height: 34px;
+  border: 1px solid #d2d1ca;
+  border-radius: 5px;
+  color: #555950;
+  background: #fff;
+  cursor: pointer;
+}
+.finish-control button.selected {
+  border-color: #292c27;
+  color: #fff;
+  background: #292c27;
+}
 .inline-color-picker { display: grid; gap: 8px; }
 .color-picker-plane {
   position: relative;
@@ -509,6 +535,17 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   color: #111; background: #e8e8e5;
 }
 .control-popover button[aria-checked="true"] { box-shadow: inset 2px 0 var(--accent); }
+.camera-popover {
+  grid-template-columns: repeat(6, max-content);
+  min-width: 0;
+}
+.camera-popover button {
+  min-width: 52px;
+  padding-right: 9px;
+  padding-left: 9px;
+  text-align: center;
+  white-space: nowrap;
+}
 .quality-control { position: fixed; z-index: 22; top: 20px; right: 20px; }
 .icon-button {
   width: 38px; height: 38px; border: 1px solid #d5d5d2; border-radius: 50%;
@@ -792,6 +829,7 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .controls-view .experience-toolbar {
   bottom: 8px;
+  overflow: visible;
   scrollbar-width: none;
 }
 .controls-view .experience-toolbar::-webkit-scrollbar {
