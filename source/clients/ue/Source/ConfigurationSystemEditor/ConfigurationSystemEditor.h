@@ -6,6 +6,7 @@
 class IConsoleObject;
 class SDockTab;
 class FSpawnTabArgs;
+class UCameraComponent;
 
 /** 注册 Editor-only 探针与管理员资产接入界面。 */
 class FConfigurationSystemEditorModule final : public IModuleInterface
@@ -13,6 +14,10 @@ class FConfigurationSystemEditorModule final : public IModuleInterface
 public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+	static void ApplyDefaultCameraFov(
+		UCameraComponent* CameraComponent,
+		float DefaultFov,
+		bool bCameraWasCreated);
 
 private:
 	void RegisterMenus();
