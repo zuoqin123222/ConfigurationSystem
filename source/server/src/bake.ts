@@ -276,16 +276,26 @@ export function validateBakeManifest(
       && renderer.samplesPerPixel >= 0,
     "renderer.samplesPerPixel 非法",
   );
-  assert(
+  const hasValidOutputSize =
     typeof renderer.outputWidth === "number"
-      && Number.isInteger(renderer.outputWidth)
-      && renderer.outputWidth > 0
-      && typeof renderer.outputHeight === "number"
-      && Number.isInteger(renderer.outputHeight)
-      && renderer.outputHeight > 0,
+    && Number.isInteger(renderer.outputWidth)
+    && renderer.outputWidth > 0
+    && typeof renderer.outputHeight === "number"
+    && Number.isInteger(renderer.outputHeight)
+    && renderer.outputHeight > 0;
+  const isLegacyV1WithoutOutputSize =
+    parsed.schemaVersion === "1.0.0"
+    && renderer.outputWidth === undefined
+    && renderer.outputHeight === undefined;
+  assert(
+    hasValidOutputSize || isLegacyV1WithoutOutputSize,
     "renderer 输出尺寸非法",
   );
-  assert(typeof renderer.denoiser === "boolean", "renderer.denoiser 非法");
+  assert(
+    typeof renderer.denoiser === "boolean"
+      || (parsed.schemaVersion === "1.0.0" && renderer.denoiser === undefined),
+    "renderer.denoiser 非法",
+  );
   assert(Array.isArray(parsed.renders), "renders 必须是数组");
   assert(parsed.renders.length > 0, "renders 不能为空");
 
