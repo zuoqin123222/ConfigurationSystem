@@ -362,9 +362,14 @@ describe('App v2', () => {
       },
     }))
     expect(screen.getByText('¥239,400')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '复位' }))
     await user.click(screen.getByRole('button', { name: '保存' }))
     await user.click(screen.getByRole('button', { name: '分享' }))
-    expect(triggerconfiguratorheaderaction.mock.calls).toEqual([['save'], ['share']])
+    expect(triggerconfiguratorheaderaction.mock.calls).toEqual([
+      ['reset'],
+      ['save'],
+      ['share'],
+    ])
 
     expect(document.body).toHaveClass('header-document')
   })
@@ -413,6 +418,16 @@ describe('App v2', () => {
           ...initialSelections,
           'exterior-body-cover': 'body-cover-silver',
         },
+        customizations: {},
+      })
+    })
+
+    fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'reset' }))
+    await waitFor(() => {
+      const payload = JSON.parse(String(applyconfigurationjson.mock.lastCall?.[0]))
+      expect(payload).toEqual({
+        schemaVersion: '2.0.0',
+        selections: initialSelections,
         customizations: {},
       })
     })

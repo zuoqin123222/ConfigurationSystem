@@ -234,7 +234,7 @@ function ConfiguratorHeader() {
     }
   }, [])
 
-  const triggerAction = (action: 'save' | 'share') => {
+  const triggerAction = (action: 'save' | 'share' | 'reset') => {
     void triggerUeConfiguratorHeaderAction(getUeBridge(true), action)
   }
 
@@ -249,6 +249,7 @@ function ConfiguratorHeader() {
       categories={categories}
       headerState={headerState}
       onAction={triggerAction}
+      onReset={() => triggerAction('reset')}
       onSelectCategory={selectCategory}
     />
   )
@@ -833,6 +834,7 @@ function Configurator({
       const action = (event as CustomEvent<unknown>).detail
       if (action === 'save') void persist()
       if (action === 'share') void share()
+      if (action === 'reset') resetConfiguration()
     }
     window.addEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
     return () => window.removeEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)

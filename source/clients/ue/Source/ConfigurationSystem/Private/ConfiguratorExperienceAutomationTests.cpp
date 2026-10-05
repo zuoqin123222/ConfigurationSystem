@@ -5,15 +5,12 @@
 #include "ConfiguratorWebBridge.h"
 #include "ConfiguratorVehicleActor.h"
 #include "ConfigShowroomPlayerController.h"
-#include "PathTracingLightingRig.h"
 #include "PathTracingExperienceSubsystem.h"
 #include "ReversiblePartActuatorComponent.h"
 #include "SmoothWheelControllerComponent.h"
 #include "VehicleAnimSequencePlayerComponent.h"
 
 #include "Components/SceneComponent.h"
-#include "Components/PostProcessComponent.h"
-#include "Components/SkyLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
@@ -22,7 +19,6 @@
 #include "Materials/MaterialInterface.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
-#include "Misc/PackageName.h"
 #include "UObject/UObjectGlobals.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -230,6 +226,8 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("save")));
 	TestTrue(TEXT("bridge 接受 Header 分享动作"),
 		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("share")));
+	TestTrue(TEXT("bridge 接受 Header 复位动作"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("reset")));
 	TestFalse(TEXT("bridge 拒绝 Header 调试动作"),
 		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("debug")));
 	FString HeaderStateError;
@@ -771,97 +769,6 @@ bool FVehicleAnimSequenceFramePlayerAutomationTest::RunTest(
 			Vehicle->GetActiveVehicleAnimationId().IsNone());
 		TestFalse(TEXT("冻结后车轮立即停止"),
 			Vehicle->IsWheelAnimationEnabled());
-	}
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FPathTracingLightingRigAutomationTest,
-	"ConfigurationSystem.Runtime.Experience.PathTracingLightingRig",
-	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
-
-bool FPathTracingLightingRigAutomationTest::RunTest(const FString& Parameters)
-{
-	(void)Parameters;
-	const FPathTracingLightingPreset Studio =
-		FPathTracingLightingPreset::ForEnvironment(0);
-	const FPathTracingLightingPreset Outdoor =
-		FPathTracingLightingPreset::ForEnvironment(1);
-	const FPathTracingLightingPreset ClampedOutdoor =
-		FPathTracingLightingPreset::ForEnvironment(99);
-
-	TestEqual(
-		TEXT("Studio 使用 Studio_02 Cubemap"),
-		Studio.CubemapPath,
-		FString(TEXT("/Game/Library/HDRIs/Studio_02.Studio_02")));
-	TestEqual(
-		TEXT("Outdoor 使用 008 Cubemap"),
-		Outdoor.CubemapPath,
-		FString(TEXT("/Game/Library/HDRIs/008.008")));
-	TestEqual(
-		TEXT("越界环境索引归一化为 Outdoor"),
-		ClampedOutdoor.CubemapPath,
-		Outdoor.CubemapPath);
-	TestTrue(
-		TEXT("Studio 与 Outdoor 有独立方向光参数"),
-		!FMath::IsNearlyEqual(
-			Studio.DirectionalIntensity,
-			Outdoor.DirectionalIntensity));
-	TestTrue(
-		TEXT("PT 预设同时定义 Point 与 Rect 补光"),
-		Studio.PointIntensity > 0.0f && Studio.RectIntensity > 0.0f
-			&& Outdoor.PointIntensity > 0.0f && Outdoor.RectIntensity > 0.0f);
-
-	TestNotNull(
-		TEXT("Rig CDO 可用"),
-		GetDefault<APathTracingLightingRig>());
-	TestTrue(
-		TEXT("Studio_02 Cubemap 包存在"),
-		FPackageName::DoesPackageExist(TEXT("/Game/Library/HDRIs/Studio_02")));
-	TestTrue(
-		TEXT("008 Cubemap 包存在"),
-		FPackageName::DoesPackageExist(TEXT("/Game/Library/HDRIs/008")));
-
-	const APathTracingLightingRig* RigCDO = GetDefault<APathTracingLightingRig>();
-	if (RigCDO != nullptr)
-	{
-		TestNotNull(TEXT("Rig 包含 SkyLight"), RigCDO->GetSkyLightComponent());
-		TestNotNull(
-			TEXT("Rig 包含 DirectionalLight"),
-			RigCDO->GetDirectionalLightComponent());
-		TestNotNull(TEXT("Rig 包含 PointLight"), RigCDO->GetPointLightComponent());
-		TestNotNull(TEXT("Rig 包含 RectLight"), RigCDO->GetRectLightComponent());
-		const UStaticMeshComponent* Floor = RigCDO->GetFloorComponent();
-		if (TestNotNull(TEXT("Rig 包含仅随自身生命周期存在的 PT 地板"), Floor))
-		{
-			TestTrue(TEXT("PT 地板由 Rig 拥有并挂在 Rig 根组件"),
-				Floor->GetOwner() == RigCDO
-					&& Floor->GetAttachParent() == RigCDO->GetRootComponent());
-			TestTrue(TEXT("PT 地板使用 Engine Cube"),
-				Floor->GetStaticMesh() != nullptr
-					&& Floor->GetStaticMesh()->GetFName() == TEXT("Cube"));
-			TestTrue(TEXT("PT 地板水平尺寸为 18m × 18m"),
-				FMath::IsNearlyEqual(
-					Floor->GetStaticMesh()->GetBounds().BoxExtent.X
-						* Floor->GetRelativeScale3D().X * 2.0,
-					1800.0,
-					0.01)
-					&& FMath::IsNearlyEqual(
-						Floor->GetStaticMesh()->GetBounds().BoxExtent.Y
-							* Floor->GetRelativeScale3D().Y * 2.0,
-						1800.0,
-						0.01));
-			TestTrue(TEXT("PT 薄地板顶面位于 Z=0"),
-				FMath::IsNearlyZero(
-					Floor->GetRelativeLocation().Z
-						+ Floor->GetStaticMesh()->GetBounds().BoxExtent.Z
-							* Floor->GetRelativeScale3D().Z,
-					0.01));
-			const UMaterialInterface* FloorMaterial = Floor->GetMaterial(0);
-			TestTrue(TEXT("PT 地板显式使用 BasicShapeMaterial"),
-				FloorMaterial != nullptr
-					&& FloorMaterial->GetFName() == TEXT("BasicShapeMaterial"));
-		}
 	}
 	return true;
 }

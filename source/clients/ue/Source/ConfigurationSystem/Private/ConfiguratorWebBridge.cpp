@@ -109,7 +109,9 @@ bool UConfiguratorWebBridge::IsSupportedConfiguratorCategory(
 bool UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(
 	const FString& Action)
 {
-	return Action == TEXT("save") || Action == TEXT("share");
+	return Action == TEXT("save")
+		|| Action == TEXT("share")
+		|| Action == TEXT("reset");
 }
 
 void UConfiguratorWebBridge::ApplyConfigurationJson(
