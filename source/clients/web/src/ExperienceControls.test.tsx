@@ -153,6 +153,81 @@ describe('ExperienceControls', () => {
       .toHaveAttribute('aria-checked', 'false')
   })
 
+  it('车内镜头点击后不等待 UE 命令返回就更新选中标记', async () => {
+    const user = userEvent.setup()
+    let currentState = {
+      cameraId: 'wheel',
+      animationEnabled: false,
+      lightPreset: 'studio',
+      renderMode: 'realtime',
+      quality: 'high',
+      fullscreen: false,
+    }
+    let resolveCameraCommand: ((accepted: boolean) => void) | undefined
+    const bridge = {
+      getpresentationstatejson: vi.fn(async () => JSON.stringify(currentState)),
+      setcameraid: vi.fn(() => new Promise<boolean>((resolve) => {
+        resolveCameraCommand = resolve
+      })),
+    }
+    window.ue = { uebridge: bridge }
+    render(<ExperienceControls ueEnabled />)
+
+    await waitFor(() => expect(bridge.getpresentationstatejson).toHaveBeenCalled())
+    await user.click(screen.getByRole('button', { name: '镜头' }))
+    const menu = await screen.findByRole('menu', { name: '镜头预设' })
+    await user.click(within(menu).getByRole('menuitemradio', { name: '驾驶位' }))
+
+    expect(within(menu).getByRole('menuitemradio', { name: '驾驶位' }))
+      .toHaveAttribute('aria-checked', 'true')
+    expect(within(menu).getByRole('menuitemradio', { name: '轮毂' }))
+      .toHaveAttribute('aria-checked', 'false')
+
+    currentState = { ...currentState, cameraId: 'driver' }
+    await act(async () => resolveCameraCommand?.(true))
+    await waitFor(() => {
+      expect(screen.queryByRole('menu', { name: '镜头预设' })).not.toBeInTheDocument()
+    })
+  })
+
+  it('UE 未确认镜头切换时回滚到已确认镜头', async () => {
+    const user = userEvent.setup()
+    const bridge = {
+      getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
+        cameraId: 'wheel',
+        animationEnabled: false,
+        lightPreset: 'studio',
+        renderMode: 'realtime',
+        quality: 'high',
+        fullscreen: false,
+      })),
+      setcameraid: vi.fn().mockResolvedValue(true),
+    }
+    window.ue = { uebridge: bridge }
+    render(<ExperienceControls ueEnabled />)
+
+    await waitFor(() => expect(bridge.getpresentationstatejson).toHaveBeenCalled())
+    await user.click(screen.getByRole('button', { name: '镜头' }))
+    await user.click(await screen.findByRole('menuitemradio', { name: '驾驶位' }))
+    await waitFor(() => expect(bridge.setcameraid).toHaveBeenCalledWith('driver'))
+    await waitFor(() => {
+      expect(screen.queryByRole('menu', { name: '镜头预设' })).not.toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: '镜头' }))
+    expect(await screen.findByRole('menuitemradio', { name: '驾驶位' }))
+      .toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('menuitemradio', { name: '轮毂' }))
+      .toHaveAttribute('aria-checked', 'false')
+
+    expect(await screen.findByRole('alert', {}, { timeout: 1500 }))
+      .toHaveTextContent('UE 镜头切换未确认')
+    expect(screen.getByRole('menuitemradio', { name: '驾驶位' }))
+      .toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('menuitemradio', { name: '轮毂' }))
+      .toHaveAttribute('aria-checked', 'true')
+  })
+
   it('setcameraid 缺失时仅按目录 legacyIndex 调用旧 setcamera', async () => {
     const user = userEvent.setup()
     const bridge = {

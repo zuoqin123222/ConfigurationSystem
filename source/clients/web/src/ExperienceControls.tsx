@@ -23,6 +23,19 @@ interface ExperienceControlsProps {
   ueEnabled?: boolean
 }
 
+interface PendingCameraSelection {
+  cameraId: CatalogCameraId
+  cameraIndex: UeCameraIndex | null
+}
+
+function cameraSelectionMatchesState(
+  selection: PendingCameraSelection,
+  state: UePresentationState,
+): boolean {
+  return state.cameraId === selection.cameraId
+    || (selection.cameraIndex !== null && state.cameraIndex === selection.cameraIndex)
+}
+
 export default function ExperienceControls({ ueEnabled = false }: ExperienceControlsProps) {
   const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
   const [animationMenuOpen, setAnimationMenuOpen] = useState(false)
@@ -31,6 +44,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const [animations, setAnimations] = useState<CatalogAnimation[]>([])
   const [cameraId, setCameraId] = useState<CatalogCameraId | null>(null)
   const [cameraIndex, setCameraIndex] = useState<UeCameraIndex | null>(null)
+  const [pendingCameraSelection, setPendingCameraSelection] = useState<PendingCameraSelection | null>(null)
   const [animationEnabled, setAnimationEnabled] = useState(false)
   const [animationId, setAnimationId] = useState<string | null>(null)
   const [lightPreset, setLightPreset] = useState<'studio' | 'outdoor'>('studio')
@@ -40,11 +54,13 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const [toolbarIdle, setToolbarIdle] = useState(false)
   const [error, setError] = useState('')
   const idleTimer = useRef<number | null>(null)
+  const cameraRequestIdRef = useRef(0)
 
   useEffect(() => {
     document.documentElement.classList.add('controls-document')
     document.body.classList.add('controls-document')
     return () => {
+      cameraRequestIdRef.current += 1
       document.documentElement.classList.remove('controls-document')
       document.body.classList.remove('controls-document')
     }
@@ -68,6 +84,11 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const applyState = (state: UePresentationState) => {
     setCameraId(state.cameraId ?? null)
     setCameraIndex(state.cameraIndex ?? null)
+    setPendingCameraSelection((current) => (
+      current && cameraSelectionMatchesState(current, state)
+        ? null
+        : current
+    ))
     setAnimationEnabled(state.animationEnabled)
     setAnimationId(state.animationId ?? null)
     setLightPreset(state.lightPreset)
@@ -133,6 +154,48 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     return accepted
   }
 
+  const selectCamera = async (camera: CatalogInteractionCamera) => {
+    if (!ueEnabled) return
+    const bridge = getUeBridge(true)
+    const requestId = cameraRequestIdRef.current + 1
+    cameraRequestIdRef.current = requestId
+    const targetSelection: PendingCameraSelection = {
+      cameraId: camera.cameraId,
+      cameraIndex: camera.legacyIndex ?? null,
+    }
+    setPendingCameraSelection(targetSelection)
+    setError('')
+    const accepted = await executeUeControl(bridge, {
+      type: 'camera',
+      cameraId: camera.cameraId,
+      legacyIndex: camera.legacyIndex,
+    })
+    if (cameraRequestIdRef.current !== requestId) return
+    setError(accepted ? '' : 'UE 控制桥不可用或命令被拒绝')
+    if (!accepted) {
+      setPendingCameraSelection(null)
+      return
+    }
+    setCameraMenuOpen(false)
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const updatedState = await getUePresentationState(bridge)
+      if (cameraRequestIdRef.current !== requestId) return
+      if (updatedState) {
+        applyState(updatedState)
+        if (cameraSelectionMatchesState(targetSelection, updatedState)) return
+      }
+      if (attempt < 4) {
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 120)
+        })
+      }
+    }
+    if (cameraRequestIdRef.current === requestId) {
+      setPendingCameraSelection(null)
+      setError('UE 镜头切换未确认')
+    }
+  }
+
   const selectAnimation = async (nextAnimationId: string) => {
     if (!ueEnabled) return
     const bridge = getUeBridge(true)
@@ -181,21 +244,11 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
                 <button
                   key={String(camera.cameraId)}
                   role="menuitemradio"
-                  aria-checked={cameraId !== null
-                    ? cameraId === camera.cameraId
-                    : cameraIndex !== null && cameraIndex === camera.legacyIndex}
-                  onClick={() => void run(
-                    {
-                      type: 'camera',
-                      cameraId: camera.cameraId,
-                      legacyIndex: camera.legacyIndex,
-                    },
-                    () => {
-                      setCameraId(camera.cameraId)
-                      setCameraIndex(camera.legacyIndex ?? null)
-                      setCameraMenuOpen(false)
-                    },
-                  )}
+                  aria-checked={(pendingCameraSelection?.cameraId ?? cameraId) !== null
+                    ? (pendingCameraSelection?.cameraId ?? cameraId) === camera.cameraId
+                    : (pendingCameraSelection?.cameraIndex ?? cameraIndex) !== null
+                      && (pendingCameraSelection?.cameraIndex ?? cameraIndex) === camera.legacyIndex}
+                  onClick={() => void selectCamera(camera)}
                 >
                   <img src={camera.iconUrl} alt="" />
                   {camera.displayName}
@@ -293,14 +346,18 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
             </div>
           )}
         </div>
-        <button onClick={() => void run(
-          { type: 'reset' },
-          () => {
-            void getUePresentationState(getUeBridge(true)).then((state) => {
-              if (state) applyState(state)
-            })
-          },
-        )}>
+        <button onClick={() => {
+          cameraRequestIdRef.current += 1
+          setPendingCameraSelection(null)
+          void run(
+            { type: 'reset' },
+            () => {
+              void getUePresentationState(getUeBridge(true)).then((state) => {
+                if (state) applyState(state)
+              })
+            },
+          )
+        }}>
           <span aria-hidden="true">↺</span>
           复位
         </button>
