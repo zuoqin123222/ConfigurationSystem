@@ -222,6 +222,31 @@ describe('App v2', () => {
     })
   })
 
+  it('默认配置下可连续复位并在每次复位后重新显示车辆图片', async () => {
+    const user = userEvent.setup()
+    const imageUrl = '/assets/v2/renders/review/default/front-left.png'
+    const fetchMock = mockApi({ v2ImageUrl: imageUrl })
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+    await loadProxy()
+
+    const resolveCount = () => fetchMock.mock.calls.filter(
+      ([url]) => url === '/api/v2/renders/resolve',
+    ).length
+    const initialResolveCount = resolveCount()
+
+    await user.click(screen.getByRole('button', { name: '复位' }))
+    await waitFor(() => expect(resolveCount()).toBe(initialResolveCount + 1))
+    await loadProxy()
+    expect(screen.getByAltText('SC01 车辆预览')).toHaveAttribute('src', imageUrl)
+
+    await user.click(screen.getByRole('button', { name: '复位' }))
+    await waitFor(() => expect(resolveCount()).toBe(initialResolveCount + 2))
+    await loadProxy()
+    expect(screen.getByAltText('SC01 车辆预览')).toHaveAttribute('src', imageUrl)
+    expect(screen.queryByText('正在加载车辆预览…')).not.toBeInTheDocument()
+  })
+
   it('embedded 模式只展示完整选配区且不请求车辆预览、视角或图片解析', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const fetchMock = mockApi()

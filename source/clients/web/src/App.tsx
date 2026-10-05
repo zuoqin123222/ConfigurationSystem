@@ -510,6 +510,7 @@ function Configurator({
   const [activeView, setActiveView] = useState<RenderViewId>('front-left')
   const [render, setRender] = useState<LegacyRender | null>(null)
   const [pendingRender, setPendingRender] = useState<LegacyRender | null>(null)
+  const [renderRefreshKey, setRenderRefreshKey] = useState(0)
   const renderRequestRef = useRef('')
   const focusedAnimationIdRef = useRef<string | null>(null)
   const [renderLoading, setRenderLoading] = useState(!embedded)
@@ -686,6 +687,7 @@ function Configurator({
     catalog.vehicle.vehicleId,
     embedded,
     legacyCatalog,
+    renderRefreshKey,
     renderSelectionKey,
   ])
 
@@ -807,6 +809,7 @@ function Configurator({
     setRender(null)
     setPendingRender(null)
     setRenderLoading(!embedded)
+    setRenderRefreshKey((value) => value + 1)
     setRenderMessage('')
     setSyncState('idle')
     setSyncMessage('已恢复默认配置')
