@@ -6,6 +6,20 @@
 
 用户指令优先于默认流程。用户明确要求“不提交”时，AI 必须保留本地改动，不执行 `git commit` 或 `git push`；其余质量门槛仍然适用。
 
+## 新会话启动
+
+仓库文件量大且可能同时存在多个 Git worktree。新会话不得从全库递归读取开始，也不得把其他对话的完成摘要直接当作当前分支事实。先读取根目录
+[`AGENTS.md`](../AGENTS.md) 和 [`HARNESS.md`](HARNESS.md)，再执行：
+
+```powershell
+git status --short --branch
+git worktree list
+git log --all --date-order -n 30 --oneline --decorate
+node tools/validate-harness.mjs
+```
+
+确认目标工作树、分支、HEAD 和未提交文件后，只读取任务相关模块。`package/`、UE 生成目录、`node_modules/`、临时烘焙目录和大批二进制资产不进入默认上下文；需要判断真实 UE 资产或视觉状态时转为探针和 GUI 验证。
+
 ## 先计划
 
 开始修改前先完成四项判断：
