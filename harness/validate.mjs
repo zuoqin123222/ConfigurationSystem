@@ -255,7 +255,7 @@ if (catalog) {
 
   const seatShellCustom = optionById(catalog, "seat-shell-custom");
   if (seatShellCustom) {
-    expectEqual(seatShellCustom.displayName, "自定义取色", "座椅背板自定义名称");
+    expectEqual(seatShellCustom.displayName, "自定义颜色", "座椅背板自定义名称");
     expectEqual(seatShellCustom.parameters?.color?.mode, "custom", "座椅背板取色模式");
     expectEqual(
       seatShellCustom.ui?.iconUrl,

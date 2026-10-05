@@ -36,7 +36,7 @@
 - 仪表台回中标默认 `ip-center-mark-uncovered-black`；四类材料及色卡均为 100 元。
 - 座椅回中标四类材料及色卡均免费。
 - 座椅背板默认 `seat-shell-carbon-original` /“高光原色碳纤维”。
-- `seat-shell-custom` 为“自定义取色”，支持亮面与雾面。
+- `seat-shell-custom` 为“自定义颜色”，支持亮面与雾面。
 - 自定义颜色入口使用满幅彩虹方块。
 
 ## 工程边界
