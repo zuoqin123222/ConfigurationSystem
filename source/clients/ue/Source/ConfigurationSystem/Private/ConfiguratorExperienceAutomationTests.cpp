@@ -15,6 +15,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
 #include "HAL/FileManager.h"
+#include "HAL/PlatformProcess.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "UObject/UObjectGlobals.h"
@@ -113,6 +114,11 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		|| Url.StartsWith(TEXT("https://")));
 	TestTrue(TEXT("UE 入口包含 source=ue"), Url.Contains(TEXT("source=ue")));
 	TestTrue(TEXT("UE 入口启用 embedded 视图"), Url.Contains(TEXT("view=embedded")));
+	TestTrue(
+		TEXT("UE 入口包含进程级静态资源版本"),
+		Url.Contains(FString::Printf(
+			TEXT("assetRevision=%u"),
+			FPlatformProcess::GetCurrentProcessId())));
 	const FString ControlsUrl = UConfiguratorPanel::GetControlsWebUrl();
 	TestTrue(TEXT("控制层使用独立 controls 视图"), ControlsUrl.Contains(TEXT("view=controls")));
 	TestFalse(TEXT("控制层不加载选配 embedded 视图"), ControlsUrl.Contains(TEXT("view=embedded")));

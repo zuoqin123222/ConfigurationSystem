@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App, { STANDALONE_LAYOUT } from './App'
+import App, { STANDALONE_LAYOUT, versionStaticAssetUrl } from './App'
 import {
   catalogFixture,
   initialSelections,
@@ -99,6 +99,21 @@ describe('App v2', () => {
     delete window.ue
     localStorage.clear()
     window.history.replaceState(null, '', '/')
+  })
+
+  it('UE 资源版本参数会传递到静态色卡 URL', () => {
+    expect(versionStaticAssetUrl(
+      '/sc01/thumbnails/leather-p10-1242.webp',
+      '?source=ue&assetRevision=4321',
+    )).toBe('/sc01/thumbnails/leather-p10-1242.webp?v=4321')
+    expect(versionStaticAssetUrl(
+      '/sc01/thumbnails/leather-p10-1242.webp?size=512',
+      '?assetRevision=build%20two',
+    )).toBe('/sc01/thumbnails/leather-p10-1242.webp?size=512&v=build%20two')
+    expect(versionStaticAssetUrl(
+      '/sc01/thumbnails/leather-p10-1242.webp',
+      '?source=web',
+    )).toBe('/sc01/thumbnails/leather-p10-1242.webp')
   })
 
   it('默认独立页使用现代顶栏、紧凑侧栏和烘焙车辆视角', async () => {

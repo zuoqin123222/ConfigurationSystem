@@ -15,6 +15,7 @@
 #include "GameFramework/GameUserSettings.h"
 #include "Engine/GameInstance.h"
 #include "HttpModule.h"
+#include "HAL/PlatformProcess.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Misc/ConfigCacheIni.h"
@@ -105,8 +106,9 @@ FString UConfiguratorPanel::GetConfiguredWebUrl()
 		Endpoint = DefaultWebConfiguratorEndpoint;
 	}
 	return FString::Printf(
-		TEXT("http://%s/?source=ue&view=embedded"),
-		*Endpoint);
+		TEXT("http://%s/?source=ue&view=embedded&assetRevision=%u"),
+		*Endpoint,
+		FPlatformProcess::GetCurrentProcessId());
 }
 
 FString UConfiguratorPanel::GetControlsWebUrl()

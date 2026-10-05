@@ -69,6 +69,7 @@ import {
 
 const CACHE_KEY = 'automotive-v2-configurator'
 const DEFAULT_IMAGE_URL = '/sc01/option-icons/default.svg'
+const ASSET_REVISION_QUERY = 'assetRevision'
 export const STANDALONE_LAYOUT = {
   headerHeight: 76,
   panelWidth: 480,
@@ -115,6 +116,17 @@ function optionSwatch(option: CatalogV2['options'][number]): string {
 function useDefaultImage(event: SyntheticEvent<HTMLImageElement>) {
   const image = event.currentTarget
   if (!image.src.endsWith(DEFAULT_IMAGE_URL)) image.src = DEFAULT_IMAGE_URL
+}
+
+export function versionStaticAssetUrl(
+  url: string | undefined,
+  search = window.location.search,
+): string | undefined {
+  if (!url || /^(?:data|blob):/i.test(url)) return url
+  const revision = new URLSearchParams(search).get(ASSET_REVISION_QUERY)
+  if (!revision) return url
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}v=${encodeURIComponent(revision)}`
 }
 
 function Showroom() {
@@ -884,7 +896,9 @@ function Configurator({
         >
           {(option.ui?.iconUrl ?? thumbnailUrl)
             ? <img
-                src={option.ui?.iconUrl ?? thumbnailUrl ?? DEFAULT_IMAGE_URL}
+                src={versionStaticAssetUrl(
+                  option.ui?.iconUrl ?? thumbnailUrl ?? DEFAULT_IMAGE_URL,
+                )}
                 alt=""
                 loading="lazy"
                 onError={useDefaultImage}
@@ -1009,7 +1023,7 @@ function Configurator({
                         aria-label={`${variant.displayName}，${materialFamily.displayName}，${optionPrice(option)}`}
                       >
                         <img
-                          src={variant.thumbnailUrl}
+                          src={versionStaticAssetUrl(variant.thumbnailUrl)}
                           alt=""
                           loading="lazy"
                           onError={useDefaultImage}
