@@ -580,6 +580,16 @@ bool FConfigurationBatchBake::SetupScene(FString& OutError)
 		SpawnedActors.Add(BakeVehicle);
 	}
 	Vehicle=BakeVehicle;
+	UGameInstance* GameInstance = World->GetGameInstance();
+	UCarConfiguratorSubsystem* Configurator = GameInstance != nullptr
+		? GameInstance->GetSubsystem<UCarConfiguratorSubsystem>()
+		: nullptr;
+	if (!IsValid(Configurator))
+	{
+		OutError = TEXT("无法获得 UCarConfiguratorSubsystem。");
+		return false;
+	}
+	Configurator->RegisterVehicle(BakeVehicle);
 	TInlineComponentArray<USkeletalMeshComponent*> SkeletalMeshes(BakeVehicle);
 	for (const USkeletalMeshComponent* SkeletalMesh : SkeletalMeshes)
 	{

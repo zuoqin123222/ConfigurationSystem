@@ -58,9 +58,10 @@ Screen Percentage；关闭后使用 Lit，并等待稳定帧再回读。PNG 回�
 - v2 默认只执行 `estimate`。SC01 当前完整空间为
   `391820820480000000000`（约 3.9e20）个配置，生成器明确拒绝 `exhaustive`。
 - v2 `coverage` 从默认/首选基线生成去重集合，保证每个 `renderRelevant` 选项以及每个
-  可被已定价色卡选项消费的 `materialVariant` 至少出现一次。当前 SC01 覆盖 154 个相关
-  选项和 352 个可用材料色卡，去重后得到 469 个配置；按 4 个视角为 1876 个渲染任务，
-  30 秒/张时预计 56280 秒（15.6 小时）。
+  可被已定价色卡选项消费的 `materialVariant` 至少出现一次。基线严格复用
+  `defaultSelections`，不会给无默认项的可选 surface 强行选择第一个选项，确保 Web
+  初始状态可以直接命中渲染。当前 SC01 覆盖 154 个相关选项和 352 个可用材料色卡，
+  去重后得到 477 个配置；按 4 个视角为 1908 个渲染任务。
 - v2 `shard` 对 coverage 集合做确定性取模分片，`--shard=0/4` 到 `3/4` 合并后不重不漏。
 - v2 coverage/shard 输出固定声明四个 `renderViewIds`，并对每项写出
   `configurationKey = renderKey`。`FConfigurationBakePlan::Load` 同时读取通用
@@ -86,10 +87,23 @@ node tools/generate-published-configurations.mjs `
 
 ## 自动化结果
 
-- 2026-10-05 本分支验证：契约聚合校验、Web 67/67、Server 45/45、UE BatchBake
+- 2026-10-05 本分支验证：契约聚合校验、Web 66/66、Server 45/45、UE BatchBake
   6/6 通过，`ConfigurationSystemEditor Win64 Development` 编译成功。
-- 使用 `-RenderOffscreen -ForceRes` 实跑 v2 `0/469` 分片，Lit Debug 模式成功输出
-  1 个配置 × 4 个视角，manifest 全部为 `ready`，原图均为 1022 × 664 RGBA。
+- 2026-10-05 R2 发布候选：`sc01-web-shipping-20261005-r2` 使用 2044 × 1328
+  Realtime 高质量档完成 477 套配置、1908 张 RGBA PNG；首轮 64 张 Woven Wool
+  Shader 首次编译超时后独立补跑并原子合并，最终 1908/1908 `ready`。
+- Server 对 R2 manifest 逐文件校验通过；1908 条路径唯一、1908 个 SHA-256 唯一，
+  图片合计 1,173,513,611 字节。真实 `/api/v2/renders/resolve` 返回 R2 图片，
+  默认配置与银色车漆均能命中 2044 × 1328 PNG。
+- 真实 Web 页面验证舞台圆角为 20 px，车辆图以 `object-fit: contain` 填满舞台；
+  UE controls 页面 `html`、`body`、`#root`、`.controls-view` 的横纵 overflow
+  均为 `hidden`，控制条 `scrollWidth == clientWidth` 且
+  `scrollHeight == clientHeight`。
+- 当前自动化浏览器固定为 511 × 764 视口，无法留存真实 2560 × 1440 桌面截图；
+  已分别验证 R2 原图自然尺寸 2044 × 1328、舞台比例、20 px 圆角和无 overflow。
+- 使用 `-RenderOffscreen -ForceRes` 实跑早期 469 套 coverage 的 `0/469` canary，
+  Lit Debug 模式成功输出 1 个配置 × 4 个视角，manifest 全部为 `ready`，原图均为
+  1022 × 664 RGBA。该批次因错误地为无默认项 surface 强选首项而废弃，不属于 R2。
 - 变基到 `b547706` 后将骨骼网格使用的 8 个材质通过 UE AssetTools 正式迁移到
   `/Game/SC01/Materials/VehicleProxy/M_SC01_Vehicle_*`。骨骼网格本体的 8 个
   `CS_Validation_*` 槽和运行时硬引用均已改写到新路径；清空被忽略的旧
@@ -100,8 +114,10 @@ node tools/generate-published-configurations.mjs `
 - Batch 新增材质预检：可见骨骼车辆任一槽为空、使用 `DefaultMaterial` 或
   `WorldGridMaterial` 时，将全部任务写为 `failed` 且不输出 PNG；交互式 Path Tracing
   RTPSO 预热在 Batch 模式下跳过，避免 manifest 完成后的关机竞态崩溃。
-- V2 Binder 目前仍只实现车漆和单一内饰代理槽。因此正式材质依赖补齐后，仍需验证
-  469 套覆盖配置是否产生预期视觉差异，不能仅以 1876 个文件数量代替内容验收。
+- V2 Binder 已优先绑定可见骨骼车辆的 `CS_Validation_Paint` 与
+  `CS_Validation_Interior` 命名槽。标准红/银车漆和两个内饰色卡 canary 已确认
+  产生不同视觉结果；其他 surface 尚无独立骨骼槽，1908 张覆盖图不代表 38 个
+  surface 都已具备独立视觉变化。
 - UE Batch Bake：16 个 canonical configuration × 4 个 RenderView，共 64 个任务。
 - Server：19 个测试全部通过。
 - Web：18 个测试全部通过，Vite production build 成功。
@@ -137,6 +153,7 @@ node tools/generate-published-configurations.mjs `
 - UE Windows Shipping：`package/clients/ue/Windows`
 - Web production build：`package/clients/web`
 - 不可变 Render 发布：`package/renders/mvp-v1`
+- SC01 Web R2 Render 发布候选：`package/renders-v2-r2`
 - Server 编译产物：`source/server/dist`
 
 关键文件：
@@ -153,6 +170,10 @@ node tools/generate-published-configurations.mjs `
 ## 发布边界
 
 - `mvp-v1` 不可覆盖；正式车辆接入后必须发布新版本目录。
+- R2 当前使用的仍是明确标记的代理 Audi A5 骨骼车辆，不得作为正式 SC01 造型资产发布。
+- `package/renders-v2-r2` 为约 1.17 GB 的不可变图片候选并受 Git 忽略；源码分支不承载
+  图片正文，正式上线前需同步到 Render 存储并保持 publicationVersion、manifest、
+  相对路径与 SHA-256 不变。
 - 历史 `mvp-v1` 验收图片仍是 640 × 360 的流水线证据，不代表当前默认输出参数。
 - 正式发布前必须重新检查真实车辆层级、Pivot、材质槽、玻璃、穿模、动作和构图，并
   用 `shipping` 档位重新生成全部配置与视角。

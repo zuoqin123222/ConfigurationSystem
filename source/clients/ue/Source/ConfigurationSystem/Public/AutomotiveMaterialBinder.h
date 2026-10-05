@@ -7,6 +7,7 @@
 class AActor;
 class UMaterialInstanceDynamic;
 class UMeshComponent;
+class USkeletalMeshComponent;
 class UAutomotiveMaterialLibrary;
 class UAutomotiveConfigurationState;
 
@@ -48,6 +49,7 @@ public:
 	UMeshComponent* GetPaintComponent() const { return PaintComponent; }
 	UMeshComponent* GetInteriorComponent() const { return InteriorComponent; }
 	UMaterialInstanceDynamic* GetPaintMaterialInstance() const { return PaintMaterialInstance; }
+	UMaterialInstanceDynamic* GetInteriorMaterialInstance() const { return InteriorMaterialInstance; }
 
 protected:
 	virtual void BeginDestroy() override;
@@ -58,6 +60,7 @@ private:
 		AActor* Vehicle,
 		FName SlotTag,
 		FString& OutError);
+	static USkeletalMeshComponent* FindVisibleSkeletalVehicle(AActor* Vehicle);
 	bool ApplyPaint();
 	bool ApplyInterior();
 
@@ -75,6 +78,12 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> PaintMaterialInstance;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> InteriorMaterialInstance;
+
+	int32 PaintMaterialIndex = 0;
+	int32 InteriorMaterialIndex = 0;
 
 	UPROPERTY(Transient)
 	FString AppliedInteriorFamilyId;

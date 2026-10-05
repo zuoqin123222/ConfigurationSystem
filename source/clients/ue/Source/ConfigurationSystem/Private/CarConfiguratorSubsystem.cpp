@@ -82,6 +82,15 @@ const FPrimaryAssetId CatalogAssetId(
 		UAutomotiveMaterialLibrary::DefaultAssetName);
 	AutomotiveMaterialLibrary = Cast<UAutomotiveMaterialLibrary>(
 		UAssetManager::Get().GetPrimaryAssetPath(MaterialLibraryId).TryLoad());
+	if (!IsValid(AutomotiveMaterialLibrary))
+	{
+		// 兼容由旧 Sc01MaterialLibrary 类型迁移而来的资产注册表标签。
+		// 固定 Cook 路径与 Primary Asset 扫描目录一致，可在离线包中加载。
+		AutomotiveMaterialLibrary = LoadObject<UAutomotiveMaterialLibrary>(
+			nullptr,
+			TEXT("/Game/SC01/Materials/DA_SC01MaterialLibrary."
+				"DA_SC01MaterialLibrary"));
+	}
 	if (IsValid(AutomotiveConfigurationState) && IsValid(AutomotiveMaterialLibrary))
 	{
 		AutomotiveMaterialBinder = NewObject<UAutomotiveMaterialBinder>(this);

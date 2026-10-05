@@ -109,10 +109,10 @@ export function estimateV2Scale(
 }
 
 function baselineV2Selections(catalog, bySurface) {
-  return Object.fromEntries(catalog.selectionOrder.map((surfaceId) => [
-    surfaceId,
-    catalog.defaultSelections?.[surfaceId] ?? bySurface.get(surfaceId)[0].optionId
-  ]));
+  return Object.fromEntries(catalog.selectionOrder.flatMap((surfaceId) => {
+    const optionId = catalog.defaultSelections?.[surfaceId];
+    return optionId ? [[surfaceId, optionId]] : [];
+  }));
 }
 
 export function generateV2Coverage(catalog) {
@@ -122,6 +122,14 @@ export function generateV2Coverage(catalog) {
     (option) => option.renderRelevant === true
   );
   const uniqueSelections = new Map();
+  const baselineIdentity = deriveConfigurationIdentity(catalog, baseline);
+  uniqueSelections.set(baselineIdentity.renderKey, {
+    configurationKey: baselineIdentity.renderKey,
+    configurationId: baselineIdentity.configurationId,
+    renderKey: baselineIdentity.renderKey,
+    selections: baseline,
+    customizations: {}
+  });
   for (const option of renderRelevant) {
     const selections = { ...baseline, [option.surfaceId]: option.optionId };
     const identity = deriveConfigurationIdentity(catalog, selections);

@@ -138,6 +138,7 @@ namespace AutomotiveCatalog
 		bool IsGameObjectPath(const FString& Path)
 		{
 			return Path.StartsWith(TEXT("/Game/"))
+				&& Path.Contains(TEXT("."))
 				&& FPackageName::IsValidObjectPath(Path);
 		}
 
@@ -394,6 +395,17 @@ namespace AutomotiveCatalog
 					|| !ReadString(*Object, TEXT("displayName"), Variant.DisplayName, OutError)
 					|| !ReadNullableString(*Object, TEXT("colorCode"), Variant.ColorCode, OutError)
 					|| !ReadString(*Object, TEXT("thumbnailUrl"), Variant.ThumbnailUrl, OutError))
+				{
+					return false;
+				}
+				const TSharedPtr<FJsonObject>* Ui = nullptr;
+				if ((*Object)->TryGetObjectField(TEXT("ui"), Ui)
+					&& Ui != nullptr
+					&& !ReadNullableString(
+						*Ui,
+						TEXT("sortColorHex"),
+						Variant.DisplayColorHex,
+						OutError))
 				{
 					return false;
 				}

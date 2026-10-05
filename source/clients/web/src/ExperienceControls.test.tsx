@@ -89,7 +89,7 @@ describe('ExperienceControls', () => {
     await user.click(within(toolbar).getByRole('button', { name: '动画' }))
     await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
     await user.click(within(toolbar).getByRole('button', { name: '灯光' }))
-    await user.click(within(toolbar).getByRole('button', { name: '渲染' }))
+    await user.click(within(toolbar).getByRole('button', { name: 'Path Tracing' }))
     await user.click(within(toolbar).getByRole('button', { name: '画质' }))
     await user.click(screen.getByRole('menuitemradio', { name: '极高' }))
     await user.click(within(toolbar).getByRole('button', { name: '复位' }))

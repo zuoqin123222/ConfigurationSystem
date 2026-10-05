@@ -133,6 +133,15 @@ test("v2 coverage 保证每个 renderRelevant 选项至少出现一次", () => {
   assert.equal(coverage.availableMaterialVariantCount, 2);
   assert.equal(coverage.coveredMaterialVariantCount, 2);
   assert.equal(coverage.configurations.length, 6);
+  assert.ok(
+    coverage.configurations.some(({ selections, customizations }) =>
+      selections.paint === "paint-red"
+      && selections.wheel === "wheel-a"
+      && !Object.hasOwn(selections, "trim")
+      && Object.keys(customizations).length === 0
+    ),
+    "coverage 必须包含与 Web 初始状态一致且不强选可选 surface 的基线配置"
+  );
   assert.deepEqual(
     new Set(
       coverage.configurations.flatMap(({ customizations }) =>
