@@ -113,6 +113,7 @@ describe('App v2', () => {
     expect(within(categories).getByRole('button', { name: '个性化' })).toBeInTheDocument()
     expect(screen.getByText('参考总价')).toBeInTheDocument()
     expect(screen.getByText('¥229,800')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '复位' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '保存' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '分享' })).toBeInTheDocument()
     expect(screen.getByText('未同步更改')).toBeInTheDocument()
@@ -177,6 +178,48 @@ describe('App v2', () => {
       expect(writeText).toHaveBeenCalledWith(expect.stringContaining('configuration=cfg-body-cover-silver'))
     })
     expect(screen.getByText('分享链接已复制')).toBeInTheDocument()
+  })
+
+  it('独立页复位会清除本地组合与分享参数并重新请求默认左前视角', async () => {
+    const user = userEvent.setup()
+    const cachedSelections = {
+      ...initialSelections,
+      'exterior-body-cover': 'body-cover-silver',
+    }
+    localStorage.setItem('automotive-v2-configurator', JSON.stringify({
+      catalog: catalogFixture,
+      selections: cachedSelections,
+      customizations: {},
+    }))
+    const fetchMock = mockApi({
+      v2ImageUrl: '/assets/v2/renders/review/front-left.png',
+    })
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    expect(screen.getByRole('button', { name: /银色.*免费/ }))
+      .toHaveAttribute('aria-pressed', 'true')
+    await user.click(within(screen.getByRole('group', { name: '车辆视角' }))
+      .getByRole('button', { name: '侧面' }))
+    window.history.replaceState(null, '', '/?configuration=cfg-old')
+
+    await user.click(screen.getByRole('button', { name: '复位' }))
+
+    expect(screen.getByRole('button', { name: /红色.*免费/ }))
+      .toHaveAttribute('aria-pressed', 'true')
+    expect(window.location.search).toBe('')
+    expect(screen.getByText('已恢复默认配置')).toBeInTheDocument()
+    await waitFor(() => {
+      const cached = JSON.parse(String(localStorage.getItem('automotive-v2-configurator')))
+      expect(cached.selections).toEqual(initialSelections)
+      const resolveCalls = fetchMock.mock.calls.filter(
+        ([url]) => url === '/api/v2/renders/resolve',
+      )
+      const request = JSON.parse(String(resolveCalls.at(-1)?.[1]?.body))
+      expect(request.selections).toEqual(initialSelections)
+      expect(request.customizations).toEqual({})
+      expect(request.renderViewId).toBe('front-left')
+    })
   })
 
   it('embedded 模式只展示完整选配区且不请求车辆预览、视角或图片解析', async () => {

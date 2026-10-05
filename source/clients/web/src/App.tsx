@@ -258,12 +258,14 @@ function ConfiguratorTopBar({
   categories,
   headerState,
   onAction,
+  onReset,
   onSelectCategory,
   standalone = false,
 }: {
   categories: CatalogV2['categories']
   headerState: UeConfiguratorHeaderState
   onAction: (action: 'save' | 'share') => void
+  onReset?: () => void
   onSelectCategory: (categoryId: string) => void
   standalone?: boolean
 }) {
@@ -310,6 +312,15 @@ function ConfiguratorTopBar({
           <small>参考总价</small>
           <strong>¥{(headerState.referenceTotalMinor / 100).toLocaleString('zh-CN')}</strong>
         </span>
+        {onReset && (
+          <button
+            className="header-reset"
+            onClick={onReset}
+            disabled={headerState.syncState === 'saving'}
+          >
+            复位
+          </button>
+        )}
         <button
           className="header-save"
           onClick={() => onAction('save')}
@@ -778,6 +789,29 @@ function Configurator({
     }
   }
 
+  const resetConfiguration = () => {
+    const initialSelections = createInitialSelections(catalog)
+    const initialCustomizations = normalizeCustomizations(catalog, initialSelections, {})
+    const url = new URL(window.location.href)
+    url.searchParams.delete('configuration')
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+    localStorage.removeItem(CACHE_KEY)
+    setSelections(initialSelections)
+    setCustomizations(initialCustomizations)
+    setSavedConfiguration(null)
+    setCategoryId(categories[0]?.categoryId ?? '')
+    setComponentId('all')
+    setSurfaceId(catalog.selectionOrder[0] ?? '')
+    setActiveView('front-left')
+    renderRequestRef.current = ''
+    setRender(null)
+    setPendingRender(null)
+    setRenderLoading(!embedded)
+    setRenderMessage('')
+    setSyncState('idle')
+    setSyncMessage('已恢复默认配置')
+  }
+
   useEffect(() => {
     if (!embedded) return
     void syncUeConfiguratorHeaderState(getUeBridge(true), {
@@ -1053,6 +1087,7 @@ function Configurator({
             if (action === 'save') void persist()
             if (action === 'share') void share()
           }}
+          onReset={resetConfiguration}
           onSelectCategory={selectCategory}
         />
       )}
