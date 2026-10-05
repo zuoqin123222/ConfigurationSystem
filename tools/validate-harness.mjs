@@ -120,11 +120,27 @@ if (agentsPath) {
     "docs/HARNESS.md",
     "git worktree list",
     "node tools/validate-harness.mjs",
-    "22980000",
-    "正式 SC01 模型尚未到位",
+    "不确定的产品、资产或授权信息不得写入 Harness",
   ]) {
     if (!agents.includes(requiredText)) {
       fail(`AGENTS.md 缺少必需约束：${requiredText}`);
+    }
+  }
+}
+
+const harnessPath = requireFile("docs/HARNESS.md");
+if (harnessPath) {
+  const harness = readFileSync(harnessPath, "utf8");
+  for (const requiredText of [
+    "22980000",
+    "正式模型尚未到位",
+    "A 柱默认",
+    "仪表台回中标",
+    "座椅回中标",
+    "高光原色碳纤维",
+  ]) {
+    if (!harness.includes(requiredText)) {
+      fail(`docs/HARNESS.md 缺少当前确定事实：${requiredText}`);
     }
   }
 }
