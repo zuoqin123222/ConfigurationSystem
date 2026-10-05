@@ -11,12 +11,10 @@
 #include "VehicleAnimSequencePlayerComponent.h"
 
 #include "Components/SceneComponent.h"
-#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
 #include "HAL/FileManager.h"
-#include "Materials/MaterialInterface.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
 #include "UObject/UObjectGlobals.h"
@@ -658,77 +656,11 @@ bool FVehicleAnimSequenceFramePlayerAutomationTest::RunTest(
 		AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(false, true));
 	TestTrue(TEXT("缺少 sequence 时允许静态代理回退"),
 		AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(true, false));
-	const TPair<FName, FName> ExpectedSkeletalMaterials[] = {
-		{TEXT("CS_Validation_LightRed"), TEXT("M_SC01_Vehicle_LightRed")},
-		{TEXT("CS_Validation_Glass"), TEXT("M_SC01_Vehicle_Glass")},
-		{TEXT("CS_Validation_Paint"), TEXT("M_SC01_Vehicle_Paint")},
-		{TEXT("CS_Validation_Plastic"), TEXT("M_SC01_Vehicle_Plastic")},
-		{TEXT("CS_Validation_Interior"), TEXT("M_SC01_Vehicle_Interior")},
-		{TEXT("CS_Validation_Rubber"), TEXT("M_SC01_Vehicle_Rubber")},
-		{TEXT("CS_Validation_Metal"), TEXT("M_SC01_Vehicle_Metal")},
-		{TEXT("CS_Validation_LightClear"), TEXT("M_SC01_Vehicle_LightClear")}
-	};
-	for (const TPair<FName, FName>& Expected : ExpectedSkeletalMaterials)
-	{
-		TestEqual(
-			*FString::Printf(TEXT("%s 按 slot 名解析材质"), *Expected.Key.ToString()),
-			AConfiguratorVehicleActor::GetOfflineMaterialNameForSkeletalSlot(Expected.Key),
-			Expected.Value);
-	}
-	TestTrue(
-		TEXT("未知 slot 不按数组序号误配材质"),
-		AConfiguratorVehicleActor::GetOfflineMaterialNameForSkeletalSlot(
-			TEXT("UnknownSlot")).IsNone());
 	AutomotiveCatalog::FCatalog InvalidIdCatalog = Catalog;
 	InvalidIdCatalog.Animations[0].AnimationId = TEXT("hood--open");
 	TestFalse(TEXT("UE 在配置播放器前拒绝非 stable animation ID"),
 		AConfiguratorVehicleActor::BuildAnimationClips(
 			InvalidIdCatalog, CatalogClips));
-
-	AutomotiveCatalog::FCatalog AssetCatalog = Catalog;
-	AssetCatalog.SkeletalMeshPath = TEXT(
-		"/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
-		"automotive-configurator-audi-a5-rigged-v2."
-		"automotive-configurator-audi-a5-rigged-v2");
-	AssetCatalog.SequencePath = TEXT(
-		"/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
-		"automotive-configurator-audi-a5-rigged-v2_Anim."
-		"automotive-configurator-audi-a5-rigged-v2_Anim");
-	AConfiguratorVehicleActor* AnimatedVehicle =
-		NewObject<AConfiguratorVehicleActor>();
-	TestTrue(
-		TEXT("真实骨骼网格与动画可配置"),
-		AnimatedVehicle->ConfigureAnimationFromCatalog(AssetCatalog));
-	USkeletalMeshComponent* SkeletalVehicle =
-		FindObjectFast<USkeletalMeshComponent>(AnimatedVehicle, TEXT("SkeletalVehicle"));
-	if (TestNotNull(TEXT("动画车辆包含骨骼网格组件"), SkeletalVehicle))
-	{
-		for (const TPair<FName, FName>& Expected : ExpectedSkeletalMaterials)
-		{
-			const int32 SlotIndex = SkeletalVehicle->GetMaterialIndex(Expected.Key);
-			TestTrue(
-				*FString::Printf(TEXT("骨骼网格包含实际 slot %s"), *Expected.Key.ToString()),
-				SlotIndex != INDEX_NONE);
-			if (SlotIndex != INDEX_NONE)
-			{
-				const UMaterialInterface* Material =
-					SkeletalVehicle->GetMaterial(SlotIndex);
-				TestTrue(
-					*FString::Printf(
-						TEXT("slot %s 绑定 %s"),
-						*Expected.Key.ToString(),
-						*Expected.Value.ToString()),
-					Material != nullptr && Material->GetFName() == Expected.Value);
-				TestTrue(
-					*FString::Printf(
-						TEXT("slot %s 使用可离线追踪的 SC01 材质路径"),
-						*Expected.Key.ToString()),
-					Material != nullptr
-						&& Material->GetPathName().StartsWith(
-							TEXT("/Game/SC01/Materials/VehicleProxy/")));
-			}
-		}
-	}
 
 	AConfiguratorVehicleActor* Vehicle =
 		NewObject<AConfiguratorVehicleActor>();

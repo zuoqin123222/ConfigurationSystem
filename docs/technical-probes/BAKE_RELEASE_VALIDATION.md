@@ -108,13 +108,9 @@ node tools/generate-published-configurations.mjs `
 - 使用 `-RenderOffscreen -ForceRes` 实跑早期 469 套 coverage 的 `0/469` canary，
   Lit Debug 模式成功输出 1 个配置 × 4 个视角，manifest 全部为 `ready`，原图均为
   1022 × 664 RGBA。该批次因错误地为无默认项 surface 强选首项而废弃，不属于 R2。
-- 变基到 `b547706` 后将骨骼网格使用的 8 个材质通过 UE AssetTools 正式迁移到
-  `/Game/SC01/Materials/VehicleProxy/M_SC01_Vehicle_*`。骨骼网格本体的 8 个
-  `CS_Validation_*` 槽和运行时硬引用均已改写到新路径；清空被忽略的旧
-  `AuthorizedAudiA5/Materials` 目录后，全新 UE 进程不再产生旧材质 LoadErrors，
-  Lit Debug canary 仍可输出 4/4 `ready` PNG。
-- 独立 Development Cook/Stage/Pak 成功；IoStore 清单逐项包含 8 个
-  `M_SC01_Vehicle_*` 材质包，证明离线客户端不依赖编辑器缓存或被忽略目录。
+- 合并边界复核后，功能分支不再修改骨骼车辆 `.uasset`、`ConfiguratorVehicleActor`
+  或其材质覆盖映射；这些车辆所有权文件与 `origin/main` 完全一致，合并时不会替换
+  主分支车辆。此前迁移到 `VehicleProxy` 的实验材质及其测试已从分支移除。
 - Batch 新增材质预检：可见骨骼车辆任一槽为空、使用 `DefaultMaterial` 或
   `WorldGridMaterial` 时，将全部任务写为 `failed` 且不输出 PNG；交互式 Path Tracing
   RTPSO 预热在 Batch 模式下跳过，避免 manifest 完成后的关机竞态崩溃。
