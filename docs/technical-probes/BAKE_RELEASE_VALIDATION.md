@@ -87,9 +87,9 @@ node tools/generate-published-configurations.mjs `
 
 ## 自动化结果
 
-- 2026-10-05 在提交 `8769aa2` 上重新执行 Windows Shipping
+- 2026-10-05 在提交 `fe4834e` 上重新执行 Windows Shipping
   Build/Cook/Stage/Pak/Archive，AutomationTool `ExitCode=0`，归档总大小
-  1,136,434,292 字节。归档 Shipping 二进制与构建输出 SHA-256 一致，确认包含
+  1,267,238,657 字节。归档 Shipping 二进制与构建输出 SHA-256 一致，确认包含
   `reset` 顶栏动作白名单，同时保持车辆资产与 `origin/main` 一致；真实启动后窗口
   标题为“汽车选配系统”且进程可响应。
 - 2026-10-05 本分支验证：契约聚合校验、Web 68/68、Server 45/45、UE BatchBake
@@ -110,8 +110,9 @@ node tools/generate-published-configurations.mjs `
   Lit Debug 模式成功输出 1 个配置 × 4 个视角，manifest 全部为 `ready`，原图均为
   1022 × 664 RGBA。该批次因错误地为无默认项 surface 强选首项而废弃，不属于 R2。
 - 合并边界复核后，功能分支不再修改骨骼车辆 `.uasset`、`ConfiguratorVehicleActor`
-  或其材质覆盖映射；这些车辆所有权文件与 `origin/main` 完全一致，合并时不会替换
-  主分支车辆。此前迁移到 `VehicleProxy` 的实验材质及其测试已从分支移除。
+  或其材质覆盖映射；这些车辆所有权文件与 `origin/main` 完全一致。主分支本地原有但
+  被 `.gitignore` 排除的 `AuthorizedAudiA5` 分件和材质按原路径通过 Git LFS 纳入，
+  并加入 AlwaysCook；此前迁移到 `VehicleProxy` 的实验材质及覆盖逻辑已移除。
 - Batch 新增材质预检：可见骨骼车辆任一槽为空、使用 `DefaultMaterial` 或
   `WorldGridMaterial` 时，将全部任务写为 `failed` 且不输出 PNG；交互式 Path Tracing
   RTPSO 预热在 Batch 模式下跳过，避免 manifest 完成后的关机竞态崩溃。
@@ -149,6 +150,10 @@ node tools/generate-published-configurations.mjs `
 
 ![UE Shipping GUI](assets/bake-release/ue-shipping-gui.png)
 
+本次主分支车辆保护后的 Shipping 实机画面：
+
+![Shipping main A5](assets/bake-release/shipping-main-a5.png)
+
 ## 交付位置
 
 - UE Windows Shipping：`package/clients/ue/Windows`
@@ -162,10 +167,10 @@ node tools/generate-published-configurations.mjs `
 | 文件 | 字节 | SHA-256 |
 | --- | ---: | --- |
 | `package/clients/ue/Windows/ConfigurationSystem.exe` | 172032 | `bceb51f8f21c315ed663e62bd87e9eb75b1595534fbe5af5be9f049462ddacd5` |
-| `package/clients/ue/Windows/ConfigurationSystem/Binaries/Win64/ConfigurationSystem-Win64-Shipping.exe` | 166851584 | `e73f5d4d55678529de45733b92970c295c796acf6e8f31385eade903f9dffc51` |
-| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.pak` | 11377375 | `bf9aabce29bbd95092fe0828069af26dd4c272fc98e65f11a687bd026792f53e` |
-| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.utoc` | 242961 | `fe9b5fb87f299760f55bdbd5cb3104a385724ce8b1054db04111f508a9f073a4` |
-| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.ucas` | 300623584 | `9305487948ac83463cfdea9f2173d416472514a4794c7eed766bd824061e66bb` |
+| `package/clients/ue/Windows/ConfigurationSystem/Binaries/Win64/ConfigurationSystem-Win64-Shipping.exe` | 166851584 | `a64e610c0f224ee7b0c3d8fad9584aee48eb7d1abf41616d2cf1c37380c0e6d4` |
+| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.pak` | 11379423 | `9edc2730a8d9174a9c208d43627a5840cd1f83b274e2790474c8a33016f930fc` |
+| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.utoc` | 315243 | `53c42ef67683152f2e2a070c1074c2d763f850730042afc82c6a06ce65f131c5` |
+| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.ucas` | 431325888 | `ac031f08f522c754d287dca1422e21cbefd114f8bbd9123e31ed70c353a6ebdd` |
 | `package/clients/web/index.html` | 471 | `eab368f98568da480e39ae196631bce5c9a029c8f3aadf457f68a3259b28dbe5c` |
 | `package/renders/mvp-v1/bake-manifest.json` | 37092 | `80bbd1b64790bd37f252c443e6c0e805662251b9a3aa468573494e68de7d293e` |
 
