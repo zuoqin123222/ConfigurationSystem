@@ -134,6 +134,8 @@ if (agentsPath) {
     "git worktree list",
     "node harness/validate.mjs",
     "不确定的产品、资产或授权信息不得写入 Harness",
+    "阶段验证通过后自动继续",
+    "占位资源",
   ]) {
     if (!agents.includes(requiredText)) {
       fail(`harness/AGENTS.md 缺少必需约束：${requiredText}`);
@@ -151,6 +153,8 @@ if (harnessPath) {
     "仪表台回中标",
     "座椅回中标",
     "高光原色碳纤维",
+    "source-manifest.json",
+    "UE 管理员模式",
   ]) {
     if (!harness.includes(requiredText)) {
       fail(`harness/PROJECT.md 缺少当前确定事实：${requiredText}`);
@@ -168,6 +172,10 @@ if (ueHarnessPath) {
     "BAKE_RELEASE_VALIDATION.md",
     "Content/Configurator/_ImportStaging/",
     "BuildCookRun",
+    "当前 active 版本不变",
+    "车内禁止平移",
+    "受限 Web/UE Bridge",
+    "M_SC01_*",
   ]) {
     if (!ueHarness.includes(requiredText)) {
       fail(`harness/UE.md 缺少 UE/资产/打包路由：${requiredText}`);
