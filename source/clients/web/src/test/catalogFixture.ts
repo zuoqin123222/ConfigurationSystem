@@ -409,7 +409,7 @@ export const catalogFixture: CatalogV2 = {
       },
     },
     {
-      ...option('seat-shell-custom', 'seat-shell-back', 'paint', '自定义取色', false),
+      ...option('seat-shell-custom', 'seat-shell-back', 'paint', '自定义颜色', false),
       ui: {
         order: 1,
         iconUrl: '/sc01/option-icons/rainbow.svg',

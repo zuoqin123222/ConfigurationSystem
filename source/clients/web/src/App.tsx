@@ -82,6 +82,20 @@ const SRGB_TO_LINEAR_TABLE = Array.from({ length: 256 }, (_, index) => {
     ? value / 12.92
     : Math.pow((value + 0.055) / 1.055, 2.4)
 }).join(' ')
+const SEAT_BACKPLATE_FINISH_PRESETS = {
+  gloss: {
+    label: '亮面',
+    roughness: 0.18,
+    clearCoat: 0.8,
+  },
+  matte: {
+    label: '雾面',
+    roughness: 0.72,
+    clearCoat: 0.05,
+  },
+} as const
+
+type SeatBackplateFinish = keyof typeof SEAT_BACKPLATE_FINISH_PRESETS
 
 export function isEmbeddedView(search = window.location.search): boolean {
   return new URLSearchParams(search).get('view') === 'embedded'
@@ -116,6 +130,20 @@ function optionSwatch(option: CatalogV2['options'][number]): string {
 function useDefaultImage(event: SyntheticEvent<HTMLImageElement>) {
   const image = event.currentTarget
   if (!image.src.endsWith(DEFAULT_IMAGE_URL)) image.src = DEFAULT_IMAGE_URL
+}
+
+function customEditorLabel(displayName: string): string {
+  return displayName.endsWith('颜色') ? displayName : `${displayName}颜色`
+}
+
+function resolveSeatBackplateFinish(
+  customization: PaintCustomization,
+): SeatBackplateFinish {
+  const glossDelta = Math.abs(customization.roughness - SEAT_BACKPLATE_FINISH_PRESETS.gloss.roughness)
+    + Math.abs(customization.clearCoat - SEAT_BACKPLATE_FINISH_PRESETS.gloss.clearCoat)
+  const matteDelta = Math.abs(customization.roughness - SEAT_BACKPLATE_FINISH_PRESETS.matte.roughness)
+    + Math.abs(customization.clearCoat - SEAT_BACKPLATE_FINISH_PRESETS.matte.clearCoat)
+  return glossDelta <= matteDelta ? 'gloss' : 'matte'
 }
 
 export function versionStaticAssetUrl(
@@ -758,6 +786,23 @@ function Configurator({
     setSyncMessage('')
   }
 
+  const patchPaintCustomization = (
+    surfaceId: string,
+    patch: Partial<PaintCustomization>,
+  ) => {
+    const customization = customizations[surfaceId]
+    const paint = customization && !('materialVariantId' in customization)
+      ? customization
+      : null
+    if (!paint) return
+    setCustomizations({
+      ...customizations,
+      [surfaceId]: { ...paint, ...patch },
+    })
+    setSyncState('idle')
+    setSyncMessage('')
+  }
+
   const persist = async (): Promise<ConfigurationV2 | null> => {
     if (!online) {
       setSyncState('error')
@@ -878,6 +923,13 @@ function Configurator({
     const currentCustomization = customizations[surface.surfaceId]
     const referenceImageUrl = INTERIOR_PART_IMAGES[surface.surfaceId]
     const blackReference = BLACK_REFERENCE_SURFACES.has(surface.surfaceId)
+    const showSeatBackplateFinish = surface.surfaceId === 'seat-shell-back'
+      && selectedOption?.optionId === 'seat-shell-custom'
+      && currentCustomization
+      && !('materialVariantId' in currentCustomization)
+    const seatBackplateFinish = showSeatBackplateFinish
+      ? resolveSeatBackplateFinish(currentCustomization)
+      : null
 
     const renderFlatOption = (
       option: CatalogV2['options'][number],
@@ -1043,9 +1095,9 @@ function Configurator({
           || (!selectedOption?.ui?.control && selectedOption?.parameters.color?.mode === 'custom'))
           && currentCustomization
           && !('materialVariantId' in currentCustomization) && (
-          <section className="paint-editor" aria-label={`${selectedOption.displayName}颜色`}>
+          <section className="paint-editor" aria-label={customEditorLabel(selectedOption.displayName)}>
             <div className="section-title">
-              <h3>自定义色</h3>
+              <h3>自定义颜色</h3>
               <span>{optionPrice(selectedOption)}</span>
             </div>
             <div className="color-control">
@@ -1070,6 +1122,28 @@ function Configurator({
                 />
               </div>
             </div>
+            {showSeatBackplateFinish && seatBackplateFinish && (
+              <div className="finish-control">
+                <span>效果</span>
+                <div role="group" aria-label={`${surface.displayName}表面效果`}>
+                  {(Object.entries(SEAT_BACKPLATE_FINISH_PRESETS) as Array<
+                    [SeatBackplateFinish, (typeof SEAT_BACKPLATE_FINISH_PRESETS)[SeatBackplateFinish]]
+                  >).map(([finishId, preset]) => (
+                    <button
+                      key={finishId}
+                      className={seatBackplateFinish === finishId ? 'selected' : ''}
+                      aria-pressed={seatBackplateFinish === finishId}
+                      onClick={() => patchPaintCustomization(surface.surfaceId, {
+                        roughness: preset.roughness,
+                        clearCoat: preset.clearCoat,
+                      })}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
       </section>

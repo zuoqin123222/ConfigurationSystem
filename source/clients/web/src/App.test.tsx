@@ -613,9 +613,9 @@ describe('App v2', () => {
       .toBeInTheDocument()
   })
 
-  it('座椅背板自定义取色使用 option ui 默认参数且不包含专用控件', async () => {
+  it('座椅背板自定义颜色支持亮面与雾面切换并随保存提交参数', async () => {
     const user = userEvent.setup()
-    mockApi()
+    const fetchMock = mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
@@ -628,10 +628,25 @@ describe('App v2', () => {
 
     expect(screen.getByRole('button', { name: /高光原色碳纤维，免费/ }))
       .toHaveAttribute('aria-pressed', 'true')
-    await user.click(screen.getByRole('button', { name: /自定义取色，¥1,680/ }))
-    const editor = screen.getByRole('region', { name: '自定义取色颜色' })
-    expect(within(editor).queryByRole('group', { name: '背板表面效果' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /自定义取色，¥1,680/ }).querySelector('img'))
+    await user.click(screen.getByRole('button', { name: /自定义颜色，¥1,680/ }))
+    const editor = screen.getByRole('region', { name: '自定义颜色' })
+    const finishGroup = within(editor).getByRole('group', { name: '背板表面效果' })
+    const glossButton = within(finishGroup).getByRole('button', { name: '亮面' })
+    const matteButton = within(finishGroup).getByRole('button', { name: '雾面' })
+    expect(glossButton).toHaveAttribute('aria-pressed', 'true')
+    await user.click(matteButton)
+    expect(matteButton).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() => {
+      const saveCall = fetchMock.mock.calls.find(([url]) => url === '/api/v2/configurations')
+      expect(saveCall).toBeDefined()
+      const payload = JSON.parse(String(saveCall?.[1]?.body))
+      expect(payload.customizations['seat-shell-back']).toMatchObject({
+        roughness: 0.72,
+        clearCoat: 0.05,
+      })
+    })
+    expect(screen.getByRole('button', { name: /自定义颜色，¥1,680/ }).querySelector('img'))
       .toHaveAttribute('src', '/sc01/option-icons/rainbow.svg')
   })
 

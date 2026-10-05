@@ -8525,7 +8525,7 @@
       "optionId": "seat-shell-custom",
       "surfaceId": "seat-shell-back",
       "materialFamilyId": "carbon-fiber",
-      "displayName": "自定义取色",
+      "displayName": "自定义颜色",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -8567,7 +8567,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "碳纤维背板颜色 / 自定义取色 / 亮面或雾面 / 1680*2 元"
+          "locator": "碳纤维背板颜色 / 自定义颜色 / 亮面或雾面 / 1680*2 元"
         }
       ]
     },
