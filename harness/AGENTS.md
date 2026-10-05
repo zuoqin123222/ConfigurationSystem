@@ -1,7 +1,8 @@
-# ConfigurationSystem Agent Harness
+# ConfigurationSystem Harness
 
-本文件是新会话入口。确定的项目事实和任务路由见
-[`docs/HARNESS.md`](docs/HARNESS.md)。
+本目录是 AI 新会话的统一入口。项目确定事实见
+[`PROJECT.md`](PROJECT.md)，UE、FBX、资产目录和打包规则见
+[`UE.md`](UE.md)。
 
 ## 优先级
 
@@ -20,20 +21,23 @@
 git status --short --branch
 git worktree list
 git log --all --date-order -n 20 --oneline --decorate
-node tools/validate-harness.mjs
+node harness/validate.mjs
 ```
 
-确认分支、HEAD、其他工作树和未提交文件后，只读取任务相关入口：
+确认分支、HEAD、其他工作树和未提交文件后，只读取任务相关内容。不得覆盖或提交来源不明的现有改动。
 
-- 总览：`docs/HARNESS.md`
-- 工作流：`docs/AI_WORKFLOW.md`
-- 架构与决策：`docs/ARCHITECTURE.md`、`docs/DECISIONS.md`
-- 契约：`contracts/README.md`
-- UE/Web/Server：各自目录的 `README.md`
-- 资产：`docs/REFERENCE_ASSET_POLICY.md`
-- 发布：`docs/technical-probes/BAKE_RELEASE_VALIDATION.md`
+## 任务触发路由
 
-不得覆盖或提交来源不明的现有改动。
+| 任务关键词 | 必须读取 |
+|---|---|
+| SC01 产品、价格、选项、UI | `harness/PROJECT.md`、`contracts/README.md` |
+| UE、C++、Content、地图、材质、相机、动画 | `harness/UE.md`、`source/clients/ue/README.md` |
+| FBX、Maya、骨骼、Pivot、LOD、材质槽 | `harness/UE.md`、`docs/DCC_VEHICLE_MODELING_EXPORT_GUIDE.md`、`docs/VEHICLE_ASSET_REQUIREMENTS.md` |
+| 外部资产、授权、代理车辆 | `harness/UE.md`、`docs/REFERENCE_ASSET_POLICY.md` |
+| Cook、Stage、Shipping、打包 | `harness/UE.md`、`docs/technical-probes/PACKAGING_BOUNDARY_PROBE.md` |
+| Bake、图片、publication、发布 | `harness/UE.md`、`docs/technical-probes/BAKE_RELEASE_VALIDATION.md` |
+| Web | `harness/PROJECT.md`、`source/clients/web/README.md` |
+| Server、API | `harness/PROJECT.md`、`source/server/README.md` |
 
 ## 控制上下文
 
@@ -46,33 +50,23 @@ node tools/validate-harness.mjs
 
 UE 二进制资产的层级、Pivot、材质槽和视觉效果通过探针与 UE5.8 GUI 确认。
 
-## 实施规则
+## 实施与验证
 
 - `contracts/` 是跨端协议和稳定 ID 的唯一来源。
-- 跨端变更先修改契约，再修改消费者，最后做集成验证。
+- 跨端变更按“契约 → 消费者 → 集成验证”执行。
 - 稳定 ID 不得原地改义；兼容旧配置使用 alias 或版本迁移。
 - UE 业务规则优先放在可测试的 C++；Runtime 不依赖 Editor-only 模块。
 - React 是选配内容的唯一 UI 实现，UE 不复制目录和价格逻辑。
 - `package/` 只保存可重建产物，不作为源码事实或提交内容。
 - 不确定的产品、资产或授权信息不得写入 Harness，也不得自行推断。
 
-外部资产必须先确认许可、来源和 SHA-256。车辆接入流程固定为：
+最低验证：
 
-```text
-授权 FBX → Maya 2025 规范化 → sidecar → 管理员暂存导入 → UE GUI 验收
-```
-
-## 验证
-
-- Harness/文档：`node tools/validate-harness.mjs`、`git diff --check`
+- Harness/文档：`node harness/validate.mjs`、`git diff --check`
 - 契约：`node tools/validate-contracts.mjs`
 - Web：`npm test`、`npm run build`
 - Server：`npm test`
-- UE C++：编译 `ConfigurationSystemEditor Win64 Development`
-- UE 资产和视觉：对应自动化 + UE5.8 GUI
-- 发布：Shipping 实机验证 + 图片重烘焙 + manifest/像素校验
+- UE：Editor 编译、对应自动化、必要的 UE5.8 GUI 验收
+- 发布：Shipping 实机、Web build、Bake 与 manifest/像素校验
 
 编译通过不等于 Cook、Shipping 或视觉验收通过。默认在验证后创建单一目的提交并推送；用户明确要求不提交时除外。
-
-产品事实、架构边界或验证入口变化时，同步更新 `docs/HARNESS.md` 和
-`tools/validate-harness.mjs`。

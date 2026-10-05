@@ -4,8 +4,7 @@
 
 ## 文档
 
-- [新会话项目 Harness](AGENTS.md)
-- [当前事实、模块路由与验证矩阵](docs/HARNESS.md)
+- [AI 项目 Harness](harness/AGENTS.md)
 - [系统架构与三端边界](docs/ARCHITECTURE.md)
 - [AI 协作工作流](docs/AI_WORKFLOW.md)
 - [架构决策记录](docs/DECISIONS.md)
@@ -65,7 +64,7 @@ ConfigurationSystem/
 安装 Node.js 18 或更高版本后，在仓库根目录执行：
 
 ```powershell
-node tools/validate-harness.mjs
+node harness/validate.mjs
 node tools/validate-contracts.mjs
 ```
 

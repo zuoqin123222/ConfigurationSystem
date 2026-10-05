@@ -85,8 +85,9 @@ function validateMarkdownLinks(relativePath) {
 }
 
 const requiredFiles = [
-  "AGENTS.md",
-  "docs/HARNESS.md",
+  "harness/AGENTS.md",
+  "harness/PROJECT.md",
+  "harness/UE.md",
   "docs/AI_WORKFLOW.md",
   "docs/ARCHITECTURE.md",
   "docs/DECISIONS.md",
@@ -107,28 +108,40 @@ for (const relativePath of requiredFiles) {
 for (const relativePath of [
   "AGENTS.md",
   "docs/HARNESS.md",
+  "tools/validate-harness.mjs",
+]) {
+  if (existsSync(absolute(relativePath))) {
+    fail(`Harness 文件必须集中在 harness/，请移除旧入口：${relativePath}`);
+  }
+}
+
+for (const relativePath of [
+  "harness/AGENTS.md",
+  "harness/PROJECT.md",
+  "harness/UE.md",
   "README.md",
   "CONTRIBUTING.md",
 ]) {
   validateMarkdownLinks(relativePath);
 }
 
-const agentsPath = requireFile("AGENTS.md");
+const agentsPath = requireFile("harness/AGENTS.md");
 if (agentsPath) {
   const agents = readFileSync(agentsPath, "utf8");
   for (const requiredText of [
-    "docs/HARNESS.md",
+    "PROJECT.md",
+    "UE.md",
     "git worktree list",
-    "node tools/validate-harness.mjs",
+    "node harness/validate.mjs",
     "不确定的产品、资产或授权信息不得写入 Harness",
   ]) {
     if (!agents.includes(requiredText)) {
-      fail(`AGENTS.md 缺少必需约束：${requiredText}`);
+      fail(`harness/AGENTS.md 缺少必需约束：${requiredText}`);
     }
   }
 }
 
-const harnessPath = requireFile("docs/HARNESS.md");
+const harnessPath = requireFile("harness/PROJECT.md");
 if (harnessPath) {
   const harness = readFileSync(harnessPath, "utf8");
   for (const requiredText of [
@@ -140,7 +153,24 @@ if (harnessPath) {
     "高光原色碳纤维",
   ]) {
     if (!harness.includes(requiredText)) {
-      fail(`docs/HARNESS.md 缺少当前确定事实：${requiredText}`);
+      fail(`harness/PROJECT.md 缺少当前确定事实：${requiredText}`);
+    }
+  }
+}
+
+const ueHarnessPath = requireFile("harness/UE.md");
+if (ueHarnessPath) {
+  const ueHarness = readFileSync(ueHarnessPath, "utf8");
+  for (const requiredText of [
+    "DCC_VEHICLE_MODELING_EXPORT_GUIDE.md",
+    "VEHICLE_ASSET_REQUIREMENTS.md",
+    "PACKAGING_BOUNDARY_PROBE.md",
+    "BAKE_RELEASE_VALIDATION.md",
+    "Content/Configurator/_ImportStaging/",
+    "BuildCookRun",
+  ]) {
+    if (!ueHarness.includes(requiredText)) {
+      fail(`harness/UE.md 缺少 UE/资产/打包路由：${requiredText}`);
     }
   }
 }

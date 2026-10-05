@@ -4,8 +4,7 @@
 
 本仓库同时包含 UE Runtime、UE Editor、Web、Server、共享契约和探针证据。修改前先阅读：
 
-- [新会话项目 Harness](AGENTS.md)
-- [当前事实与任务路由](docs/HARNESS.md)
+- [AI 项目 Harness](harness/AGENTS.md)
 - [系统架构](docs/ARCHITECTURE.md)
 - [AI 协作工作流](docs/AI_WORKFLOW.md)
 - [架构决策记录](docs/DECISIONS.md)
@@ -16,7 +15,7 @@
 ```powershell
 git status --short --branch
 git worktree list
-node tools/validate-harness.mjs
+node harness/validate.mjs
 ```
 
 不要覆盖或顺手提交来源不明的本地改动。其他对话或工作树中的完成记录不等于当前分支已经包含对应提交；先确认 HEAD 和提交归属。任务涉及 UE 引擎能力、Cook、Shipping、资产发现或渲染输出时，先找到对应技术探针；现有证据不能覆盖不同引擎、平台或硬件环境。
@@ -66,7 +65,7 @@ node tools/validate-harness.mjs
 
 ### 所有改动
 
-- [ ] `node tools/validate-harness.mjs` 通过。
+- [ ] `node harness/validate.mjs` 通过。
 - [ ] `git diff --check` 无空白错误。
 - [ ] `git status --short` 只包含本任务文件。
 - [ ] diff 不包含密钥、本地绝对临时路径、生成物或无关格式化。
