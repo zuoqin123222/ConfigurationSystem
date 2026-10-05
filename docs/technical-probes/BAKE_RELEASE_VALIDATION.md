@@ -87,10 +87,11 @@ node tools/generate-published-configurations.mjs `
 
 ## 自动化结果
 
-- 2026-10-05 在提交 `8388c9b` 上重新执行 Windows Shipping
+- 2026-10-05 在提交 `8769aa2` 上重新执行 Windows Shipping
   Build/Cook/Stage/Pak/Archive，AutomationTool `ExitCode=0`，归档总大小
-  1,136,751,987 字节。归档 Shipping 二进制与构建输出 SHA-256 一致，确认包含
-  `reset` 顶栏动作白名单；真实启动后窗口标题为“汽车选配系统”且进程可响应。
+  1,136,434,292 字节。归档 Shipping 二进制与构建输出 SHA-256 一致，确认包含
+  `reset` 顶栏动作白名单，同时保持车辆资产与 `origin/main` 一致；真实启动后窗口
+  标题为“汽车选配系统”且进程可响应。
 - 2026-10-05 本分支验证：契约聚合校验、Web 68/68、Server 45/45、UE BatchBake
   6/6 通过，`ConfigurationSystemEditor Win64 Development` 编译成功。
 - 2026-10-05 R2 发布候选：`sc01-web-shipping-20261005-r2` 使用 2044 × 1328
@@ -161,10 +162,10 @@ node tools/generate-published-configurations.mjs `
 | 文件 | 字节 | SHA-256 |
 | --- | ---: | --- |
 | `package/clients/ue/Windows/ConfigurationSystem.exe` | 172032 | `bceb51f8f21c315ed663e62bd87e9eb75b1595534fbe5af5be9f049462ddacd5` |
-| `package/clients/ue/Windows/ConfigurationSystem/Binaries/Win64/ConfigurationSystem-Win64-Shipping.exe` | 166855168 | `2e51f6a44724c08586570d86968737d375494c9840a9bc2ace02ac03b89f617b` |
-| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.pak` | 11377375 | `cdf44b6eefee4280c5b83903d73ceb8245f5fa10c86c7cc13d7a24ecf4645363` |
-| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.utoc` | 244514 | `4cc2c4ddc902d80e0bcbe063393c6820e9aa8e8a58d27c17d82e4d57adf335fa` |
-| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.ucas` | 300820560 | `f4f43610cba016c33f62e924efd5e2397b3d25d56152a71da9e1012adfb42efd` |
+| `package/clients/ue/Windows/ConfigurationSystem/Binaries/Win64/ConfigurationSystem-Win64-Shipping.exe` | 166851584 | `e73f5d4d55678529de45733b92970c295c796acf6e8f31385eade903f9dffc51` |
+| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.pak` | 11377375 | `bf9aabce29bbd95092fe0828069af26dd4c272fc98e65f11a687bd026792f53e` |
+| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.utoc` | 242961 | `fe9b5fb87f299760f55bdbd5cb3104a385724ce8b1054db04111f508a9f073a4` |
+| `package/clients/ue/Windows/ConfigurationSystem/Content/Paks/ConfigurationSystem-Windows.ucas` | 300623584 | `9305487948ac83463cfdea9f2173d416472514a4794c7eed766bd824061e66bb` |
 | `package/clients/web/index.html` | 471 | `eab368f98568da480e39ae196631bce5c9a029c8f3aadf457f68a3259b28dbe5c` |
 | `package/renders/mvp-v1/bake-manifest.json` | 37092 | `80bbd1b64790bd37f252c443e6c0e805662251b9a3aa468573494e68de7d293e` |
 
