@@ -372,7 +372,10 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   border: 1px solid #d5d3ca; border-radius: 5px;
   color: var(--ink); background: #fff; cursor: pointer;
 }
-.color-choice.selected { border: 2px solid #292c27; box-shadow: 0 0 0 2px #e6e6e3; }
+.color-choice.selected {
+  border-color: #292c27;
+  box-shadow: inset 0 0 0 1px #292c27, 0 0 0 2px #e6e6e3;
+}
 .color-choice img {
   display: block; width: 100%; aspect-ratio: 1.45; object-fit: cover;
   background: repeating-linear-gradient(135deg, #cbc8c0 0 2px, #b8b5ad 2px 4px);
