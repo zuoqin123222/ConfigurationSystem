@@ -12,7 +12,7 @@
     "replaceable": true
   },
   "itemCount": 352,
-  "totalBytes": 5804188,
+  "totalBytes": 5861002,
   "items": [
     {
       "variantId": "alcantara-p2-2911",
@@ -2103,10 +2103,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 33844,
-      "sha256": "f96f3039d65346a19c70972eb6554f657695ab44782f1c5fdb57fc5c4bc6b0c5",
+      "byteLength": 35780,
+      "sha256": "8de0cfa2ac05a3072f64cf251bc6021e897fe02ee283ec7b6a0ce7a0ef3a4f8f",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 39,
+        "y": 15,
+        "width": 463,
+        "height": 487
+      }
     },
     {
       "variantId": "ultrasuede-p6-sf4",
@@ -2127,15 +2133,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 29676,
-      "sha256": "e14c82c1e9bf718c989173458761a298fdf60c3597d82083deda21578b949c27",
+      "byteLength": 32382,
+      "sha256": "35f80acab0f08a267f8802917774fc2c58b4fca0f92a93fdd6ce8484e0fc69b4",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 47,
-        "y": 67,
-        "width": 417,
-        "height": 417
+        "x": 33,
+        "y": 52,
+        "width": 469,
+        "height": 450
       }
     },
     {
@@ -2157,15 +2163,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 25736,
-      "sha256": "fdb9e9439e6f45e840564d0f944a931534bbacd46e4bc139ae2a2ace39297dbf",
+      "byteLength": 28470,
+      "sha256": "c59abd2871ce7594b70bd5c33c040efbb096fb7792a2c95e2085411942baa5f4",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 52,
-        "y": 76,
-        "width": 408,
-        "height": 408
+        "x": 27,
+        "y": 84,
+        "width": 475,
+        "height": 418
       }
     },
     {
@@ -2187,15 +2193,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 33136,
-      "sha256": "1d6dbf48289cb639bfbb6e30c4f668c0157d3ca9de3632e1f2b3eeb91bc738f0",
+      "byteLength": 39050,
+      "sha256": "b01617fb9216cd07af83fcfea5f2c1cc030c705bf169076a024836a8c71edc6b",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 82,
-        "y": 140,
-        "width": 348,
-        "height": 348
+        "x": 15,
+        "y": 130,
+        "width": 487,
+        "height": 372
       }
     },
     {
@@ -2217,15 +2223,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 38930,
-      "sha256": "abf3718961b291a307ba7bf575c4aa146519c43c38d019f1e03392eb69082aff",
+      "byteLength": 43466,
+      "sha256": "be248b88adfa344e3dfbe1d45ee99fe83f824b34faefd12b6ee6de3b2d6d0337",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 65,
-        "y": 47,
-        "width": 418,
-        "height": 418
+        "x": 48,
+        "y": 15,
+        "width": 454,
+        "height": 487
       }
     },
     {
@@ -2247,15 +2253,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 36704,
-      "sha256": "77aff878a29027fb3bdcf63427a271769e38f8ce518167586279933d7169a867",
+      "byteLength": 40896,
+      "sha256": "77f51141cf3ed44fabe43026694e654f6a6a94801c75e54ca31e093c192e1ed3",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 65,
-        "y": 69,
-        "width": 415,
-        "height": 415
+        "x": 48,
+        "y": 52,
+        "width": 454,
+        "height": 450
       }
     },
     {
@@ -2277,15 +2283,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 29414,
-      "sha256": "9b999e276b40e0fc95007cbdff399d6b2a1fcf8a9ab40f0310a6fabe7b4e76f9",
+      "byteLength": 34862,
+      "sha256": "021584aff4c84b3025246662283fadbd35875839ba5815cc2d0fb412c3ee6686",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 75,
-        "y": 97,
-        "width": 388,
-        "height": 388
+        "x": 41,
+        "y": 82,
+        "width": 461,
+        "height": 420
       }
     },
     {
@@ -2307,15 +2313,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 27050,
-      "sha256": "3fcc9905da5d04d4e25030d42706c28bfb5a9f5b1974b1cce1c47931648cbafe",
+      "byteLength": 32398,
+      "sha256": "5238292163b77693708fd69972d7514abc1fc2a17893689d74ccf001a399350f",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 94,
-        "y": 141,
-        "width": 347,
-        "height": 347
+        "x": 35,
+        "y": 128,
+        "width": 467,
+        "height": 374
       }
     },
     {
@@ -2337,15 +2343,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 23732,
-      "sha256": "7d2e0a96074c87df7f91db2ad7cd54f2fb251881c768a883712db32e9aa7f4c9",
+      "byteLength": 26638,
+      "sha256": "eb021bc903286689df2dbdd4b721712207053fa43466d96834ed51c3b8ceeabe",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 74,
-        "y": 54,
-        "width": 410,
-        "height": 410
+        "x": 56,
+        "y": 18,
+        "width": 446,
+        "height": 484
       }
     },
     {
@@ -2367,15 +2373,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 44276,
-      "sha256": "7368bc83ed771d0812f68085b0e94c90e4e837ef5eac4975d111b7db94a90c47",
+      "byteLength": 46478,
+      "sha256": "7c66a3f178f4b88db775de4ec83d5796c1929a8ea317f271cab914eb96aac003",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 72,
-        "y": 70,
-        "width": 412,
-        "height": 412
+        "x": 57,
+        "y": 51,
+        "width": 445,
+        "height": 451
       }
     },
     {
@@ -2397,15 +2403,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 39546,
-      "sha256": "ee9db0a7be38214ad7a22ead9bf240cc828843f24cb84f7c32370f2465a6f858",
+      "byteLength": 44108,
+      "sha256": "73fa09f7cd3805bd63509bd359d704787e07c546f9c201611201529dd4b81274",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 85,
-        "y": 101,
-        "width": 385,
-        "height": 385
+        "x": 56,
+        "y": 86,
+        "width": 446,
+        "height": 416
       }
     },
     {
@@ -2427,15 +2433,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 6486,
-      "sha256": "4661b7b19d717616be37c1dbd23376cfe39a0cbd80c584073c007db9e5d46bd1",
+      "byteLength": 7482,
+      "sha256": "580ec15377290b47056a46e2e8476dec8025675d5fbb17d19b178a343ce61ea2",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 100,
-        "y": 136,
-        "width": 352,
-        "height": 352
+        "x": 52,
+        "y": 124,
+        "width": 450,
+        "height": 378
       }
     },
     {
@@ -2457,10 +2463,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 36496,
-      "sha256": "063e18ce860b3de2f4324c0646d2afb667480ff777cecc725d335f2ce17f433b",
+      "byteLength": 36786,
+      "sha256": "a790d526fb4be00229dd3dd2d7413d75b61281fd992fef4f603e129d7117e1ac",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 10,
+        "y": 10,
+        "width": 492,
+        "height": 492
+      }
     },
     {
       "variantId": "ultrasuede-p7-beg1",
@@ -2481,15 +2493,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 36960,
-      "sha256": "78ea2abbabfecdc528fdcbafdea11d2111a662b68319e9b5ec30d1911a4fdce9",
+      "byteLength": 43892,
+      "sha256": "e9adab5215c2f20ea948dea4c5cbfbbb56e4b810fc59bc734d3c5cd0d2ba86a0",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 73,
-        "y": 122,
-        "width": 365,
-        "height": 365
+        "x": 10,
+        "y": 110,
+        "width": 492,
+        "height": 392
       }
     },
     {
@@ -2511,10 +2523,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 26944,
-      "sha256": "c61385ae1ff7df4ecd5ff42f010651261c27289bfafb3f105e915d26780ecf5b",
+      "byteLength": 26726,
+      "sha256": "ce8ac819f4e6c010c8c4f6cc1f3e4374688651aba38c0e164494b0e6716bdbcf",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 10,
+        "y": 10,
+        "width": 492,
+        "height": 492
+      }
     },
     {
       "variantId": "ultrasuede-p7-lbrw1",
@@ -2535,15 +2553,15 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 29416,
-      "sha256": "9e524a2ce42b12d446ee0e33290246bc5ee9ffb62fbd23e4c5517605fbe6ca1c",
+      "byteLength": 35154,
+      "sha256": "089fbaf6b3889631026f53bec0df8e0ebbbd75b24ef671fb4acd82efef2e50c2",
       "replaceable": true,
       "reviewRequired": false,
       "outputCleanupCrop": {
-        "x": 73,
-        "y": 121,
-        "width": 366,
-        "height": 366
+        "x": 10,
+        "y": 108,
+        "width": 492,
+        "height": 394
       }
     },
     {
@@ -2565,10 +2583,16 @@
         "width": 512,
         "height": 512
       },
-      "byteLength": 30344,
-      "sha256": "82cb588993c80e107f74b269f5694b308399ecd503f012cd9548553c899cfc74",
+      "byteLength": 30936,
+      "sha256": "6be3b7b6f85cab8f4f56e93d3072bd9051a1d7998ff87910d0be068889c53ee1",
       "replaceable": true,
-      "reviewRequired": false
+      "reviewRequired": false,
+      "outputCleanupCrop": {
+        "x": 10,
+        "y": 10,
+        "width": 492,
+        "height": 492
+      }
     },
     {
       "variantId": "leather-p9-2978",
