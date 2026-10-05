@@ -32,7 +32,7 @@ async function withChangedManifest(
   };
 }
 
-test("校验实际 bake fixture 的 64 个唯一 ready RGBA PNG", () => {
+test("校验实际 bake fixture 的全部唯一 ready RGBA PNG", () => {
   const bake = validateBakeManifest(
     resolve(validRoot, "bake-manifest.json"),
     validRoot,
@@ -46,6 +46,67 @@ test("校验实际 bake fixture 的 64 个唯一 ready RGBA PNG", () => {
       "rear-right",
     ),
   );
+});
+
+test("render 数量与配置数量按 manifest 动态校验，不依赖历史 64/16 常量", async () => {
+  const fixture = await withChangedManifest((manifest) => {
+    const firstConfiguration = manifest.renders[0].configurationKey;
+    manifest.renders = manifest.renders.filter(
+      (render: any) => render.configurationKey === firstConfiguration,
+    );
+  });
+  try {
+    const bake = validateBakeManifest(fixture.path, validRoot);
+    assert.equal(bake.renders.size, 4);
+  } finally {
+    await fixture.cleanup();
+  }
+});
+
+test("v2 manifest 使用 renderKey 作为图片身份且拒绝混用 v1 字段", async () => {
+  const fixture = await withChangedManifest((manifest) => {
+    const firstConfiguration = manifest.renders[0].configurationKey;
+    manifest.schemaVersion = "2.0.0";
+    manifest.renders = manifest.renders
+      .filter((render: any) => render.configurationKey === firstConfiguration)
+      .map((render: any) => {
+        const { configurationKey, ...rest } = render;
+        return { renderKey: configurationKey, ...rest };
+      });
+  });
+  try {
+    const bake = validateBakeManifest(fixture.path, validRoot);
+    assert.equal(bake.manifest.schemaVersion, "2.0.0");
+    assert.ok(findReadyRender(
+      bake,
+      "paint-red__wheel-sport__interior-dark__frame-black",
+      "front",
+    ));
+
+    const manifest = JSON.parse(await readFile(fixture.path, "utf8"));
+    manifest.renders[0].configurationKey = manifest.renders[0].renderKey;
+    await writeFile(fixture.path, JSON.stringify(manifest));
+    assert.throws(
+      () => validateBakeManifest(fixture.path, validRoot),
+      /不得包含 configurationKey/,
+    );
+  } finally {
+    await fixture.cleanup();
+  }
+});
+
+test("每个配置必须包含相同的完整 RenderView 集合", async () => {
+  const fixture = await withChangedManifest((manifest) => {
+    manifest.renders.splice(4, 1);
+  });
+  try {
+    assert.throws(
+      () => validateBakeManifest(fixture.path, validRoot),
+      /完整 RenderView 集合/,
+    );
+  } finally {
+    await fixture.cleanup();
+  }
 });
 
 test("拒绝 SHA256 与实际 PNG 不一致的负向 fixture", () => {

@@ -8,7 +8,10 @@
   "renderer": {
     "engineVersion": "5.8.0",
     "mode": "path-tracing",
-    "samplesPerPixel": 256
+    "samplesPerPixel": 256,
+    "outputWidth": 2560,
+    "outputHeight": 1440,
+    "denoiser": true
   },
   "alphaProcessing": {
     "alphaMode": "straight",

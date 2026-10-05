@@ -84,12 +84,14 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 	TestEqual(TEXT("顶层动画定义数"), Catalog.GetCatalog().Animations.Num(), 5);
 	TestEqual(TEXT("骨骼网格由顶层 Catalog 提供"),
 		Catalog.GetCatalog().SkeletalMeshPath,
-		FString(TEXT("/Game/Configurator/AuthorizedAudiA5/"
-			"SK_A5_Car.SK_A5_Car")));
+		FString(TEXT("/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
+			"automotive-configurator-audi-a5-rigged-v2."
+			"automotive-configurator-audi-a5-rigged-v2")));
 	TestEqual(TEXT("所有帧段共享顶层完整 AnimSequence"),
 		Catalog.GetCatalog().SequencePath,
-		FString(TEXT("/Game/Configurator/AuthorizedAudiA5/Animations/"
-			"A_A5_FullVehicle.A_A5_FullVehicle")));
+		FString(TEXT("/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
+			"automotive-configurator-audi-a5-rigged-v2_Anim."
+			"automotive-configurator-audi-a5-rigged-v2_Anim")));
 	const AutomotiveCatalog::FAnimation* HoodAnimation =
 		Catalog.FindAnimation(TEXT("hood"));
 	TestNotNull(TEXT("可按 animationId 查询动画"), HoodAnimation);

@@ -1,35 +1,20 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://configurationsystem.local/schemas/published-configurations.schema.json",
-  "title": "Published MVP Configurations",
+  "title": "Published Configurations",
   "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "publicationVersion",
-    "catalogVersion",
-    "vehicleId",
-    "configurationKeyOrder",
-    "renderViewIds",
-    "expectedRenderCount",
-    "configurations"
+  "oneOf": [
+    { "$ref": "#/$defs/v1Plan" },
+    { "$ref": "#/$defs/v2Plan" }
   ],
-  "properties": {
-    "schemaVersion": { "const": "1.0.0" },
-    "publicationVersion": { "$ref": "#/$defs/id" },
-    "catalogVersion": { "$ref": "#/$defs/id" },
-    "vehicleId": { "$ref": "#/$defs/id" },
-    "configurationKeyOrder": {
-      "type": "array",
-      "prefixItems": [
-        { "const": "paint" },
-        { "const": "wheel" },
-        { "const": "interior" },
-        { "const": "frame" }
-      ],
-      "items": false,
-      "minItems": 4,
-      "maxItems": 4
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "renderKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+__[a-z0-9-]+__render-[a-f0-9]{24}$"
     },
     "renderViewIds": {
       "type": "array",
@@ -43,52 +28,214 @@
       "minItems": 4,
       "maxItems": 4
     },
-    "expectedRenderCount": {
-      "const": 64
-    },
-    "configurations": {
-      "type": "array",
-      "minItems": 16,
-      "maxItems": 16,
-      "items": { "$ref": "#/$defs/configuration" }
-    }
-  },
-  "$defs": {
-    "id": {
-      "type": "string",
-      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
-    },
-    "configurationKey": {
-      "type": "string",
-      "pattern": "^paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+$"
-    },
-    "selections": {
+    "v1Plan": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["paint", "wheel", "interior", "frame"],
+      "required": [
+        "schemaVersion",
+        "publicationVersion",
+        "catalogVersion",
+        "vehicleId",
+        "configurationKeyOrder",
+        "renderViewIds",
+        "expectedRenderCount",
+        "configurations"
+      ],
       "properties": {
-        "paint": { "$ref": "#/$defs/id" },
-        "wheel": { "$ref": "#/$defs/id" },
-        "interior": { "$ref": "#/$defs/id" },
-        "frame": { "$ref": "#/$defs/id" }
+        "schemaVersion": { "const": "1.0.0" },
+        "publicationVersion": { "$ref": "#/$defs/id" },
+        "catalogVersion": { "$ref": "#/$defs/id" },
+        "vehicleId": { "$ref": "#/$defs/id" },
+        "configurationKeyOrder": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "paint" },
+            { "const": "wheel" },
+            { "const": "interior" },
+            { "const": "frame" }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "renderViewIds": { "$ref": "#/$defs/renderViewIds" },
+        "expectedRenderCount": { "type": "integer", "minimum": 4 },
+        "configurations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/v1Configuration" }
+        }
       }
     },
-    "configuration": {
+    "v1Configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["configurationKey", "selections", "totalPriceMinor"],
+      "properties": {
+        "configurationKey": {
+          "type": "string",
+          "pattern": "^paint-[a-z0-9-]+__wheel-[a-z0-9-]+__interior-[a-z0-9-]+__frame-[a-z0-9-]+$"
+        },
+        "selections": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["paint", "wheel", "interior", "frame"],
+          "properties": {
+            "paint": { "$ref": "#/$defs/id" },
+            "wheel": { "$ref": "#/$defs/id" },
+            "interior": { "$ref": "#/$defs/id" },
+            "frame": { "$ref": "#/$defs/id" }
+          }
+        },
+        "totalPriceMinor": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "v2Plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "publicationVersion",
+        "catalogVersion",
+        "vehicleId",
+        "renderViewIds",
+        "strategy",
+        "shard",
+        "exhaustiveScale",
+        "coverage",
+        "expectedRenderCount",
+        "estimatedSeconds",
+        "configurations"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "2.0.0" },
+        "publicationVersion": { "$ref": "#/$defs/id" },
+        "catalogVersion": { "$ref": "#/$defs/id" },
+        "vehicleId": { "$ref": "#/$defs/id" },
+        "renderViewIds": { "$ref": "#/$defs/renderViewIds" },
+        "strategy": { "enum": ["coverage", "shard"] },
+        "shard": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["index", "count"],
+              "properties": {
+                "index": { "type": "integer", "minimum": 0 },
+                "count": { "type": "integer", "minimum": 1 }
+              }
+            }
+          ]
+        },
+        "exhaustiveScale": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "configurationCount",
+            "renderCount",
+            "viewCount",
+            "secondsPerRender",
+            "estimatedSeconds",
+            "estimatedYears"
+          ],
+          "properties": {
+            "configurationCount": { "type": "string", "pattern": "^[0-9]+$" },
+            "renderCount": { "type": "string", "pattern": "^[0-9]+$" },
+            "viewCount": { "const": 4 },
+            "secondsPerRender": { "type": "number", "exclusiveMinimum": 0 },
+            "estimatedSeconds": { "type": "string", "pattern": "^[0-9]+$" },
+            "estimatedYears": { "type": "string", "minLength": 1 }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "renderRelevantOptionCount",
+            "coveredRenderRelevantOptionCount",
+            "availableMaterialVariantCount",
+            "coveredMaterialVariantCount",
+            "totalConfigurationCount"
+          ],
+          "properties": {
+            "renderRelevantOptionCount": { "type": "integer", "minimum": 0 },
+            "coveredRenderRelevantOptionCount": { "type": "integer", "minimum": 0 },
+            "availableMaterialVariantCount": { "type": "integer", "minimum": 0 },
+            "coveredMaterialVariantCount": { "type": "integer", "minimum": 0 },
+            "totalConfigurationCount": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "expectedRenderCount": { "type": "integer", "minimum": 4 },
+        "estimatedSeconds": { "type": "string", "pattern": "^[0-9]+$" },
+        "configurations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/v2Configuration" }
+        }
+      }
+    },
+    "v2Configuration": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "configurationKey",
+        "configurationId",
+        "renderKey",
         "selections",
-        "totalPriceMinor"
+        "customizations"
       ],
       "properties": {
-        "configurationKey": { "$ref": "#/$defs/configurationKey" },
-        "selections": { "$ref": "#/$defs/selections" },
-        "totalPriceMinor": {
-          "type": "integer",
-          "minimum": 0
+        "configurationKey": { "$ref": "#/$defs/renderKey" },
+        "configurationId": {
+          "type": "string",
+          "pattern": "^cfg-[a-f0-9]{24}$"
+        },
+        "renderKey": { "$ref": "#/$defs/renderKey" },
+        "selections": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/id" },
+          "additionalProperties": { "$ref": "#/$defs/id" }
+        },
+        "customizations": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/id" },
+          "additionalProperties": { "$ref": "#/$defs/customization" }
         }
       }
+    },
+    "customization": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["materialVariantId"],
+          "properties": {
+            "materialVariantId": { "$ref": "#/$defs/id" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "colorHex",
+            "metallic",
+            "roughness",
+            "clearCoat",
+            "orangePeel",
+            "flakeIntensity"
+          ],
+          "properties": {
+            "colorHex": { "type": "string", "pattern": "^#[0-9A-F]{6}$" },
+            "metallic": { "type": "number", "minimum": 0, "maximum": 1 },
+            "roughness": { "type": "number", "minimum": 0, "maximum": 1 },
+            "clearCoat": { "type": "number", "minimum": 0, "maximum": 1 },
+            "orangePeel": { "type": "number", "minimum": 0, "maximum": 1 },
+            "flakeIntensity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      ]
     }
   }
 }

@@ -5,8 +5,9 @@
 ## 文件
 
 - `schemas/catalog.schema.json`：车型、分区、选项、模板、交互镜头与渲染视角。
-- `schemas/published-configurations.schema.json`：Web 可达的 16 个完整配置。
-- `schemas/bake-manifest.schema.json`：烘焙器、Alpha 处理策略，以及图片归一化结果、尺寸、哈希与状态。
+- `schemas/published-configurations.schema.json`：v1 完整笛卡尔积，以及 v2
+  coverage/shard Bake 计划。
+- `schemas/bake-manifest.schema.json`：兼容 v1/v2 的烘焙器、Alpha 处理策略，以及图片归一化结果、尺寸、哈希与状态；v1 图片使用 `configurationKey`，v2 图片使用 `renderKey`，禁止混用。
 - `schemas/vehicle-model-sidecar.schema.json`：DCC 模型交付的坐标、FBX、层级、Pivot、材质槽、LOD、授权与哈希。
 - `schemas/vehicle-animation-sidecar.schema.json`：动画 clip、目标节点、可逆性、模型引用、授权与动画 FBX 哈希。
 - `schemas/rigged-vehicle-sidecar.schema.json`：首选 v2 交付；单个 FBX 同时包含 SkeletalMesh、Skeleton 和一条完整 AnimSequence，并声明非循环片段帧范围。
@@ -95,6 +96,14 @@ SC01 不复用 v1 的固定四分区和固定价差模型。v2 使用
 摘要的截断标识。`renderKey` 使用独立的渲染规范输入，只包含当前
 `renderRelevant=true` 的选项，因此完整配置变化不一定要求生成新图片；
 `renderViewId` 不进入配置身份或渲染投影。
+
+v2 published plan 必须声明四个标准 `renderViewIds`，每项使用
+`configurationKey = renderKey` 作为图片目录键，并携带通用
+`selections/customizations`。coverage 除所有 `renderRelevant` 选项外，还覆盖所有
+可被已定价色卡选项消费的 `materialVariants`；shard 只对该完整覆盖集做确定性分片。
+UE 对 v2 计划生成 `schemaVersion: 2.0.0` 的独立 Bake manifest，render 条目以
+`renderKey + renderViewId` 唯一定位图片；Server 可从独立 v2 根加载，不改变 v1
+manifest、活动发布指针或静态 URL。
 
 当前 SC01 fixture 是 `draft`。基础价与现阶段已确认的选装价格用于参考总价，
 但正式报价仍关闭，`quoteAllowed=false`。来源映射与字段理由见

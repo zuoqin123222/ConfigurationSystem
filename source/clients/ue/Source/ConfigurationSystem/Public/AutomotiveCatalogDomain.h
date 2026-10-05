@@ -110,6 +110,7 @@ namespace AutomotiveCatalog
 		FString MaterialFamilyId;
 		FString DisplayName;
 		TOptional<FString> ColorCode;
+		TOptional<FString> DisplayColorHex;
 		FString ThumbnailUrl;
 	};
 

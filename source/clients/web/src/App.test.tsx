@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from './App'
+import App, { STANDALONE_LAYOUT } from './App'
 import {
   catalogFixture,
   initialSelections,
@@ -37,7 +37,7 @@ function configuration(selections = initialSelections, revision = 1, customizati
   }
 }
 
-function mockApi() {
+function mockApi(options: { v2ImageUrl?: string } = {}) {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (url === '/api/v2/catalog') return Promise.resolve(jsonResponse(catalogFixture))
     if (url === '/api/v1/catalog') return Promise.resolve(jsonResponse(legacyCatalogFixture))
@@ -60,6 +60,7 @@ function mockApi() {
         configurationId: `cfg-${request.selections['exterior-body-cover']}`,
         renderKey: `render-${request.selections['exterior-body-cover']}`,
         renderViewId: request.renderViewId,
+        ...(options.v2ImageUrl ? { imageUrl: options.v2ImageUrl } : {}),
       }))
     }
     if (url === '/api/v2/configurations') {
@@ -112,6 +113,7 @@ describe('App v2', () => {
     expect(within(categories).getByRole('button', { name: '个性化' })).toBeInTheDocument()
     expect(screen.getByText('参考总价')).toBeInTheDocument()
     expect(screen.getByText('¥229,800')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '复位' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '保存' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '分享' })).toBeInTheDocument()
     expect(screen.getByText('未同步更改')).toBeInTheDocument()
@@ -130,6 +132,17 @@ describe('App v2', () => {
     expect(document.querySelector('.option-card')).toBeNull()
     expect(document.querySelector('.material-family-title')).toBeNull()
     expect(document.querySelectorAll('.color-choice')).toHaveLength(3)
+    const shell = document.querySelector<HTMLElement>('.app-shell.standalone')
+    expect(STANDALONE_LAYOUT).toEqual({
+      headerHeight: 76,
+      panelWidth: 480,
+      stageMargin: 18,
+      stageRadius: 24,
+    })
+    expect(shell?.style.getPropertyValue('--standalone-header-height')).toBe('76px')
+    expect(shell?.style.getPropertyValue('--standalone-panel-width')).toBe('480px')
+    expect(shell?.style.getPropertyValue('--standalone-stage-margin')).toBe('18px')
+    expect(shell?.style.getPropertyValue('--standalone-stage-radius')).toBe('24px')
     expect(within(screen.getByRole('group', { name: '车辆视角' }))
       .getAllByRole('button')).toHaveLength(4)
     expect(catalogFixture.selectionOrder).toHaveLength(38)
@@ -165,6 +178,73 @@ describe('App v2', () => {
       expect(writeText).toHaveBeenCalledWith(expect.stringContaining('configuration=cfg-body-cover-silver'))
     })
     expect(screen.getByText('分享链接已复制')).toBeInTheDocument()
+  })
+
+  it('独立页复位会清除本地组合与分享参数并重新请求默认左前视角', async () => {
+    const user = userEvent.setup()
+    const cachedSelections = {
+      ...initialSelections,
+      'exterior-body-cover': 'body-cover-silver',
+    }
+    localStorage.setItem('automotive-v2-configurator', JSON.stringify({
+      catalog: catalogFixture,
+      selections: cachedSelections,
+      customizations: {},
+    }))
+    const fetchMock = mockApi({
+      v2ImageUrl: '/assets/v2/renders/review/front-left.png',
+    })
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    expect(screen.getByRole('button', { name: /银色.*免费/ }))
+      .toHaveAttribute('aria-pressed', 'true')
+    await user.click(within(screen.getByRole('group', { name: '车辆视角' }))
+      .getByRole('button', { name: '侧面' }))
+    window.history.replaceState(null, '', '/?configuration=cfg-old')
+
+    await user.click(screen.getByRole('button', { name: '复位' }))
+
+    expect(screen.getByRole('button', { name: /红色.*免费/ }))
+      .toHaveAttribute('aria-pressed', 'true')
+    expect(window.location.search).toBe('')
+    expect(screen.getByText('已恢复默认配置')).toBeInTheDocument()
+    await waitFor(() => {
+      const cached = JSON.parse(String(localStorage.getItem('automotive-v2-configurator')))
+      expect(cached.selections).toEqual(initialSelections)
+      const resolveCalls = fetchMock.mock.calls.filter(
+        ([url]) => url === '/api/v2/renders/resolve',
+      )
+      const request = JSON.parse(String(resolveCalls.at(-1)?.[1]?.body))
+      expect(request.selections).toEqual(initialSelections)
+      expect(request.customizations).toEqual({})
+      expect(request.renderViewId).toBe('front-left')
+    })
+  })
+
+  it('默认配置下可连续复位并在每次复位后重新显示车辆图片', async () => {
+    const user = userEvent.setup()
+    const imageUrl = '/assets/v2/renders/review/default/front-left.png'
+    const fetchMock = mockApi({ v2ImageUrl: imageUrl })
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+    await loadProxy()
+
+    const resolveCount = () => fetchMock.mock.calls.filter(
+      ([url]) => url === '/api/v2/renders/resolve',
+    ).length
+    const initialResolveCount = resolveCount()
+
+    await user.click(screen.getByRole('button', { name: '复位' }))
+    await waitFor(() => expect(resolveCount()).toBe(initialResolveCount + 1))
+    await loadProxy()
+    expect(screen.getByAltText('SC01 车辆预览')).toHaveAttribute('src', imageUrl)
+
+    await user.click(screen.getByRole('button', { name: '复位' }))
+    await waitFor(() => expect(resolveCount()).toBe(initialResolveCount + 2))
+    await loadProxy()
+    expect(screen.getByAltText('SC01 车辆预览')).toHaveAttribute('src', imageUrl)
+    expect(screen.queryByText('正在加载车辆预览…')).not.toBeInTheDocument()
   })
 
   it('embedded 模式只展示完整选配区且不请求车辆预览、视角或图片解析', async () => {
@@ -282,9 +362,14 @@ describe('App v2', () => {
       },
     }))
     expect(screen.getByText('¥239,400')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '复位' }))
     await user.click(screen.getByRole('button', { name: '保存' }))
     await user.click(screen.getByRole('button', { name: '分享' }))
-    expect(triggerconfiguratorheaderaction.mock.calls).toEqual([['save'], ['share']])
+    expect(triggerconfiguratorheaderaction.mock.calls).toEqual([
+      ['reset'],
+      ['save'],
+      ['share'],
+    ])
 
     expect(document.body).toHaveClass('header-document')
   })
@@ -333,6 +418,16 @@ describe('App v2', () => {
           ...initialSelections,
           'exterior-body-cover': 'body-cover-silver',
         },
+        customizations: {},
+      })
+    })
+
+    fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'reset' }))
+    await waitFor(() => {
+      const payload = JSON.parse(String(applyconfigurationjson.mock.lastCall?.[0]))
+      expect(payload).toEqual({
+        schemaVersion: '2.0.0',
+        selections: initialSelections,
         customizations: {},
       })
     })
@@ -557,6 +652,18 @@ describe('App v2', () => {
       expect(document.querySelector('.vehicle-image-preload')).not.toBeNull()
     })
     expect(screen.getByAltText('SC01 车辆预览')).toBeInTheDocument()
+  })
+
+  it('v2 resolve 返回 imageUrl 时直接使用 v2 Bake 图片且不请求 v1 代理', async () => {
+    const imageUrl = '/assets/v2/renders/sc01-v2/sc01/render-default/front-left.png'
+    const fetchMock = mockApi({ v2ImageUrl: imageUrl })
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+    await loadProxy()
+
+    expect(screen.getByAltText('SC01 车辆预览')).toHaveAttribute('src', imageUrl)
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v1/renders/resolve')).toBe(false)
+    expect(fetchMock.mock.calls.some(([url]) => url === '/health')).toBe(false)
   })
 
   it('保存配置并生成可分享链接', async () => {

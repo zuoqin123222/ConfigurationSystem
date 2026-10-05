@@ -224,6 +224,8 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("save")));
 	TestTrue(TEXT("bridge 接受 Header 分享动作"),
 		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("share")));
+	TestTrue(TEXT("bridge 接受 Header 复位动作"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("reset")));
 	TestFalse(TEXT("bridge 拒绝 Header 调试动作"),
 		UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(TEXT("debug")));
 	FString HeaderStateError;
@@ -368,6 +370,8 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 			0.1f));
 	TestTrue(TEXT("首次 Reveal 始终看向车辆 Pivot"),
 		RevealStart.Rotation.Equals((Pivot - RevealStart.Location).Rotation(), 0.1f));
+	TestTrue(TEXT("首次 Reveal 保留目标机位 FOV"),
+		FMath::IsNearlyEqual(RevealStart.FOV, RevealTarget.FOV));
 	FMinimalViewInfo OffAxisPOV = RevealTarget;
 	OffAxisPOV.Rotation += FRotator(3.0f, -2.0f, 0.0f);
 	const FVector ViewAlignedPivot =

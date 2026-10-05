@@ -4,6 +4,7 @@
 
 #include "ConfiguratorVehicleActor.h"
 #include "Components/MeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/AutomationTest.h"
 #include "AutomotiveMaterialLibrary.h"
@@ -65,15 +66,47 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			Binder->GetAppliedInteriorFamilyId(),
 			FString(Case.FamilyId));
 		TestTrue(
-			TEXT("代理槽使用材质库中的对应 Master Material"),
-			Binder->GetInteriorComponent()->GetMaterial(0) == Case.Expected);
+			TEXT("代理槽动态实例使用材质库中的对应 Master Material"),
+			IsValid(Binder->GetInteriorMaterialInstance())
+				&& Binder->GetInteriorMaterialInstance()->Parent == Case.Expected);
 	}
 
+	UMaterialInstanceDynamic* PaintInstance = Binder->GetPaintMaterialInstance();
+	TestNotNull(TEXT("默认车漆创建动态实例"), PaintInstance);
+	if (PaintInstance != nullptr)
+	{
+		const FLinearColor Red =
+			FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#A61D24")));
+		TestTrue(
+			TEXT("标准红色写入车漆 BaseColor"),
+			PaintInstance->K2_GetVectorParameterValue(TEXT("BaseColor")).Equals(
+				Red,
+				0.001f));
+	}
 	TestTrue(
-		TEXT("选择自定义车漆 option"),
+		TEXT("选择标准银色"),
 		State->SelectOption(
 			UAutomotiveMaterialBinder::PaintSurfaceId,
-			TEXT("body-cover-custom")));
+			TEXT("body-cover-silver")));
+	if (PaintInstance != nullptr)
+	{
+		const FLinearColor Silver =
+			FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#BFC3C7")));
+		TestTrue(
+			TEXT("标准银色写入车漆 BaseColor"),
+			PaintInstance->K2_GetVectorParameterValue(TEXT("BaseColor")).Equals(
+				Silver,
+				0.001f));
+	}
+
+	const AutomotiveCatalog::FMaterialVariant* DisplayColorVariant =
+		State->GetCatalogIndex().FindMaterialVariant(TEXT("alcantara-p2-2911"));
+	TestTrue(
+		TEXT("色卡 ui.sortColorHex 进入 UE 目录模型"),
+		DisplayColorVariant != nullptr
+			&& DisplayColorVariant->DisplayColorHex.IsSet()
+			&& DisplayColorVariant->DisplayColorHex.GetValue() == TEXT("#DFDBBE"));
+
 	FAutomotivePaintCustomization Paint;
 	Paint.ColorHex = TEXT("#336699");
 	Paint.Metallic = 0.45;
@@ -81,11 +114,23 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	Paint.ClearCoat = 0.9;
 	Paint.OrangePeel = 0.12;
 	Paint.FlakeIntensity = 0.3;
+	TMap<FString, FString> TransactionSelections = State->GetSelections();
+	TransactionSelections.Add(
+		UAutomotiveMaterialBinder::PaintSurfaceId,
+		TEXT("body-cover-custom"));
+	TMap<FString, FAutomotiveCustomization> TransactionCustomizations =
+		State->GetCustomizations();
+	FAutomotiveCustomization PaintCustomization;
+	PaintCustomization.Kind = EAutomotiveCustomizationKind::Paint;
+	PaintCustomization.Paint = Paint;
+	TransactionCustomizations.Add(
+		UAutomotiveMaterialBinder::PaintSurfaceId,
+		PaintCustomization);
 	TestTrue(
-		TEXT("提交 v2 自定义车漆"),
-		State->SetPaintCustomization(UAutomotiveMaterialBinder::PaintSurfaceId, Paint));
+		TEXT("ApplyTransaction 原子提交 v2 selections/customizations"),
+		State->ApplyTransaction(TransactionSelections, TransactionCustomizations));
 
-	UMaterialInstanceDynamic* PaintInstance = Binder->GetPaintMaterialInstance();
+	PaintInstance = Binder->GetPaintMaterialInstance();
 	TestNotNull(TEXT("车身代理使用动态车漆实例"), PaintInstance);
 	if (PaintInstance != nullptr)
 	{
@@ -116,6 +161,41 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			FMath::IsNearlyEqual(
 				PaintInstance->K2_GetScalarParameterValue(TEXT("FlakeIntensity")),
 				0.3f));
+	}
+
+	TestTrue(
+		TEXT("真实骨骼车辆可由目录完成初始化"),
+		Vehicle->ConfigureAnimationFromCatalog(
+			State->GetCatalogIndex().GetCatalog()));
+	TestTrue(TEXT("重新绑定真实骨骼命名槽"), Binder->Bind(State, Library, Vehicle));
+	USkeletalMeshComponent* SkeletalComponent =
+		Cast<USkeletalMeshComponent>(Binder->GetPaintComponent());
+	TestNotNull(TEXT("车漆绑定到可见骨骼车辆"), SkeletalComponent);
+	TestTrue(
+		TEXT("内饰与车漆绑定到同一骨骼车辆"),
+		Binder->GetInteriorComponent() == SkeletalComponent);
+	if (SkeletalComponent != nullptr)
+	{
+		const int32 PaintIndex =
+			SkeletalComponent->GetMaterialIndex(TEXT("CS_Validation_Paint"));
+		const int32 InteriorIndex =
+			SkeletalComponent->GetMaterialIndex(TEXT("CS_Validation_Interior"));
+		TestTrue(TEXT("骨骼车漆命名槽有效"), PaintIndex != INDEX_NONE);
+		TestTrue(TEXT("骨骼内饰命名槽有效"), InteriorIndex != INDEX_NONE);
+		if (PaintIndex != INDEX_NONE)
+		{
+			TestTrue(
+				TEXT("骨骼车漆槽使用动态实例"),
+				SkeletalComponent->GetMaterial(PaintIndex)
+					== Binder->GetPaintMaterialInstance());
+		}
+		if (InteriorIndex != INDEX_NONE)
+		{
+			TestTrue(
+				TEXT("骨骼内饰槽使用动态实例"),
+				SkeletalComponent->GetMaterial(InteriorIndex)
+					== Binder->GetInteriorMaterialInstance());
+		}
 	}
 	return true;
 }

@@ -21,6 +21,10 @@ npm start
 - `BAKE_ROOT`：发布根目录。服务启动时从
   `renders/<publicationVersion>/bake-manifest.json` 加载并校验 manifest；
   默认指向仓库根目录的 `package`。
+- `V2_BAKE_ROOT`：可选的独立 v2 Bake 资产根目录；默认读取根目录下
+  `bake-manifest.json`，不影响 v1 发布根。
+- `V2_BAKE_MANIFEST`：可选的 v2 manifest 绝对或相对路径；可与
+  `V2_BAKE_ROOT` 组合，用于 manifest 不位于根目录时显式指定。
 
 校验与原子发布：
 
@@ -35,8 +39,12 @@ npm run publish:bake -- <包含 bake-manifest.json 的源目录> <发布根目�
 - `GET /api/v1/catalog`：返回 `catalog.mvp.json`。
 - `POST /api/v1/renders/resolve`：校验 catalog/publication 版本、车型、四分区
   selections 和渲染视角，返回 canonical key、视角及图片 URL。
+- `POST /api/v2/renders/resolve`：派生稳定 `renderKey`；配置 v2 Bake 后按
+  `renderKey + renderViewId` 查找 ready 图片并返回 `imageUrl`。
 - `GET /assets/renders/:publicationVersion/:vehicleId/:configurationKey/:renderViewId.png`：
   只读取启动时已通过 manifest 校验的 ready PNG。
+- `GET /assets/v2/renders/:publicationVersion/:vehicleId/:renderKey/:renderViewId.png`：
+  从独立 v2 根安全读取已校验图片，并阻止路径穿越和符号链接逃逸。
 
 resolve 请求示例：
 

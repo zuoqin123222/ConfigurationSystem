@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
   type SyntheticEvent,
 } from 'react'
@@ -61,9 +62,19 @@ import {
 } from './ueBridge'
 import ExperienceControls from './ExperienceControls'
 import InlineColorPicker from './InlineColorPicker'
+import {
+  BLACK_REFERENCE_SURFACES,
+  INTERIOR_PART_IMAGES,
+} from './interiorPartImages'
 
 const CACHE_KEY = 'automotive-v2-configurator'
 const DEFAULT_IMAGE_URL = '/sc01/option-icons/default.svg'
+export const STANDALONE_LAYOUT = {
+  headerHeight: 76,
+  panelWidth: 480,
+  stageMargin: 18,
+  stageRadius: 24,
+} as const
 const SRGB_TO_LINEAR_TABLE = Array.from({ length: 256 }, (_, index) => {
   const value = index / 255
   return value <= 0.04045
@@ -223,7 +234,7 @@ function ConfiguratorHeader() {
     }
   }, [])
 
-  const triggerAction = (action: 'save' | 'share') => {
+  const triggerAction = (action: 'save' | 'share' | 'reset') => {
     void triggerUeConfiguratorHeaderAction(getUeBridge(true), action)
   }
 
@@ -238,6 +249,7 @@ function ConfiguratorHeader() {
       categories={categories}
       headerState={headerState}
       onAction={triggerAction}
+      onReset={() => triggerAction('reset')}
       onSelectCategory={selectCategory}
     />
   )
@@ -247,12 +259,14 @@ function ConfiguratorTopBar({
   categories,
   headerState,
   onAction,
+  onReset,
   onSelectCategory,
   standalone = false,
 }: {
   categories: CatalogV2['categories']
   headerState: UeConfiguratorHeaderState
   onAction: (action: 'save' | 'share') => void
+  onReset?: () => void
   onSelectCategory: (categoryId: string) => void
   standalone?: boolean
 }) {
@@ -299,6 +313,15 @@ function ConfiguratorTopBar({
           <small>参考总价</small>
           <strong>¥{(headerState.referenceTotalMinor / 100).toLocaleString('zh-CN')}</strong>
         </span>
+        {onReset && (
+          <button
+            className="header-reset"
+            onClick={onReset}
+            disabled={headerState.syncState === 'saving'}
+          >
+            复位
+          </button>
+        )}
         <button
           className="header-save"
           onClick={() => onAction('save')}
@@ -488,6 +511,7 @@ function Configurator({
   const [activeView, setActiveView] = useState<RenderViewId>('front-left')
   const [render, setRender] = useState<LegacyRender | null>(null)
   const [pendingRender, setPendingRender] = useState<LegacyRender | null>(null)
+  const [renderRefreshKey, setRenderRefreshKey] = useState(0)
   const renderRequestRef = useRef('')
   const focusedAnimationIdRef = useRef<string | null>(null)
   const [renderLoading, setRenderLoading] = useState(!embedded)
@@ -664,6 +688,7 @@ function Configurator({
     catalog.vehicle.vehicleId,
     embedded,
     legacyCatalog,
+    renderRefreshKey,
     renderSelectionKey,
   ])
 
@@ -767,6 +792,30 @@ function Configurator({
     }
   }
 
+  const resetConfiguration = () => {
+    const initialSelections = createInitialSelections(catalog)
+    const initialCustomizations = normalizeCustomizations(catalog, initialSelections, {})
+    const url = new URL(window.location.href)
+    url.searchParams.delete('configuration')
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+    localStorage.removeItem(CACHE_KEY)
+    setSelections(initialSelections)
+    setCustomizations(initialCustomizations)
+    setSavedConfiguration(null)
+    setCategoryId(categories[0]?.categoryId ?? '')
+    setComponentId('all')
+    setSurfaceId(catalog.selectionOrder[0] ?? '')
+    setActiveView('front-left')
+    renderRequestRef.current = ''
+    setRender(null)
+    setPendingRender(null)
+    setRenderLoading(!embedded)
+    setRenderRefreshKey((value) => value + 1)
+    setRenderMessage('')
+    setSyncState('idle')
+    setSyncMessage('已恢复默认配置')
+  }
+
   useEffect(() => {
     if (!embedded) return
     void syncUeConfiguratorHeaderState(getUeBridge(true), {
@@ -785,6 +834,7 @@ function Configurator({
       const action = (event as CustomEvent<unknown>).detail
       if (action === 'save') void persist()
       if (action === 'share') void share()
+      if (action === 'reset') resetConfiguration()
     }
     window.addEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
     return () => window.removeEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
@@ -814,6 +864,8 @@ function Configurator({
       (option) => option.optionId === selections[surface.surfaceId],
     )
     const currentCustomization = customizations[surface.surfaceId]
+    const referenceImageUrl = INTERIOR_PART_IMAGES[surface.surfaceId]
+    const blackReference = BLACK_REFERENCE_SURFACES.has(surface.surfaceId)
 
     const renderFlatOption = (
       option: CatalogV2['options'][number],
@@ -853,6 +905,20 @@ function Configurator({
         <div className="section-title">
           <h3>{surface.displayName}</h3>
         </div>
+        {(referenceImageUrl || blackReference) && (
+          <div
+            className={`surface-reference ${blackReference ? 'surface-reference-black' : ''}`}
+            aria-label={`${surface.displayName}定制项目参考`}
+          >
+            {referenceImageUrl && (
+              <img
+                src={referenceImageUrl}
+                alt={`${surface.displayName}定制项目参考`}
+                loading="lazy"
+              />
+            )}
+          </div>
+        )}
         {(flatOptions.length > 0 || !surface.required) && (
           <div className="choice-grid flat-options">
             {!surface.required && (
@@ -997,7 +1063,15 @@ function Configurator({
   }
 
   return (
-    <main className={`app-shell ${embedded ? 'embedded' : 'standalone'}`}>
+    <main
+      className={`app-shell ${embedded ? 'embedded' : 'standalone'}`}
+      style={embedded ? undefined : {
+        '--standalone-header-height': `${STANDALONE_LAYOUT.headerHeight}px`,
+        '--standalone-panel-width': `${STANDALONE_LAYOUT.panelWidth}px`,
+        '--standalone-stage-margin': `${STANDALONE_LAYOUT.stageMargin}px`,
+        '--standalone-stage-radius': `${STANDALONE_LAYOUT.stageRadius}px`,
+      } as CSSProperties}
+    >
       {!embedded && (
         <ConfiguratorTopBar
           standalone
@@ -1018,6 +1092,7 @@ function Configurator({
             if (action === 'save') void persist()
             if (action === 'share') void share()
           }}
+          onReset={resetConfiguration}
           onSelectCategory={selectCategory}
         />
       )}

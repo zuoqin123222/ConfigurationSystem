@@ -140,17 +140,22 @@ describe('受限 UE bridge', () => {
     await expect(getUeConfiguratorHeaderState(bridge)).resolves.toBeNull()
   })
 
-  it('Header 动作只允许 save 和 share 两个固定值', async () => {
+  it('Header 动作只允许 save、share 和 reset 三个固定值', async () => {
     const triggerconfiguratorheaderaction = vi.fn().mockResolvedValue(true)
     const bridge = { triggerconfiguratorheaderaction }
 
     await expect(triggerUeConfiguratorHeaderAction(bridge, 'save')).resolves.toBe(true)
     await expect(triggerUeConfiguratorHeaderAction(bridge, 'share')).resolves.toBe(true)
+    await expect(triggerUeConfiguratorHeaderAction(bridge, 'reset')).resolves.toBe(true)
     await expect(triggerUeConfiguratorHeaderAction(
       bridge,
       'debug' as 'save',
     )).resolves.toBe(false)
-    expect(triggerconfiguratorheaderaction.mock.calls).toEqual([['save'], ['share']])
+    expect(triggerconfiguratorheaderaction.mock.calls).toEqual([
+      ['save'],
+      ['share'],
+      ['reset'],
+    ])
   })
 
   it('await CEF Promise 并把语义镜头及其余显式命令路由到对应 bridge 方法', async () => {

@@ -43,7 +43,7 @@ export type UeControlCommand =
   | { type: 'fullscreen'; enabled: boolean }
 
 export type UeQualityLevel = 'low' | 'medium' | 'high' | 'epic'
-export type UeConfiguratorHeaderAction = 'save' | 'share'
+export type UeConfiguratorHeaderAction = 'save' | 'share' | 'reset'
 export type UeConfiguratorSyncState = 'idle' | 'saving' | 'saved' | 'error'
 
 export interface UeConfiguratorHeaderState {
@@ -257,7 +257,7 @@ export async function triggerUeConfiguratorHeaderAction(
   bridge: ReflectedUeBridge | null,
   action: UeConfiguratorHeaderAction,
 ): Promise<boolean> {
-  if (!['save', 'share'].includes(action)
+  if (!['save', 'share', 'reset'].includes(action)
     || typeof bridge?.triggerconfiguratorheaderaction !== 'function') return false
   try {
     return await bridge.triggerconfiguratorheaderaction(action)
