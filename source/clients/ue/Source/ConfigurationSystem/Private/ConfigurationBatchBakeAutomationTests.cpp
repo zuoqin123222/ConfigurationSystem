@@ -36,6 +36,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"ConfigurationSystem.Runtime.BatchBake.V2Plan",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FConfigurationBatchBakeShaderWaitTrackerTest,
+	"ConfigurationSystem.Runtime.BatchBake.ShaderWaitUsesIndependentTimeout",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
 namespace ConfigurationBatchBakeAutomation
 {
 	FString FixturePath()
@@ -142,6 +147,40 @@ bool FConfigurationBatchBakeOutputProfileTest::RunTest(const FString& Parameters
 	TestFalse(TEXT("未知档位被拒绝"),
 		FConfigurationBakeOutputSettings::Resolve(TEXT("cinema"), false, Settings, Error));
 	TestFalse(TEXT("未知档位提供错误"), Error.IsEmpty());
+	return true;
+}
+
+bool FConfigurationBatchBakeShaderWaitTrackerTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	FConfigurationBakeShaderWaitTracker Tracker;
+	constexpr double TimeoutSeconds = 120.0;
+
+	TestEqual(
+		TEXT("整批运行很久后首次出现 Shader 编译仍从当前时刻开始等待"),
+		Tracker.Update(true, 3600.0, TimeoutSeconds),
+		EConfigurationBakeShaderWaitResult::Waiting);
+	TestEqual(
+		TEXT("本次 Shader 编译未超过独立窗口时继续等待"),
+		Tracker.Update(true, 3719.0, TimeoutSeconds),
+		EConfigurationBakeShaderWaitResult::Waiting);
+	TestEqual(
+		TEXT("本次 Shader 编译结束会报告完成，以便重置任务采样计时"),
+		Tracker.Update(false, 3720.0, TimeoutSeconds),
+		EConfigurationBakeShaderWaitResult::Completed);
+	TestEqual(
+		TEXT("完成状态只报告一次"),
+		Tracker.Update(false, 3721.0, TimeoutSeconds),
+		EConfigurationBakeShaderWaitResult::NotCompiling);
+
+	TestEqual(
+		TEXT("下一批 Shader 使用新的独立等待窗口"),
+		Tracker.Update(true, 7200.0, TimeoutSeconds),
+		EConfigurationBakeShaderWaitResult::Waiting);
+	TestEqual(
+		TEXT("只有单次 Shader 编译超过窗口才超时"),
+		Tracker.Update(true, 7321.0, TimeoutSeconds),
+		EConfigurationBakeShaderWaitResult::TimedOut);
 	return true;
 }
 

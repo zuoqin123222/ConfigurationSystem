@@ -46,6 +46,28 @@ struct CONFIGURATIONSYSTEM_API FConfigurationBakeOutputSettings
 	bool HasDesktopStageAspectRatio() const;
 };
 
+enum class EConfigurationBakeShaderWaitResult : uint8
+{
+	NotCompiling,
+	Waiting,
+	Completed,
+	TimedOut
+};
+
+struct CONFIGURATIONSYSTEM_API FConfigurationBakeShaderWaitTracker
+{
+	EConfigurationBakeShaderWaitResult Update(
+		bool bIsCompiling,
+		double NowSeconds,
+		double TimeoutSeconds);
+
+	void Reset();
+
+private:
+	double StartedAt = 0.0;
+	bool bWasCompiling = false;
+};
+
 struct CONFIGURATIONSYSTEM_API FConfigurationBakePlan
 {
 	FString SchemaVersion;
@@ -121,6 +143,7 @@ private:
 	double TaskStartedAt = 0.0;
 	double ConfigurationChangedAt = 0.0;
 	double TaskTimeoutSeconds = 120.0;
+	FConfigurationBakeShaderWaitTracker ShaderWaitTracker;
 	bool bObservedReset = false;
 	bool bCapturePending = false;
 	bool bExitOnComplete = false;

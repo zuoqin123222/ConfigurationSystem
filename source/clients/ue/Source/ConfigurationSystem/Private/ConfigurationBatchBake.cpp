@@ -211,6 +211,37 @@ bool FConfigurationBakeOutputSettings::HasDesktopStageAspectRatio() const
 		&& static_cast<int64>(Width) * 1328 == static_cast<int64>(Height) * 2044;
 }
 
+EConfigurationBakeShaderWaitResult FConfigurationBakeShaderWaitTracker::Update(
+	const bool bIsCompiling,
+	const double NowSeconds,
+	const double TimeoutSeconds)
+{
+	if (!bIsCompiling)
+	{
+		const bool bCompleted = bWasCompiling;
+		Reset();
+		return bCompleted
+			? EConfigurationBakeShaderWaitResult::Completed
+			: EConfigurationBakeShaderWaitResult::NotCompiling;
+	}
+
+	if (!bWasCompiling)
+	{
+		StartedAt = NowSeconds;
+		bWasCompiling = true;
+	}
+
+	return NowSeconds - StartedAt > TimeoutSeconds
+		? EConfigurationBakeShaderWaitResult::TimedOut
+		: EConfigurationBakeShaderWaitResult::Waiting;
+}
+
+void FConfigurationBakeShaderWaitTracker::Reset()
+{
+	StartedAt = 0.0;
+	bWasCompiling = false;
+}
+
 class FConfigurationBatchBakeViewExtension final : public FSceneViewExtensionBase
 {
 public:
@@ -432,6 +463,7 @@ void FConfigurationBatchBake::Start(bool bInExitOnComplete)
 		Finish(FString::Join(Errors, TEXT(" ")));
 		return;
 	}
+	ShaderWaitTracker.Reset();
 	RunStartedAt = FPlatformTime::Seconds();
 	if (GEngine != nullptr) { OnEngineLoopInitComplete(); }
 	else { EngineInitCompleteHandle = FCoreDelegates::OnFEngineLoopInitComplete.AddRaw(this, &FConfigurationBatchBake::OnEngineLoopInitComplete); }
@@ -478,15 +510,24 @@ bool FConfigurationBatchBake::Tick(float DeltaTime)
 	(void)DeltaTime;
 	const double Now = FPlatformTime::Seconds();
 #if WITH_EDITOR
-	if (GShaderCompilingManager != nullptr
-		&& GShaderCompilingManager->IsCompiling())
+	const bool bShadersCompiling =
+		GShaderCompilingManager != nullptr
+		&& GShaderCompilingManager->IsCompiling();
+	const EConfigurationBakeShaderWaitResult ShaderWaitResult =
+		ShaderWaitTracker.Update(bShadersCompiling, Now, TaskTimeoutSeconds);
+	if (ShaderWaitResult == EConfigurationBakeShaderWaitResult::TimedOut)
 	{
-		if (RunStartedAt > 0.0 && Now - RunStartedAt > TaskTimeoutSeconds)
-		{
-			Finish(TEXT("等待 Bake 材质 Shader 编译超时。"));
-			return false;
-		}
+		Finish(TEXT("等待 Bake 材质 Shader 编译超时。"));
+		return false;
+	}
+	if (ShaderWaitResult == EConfigurationBakeShaderWaitResult::Waiting)
+	{
 		return true;
+	}
+	if (ShaderWaitResult == EConfigurationBakeShaderWaitResult::Completed
+		&& State != EState::WaitingForViewport)
+	{
+		TaskStartedAt = Now;
 	}
 #endif
 	if (State == EState::WaitingForViewport)
