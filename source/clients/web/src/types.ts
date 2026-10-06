@@ -77,6 +77,7 @@ export interface CatalogMaterialFamily extends CatalogNode {
   materialFamilyId: string
   ui?: {
     variantSort?: CatalogVariantSort
+    defaultVariantId?: string
   }
 }
 

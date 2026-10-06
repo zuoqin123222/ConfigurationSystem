@@ -1126,16 +1126,24 @@ function Configurator({
             const variantStripChoices = variantChoices.filter(({ option }) => usesMaterialStrip(option))
             const cardVariantChoices = variantChoices.filter(({ option }) => !usesMaterialStrip(option))
             const standardInStrip = Boolean(standardFamilyOption && variantStripChoices.length > 0)
+            const standardFamilyVariant = materialFamily.ui?.defaultVariantId
+              ? catalog.materialVariants.find(
+                  (variant) => variant.variantId === materialFamily.ui?.defaultVariantId,
+                )
+              : undefined
             const stripChoices = [
               ...(standardInStrip && standardFamilyOption
                 ? [{
                     option: standardFamilyOption,
                     choiceId: standardFamilyOption.optionId,
-                    displayName: standardFamilyOption.displayName,
-                    imageUrl: standardFamilyOption.ui?.iconUrl
+                    displayName: standardFamilyVariant?.displayName
+                      ?? standardFamilyOption.displayName,
+                    imageUrl: standardFamilyVariant?.thumbnailUrl
+                      ?? standardFamilyOption.ui?.iconUrl
                       ?? standardFamilyOption.thumbnailUrl
                       ?? DEFAULT_IMAGE_URL,
-                    colorHex: optionSwatch(standardFamilyOption),
+                    colorHex: standardFamilyVariant?.ui?.sortColorHex
+                      ?? optionSwatch(standardFamilyOption),
                   }]
                 : []),
               ...variantStripChoices.map(({ option, variant }) => ({
@@ -1176,7 +1184,7 @@ function Configurator({
                   aria-pressed={familySelected}
                 >
                   <strong>{materialFamily.displayName}</strong>
-                  <span className="check" aria-hidden="true">{familySelected ? '✓' : ''}</span>
+                  {familySelected && <span className="check" aria-hidden="true">✓</span>}
                 </button>
                 <div className="choice-grid material-family-defaults">
                   {standardFamilyOption && !standardInStrip && renderFlatOption(

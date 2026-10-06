@@ -710,6 +710,9 @@ describe('App v2', () => {
     expect(screen.getByRole('region', { name: 'Alcantara材质' })).toHaveTextContent('免费')
     expect(screen.getByRole('region', { name: '超纤皮材质' })).toHaveTextContent('免费')
     expect(screen.getByRole('region', { name: '牛皮材质' })).toHaveTextContent('免费')
+    expect(document.querySelectorAll('.material-family .check')).toHaveLength(1)
+    expect(screen.getByRole('region', { name: '奥司维材质' })).toHaveClass('selected')
+    expect(screen.getByRole('region', { name: 'Alcantara材质' })).not.toHaveClass('selected')
   })
 
   it('渲染相关配置变化会刷新代理图并保留上一张直到新图就绪', async () => {

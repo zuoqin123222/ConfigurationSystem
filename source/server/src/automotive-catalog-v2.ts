@@ -196,6 +196,7 @@ export interface CatalogMaterialFamily {
   materialFamilyId: string;
   ui?: {
     variantSort?: "achromatic-then-rainbow";
+    defaultVariantId?: string;
   };
   [key: string]: unknown;
 }
@@ -311,7 +312,11 @@ function validateCatalogUi(catalog: AutomotiveCatalog): void {
       && (!isRecord(family.ui)
         || (family.ui.variantSort !== undefined
           && family.ui.variantSort !== "achromatic-then-rainbow")
-        || Object.keys(family.ui).some((key) => key !== "variantSort"))) {
+        || (family.ui.defaultVariantId !== undefined
+          && (typeof family.ui.defaultVariantId !== "string"
+            || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(family.ui.defaultVariantId)))
+        || Object.keys(family.ui)
+          .some((key) => !["variantSort", "defaultVariantId"].includes(key)))) {
       throw new Error(`车型目录 v2 材料族 ${family.materialFamilyId} ui 非法`);
     }
   }
@@ -333,6 +338,16 @@ function validateCatalogUi(catalog: AutomotiveCatalog): void {
     if (sortedFamilyIds.has(variant.materialFamilyId)
       && (typeof sortColorHex !== "string" || !/^#[0-9a-fA-F]{6}$/.test(sortColorHex))) {
       throw new Error(`车型目录 v2 材料色卡 ${variant.variantId} 缺少合法 ui.sortColorHex`);
+    }
+  }
+  const materialVariants = new Map(
+    catalog.materialVariants.map((variant) => [variant.variantId, variant]),
+  );
+  for (const family of catalog.materialFamilies) {
+    if (family.ui?.defaultVariantId === undefined) continue;
+    if (materialVariants.get(family.ui.defaultVariantId)?.materialFamilyId
+      !== family.materialFamilyId) {
+      throw new Error(`车型目录 v2 材料族 ${family.materialFamilyId} 默认色号非法`);
     }
   }
   for (const option of catalog.options) {

@@ -367,6 +367,38 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
       .map((family) => family.materialFamilyId),
     ["ultrasuede", "alcantara", "leather", "microfiber"]
   );
+  assert.equal(
+    catalog.materialFamilies.find((family) => family.materialFamilyId === "ultrasuede")
+      .ui.defaultVariantId,
+    "ultrasuede-p6-uf7"
+  );
+  assert.equal(
+    catalog.materialFamilies.find((family) => family.materialFamilyId === "microfiber")
+      .ui.defaultVariantId,
+    "microfiber-p16-np-3048"
+  );
+  const microfiberVariants = catalog.materialVariants.filter(
+    (variant) => variant.materialFamilyId === "microfiber"
+  );
+  assert.equal(microfiberVariants.length, 176);
+  assert.ok(microfiberVariants.every(
+    (variant) => !variant.displayName.includes("待复核")
+      && !variant.sourceRefs[0].locator.includes("待复核")
+  ));
+  assert.deepEqual(
+    microfiberVariants
+      .filter((variant) => [
+        "microfiber-p16-np-3048",
+        "microfiber-p17-kj-p17-r01c1",
+        "microfiber-p17-kj-p17-r30c2"
+      ].includes(variant.variantId))
+      .map((variant) => [variant.variantId, variant.displayName, variant.colorCode]),
+    [
+      ["microfiber-p16-np-3048", "NP-3048 暗夜黑", "NP-3048"],
+      ["microfiber-p17-kj-p17-r01c1", "KJ-065 玉石白", "KJ-065"],
+      ["microfiber-p17-kj-p17-r30c2", "KJ-008 曜夜黑", "KJ-008"]
+    ]
+  );
   assert.deepEqual(
     catalog.options
       .filter((option) => option.surfaceId === "wheel-color")

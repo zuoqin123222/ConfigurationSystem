@@ -1111,7 +1111,10 @@
     {
       "materialFamilyId": "ultrasuede",
       "displayName": "奥司维",
-      "ui": { "variantSort": "achromatic-then-rainbow" },
+      "ui": {
+        "variantSort": "achromatic-then-rainbow",
+        "defaultVariantId": "ultrasuede-p6-uf7"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-color-card",
@@ -1147,7 +1150,10 @@
     {
       "materialFamilyId": "microfiber",
       "displayName": "超纤皮",
-      "ui": { "variantSort": "achromatic-then-rainbow" },
+      "ui": {
+        "variantSort": "achromatic-then-rainbow",
+        "defaultVariantId": "microfiber-p16-np-3048"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-color-card",
@@ -3798,7 +3804,7 @@
     {
       "variantId": "microfiber-p16-np-3001",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3001（名称待复核）",
+      "displayName": "NP-3001 纯净白",
       "colorCode": "NP-3001",
       "ui": { "sortColorHex": "#FFFFFF" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3001.webp",
@@ -3807,14 +3813,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3001（名称待复核）"
+          "locator": "NP-3001 纯净白"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3002",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3002（名称待复核）",
+      "displayName": "NP-3002 特斯拉白",
       "colorCode": "NP-3002",
       "ui": { "sortColorHex": "#F7F7F7" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3002.webp",
@@ -3823,14 +3829,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3002（名称待复核）"
+          "locator": "NP-3002 特斯拉白"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3003",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3003（名称待复核）",
+      "displayName": "NP-3003 LM珍珠琉璃白",
       "colorCode": "NP-3003",
       "ui": { "sortColorHex": "#E0E0E0" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3003.webp",
@@ -3839,14 +3845,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3003（名称待复核）"
+          "locator": "NP-3003 LM珍珠琉璃白"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3004",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3004（名称待复核）",
+      "displayName": "NP-3004 艾维亚白",
       "colorCode": "NP-3004",
       "ui": { "sortColorHex": "#C0BFBD" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3004.webp",
@@ -3855,14 +3861,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3004（名称待复核）"
+          "locator": "NP-3004 艾维亚白"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3005",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3005（名称待复核）",
+      "displayName": "NP-3005 珍珠白",
       "colorCode": "NP-3005",
       "ui": { "sortColorHex": "#BBBBBB" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3005.webp",
@@ -3871,14 +3877,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3005（名称待复核）"
+          "locator": "NP-3005 珍珠白"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3006",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3006（名称待复核）",
+      "displayName": "NP-3006 奶白",
       "colorCode": "NP-3006",
       "ui": { "sortColorHex": "#D1CBAD" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3006.webp",
@@ -3887,14 +3893,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3006（名称待复核）"
+          "locator": "NP-3006 奶白"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3007",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3007（名称待复核）",
+      "displayName": "NP-3007 象牙白",
       "colorCode": "NP-3007",
       "ui": { "sortColorHex": "#ABA998" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3007.webp",
@@ -3903,14 +3909,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3007（名称待复核）"
+          "locator": "NP-3007 象牙白"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3008",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3008（名称待复核）",
+      "displayName": "NP-3008 竞速米",
       "colorCode": "NP-3008",
       "ui": { "sortColorHex": "#CCB67B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3008.webp",
@@ -3919,14 +3925,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3008（名称待复核）"
+          "locator": "NP-3008 竞速米"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3009",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3009（名称待复核）",
+      "displayName": "NP-3009 艾维亚米",
       "colorCode": "NP-3009",
       "ui": { "sortColorHex": "#C2BE9F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3009.webp",
@@ -3935,14 +3941,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3009（名称待复核）"
+          "locator": "NP-3009 艾维亚米"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3010",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3010（名称待复核）",
+      "displayName": "NP-3010 贵士米",
       "colorCode": "NP-3010",
       "ui": { "sortColorHex": "#928468" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3010.webp",
@@ -3951,14 +3957,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3010（名称待复核）"
+          "locator": "NP-3010 贵士米"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3011",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3011（名称待复核）",
+      "displayName": "NP-3011 丰田系列米",
       "colorCode": "NP-3011",
       "ui": { "sortColorHex": "#827561" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3011.webp",
@@ -3967,14 +3973,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3011（名称待复核）"
+          "locator": "NP-3011 丰田系列米"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3012",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3012（名称待复核）",
+      "displayName": "NP-3012 迈巴赫米",
       "colorCode": "NP-3012",
       "ui": { "sortColorHex": "#888166" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3012.webp",
@@ -3983,14 +3989,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3012（名称待复核）"
+          "locator": "NP-3012 迈巴赫米"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3013",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3013（名称待复核）",
+      "displayName": "NP-3013 谦和米",
       "colorCode": "NP-3013",
       "ui": { "sortColorHex": "#928769" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3013.webp",
@@ -3999,14 +4005,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3013（名称待复核）"
+          "locator": "NP-3013 谦和米"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3014",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3014（名称待复核）",
+      "displayName": "NP-3014 埃尔法米",
       "colorCode": "NP-3014",
       "ui": { "sortColorHex": "#968B61" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3014.webp",
@@ -4015,14 +4021,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3014（名称待复核）"
+          "locator": "NP-3014 埃尔法米"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3015",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3015（名称待复核）",
+      "displayName": "NP-3015 保时捷莫哈韦米",
       "colorCode": "NP-3015",
       "ui": { "sortColorHex": "#7E623E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3015.webp",
@@ -4031,14 +4037,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3015（名称待复核）"
+          "locator": "NP-3015 保时捷莫哈韦米"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3016",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3016（名称待复核）",
+      "displayName": "NP-3016 大漠米",
       "colorCode": "NP-3016",
       "ui": { "sortColorHex": "#70593F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3016.webp",
@@ -4047,14 +4053,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3016（名称待复核）"
+          "locator": "NP-3016 大漠米"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3017",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3017（名称待复核）",
+      "displayName": "NP-3017 理想棕",
       "colorCode": "NP-3017",
       "ui": { "sortColorHex": "#8A5E28" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3017.webp",
@@ -4063,14 +4069,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3017（名称待复核）"
+          "locator": "NP-3017 理想棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3018",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3018（名称待复核）",
+      "displayName": "NP-3018 橡木棕",
       "colorCode": "NP-3018",
       "ui": { "sortColorHex": "#754825" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3018.webp",
@@ -4079,14 +4085,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3018（名称待复核）"
+          "locator": "NP-3018 橡木棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3019",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3019（名称待复核）",
+      "displayName": "NP-3019 丹霞棕",
       "colorCode": "NP-3019",
       "ui": { "sortColorHex": "#7B4621" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3019.webp",
@@ -4095,14 +4101,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3019（名称待复核）"
+          "locator": "NP-3019 丹霞棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3020",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3020（名称待复核）",
+      "displayName": "NP-3020 琥珀棕",
       "colorCode": "NP-3020",
       "ui": { "sortColorHex": "#814824" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3020.webp",
@@ -4111,14 +4117,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3020（名称待复核）"
+          "locator": "NP-3020 琥珀棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3021",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3021（名称待复核）",
+      "displayName": "NP-3021 奔驰S级棕",
       "colorCode": "NP-3021",
       "ui": { "sortColorHex": "#944922" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3021.webp",
@@ -4127,14 +4133,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3021（名称待复核）"
+          "locator": "NP-3021 奔驰S级棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3022",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3022（名称待复核）",
+      "displayName": "NP-3022 大叶棕",
       "colorCode": "NP-3022",
       "ui": { "sortColorHex": "#793320" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3022.webp",
@@ -4143,14 +4149,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3022（名称待复核）"
+          "locator": "NP-3022 大叶棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3023",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3023（名称待复核）",
+      "displayName": "NP-3023 马鞍棕",
       "colorCode": "NP-3023",
       "ui": { "sortColorHex": "#673015" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3023.webp",
@@ -4159,14 +4165,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3023（名称待复核）"
+          "locator": "NP-3023 马鞍棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3024",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3024（名称待复核）",
+      "displayName": "NP-3024 迈巴赫棕",
       "colorCode": "NP-3024",
       "ui": { "sortColorHex": "#5E2B16" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3024.webp",
@@ -4175,14 +4181,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3024（名称待复核）"
+          "locator": "NP-3024 迈巴赫棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3025",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3025（名称待复核）",
+      "displayName": "NP-3025 奥迪棕",
       "colorCode": "NP-3025",
       "ui": { "sortColorHex": "#543E37" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3025.webp",
@@ -4191,14 +4197,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3025（名称待复核）"
+          "locator": "NP-3025 奥迪棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3026",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3026（名称待复核）",
+      "displayName": "NP-3026 绅士棕",
       "colorCode": "NP-3026",
       "ui": { "sortColorHex": "#4A3A2E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3026.webp",
@@ -4207,14 +4213,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3026（名称待复核）"
+          "locator": "NP-3026 绅士棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3027",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3027（名称待复核）",
+      "displayName": "NP-3027 巧克力棕",
       "colorCode": "NP-3027",
       "ui": { "sortColorHex": "#573D28" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3027.webp",
@@ -4223,14 +4229,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3027（名称待复核）"
+          "locator": "NP-3027 巧克力棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3028",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3028（名称待复核）",
+      "displayName": "NP-3028 焦铁棕",
       "colorCode": "NP-3028",
       "ui": { "sortColorHex": "#552E22" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3028.webp",
@@ -4239,14 +4245,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3028（名称待复核）"
+          "locator": "NP-3028 焦铁棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3029",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3029（名称待复核）",
+      "displayName": "NP-3029 玛莎棕",
       "colorCode": "NP-3029",
       "ui": { "sortColorHex": "#65321D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3029.webp",
@@ -4255,14 +4261,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3029（名称待复核）"
+          "locator": "NP-3029 玛莎棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3030",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3030（名称待复核）",
+      "displayName": "NP-3030 欧版棕",
       "colorCode": "NP-3030",
       "ui": { "sortColorHex": "#5F311A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3030.webp",
@@ -4271,14 +4277,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3030（名称待复核）"
+          "locator": "NP-3030 欧版棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3031",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3031（名称待复核）",
+      "displayName": "NP-3031 曜石棕",
       "colorCode": "NP-3031",
       "ui": { "sortColorHex": "#7B2C1E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3031.webp",
@@ -4287,14 +4293,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3031（名称待复核）"
+          "locator": "NP-3031 曜石棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3032",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3032（名称待复核）",
+      "displayName": "NP-3032 紫檀棕",
       "colorCode": "NP-3032",
       "ui": { "sortColorHex": "#591815" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3032.webp",
@@ -4303,14 +4309,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3032（名称待复核）"
+          "locator": "NP-3032 紫檀棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3033",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3033（名称待复核）",
+      "displayName": "NP-3033 绅士咖",
       "colorCode": "NP-3033",
       "ui": { "sortColorHex": "#5D403B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3033.webp",
@@ -4319,14 +4325,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3033（名称待复核）"
+          "locator": "NP-3033 绅士咖"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3034",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3034（名称待复核）",
+      "displayName": "NP-3034 奔驰红米棕",
       "colorCode": "NP-3034",
       "ui": { "sortColorHex": "#523735" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3034.webp",
@@ -4335,14 +4341,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3034（名称待复核）"
+          "locator": "NP-3034 奔驰红米棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3035",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3035（名称待复核）",
+      "displayName": "NP-3035 伯爵咖",
       "colorCode": "NP-3035",
       "ui": { "sortColorHex": "#513B37" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3035.webp",
@@ -4351,14 +4357,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3035（名称待复核）"
+          "locator": "NP-3035 伯爵咖"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3036",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3036（名称待复核）",
+      "displayName": "NP-3036 林肯红棕",
       "colorCode": "NP-3036",
       "ui": { "sortColorHex": "#392E2D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3036.webp",
@@ -4367,14 +4373,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3036（名称待复核）"
+          "locator": "NP-3036 林肯红棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3037",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3037（名称待复核）",
+      "displayName": "NP-3037 奔驰商务棕",
       "colorCode": "NP-3037",
       "ui": { "sortColorHex": "#312829" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3037.webp",
@@ -4383,14 +4389,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3037（名称待复核）"
+          "locator": "NP-3037 奔驰商务棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3038",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3038（名称待复核）",
+      "displayName": "NP-3038 宝马摩卡棕",
       "colorCode": "NP-3038",
       "ui": { "sortColorHex": "#312421" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3038.webp",
@@ -4399,14 +4405,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3038（名称待复核）"
+          "locator": "NP-3038 宝马摩卡棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3039",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3039（名称待复核）",
+      "displayName": "NP-3039 干邑棕",
       "colorCode": "NP-3039",
       "ui": { "sortColorHex": "#34251E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3039.webp",
@@ -4415,14 +4421,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3039（名称待复核）"
+          "locator": "NP-3039 干邑棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3040",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3040（名称待复核）",
+      "displayName": "NP-3040 迈巴赫咖",
       "colorCode": "NP-3040",
       "ui": { "sortColorHex": "#2B221C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3040.webp",
@@ -4431,14 +4437,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3040（名称待复核）"
+          "locator": "NP-3040 迈巴赫咖"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3041",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3041（名称待复核）",
+      "displayName": "NP-3041 高级灰",
       "colorCode": "NP-3041",
       "ui": { "sortColorHex": "#898D8D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3041.webp",
@@ -4447,14 +4453,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3041（名称待复核）"
+          "locator": "NP-3041 高级灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3042",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3042（名称待复核）",
+      "displayName": "NP-3042 塞纳灰",
       "colorCode": "NP-3042",
       "ui": { "sortColorHex": "#737471" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3042.webp",
@@ -4463,14 +4469,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3042（名称待复核）"
+          "locator": "NP-3042 塞纳灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3043",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3043（名称待复核）",
+      "displayName": "NP-3043 巴黎灰",
       "colorCode": "NP-3043",
       "ui": { "sortColorHex": "#646E78" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3043.webp",
@@ -4479,14 +4485,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3043（名称待复核）"
+          "locator": "NP-3043 巴黎灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3044",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3044（名称待复核）",
+      "displayName": "NP-3044 战斗灰",
       "colorCode": "NP-3044",
       "ui": { "sortColorHex": "#464E57" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3044.webp",
@@ -4495,14 +4501,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3044（名称待复核）"
+          "locator": "NP-3044 战斗灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3045",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3045（名称待复核）",
+      "displayName": "NP-3045 喜马拉雅灰",
       "colorCode": "NP-3045",
       "ui": { "sortColorHex": "#4F4F51" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3045.webp",
@@ -4511,14 +4517,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3045（名称待复核）"
+          "locator": "NP-3045 喜马拉雅灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3046",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3046（名称待复核）",
+      "displayName": "NP-3046 玄铁灰",
       "colorCode": "NP-3046",
       "ui": { "sortColorHex": "#444746" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3046.webp",
@@ -4527,14 +4533,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3046（名称待复核）"
+          "locator": "NP-3046 玄铁灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3047",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3047（名称待复核）",
+      "displayName": "NP-3047 碳灰",
       "colorCode": "NP-3047",
       "ui": { "sortColorHex": "#2C2D31" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3047.webp",
@@ -4543,14 +4549,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3047（名称待复核）"
+          "locator": "NP-3047 碳灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3048",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3048（名称待复核）",
+      "displayName": "NP-3048 暗夜黑",
       "colorCode": "NP-3048",
       "ui": { "sortColorHex": "#0F1112" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3048.webp",
@@ -4559,14 +4565,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3048（名称待复核）"
+          "locator": "NP-3048 暗夜黑"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3049",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3049（名称待复核）",
+      "displayName": "NP-3049 法拉利棕黄",
       "colorCode": "NP-3049",
       "ui": { "sortColorHex": "#B4651D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3049.webp",
@@ -4575,14 +4581,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3049（名称待复核）"
+          "locator": "NP-3049 法拉利棕黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3050",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3050（名称待复核）",
+      "displayName": "NP-3050 保时捷黄",
       "colorCode": "NP-3050",
       "ui": { "sortColorHex": "#CD8140" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3050.webp",
@@ -4591,14 +4597,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3050（名称待复核）"
+          "locator": "NP-3050 保时捷黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3051",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3051（名称待复核）",
+      "displayName": "NP-3051 加州黄",
       "colorCode": "NP-3051",
       "ui": { "sortColorHex": "#DCAA4E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3051.webp",
@@ -4607,14 +4613,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3051（名称待复核）"
+          "locator": "NP-3051 加州黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3052",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3052（名称待复核）",
+      "displayName": "NP-3052 宾利黄",
       "colorCode": "NP-3052",
       "ui": { "sortColorHex": "#BD9342" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3052.webp",
@@ -4623,14 +4629,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3052（名称待复核）"
+          "locator": "NP-3052 宾利黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3053",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3053（名称待复核）",
+      "displayName": "NP-3053 皇族黄",
       "colorCode": "NP-3053",
       "ui": { "sortColorHex": "#E5BC6C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3053.webp",
@@ -4639,14 +4645,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3053（名称待复核）"
+          "locator": "NP-3053 皇族黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3054",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3054（名称待复核）",
+      "displayName": "NP-3054 马卡龙柠檬黄",
       "colorCode": "NP-3054",
       "ui": { "sortColorHex": "#C9A532" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3054.webp",
@@ -4655,14 +4661,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3054（名称待复核）"
+          "locator": "NP-3054 马卡龙柠檬黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3055",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3055（名称待复核）",
+      "displayName": "NP-3055 兰博基尼黄",
       "colorCode": "NP-3055",
       "ui": { "sortColorHex": "#EEBB19" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3055.webp",
@@ -4671,14 +4677,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3055（名称待复核）"
+          "locator": "NP-3055 兰博基尼黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3056",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3056（名称待复核）",
+      "displayName": "NP-3056 库里南橙",
       "colorCode": "NP-3056",
       "ui": { "sortColorHex": "#C06C34" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3056.webp",
@@ -4687,14 +4693,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3056（名称待复核）"
+          "locator": "NP-3056 库里南橙"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3057",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3057（名称待复核）",
+      "displayName": "NP-3057 保时捷波尔多红",
       "colorCode": "NP-3057",
       "ui": { "sortColorHex": "#751F2A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3057.webp",
@@ -4703,14 +4709,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3057（名称待复核）"
+          "locator": "NP-3057 保时捷波尔多红"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3058",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3058（名称待复核）",
+      "displayName": "NP-3058 路虎干椒红",
       "colorCode": "NP-3058",
       "ui": { "sortColorHex": "#9B1D23" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3058.webp",
@@ -4719,14 +4725,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3058（名称待复核）"
+          "locator": "NP-3058 路虎干椒红"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3059",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3059（名称待复核）",
+      "displayName": "NP-3059 兰博基尼红",
       "colorCode": "NP-3059",
       "ui": { "sortColorHex": "#BF222B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3059.webp",
@@ -4735,14 +4741,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3059（名称待复核）"
+          "locator": "NP-3059 兰博基尼红"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3060",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3060（名称待复核）",
+      "displayName": "NP-3060 火山红",
       "colorCode": "NP-3060",
       "ui": { "sortColorHex": "#E01810" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3060.webp",
@@ -4751,14 +4757,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3060（名称待复核）"
+          "locator": "NP-3060 火山红"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3061",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3061（名称待复核）",
+      "displayName": "NP-3061 中国红",
       "colorCode": "NP-3061",
       "ui": { "sortColorHex": "#C81619" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3061.webp",
@@ -4767,14 +4773,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3061（名称待复核）"
+          "locator": "NP-3061 中国红"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3062",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3062（名称待复核）",
+      "displayName": "NP-3062 熔岩棕",
       "colorCode": "NP-3062",
       "ui": { "sortColorHex": "#852C1C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3062.webp",
@@ -4783,14 +4789,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3062（名称待复核）"
+          "locator": "NP-3062 熔岩棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3063",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3063（名称待复核）",
+      "displayName": "NP-3063 爱马仕橙",
       "colorCode": "NP-3063",
       "ui": { "sortColorHex": "#A73C1E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3063.webp",
@@ -4799,14 +4805,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3063（名称待复核）"
+          "locator": "NP-3063 爱马仕橙"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3064",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3064（名称待复核）",
+      "displayName": "NP-3064 水晶橙",
       "colorCode": "NP-3064",
       "ui": { "sortColorHex": "#AB3025" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3064.webp",
@@ -4815,14 +4821,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3064（名称待复核）"
+          "locator": "NP-3064 水晶橙"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3065",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3065（名称待复核）",
+      "displayName": "NP-3065 深红",
       "colorCode": "NP-3065",
       "ui": { "sortColorHex": "#492C28" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3065.webp",
@@ -4831,14 +4837,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3065（名称待复核）"
+          "locator": "NP-3065 深红"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3066",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3066（名称待复核）",
+      "displayName": "NP-3066 紫罗兰",
       "colorCode": "NP-3066",
       "ui": { "sortColorHex": "#432D36" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3066.webp",
@@ -4847,14 +4853,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3066（名称待复核）"
+          "locator": "NP-3066 紫罗兰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3067",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3067（名称待复核）",
+      "displayName": "NP-3067 幻影紫",
       "colorCode": "NP-3067",
       "ui": { "sortColorHex": "#552357" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3067.webp",
@@ -4863,14 +4869,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3067（名称待复核）"
+          "locator": "NP-3067 幻影紫"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3068",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3068（名称待复核）",
+      "displayName": "NP-3068 薰衣草紫",
       "colorCode": "NP-3068",
       "ui": { "sortColorHex": "#7C2279" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3068.webp",
@@ -4879,14 +4885,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3068（名称待复核）"
+          "locator": "NP-3068 薰衣草紫"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3069",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3069（名称待复核）",
+      "displayName": "NP-3069 冰雪奇缘蓝",
       "colorCode": "NP-3069",
       "ui": { "sortColorHex": "#785D86" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3069.webp",
@@ -4895,14 +4901,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3069（名称待复核）"
+          "locator": "NP-3069 冰雪奇缘蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3070",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3070（名称待复核）",
+      "displayName": "NP-3070 Royal蓝灰",
       "colorCode": "NP-3070",
       "ui": { "sortColorHex": "#4D5B76" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3070.webp",
@@ -4911,14 +4917,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3070（名称待复核）"
+          "locator": "NP-3070 Royal蓝灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3071",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3071（名称待复核）",
+      "displayName": "NP-3071 北欧蓝",
       "colorCode": "NP-3071",
       "ui": { "sortColorHex": "#4265A4" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3071.webp",
@@ -4927,14 +4933,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3071（名称待复核）"
+          "locator": "NP-3071 北欧蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3072",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3072（名称待复核）",
+      "displayName": "NP-3072 帕加尼蓝",
       "colorCode": "NP-3072",
       "ui": { "sortColorHex": "#5D7191" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3072.webp",
@@ -4943,14 +4949,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3072（名称待复核）"
+          "locator": "NP-3072 帕加尼蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3073",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3073（名称待复核）",
+      "displayName": "NP-3073 宇宙蓝",
       "colorCode": "NP-3073",
       "ui": { "sortColorHex": "#151B3A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3073.webp",
@@ -4959,14 +4965,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3073（名称待复核）"
+          "locator": "NP-3073 宇宙蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3074",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3074（名称待复核）",
+      "displayName": "NP-3074 帝王蓝",
       "colorCode": "NP-3074",
       "ui": { "sortColorHex": "#1C2A5C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3074.webp",
@@ -4975,14 +4981,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3074（名称待复核）"
+          "locator": "NP-3074 帝王蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3075",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3075（名称待复核）",
+      "displayName": "NP-3075 奔驰蓝",
       "colorCode": "NP-3075",
       "ui": { "sortColorHex": "#2F3852" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3075.webp",
@@ -4991,14 +4997,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3075（名称待复核）"
+          "locator": "NP-3075 奔驰蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3076",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3076（名称待复核）",
+      "displayName": "NP-3076 游艇蓝",
       "colorCode": "NP-3076",
       "ui": { "sortColorHex": "#3E4555" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3076.webp",
@@ -5007,14 +5013,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3076（名称待复核）"
+          "locator": "NP-3076 游艇蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3077",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3077（名称待复核）",
+      "displayName": "NP-3077 克莱因蓝",
       "colorCode": "NP-3077",
       "ui": { "sortColorHex": "#113187" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3077.webp",
@@ -5023,14 +5029,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3077（名称待复核）"
+          "locator": "NP-3077 克莱因蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3078",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3078（名称待复核）",
+      "displayName": "NP-3078 布里斯托蓝",
       "colorCode": "NP-3078",
       "ui": { "sortColorHex": "#1E4081" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3078.webp",
@@ -5039,14 +5045,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3078（名称待复核）"
+          "locator": "NP-3078 布里斯托蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3079",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3079（名称待复核）",
+      "displayName": "NP-3079 劳斯莱斯天空蓝",
       "colorCode": "NP-3079",
       "ui": { "sortColorHex": "#1567B5" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3079.webp",
@@ -5055,14 +5061,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3079（名称待复核）"
+          "locator": "NP-3079 劳斯莱斯天空蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3080",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3080（名称待复核）",
+      "displayName": "NP-3080 梦幻蓝",
       "colorCode": "NP-3080",
       "ui": { "sortColorHex": "#189ECF" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3080.webp",
@@ -5071,14 +5077,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3080（名称待复核）"
+          "locator": "NP-3080 梦幻蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3081",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3081（名称待复核）",
+      "displayName": "NP-3081 孔雀绿",
       "colorCode": "NP-3081",
       "ui": { "sortColorHex": "#0B757E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3081.webp",
@@ -5087,14 +5093,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3081（名称待复核）"
+          "locator": "NP-3081 孔雀绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3082",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3082（名称待复核）",
+      "displayName": "NP-3082 爵士蓝",
       "colorCode": "NP-3082",
       "ui": { "sortColorHex": "#16A2AF" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3082.webp",
@@ -5103,14 +5109,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3082（名称待复核）"
+          "locator": "NP-3082 爵士蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3083",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3083（名称待复核）",
+      "displayName": "NP-3083 蒂芙尼绿",
       "colorCode": "NP-3083",
       "ui": { "sortColorHex": "#15A397" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3083.webp",
@@ -5119,14 +5125,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3083（名称待复核）"
+          "locator": "NP-3083 蒂芙尼绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3084",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3084（名称待复核）",
+      "displayName": "NP-3084 薄荷蓝",
       "colorCode": "NP-3084",
       "ui": { "sortColorHex": "#6AC6D9" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3084.webp",
@@ -5135,14 +5141,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3084（名称待复核）"
+          "locator": "NP-3084 薄荷蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3085",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3085（名称待复核）",
+      "displayName": "NP-3085 蒂芙尼蓝",
       "colorCode": "NP-3085",
       "ui": { "sortColorHex": "#7ACACC" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3085.webp",
@@ -5151,14 +5157,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3085（名称待复核）"
+          "locator": "NP-3085 蒂芙尼蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3086",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3086（名称待复核）",
+      "displayName": "NP-3086 天蓝",
       "colorCode": "NP-3086",
       "ui": { "sortColorHex": "#87C1BB" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3086.webp",
@@ -5167,14 +5173,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3086（名称待复核）"
+          "locator": "NP-3086 天蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3087",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3087（名称待复核）",
+      "displayName": "NP-3087 马卡龙牛油果绿",
       "colorCode": "NP-3087",
       "ui": { "sortColorHex": "#6EAC99" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3087.webp",
@@ -5183,14 +5189,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3087（名称待复核）"
+          "locator": "NP-3087 马卡龙牛油果绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3088",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3088（名称待复核）",
+      "displayName": "NP-3088 古思特冰蓝",
       "colorCode": "NP-3088",
       "ui": { "sortColorHex": "#BAE1E8" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3088.webp",
@@ -5199,14 +5205,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3088（名称待复核）"
+          "locator": "NP-3088 古思特冰蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3089",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3089（名称待复核）",
+      "displayName": "NP-3089 祖母绿",
       "colorCode": "NP-3089",
       "ui": { "sortColorHex": "#154224" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3089.webp",
@@ -5215,14 +5221,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3089（名称待复核）"
+          "locator": "NP-3089 祖母绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3090",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3090（名称待复核）",
+      "displayName": "NP-3090 橄榄绿",
       "colorCode": "NP-3090",
       "ui": { "sortColorHex": "#495B4E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3090.webp",
@@ -5231,14 +5237,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3090（名称待复核）"
+          "locator": "NP-3090 橄榄绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3091",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3091（名称待复核）",
+      "displayName": "NP-3091 湖蓝",
       "colorCode": "NP-3091",
       "ui": { "sortColorHex": "#4D868E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3091.webp",
@@ -5247,14 +5253,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3091（名称待复核）"
+          "locator": "NP-3091 湖蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3092",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3092（名称待复核）",
+      "displayName": "NP-3092 翡翠绿",
       "colorCode": "NP-3092",
       "ui": { "sortColorHex": "#1F7036" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3092.webp",
@@ -5263,14 +5269,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3092（名称待复核）"
+          "locator": "NP-3092 翡翠绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3093",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3093（名称待复核）",
+      "displayName": "NP-3093 苹果绿",
       "colorCode": "NP-3093",
       "ui": { "sortColorHex": "#5EB42F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3093.webp",
@@ -5279,14 +5285,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3093（名称待复核）"
+          "locator": "NP-3093 苹果绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3094",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3094（名称待复核）",
+      "displayName": "NP-3094 荧光绿",
       "colorCode": "NP-3094",
       "ui": { "sortColorHex": "#C1D428" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3094.webp",
@@ -5295,14 +5301,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3094（名称待复核）"
+          "locator": "NP-3094 荧光绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3095",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3095（名称待复核）",
+      "displayName": "NP-3095 卡其绿",
       "colorCode": "NP-3095",
       "ui": { "sortColorHex": "#81B66C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3095.webp",
@@ -5311,14 +5317,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3095（名称待复核）"
+          "locator": "NP-3095 卡其绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3096",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3096（名称待复核）",
+      "displayName": "NP-3096 薄荷绿",
       "colorCode": "NP-3096",
       "ui": { "sortColorHex": "#92B97C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3096.webp",
@@ -5327,14 +5333,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3096（名称待复核）"
+          "locator": "NP-3096 薄荷绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3097",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3097（名称待复核）",
+      "displayName": "NP-3097 摩丝灰",
       "colorCode": "NP-3097",
       "ui": { "sortColorHex": "#93938F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3097.webp",
@@ -5343,14 +5349,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3097（名称待复核）"
+          "locator": "NP-3097 摩丝灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3098",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3098（名称待复核）",
+      "displayName": "NP-3098 世爵灰",
       "colorCode": "NP-3098",
       "ui": { "sortColorHex": "#888379" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3098.webp",
@@ -5359,14 +5365,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3098（名称待复核）"
+          "locator": "NP-3098 世爵灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3099",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3099（名称待复核）",
+      "displayName": "NP-3099 艾维亚灰",
       "colorCode": "NP-3099",
       "ui": { "sortColorHex": "#6D6F63" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3099.webp",
@@ -5375,14 +5381,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3099（名称待复核）"
+          "locator": "NP-3099 艾维亚灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3100",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3100（名称待复核）",
+      "displayName": "NP-3100 墨版塞纳灰",
       "colorCode": "NP-3100",
       "ui": { "sortColorHex": "#6E6D5B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3100.webp",
@@ -5391,14 +5397,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3100（名称待复核）"
+          "locator": "NP-3100 墨版塞纳灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3101",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3101（名称待复核）",
+      "displayName": "NP-3101 胖头鱼灰",
       "colorCode": "NP-3101",
       "ui": { "sortColorHex": "#6A6653" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3101.webp",
@@ -5407,14 +5413,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3101（名称待复核）"
+          "locator": "NP-3101 胖头鱼灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3102",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3102（名称待复核）",
+      "displayName": "NP-3102 贝尔尼纳灰",
       "colorCode": "NP-3102",
       "ui": { "sortColorHex": "#525450" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3102.webp",
@@ -5423,14 +5429,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3102（名称待复核）"
+          "locator": "NP-3102 贝尔尼纳灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3103",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3103（名称待复核）",
+      "displayName": "NP-3103 保时捷浅灰",
       "colorCode": "NP-3103",
       "ui": { "sortColorHex": "#6E736F" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3103.webp",
@@ -5439,14 +5445,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3103（名称待复核）"
+          "locator": "NP-3103 保时捷浅灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3104",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3104（名称待复核）",
+      "displayName": "NP-3104 加版塞纳灰",
       "colorCode": "NP-3104",
       "ui": { "sortColorHex": "#545253" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3104.webp",
@@ -5455,14 +5461,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3104（名称待复核）"
+          "locator": "NP-3104 加版塞纳灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3105",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3105（名称待复核）",
+      "displayName": "NP-3105 马卡龙白桃粉",
       "colorCode": "NP-3105",
       "ui": { "sortColorHex": "#C9A9AB" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3105.webp",
@@ -5471,14 +5477,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3105（名称待复核）"
+          "locator": "NP-3105 马卡龙白桃粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3106",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3106（名称待复核）",
+      "displayName": "NP-3106 冰莓粉",
       "colorCode": "NP-3106",
       "ui": { "sortColorHex": "#BD7169" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3106.webp",
@@ -5487,14 +5493,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3106（名称待复核）"
+          "locator": "NP-3106 冰莓粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3107",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3107（名称待复核）",
+      "displayName": "NP-3107 公主粉",
       "colorCode": "NP-3107",
       "ui": { "sortColorHex": "#B5504B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3107.webp",
@@ -5503,14 +5509,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3107（名称待复核）"
+          "locator": "NP-3107 公主粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3108",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3108（名称待复核）",
+      "displayName": "NP-3108 佩奇粉",
       "colorCode": "NP-3108",
       "ui": { "sortColorHex": "#8E5151" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3108.webp",
@@ -5519,14 +5525,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3108（名称待复核）"
+          "locator": "NP-3108 佩奇粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3109",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3109（名称待复核）",
+      "displayName": "NP-3109 典雅粉",
       "colorCode": "NP-3109",
       "ui": { "sortColorHex": "#856259" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3109.webp",
@@ -5535,14 +5541,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3109（名称待复核）"
+          "locator": "NP-3109 典雅粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3110",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3110（名称待复核）",
+      "displayName": "NP-3110 理想驼色",
       "colorCode": "NP-3110",
       "ui": { "sortColorHex": "#604931" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3110.webp",
@@ -5551,14 +5557,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3110（名称待复核）"
+          "locator": "NP-3110 理想驼色"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3111",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3111（名称待复核）",
+      "displayName": "NP-3111 极光灰",
       "colorCode": "NP-3111",
       "ui": { "sortColorHex": "#889396" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3111.webp",
@@ -5567,14 +5573,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3111（名称待复核）"
+          "locator": "NP-3111 极光灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3112",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3112（名称待复核）",
+      "displayName": "NP-3112 塔西提蓝",
       "colorCode": "NP-3112",
       "ui": { "sortColorHex": "#4C545D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3112.webp",
@@ -5583,14 +5589,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3112（名称待复核）"
+          "locator": "NP-3112 塔西提蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3113",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3113（名称待复核）",
+      "displayName": "NP-3113 托斯卡紫",
       "colorCode": "NP-3113",
       "ui": { "sortColorHex": "#772246" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3113.webp",
@@ -5599,14 +5605,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3113（名称待复核）"
+          "locator": "NP-3113 托斯卡紫"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3114",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3114（名称待复核）",
+      "displayName": "NP-3114 金沙粉",
       "colorCode": "NP-3114",
       "ui": { "sortColorHex": "#B33B5E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3114.webp",
@@ -5615,14 +5621,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3114（名称待复核）"
+          "locator": "NP-3114 金沙粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3115",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3115（名称待复核）",
+      "displayName": "NP-3115 劳斯莱斯少女粉",
       "colorCode": "NP-3115",
       "ui": { "sortColorHex": "#98485A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3115.webp",
@@ -5631,14 +5637,14 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3115（名称待复核）"
+          "locator": "NP-3115 劳斯莱斯少女粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p16-np-3116",
       "materialFamilyId": "microfiber",
-      "displayName": "NP-3116（名称待复核）",
+      "displayName": "NP-3116 miumiu粉",
       "colorCode": "NP-3116",
       "ui": { "sortColorHex": "#905A63" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3116.webp",
@@ -5647,15 +5653,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 16,
-          "locator": "NP-3116（名称待复核）"
+          "locator": "NP-3116 miumiu粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r01c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 1 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R01C1",
+      "displayName": "KJ-065 玉石白",
+      "colorCode": "KJ-065",
       "ui": { "sortColorHex": "#D3D5CC" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r01c1.webp",
       "reviewRequired": true,
@@ -5663,15 +5669,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 1 行第 1 列（待复核）"
+          "locator": "KJ-065 玉石白"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r01c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 1 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R01C2",
+      "displayName": "KJ-067 竞速米黄",
+      "colorCode": "KJ-067",
       "ui": { "sortColorHex": "#978564" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r01c2.webp",
       "reviewRequired": true,
@@ -5679,15 +5685,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 1 行第 2 列（待复核）"
+          "locator": "KJ-067 竞速米黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r02c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 2 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R02C1",
+      "displayName": "KJ-019 艾维亚白",
+      "colorCode": "KJ-019",
       "ui": { "sortColorHex": "#D9D5C0" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r02c1.webp",
       "reviewRequired": true,
@@ -5695,15 +5701,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 2 行第 1 列（待复核）"
+          "locator": "KJ-019 艾维亚白"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r02c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 2 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R02C2",
+      "displayName": "KJ-001 典雅米",
+      "colorCode": "KJ-001",
       "ui": { "sortColorHex": "#CE8E44" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r02c2.webp",
       "reviewRequired": true,
@@ -5711,15 +5717,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 2 行第 2 列（待复核）"
+          "locator": "KJ-001 典雅米"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r03c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 3 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R03C1",
+      "displayName": "KJ-066 象牙白",
+      "colorCode": "KJ-066",
       "ui": { "sortColorHex": "#C8BFA3" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r03c1.webp",
       "reviewRequired": true,
@@ -5727,15 +5733,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 3 行第 1 列（待复核）"
+          "locator": "KJ-066 象牙白"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r03c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 3 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R03C2",
+      "displayName": "KJ-068 贵族黄",
+      "colorCode": "KJ-068",
       "ui": { "sortColorHex": "#C18027" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r03c2.webp",
       "reviewRequired": true,
@@ -5743,15 +5749,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 3 行第 2 列（待复核）"
+          "locator": "KJ-068 贵族黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r04c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 4 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R04C1",
+      "displayName": "KJ-009 赛道白",
+      "colorCode": "KJ-009",
       "ui": { "sortColorHex": "#9B917D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r04c1.webp",
       "reviewRequired": true,
@@ -5759,15 +5765,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 4 行第 1 列（待复核）"
+          "locator": "KJ-009 赛道白"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r04c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 4 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R04C2",
+      "displayName": "KJ-010 天秤黄",
+      "colorCode": "KJ-010",
       "ui": { "sortColorHex": "#8B5423" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r04c2.webp",
       "reviewRequired": true,
@@ -5775,15 +5781,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 4 行第 2 列（待复核）"
+          "locator": "KJ-010 天秤黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r05c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 5 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R05C1",
+      "displayName": "KJ-062 阿瓦斯米",
+      "colorCode": "KJ-062",
       "ui": { "sortColorHex": "#907F6E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r05c1.webp",
       "reviewRequired": true,
@@ -5791,15 +5797,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 5 行第 1 列（待复核）"
+          "locator": "KJ-062 阿瓦斯米"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r05c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 5 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R05C2",
+      "displayName": "KJ-073 琥珀棕",
+      "colorCode": "KJ-073",
       "ui": { "sortColorHex": "#894C25" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r05c2.webp",
       "reviewRequired": true,
@@ -5807,15 +5813,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 5 行第 2 列（待复核）"
+          "locator": "KJ-073 琥珀棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r06c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 6 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R06C1",
+      "displayName": "KJ-069 摩德纳米",
+      "colorCode": "KJ-069",
       "ui": { "sortColorHex": "#957D61" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r06c1.webp",
       "reviewRequired": true,
@@ -5823,15 +5829,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 6 行第 1 列（待复核）"
+          "locator": "KJ-069 摩德纳米"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r06c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 6 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R06C2",
+      "displayName": "KJ-097 绅士棕",
+      "colorCode": "KJ-097",
       "ui": { "sortColorHex": "#5C290C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r06c2.webp",
       "reviewRequired": true,
@@ -5839,15 +5845,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 6 行第 2 列（待复核）"
+          "locator": "KJ-097 绅士棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r07c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 7 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R07C1",
+      "displayName": "KJ-096 大漠米",
+      "colorCode": "KJ-096",
       "ui": { "sortColorHex": "#91754D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r07c1.webp",
       "reviewRequired": true,
@@ -5855,15 +5861,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 7 行第 1 列（待复核）"
+          "locator": "KJ-096 大漠米"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r07c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 7 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R07C2",
+      "displayName": "KJ-003 马鞍棕",
+      "colorCode": "KJ-003",
       "ui": { "sortColorHex": "#662814" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r07c2.webp",
       "reviewRequired": true,
@@ -5871,15 +5877,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 7 行第 2 列（待复核）"
+          "locator": "KJ-003 马鞍棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r08c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 8 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R08C1",
+      "displayName": "KJ-002 高雅黄",
+      "colorCode": "KJ-002",
       "ui": { "sortColorHex": "#AA7B54" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r08c1.webp",
       "reviewRequired": true,
@@ -5887,15 +5893,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 8 行第 1 列（待复核）"
+          "locator": "KJ-002 高雅黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r08c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 8 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R08C2",
+      "displayName": "KJ-063 曜石棕",
+      "colorCode": "KJ-063",
       "ui": { "sortColorHex": "#B1880D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r08c2.webp",
       "reviewRequired": true,
@@ -5903,15 +5909,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 8 行第 2 列（待复核）"
+          "locator": "KJ-063 曜石棕"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r09c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 9 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R09C1",
+      "displayName": "KJ-095 咖啡金",
+      "colorCode": "KJ-095",
       "ui": { "sortColorHex": "#AD8882" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r09c1.webp",
       "reviewRequired": true,
@@ -5919,15 +5925,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 9 行第 1 列（待复核）"
+          "locator": "KJ-095 咖啡金"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r09c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 9 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R09C2",
+      "displayName": "KJ-074 加州黄",
+      "colorCode": "KJ-074",
       "ui": { "sortColorHex": "#D96638" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r09c2.webp",
       "reviewRequired": true,
@@ -5935,15 +5941,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 9 行第 2 列（待复核）"
+          "locator": "KJ-074 加州黄"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r10c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 10 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R10C1",
+      "displayName": "KJ-083 典雅粉",
+      "colorCode": "KJ-083",
       "ui": { "sortColorHex": "#C88C8E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r10c1.webp",
       "reviewRequired": true,
@@ -5951,15 +5957,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 10 行第 1 列（待复核）"
+          "locator": "KJ-083 典雅粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r10c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 10 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R10C2",
+      "displayName": "KJ-099 荧光橙",
+      "colorCode": "KJ-099",
       "ui": { "sortColorHex": "#A84433" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r10c2.webp",
       "reviewRequired": true,
@@ -5967,15 +5973,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 10 行第 2 列（待复核）"
+          "locator": "KJ-099 荧光橙"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r11c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 11 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R11C1",
+      "displayName": "KJ-011 缤纷粉",
+      "colorCode": "KJ-011",
       "ui": { "sortColorHex": "#D5877A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r11c1.webp",
       "reviewRequired": true,
@@ -5983,15 +5989,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 11 行第 1 列（待复核）"
+          "locator": "KJ-011 缤纷粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r11c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 11 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R11C2",
+      "displayName": "KJ-012 活力橙",
+      "colorCode": "KJ-012",
       "ui": { "sortColorHex": "#982B35" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r11c2.webp",
       "reviewRequired": true,
@@ -5999,15 +6005,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 11 行第 2 列（待复核）"
+          "locator": "KJ-012 活力橙"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r12c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 12 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R12C1",
+      "displayName": "KJ-088 浪漫粉",
+      "colorCode": "KJ-088",
       "ui": { "sortColorHex": "#E17898" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r12c1.webp",
       "reviewRequired": true,
@@ -6015,15 +6021,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 12 行第 1 列（待复核）"
+          "locator": "KJ-088 浪漫粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r12c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 12 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R12C2",
+      "displayName": "KJ-004 火山红",
+      "colorCode": "KJ-004",
       "ui": { "sortColorHex": "#BA4046" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r12c2.webp",
       "reviewRequired": true,
@@ -6031,15 +6037,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 12 行第 2 列（待复核）"
+          "locator": "KJ-004 火山红"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r13c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 13 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R13C1",
+      "displayName": "KJ-084 樱花粉",
+      "colorCode": "KJ-084",
       "ui": { "sortColorHex": "#AF3F97" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r13c1.webp",
       "reviewRequired": true,
@@ -6047,15 +6053,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 13 行第 1 列（待复核）"
+          "locator": "KJ-084 樱花粉"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r13c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 13 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R13C2",
+      "displayName": "KJ-075 中国红",
+      "colorCode": "KJ-075",
       "ui": { "sortColorHex": "#933F44" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r13c2.webp",
       "reviewRequired": true,
@@ -6063,15 +6069,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 13 行第 2 列（待复核）"
+          "locator": "KJ-075 中国红"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r14c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 14 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R14C1",
+      "displayName": "KJ-076 嫣红紫",
+      "colorCode": "KJ-076",
       "ui": { "sortColorHex": "#412935" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r14c1.webp",
       "reviewRequired": true,
@@ -6079,15 +6085,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 14 行第 1 列（待复核）"
+          "locator": "KJ-076 嫣红紫"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r14c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 14 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R14C2",
+      "displayName": "KJ-061 星耀红",
+      "colorCode": "KJ-061",
       "ui": { "sortColorHex": "#804345" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r14c2.webp",
       "reviewRequired": true,
@@ -6095,15 +6101,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 14 行第 2 列（待复核）"
+          "locator": "KJ-061 星耀红"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r15c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 15 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R15C1",
+      "displayName": "KJ-071 紫罗兰",
+      "colorCode": "KJ-071",
       "ui": { "sortColorHex": "#705E58" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r15c1.webp",
       "reviewRequired": true,
@@ -6111,15 +6117,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 15 行第 1 列（待复核）"
+          "locator": "KJ-071 紫罗兰"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r15c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 15 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R15C2",
+      "displayName": "KJ-005 珊瑚红",
+      "colorCode": "KJ-005",
       "ui": { "sortColorHex": "#5C3A38" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r15c2.webp",
       "reviewRequired": true,
@@ -6127,15 +6133,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 15 行第 2 列（待复核）"
+          "locator": "KJ-005 珊瑚红"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r16c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 16 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R16C1",
+      "displayName": "KJ-072 绅士咖",
+      "colorCode": "KJ-072",
       "ui": { "sortColorHex": "#5D5150" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r16c1.webp",
       "reviewRequired": true,
@@ -6143,15 +6149,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 16 行第 1 列（待复核）"
+          "locator": "KJ-072 绅士咖"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r16c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 16 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R16C2",
+      "displayName": "KJ-090 玛瑙红",
+      "colorCode": "KJ-090",
       "ui": { "sortColorHex": "#DADF37" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r16c2.webp",
       "reviewRequired": true,
@@ -6159,15 +6165,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 16 行第 2 列（待复核）"
+          "locator": "KJ-090 玛瑙红"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r17c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 17 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R17C1",
+      "displayName": "KJ-006 伯爵咖",
+      "colorCode": "KJ-006",
       "ui": { "sortColorHex": "#99BCBA" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r17c1.webp",
       "reviewRequired": true,
@@ -6175,15 +6181,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 17 行第 1 列（待复核）"
+          "locator": "KJ-006 伯爵咖"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r17c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 17 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R17C2",
+      "displayName": "KJ-098 荧光绿",
+      "colorCode": "KJ-098",
       "ui": { "sortColorHex": "#9DC937" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r17c2.webp",
       "reviewRequired": true,
@@ -6191,15 +6197,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 17 行第 2 列（待复核）"
+          "locator": "KJ-098 荧光绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r18c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 18 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R18C1",
+      "displayName": "KJ-077 天蓝",
+      "colorCode": "KJ-077",
       "ui": { "sortColorHex": "#67BEC3" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r18c1.webp",
       "reviewRequired": true,
@@ -6207,15 +6213,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 18 行第 1 列（待复核）"
+          "locator": "KJ-077 天蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r18c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 18 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R18C2",
+      "displayName": "KJ-081 伊拉莫绿",
+      "colorCode": "KJ-081",
       "ui": { "sortColorHex": "#478758" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r18c2.webp",
       "reviewRequired": true,
@@ -6223,15 +6229,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 18 行第 2 列（待复核）"
+          "locator": "KJ-081 伊拉莫绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r19c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 19 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R19C1",
+      "displayName": "KJ-022 蒂芙尼蓝",
+      "colorCode": "KJ-022",
       "ui": { "sortColorHex": "#7CC3B8" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r19c1.webp",
       "reviewRequired": true,
@@ -6239,15 +6245,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 19 行第 1 列（待复核）"
+          "locator": "KJ-022 蒂芙尼蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r19c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 19 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R19C2",
+      "displayName": "KJ-082 翡翠绿",
+      "colorCode": "KJ-082",
       "ui": { "sortColorHex": "#52685A" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r19c2.webp",
       "reviewRequired": true,
@@ -6255,15 +6261,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 19 行第 2 列（待复核）"
+          "locator": "KJ-082 翡翠绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r20c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 20 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R20C1",
+      "displayName": "KJ-021 青瓷蓝",
+      "colorCode": "KJ-021",
       "ui": { "sortColorHex": "#647BA2" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r20c1.webp",
       "reviewRequired": true,
@@ -6271,15 +6277,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 20 行第 1 列（待复核）"
+          "locator": "KJ-021 青瓷蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r20c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 20 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R20C2",
+      "displayName": "KJ-014 泰坦绿",
+      "colorCode": "KJ-014",
       "ui": { "sortColorHex": "#656350" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r20c2.webp",
       "reviewRequired": true,
@@ -6287,15 +6293,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 20 行第 2 列（待复核）"
+          "locator": "KJ-014 泰坦绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r21c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 21 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R21C1",
+      "displayName": "KJ-078 钴蓝",
+      "colorCode": "KJ-078",
       "ui": { "sortColorHex": "#415A8D" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r21c1.webp",
       "reviewRequired": true,
@@ -6303,15 +6309,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 21 行第 1 列（待复核）"
+          "locator": "KJ-078 钴蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r21c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 21 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R21C2",
+      "displayName": "KJ-086 橄榄绿",
+      "colorCode": "KJ-086",
       "ui": { "sortColorHex": "#595246" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r21c2.webp",
       "reviewRequired": true,
@@ -6319,15 +6325,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 21 行第 2 列（待复核）"
+          "locator": "KJ-086 橄榄绿"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r22c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 22 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R22C1",
+      "displayName": "KJ-016 孔雀蓝",
+      "colorCode": "KJ-016",
       "ui": { "sortColorHex": "#3F5372" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r22c1.webp",
       "reviewRequired": true,
@@ -6335,15 +6341,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 22 行第 1 列（待复核）"
+          "locator": "KJ-016 孔雀蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r22c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 22 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R22C2",
+      "displayName": "KJ-023 橄榄褐",
+      "colorCode": "KJ-023",
       "ui": { "sortColorHex": "#66619C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r22c2.webp",
       "reviewRequired": true,
@@ -6351,15 +6357,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 22 行第 2 列（待复核）"
+          "locator": "KJ-023 橄榄褐"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r23c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 23 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R23C1",
+      "displayName": "KJ-013 皇家蓝",
+      "colorCode": "KJ-013",
       "ui": { "sortColorHex": "#2A3354" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r23c1.webp",
       "reviewRequired": true,
@@ -6367,15 +6373,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 23 行第 1 列（待复核）"
+          "locator": "KJ-013 皇家蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r23c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 23 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R23C2",
+      "displayName": "KJ-091 冰雪蓝",
+      "colorCode": "KJ-091",
       "ui": { "sortColorHex": "#272676" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r23c2.webp",
       "reviewRequired": true,
@@ -6383,15 +6389,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 23 行第 2 列（待复核）"
+          "locator": "KJ-091 冰雪蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r24c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 24 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R24C1",
+      "displayName": "KJ-020 艾维亚蓝",
+      "colorCode": "KJ-020",
       "ui": { "sortColorHex": "#2D304B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r24c1.webp",
       "reviewRequired": true,
@@ -6399,15 +6405,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 24 行第 1 列（待复核）"
+          "locator": "KJ-020 艾维亚蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r24c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 24 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R24C2",
+      "displayName": "KJ-079 旋风蓝",
+      "colorCode": "KJ-079",
       "ui": { "sortColorHex": "#78777B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r24c2.webp",
       "reviewRequired": true,
@@ -6415,15 +6421,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 24 行第 2 列（待复核）"
+          "locator": "KJ-079 旋风蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r25c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 25 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R25C1",
+      "displayName": "KJ-080 钻石蓝",
+      "colorCode": "KJ-080",
       "ui": { "sortColorHex": "#C3BEBD" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r25c1.webp",
       "reviewRequired": true,
@@ -6431,15 +6437,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 25 行第 1 列（待复核）"
+          "locator": "KJ-080 钻石蓝"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r25c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 25 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R25C2",
+      "displayName": "KJ-017 复古灰",
+      "colorCode": "KJ-017",
       "ui": { "sortColorHex": "#4D4D4C" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r25c2.webp",
       "reviewRequired": true,
@@ -6447,15 +6453,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 25 行第 2 列（待复核）"
+          "locator": "KJ-017 复古灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r26c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 26 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R26C1",
+      "displayName": "KJ-015 工业白",
+      "colorCode": "KJ-015",
       "ui": { "sortColorHex": "#B9BCB5" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r26c1.webp",
       "reviewRequired": true,
@@ -6463,15 +6469,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 26 行第 1 列（待复核）"
+          "locator": "KJ-015 工业白"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r26c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 26 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R26C2",
+      "displayName": "KJ-024 曜岩黑",
+      "colorCode": "KJ-024",
       "ui": { "sortColorHex": "#5B5B5B" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r26c2.webp",
       "reviewRequired": true,
@@ -6479,15 +6485,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 26 行第 2 列（待复核）"
+          "locator": "KJ-024 曜岩黑"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r27c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 27 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R27C1",
+      "displayName": "KJ-018 布鲁灰",
+      "colorCode": "KJ-018",
       "ui": { "sortColorHex": "#BCC0BB" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r27c1.webp",
       "reviewRequired": true,
@@ -6495,15 +6501,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 27 行第 1 列（待复核）"
+          "locator": "KJ-018 布鲁灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r27c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 27 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R27C2",
+      "displayName": "KJ-089 威尼托黑",
+      "colorCode": "KJ-089",
       "ui": { "sortColorHex": "#494343" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r27c2.webp",
       "reviewRequired": true,
@@ -6511,15 +6517,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 27 行第 2 列（待复核）"
+          "locator": "KJ-089 威尼托黑"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r28c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 28 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R28C1",
+      "displayName": "KJ-070 哈瓦那灰",
+      "colorCode": "KJ-070",
       "ui": { "sortColorHex": "#A5A398" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r28c1.webp",
       "reviewRequired": true,
@@ -6527,15 +6533,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 28 行第 1 列（待复核）"
+          "locator": "KJ-070 哈瓦那灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r28c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 28 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R28C2",
+      "displayName": "KJ-100 深邃咖",
+      "colorCode": "KJ-100",
       "ui": { "sortColorHex": "#474C4E" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r28c2.webp",
       "reviewRequired": true,
@@ -6543,15 +6549,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 28 行第 2 列（待复核）"
+          "locator": "KJ-100 深邃咖"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r29c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 29 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R29C1",
+      "displayName": "KJ-064 银母灰",
+      "colorCode": "KJ-064",
       "ui": { "sortColorHex": "#BBBCB8" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r29c1.webp",
       "reviewRequired": true,
@@ -6559,15 +6565,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 29 行第 1 列（待复核）"
+          "locator": "KJ-064 银母灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r29c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 29 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R29C2",
+      "displayName": "KJ-085 炭黑",
+      "colorCode": "KJ-085",
       "ui": { "sortColorHex": "#313235" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r29c2.webp",
       "reviewRequired": true,
@@ -6575,15 +6581,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 29 行第 2 列（待复核）"
+          "locator": "KJ-085 炭黑"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r30c1",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 30 行第 1 列（待复核）",
-      "colorCode": "KJ-P17-R30C1",
+      "displayName": "KJ-007 贝尔尼瓦灰",
+      "colorCode": "KJ-007",
       "ui": { "sortColorHex": "#787B83" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r30c1.webp",
       "reviewRequired": true,
@@ -6591,15 +6597,15 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 30 行第 1 列（待复核）"
+          "locator": "KJ-007 贝尔尼瓦灰"
         }
       ]
     },
     {
       "variantId": "microfiber-p17-kj-p17-r30c2",
       "materialFamilyId": "microfiber",
-      "displayName": "KJ 色卡第 30 行第 2 列（待复核）",
-      "colorCode": "KJ-P17-R30C2",
+      "displayName": "KJ-008 曜夜黑",
+      "colorCode": "KJ-008",
       "ui": { "sortColorHex": "#FEFEFE" },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r30c2.webp",
       "reviewRequired": true,
@@ -6607,7 +6613,7 @@
         {
           "documentId": "sc01-color-card",
           "page": 17,
-          "locator": "KJ 色卡第 30 行第 2 列（待复核）"
+          "locator": "KJ-008 曜夜黑"
         }
       ]
     },

@@ -147,6 +147,9 @@ manifest、活动发布指针或静态 URL。
   才提交选择并更新材质实拍预览。不同价格自动拆为多条，免费标配色并入首条且排在首位。
 - `options[].ui.control=material-variant` 保留纹理图片卡布局，当前用于必须辨认纹理的
   织物羊毛；`color-picker`、`swatch`、`thumbnail` 分别对应自定义取色、普通色块和图片块。
+- `materialFamilies[].ui.defaultVariantId` 只负责把某材料族的标配 option 映射到真实
+  色卡预览，不改变该色卡在其他 option 下的价格；例如超纤标配预览使用
+  `NP-3048 暗夜黑`，切换到付费超纤 option 后仍按该 option 计价。
 - `interactionCameras[]` 配置可用语义机位；category/component/surface 的
   `ui.cameraId` 按 `surface → component → category` 优先级绑定页签镜头。
 

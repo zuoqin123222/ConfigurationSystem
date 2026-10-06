@@ -159,7 +159,8 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "variantSort": { "enum": ["achromatic-then-rainbow"] }
+        "variantSort": { "enum": ["achromatic-then-rainbow"] },
+        "defaultVariantId": { "$ref": "#/$defs/id" }
       }
     },
     "materialVariantUi": {

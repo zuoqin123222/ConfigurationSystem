@@ -336,11 +336,20 @@ export function validateCatalog(catalog) {
   }
   for (const family of materialFamilies.values()) {
     if (family.ui === undefined) continue;
-    assertAllowedKeys(family.ui, [], ["variantSort"], `${family.materialFamilyId}.ui`);
+    assertAllowedKeys(
+      family.ui,
+      [],
+      ["variantSort", "defaultVariantId"],
+      `${family.materialFamilyId}.ui`
+    );
     check(
       family.ui.variantSort === undefined
         || family.ui.variantSort === "achromatic-then-rainbow",
       `${family.materialFamilyId}.ui.variantSort 非法`
+    );
+    check(
+      family.ui.defaultVariantId === undefined || ID.test(family.ui.defaultVariantId),
+      `${family.materialFamilyId}.ui.defaultVariantId 非法`
     );
   }
   const sortedFamilyIds = new Set(
@@ -361,6 +370,14 @@ export function validateCatalog(catalog) {
       !sortedFamilyIds.has(variant.materialFamilyId)
         || /^#[0-9a-fA-F]{6}$/.test(variant.ui?.sortColorHex ?? ""),
       `${variant.variantId} 缺少合法 ui.sortColorHex`
+    );
+  }
+  for (const family of materialFamilies.values()) {
+    if (family.ui?.defaultVariantId === undefined) continue;
+    check(
+      materialVariants.get(family.ui.defaultVariantId)?.materialFamilyId
+        === family.materialFamilyId,
+      `${family.materialFamilyId}.ui.defaultVariantId 必须引用同材料族 variant`
     );
   }
   for (const item of [
