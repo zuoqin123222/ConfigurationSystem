@@ -59,6 +59,58 @@ ConfigurationSystem/
 
 `contracts/` 与 `tools/` 当前位于仓库根目录；请勿使用早期计划中的 `source/contracts/` 或 `source/tools/`。`source/` 只保存可审查源码，`package/` 只保存可重建的本地产物。
 
+## 统一发布
+
+Windows PowerShell 5.1 或更高版本可从仓库根目录执行统一发布入口：
+
+```powershell
+.\tools\release.ps1 -Target All
+.\tools\release.ps1 -Target UE,ServerWeb -SkipTests
+.\tools\release.ps1 -Target ServerWeb -IncludeRenders
+.\tools\release.ps1 -Target BakeWeb -Profile debug -Mode shard -Shard 0/4 `
+  -Publication sc01-v2 -Input contracts/fixtures/sc01.catalog.draft.v2.json `
+  -Output staging/sc01-v2-shard-0
+```
+
+- `Target` 支持 `UE`、`ServerWeb`、`BakeWeb`、`All`，也支持逗号或加号分隔的组合。
+- `-DryRun` 只打印计划，不运行命令或写入产物；`-SkipTests` 只跳过测试，不跳过构建和
+  Bake manifest 校验。
+- 正式运行默认要求 Git 工作树干净，使发布清单能唯一对应提交；仅限本地试验时可显式
+  使用 `-AllowDirty`，此时清单会记录 `dirty=true`。
+- `ServerWeb`、`UE` 和非 `estimate` 的 `BakeWeb` 都先在最终目录同卷的临时目录完成
+  构建、校验和清单生成。组合发布必须等待全部目标 prepare 成功后才统一事务晋升；
+  任一晋升失败会按逆序恢复所有已替换目标，构建或校验失败不会覆盖旧发布。
+- 同一次命令同时包含 `UE` 与 `ServerWeb` 时，Web 只构建一次共享 artifact；两个目标
+  复制该 artifact 的 online/embedded 入口，不会各自重新构建。
+- `UE` 固定使用官方 UE 5.8 路径（可用 `-EngineRoot` 覆盖），先执行 Web 同源构建和
+  UBT `-gather`，再执行 UAT `BuildCookRun`，归档到 `package/clients/ue/`。
+- `ServerWeb` 生成 `package/server-web/` 可搬运目录，包含 production Server 依赖、
+  contracts、Web 静态文件和 `start-server.ps1`；默认不复制体积较大的
+  `package/renders/`，需要随包交付时显式传 `-IncludeRenders`。无 renders 的包启动时
+  自动把 `BAKE_ROOT` 指向内置 `contracts/fixtures/bake.valid`，可直接做健康检查和
+  示例联调。launcher 将可变的 v2 配置存储写入当前用户
+  `%LOCALAPPDATA%\ConfigurationSystem\data\configurations-v2.json`，不会修改安装目录。
+- `BakeWeb` 调用现有配置生成器、UE Batch Bake 和 Server manifest 校验。`Mode`
+  支持 `exhaustive`、`estimate`、`coverage`、`shard`；`estimate` 只输出规模估算，
+  不执行 UE Bake。
+- 每个成功晋升的目标根目录都包含 `release-manifest.json`，记录当前 Git commit、
+  UTC 生成时间、工作树状态、目标名以及除清单自身外每个发布文件的相对路径和 SHA256。
+- `BakeOutput` 不允许指向仓库根目录、源码、契约、工具、文档或 Harness 目录。覆盖
+  已存在目录时，目标必须位于 `staging/`、`package/renders/` 下，或包含
+  `.configuration-system-bake-output` ownership sentinel；新 Bake 输出会自动写入该
+  sentinel。
+- Web embedded 部署只接受 `package/` 下的构建源，目标只允许位于 `package/` 下或为
+  UE `Content/WebUI`；源与目标不得相同或互为祖先。部署使用目标同级临时目录和备份
+  原子替换，失败时恢复旧目标。
+
+先用以下命令检查完整发布计划：
+
+```powershell
+.\tools\release.ps1 -Target All -DryRun
+node --test tools/release.test.mjs
+node --test source/clients/web/scripts/deploy-embedded.node-tests.mjs
+```
+
 ## 契约验证
 
 安装 Node.js 18 或更高版本后，在仓库根目录执行：

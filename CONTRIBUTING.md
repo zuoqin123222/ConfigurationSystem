@@ -63,6 +63,62 @@ node harness/validate.mjs
 
 ## 提交前验证
 
+### 统一发布入口
+
+`tools/release.ps1` 是 UE、Server/Web 和 Bake/Web 发布的统一入口：
+
+```powershell
+.\tools\release.ps1 -Target UE
+.\tools\release.ps1 -Target ServerWeb
+.\tools\release.ps1 -Target BakeWeb -Profile shipping -Mode coverage `
+  -Publication sc01-v2 -Input contracts/fixtures/sc01.catalog.draft.v2.json `
+  -Output staging/sc01-v2
+```
+
+多个目标可写为 `-Target UE,ServerWeb`；`All` 按 Server/Web、UE、Bake 所需步骤去重后
+执行。正式运行前应先加 `-DryRun` 审核命令。只有在已有等价验证证据时才使用
+`-SkipTests`，该开关不会绕过构建或 Bake manifest 校验。
+
+正式发布要求 Git 工作树干净；`-AllowDirty` 只用于本地验证，生成的
+`release-manifest.json` 会记录 `dirty=true`。Bake 输出不得指向仓库根、`source/`、
+`contracts/`、`tools/`、`docs/` 或 `harness/`。覆盖已存在的 Bake 目录时，仅允许
+`staging/`、`package/renders/` 范围，其他位置必须预先包含
+`.configuration-system-bake-output` ownership sentinel。
+
+`ServerWeb` 的最终交付目录是 `package/server-web/`，必须整体搬运；目标机安装
+Node.js 20 后执行：
+
+```powershell
+.\start-server.ps1
+.\start-server.ps1 -Port 8080 -HostAddress 0.0.0.0
+```
+
+默认 ServerWeb 包不复制 `package/renders/`；确需携带生产图片时使用
+`-IncludeRenders`。未携带 renders 时启动脚本将 `BAKE_ROOT` 设为包内
+`package/contracts/fixtures/bake.valid`，避免依赖仓库外路径。可变的 v2 配置存储固定
+写入 `%LOCALAPPDATA%\ConfigurationSystem\data\configurations-v2.json`，不要将运行时
+数据写回可搬运包或只读安装目录。
+
+UE 目标先通过 `Build.bat ... -gather` 刷新 WebUI RuntimeDependencies，再由官方
+UE 5.8 `RunUAT.bat BuildCookRun` 完成 Shipping Build/Cook/Stage/Pak/IoStore/Archive。
+Bake 的 `estimate` 模式只评估规模；`coverage`、`shard`、`exhaustive` 才继续执行
+UE Bake 和 `npm run validate:bake`。
+
+三个发布目标均在最终目录同卷的隐藏临时目录构建；组合发布的全部目标完成 prepare、
+校验并写入 `release-manifest.json` 后，才统一进入事务晋升。清单记录 Git commit、
+目标和每个 payload 文件的 SHA256（不递归记录清单自身）。任一晋升失败时按逆序恢复
+所有旧目录，不得手工删除旧发布来“修复”晋升错误。
+
+`deploy-embedded.mjs` 只允许 `package/` 下的构建源，目标只允许 `package/` 下的
+staging 或 UE `Content/WebUI`；源目标不可重叠。目标替换必须使用同级临时目录与备份，
+禁止先删除目标再复制。修改发布逻辑后至少运行：
+
+```powershell
+.\tools\release.ps1 -Target All -DryRun
+node --test tools/release.test.mjs
+node --test source/clients/web/scripts/deploy-embedded.node-tests.mjs
+```
+
 ### 所有改动
 
 - [ ] `node harness/validate.mjs` 通过。
