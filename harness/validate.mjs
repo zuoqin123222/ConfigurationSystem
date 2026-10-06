@@ -85,6 +85,7 @@ function validateMarkdownLinks(relativePath) {
 }
 
 const requiredFiles = [
+  "AGENTS.md",
   "harness/AGENTS.md",
   "harness/PROJECT.md",
   "harness/UE.md",
@@ -99,6 +100,8 @@ const requiredFiles = [
   "source/clients/web/package.json",
   "source/server/package.json",
   "source/clients/web/public/sc01/option-icons/rainbow.svg",
+  "tools/release.ps1",
+  "docs/technical-probes/UNIFIED_RELEASE_PIPELINE.md",
 ];
 
 for (const relativePath of requiredFiles) {
@@ -106,7 +109,6 @@ for (const relativePath of requiredFiles) {
 }
 
 for (const relativePath of [
-  "AGENTS.md",
   "docs/HARNESS.md",
   "tools/validate-harness.mjs",
 ]) {
@@ -125,6 +127,22 @@ for (const relativePath of [
   validateMarkdownLinks(relativePath);
 }
 
+const rootAgentsPath = requireFile("AGENTS.md");
+if (rootAgentsPath) {
+  const rootAgents = readFileSync(rootAgentsPath, "utf8");
+  for (const requiredText of [
+    "harness/AGENTS.md",
+    "tools/release.ps1",
+    "-DryRun",
+    "禁止用临时 `RunUAT`",
+    "构建期间发生变化",
+  ]) {
+    if (!rootAgents.includes(requiredText)) {
+      fail(`AGENTS.md 缺少启动门禁：${requiredText}`);
+    }
+  }
+}
+
 const agentsPath = requireFile("harness/AGENTS.md");
 if (agentsPath) {
   const agents = readFileSync(agentsPath, "utf8");
@@ -136,6 +154,10 @@ if (agentsPath) {
     "不确定的产品、资产或授权信息不得写入 Harness",
     "阶段验证通过后自动继续",
     "占位资源",
+    "发布硬门禁",
+    "tools/release.ps1",
+    "-DryRun",
+    "不得依赖",
   ]) {
     if (!agents.includes(requiredText)) {
       fail(`harness/AGENTS.md 缺少必需约束：${requiredText}`);
@@ -176,6 +198,9 @@ if (ueHarnessPath) {
     "车内禁止平移",
     "受限 Web/UE Bridge",
     "M_SC01_*",
+    "tools/release.ps1",
+    "-DryRun",
+    "不要另写临时打包命令",
   ]) {
     if (!ueHarness.includes(requiredText)) {
       fail(`harness/UE.md 缺少 UE/资产/打包路由：${requiredText}`);

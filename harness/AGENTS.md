@@ -39,6 +39,16 @@ node harness/validate.mjs
 | Web | `harness/PROJECT.md`、`source/clients/web/README.md` |
 | Server、API | `harness/PROJECT.md`、`source/server/README.md` |
 
+## 发布硬门禁
+
+- 执行任何打包、Cook、Stage、Shipping、归档或发布命令前，必须重新读取磁盘上的
+  `harness/UE.md` 和 `docs/technical-probes/UNIFIED_RELEASE_PIPELINE.md`，不得依赖
+  会话早期读取结果或历史记忆。
+- 正式发布只能从仓库根目录运行 `tools/release.ps1`，并先执行对应目标的 `-DryRun`。
+- 禁止直接调用 `RunUAT.bat`、`BuildCookRun` 或零散构建命令替代统一发布入口。
+- 长时间构建前后都要复核 `git rev-parse HEAD` 与 `git status --short`；HEAD 或工作树
+  在构建期间发生变化时，该产物不得晋升为正式包。
+
 ## 控制上下文
 
 先按路径、符号或稳定 ID 定向搜索，不要递归读取全库。默认排除：
