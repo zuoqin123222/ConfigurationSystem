@@ -834,6 +834,15 @@ bool FVehiclePresentationHierarchyAutomationTest::RunTest(const FString& Paramet
 					+ SkeletalVehicle->GetRelativeLocation().Z,
 				0.01));
 	}
+	for (const FName AnimationId :
+		{FName(TEXT("hood")), FName(TEXT("door-left")),
+			FName(TEXT("door-right")), FName(TEXT("trunk")),
+			FName(TEXT("wheel-spin"))})
+	{
+		TestTrue(
+			*FString::Printf(TEXT("稳定动画 %s 必须具备可执行回退"), *AnimationId.ToString()),
+			Vehicle->CanPlayVehicleAnimation(AnimationId));
+	}
 
 	const TCHAR* WheelNames[] = {
 		TEXT("WheelFrontLeft"), TEXT("WheelFrontRight"),

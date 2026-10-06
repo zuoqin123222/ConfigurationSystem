@@ -861,17 +861,10 @@ bool AConfiguratorVehicleActor::CanPlayVehicleAnimation(
 	{
 		return true;
 	}
-	if (AnimationId == TEXT("wheel-spin"))
-	{
-		return IsValid(WheelController);
-	}
-	const UReversiblePartActuatorComponent* Actuator =
-		AnimationId == TEXT("hood") ? HoodActuator
-		: AnimationId == TEXT("trunk") ? TrunkActuator
-		: AnimationId == TEXT("door-left") ? LeftDoorActuator
-		: AnimationId == TEXT("door-right") ? RightDoorActuator
-		: nullptr;
-	return IsValid(Actuator);
+	// 五个稳定动画 ID 均具备静态代理回退路径。能力查询必须与
+	// FocusVehicleAnimation 的故障回退保持一致，不能因启动瞬间组件
+	// 注册状态不同而把可执行项永久过滤出 Web 菜单。
+	return IsStaticAnimationSupported(AnimationId);
 }
 
 bool AConfiguratorVehicleActor::ApplyStaticAnimationFallback(
