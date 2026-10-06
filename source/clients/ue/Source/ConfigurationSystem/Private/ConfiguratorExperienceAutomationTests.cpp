@@ -203,6 +203,10 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 		UConfiguratorWebBridge::IsSupportedQualityLevel(TEXT("sg.ViewDistanceQuality 0")));
 	TestTrue(TEXT("bridge 接受固定选配阶段"),
 		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("interior")));
+	TestTrue(TEXT("bridge 接受预设流程阶段"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("preset")));
+	TestTrue(TEXT("bridge 接受总览流程阶段"),
+		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("summary")));
 	TestFalse(TEXT("bridge 拒绝任意选配阶段"),
 		UConfiguratorWebBridge::IsSupportedConfiguratorCategory(TEXT("admin")));
 	TestTrue(TEXT("bridge 接受 Header 保存动作"),
@@ -442,27 +446,22 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 		AConfigShowroomPlayerController::ShouldReplacePendingCameraTransition(
 			0, INDEX_NONE, 1));
 
-	const FVector InteriorPreset(10.0, 20.0, 30.0);
-	TestTrue(TEXT("车内推拉未超限时保留候选位置"),
-		AConfigShowroomPlayerController::ClampInteriorCameraLocation(
-			InteriorPreset,
-			InteriorPreset + FVector(60.0, 0.0, 0.0),
-			120.0f).Equals(InteriorPreset + FVector(60.0, 0.0, 0.0), 0.1));
-	const FVector ClampedInterior =
-		AConfigShowroomPlayerController::ClampInteriorCameraLocation(
-			InteriorPreset,
-			InteriorPreset + FVector(300.0, 400.0, 0.0),
-			120.0f);
-	TestTrue(TEXT("车内推拉始终以预设位置为基准限幅"),
+	TestTrue(TEXT("车内滚轮向前缩小 FOV"),
 		FMath::IsNearlyEqual(
-			FVector::Distance(InteriorPreset, ClampedInterior),
-			120.0f,
-			0.1f));
-	TestTrue(TEXT("负限幅按零距离处理"),
-		AConfigShowroomPlayerController::ClampInteriorCameraLocation(
-			InteriorPreset,
-			InteriorPreset + FVector(1.0, 0.0, 0.0),
-			-1.0f).Equals(InteriorPreset, 0.1));
+			AConfigShowroomPlayerController::CalculateInteriorZoomFov(70.0f, 1.0f),
+			67.0f));
+	TestTrue(TEXT("车内滚轮向后扩大 FOV"),
+		FMath::IsNearlyEqual(
+			AConfigShowroomPlayerController::CalculateInteriorZoomFov(70.0f, -1.0f),
+			73.0f));
+	TestTrue(TEXT("车内 FOV 不低于安全下限"),
+		FMath::IsNearlyEqual(
+			AConfigShowroomPlayerController::CalculateInteriorZoomFov(36.0f, 2.0f),
+			35.0f));
+	TestTrue(TEXT("车内 FOV 不高于安全上限"),
+		FMath::IsNearlyEqual(
+			AConfigShowroomPlayerController::CalculateInteriorZoomFov(108.0f, -2.0f),
+			110.0f));
 
 	FMinimalViewInfo StartPOV;
 	StartPOV.Location = Start;

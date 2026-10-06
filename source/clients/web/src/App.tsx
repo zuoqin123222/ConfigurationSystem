@@ -117,6 +117,25 @@ const SEAT_BACKPLATE_FINISH_PRESETS = {
 } as const
 
 type SeatBackplateFinish = keyof typeof SEAT_BACKPLATE_FINISH_PRESETS
+type WorkflowStepId = 'preset' | 'summary' | string
+
+interface WorkflowStep {
+  id: WorkflowStepId
+  label: string
+  categoryId?: string
+}
+
+function workflowSteps(categories: CatalogV2['categories']): WorkflowStep[] {
+  return [
+    { id: 'preset', label: '预设' },
+    ...categories.map((category) => ({
+      id: category.categoryId,
+      label: category.displayName,
+      categoryId: category.categoryId,
+    })),
+    { id: 'summary', label: '总览' },
+  ]
+}
 
 export function isEmbeddedView(search = window.location.search): boolean {
   return new URLSearchParams(search).get('view') === 'embedded'
@@ -286,7 +305,7 @@ function UeColorCorrected({ children }: { children: ReactNode }) {
 function ConfiguratorHeader() {
   const [categories, setCategories] = useState<CatalogV2['categories']>([])
   const [headerState, setHeaderState] = useState<UeConfiguratorHeaderState>({
-    categoryId: 'exterior',
+    categoryId: 'preset',
     referenceTotalMinor: 22980000,
     syncState: 'idle',
     syncMessage: '',
@@ -316,8 +335,10 @@ function ConfiguratorHeader() {
     void catalogRequest.then((catalog) => {
       const nextCategories = categoriesInUiOrder(catalog)
       setCategories(nextCategories)
-      setHeaderState((current) => nextCategories.some(
-        (category) => category.categoryId === current.categoryId,
+      setHeaderState((current) => (
+        current.categoryId === 'preset'
+        || current.categoryId === 'summary'
+        || nextCategories.some((category) => category.categoryId === current.categoryId)
       )
         ? current
         : { ...current, categoryId: nextCategories[0]?.categoryId ?? current.categoryId })
@@ -332,45 +353,50 @@ function ConfiguratorHeader() {
     }
   }, [])
 
-  const triggerAction = (action: 'save' | 'share' | 'reset') => {
+  const triggerAction = (action: 'save') => {
     void triggerUeConfiguratorHeaderAction(getUeBridge(true), action)
   }
 
-  const selectCategory = (categoryId: string) => {
-    if (!categories.some((category) => category.categoryId === categoryId)) return
-    setHeaderState((current) => ({ ...current, categoryId }))
-    void syncUeConfiguratorCategory(getUeBridge(true), categoryId)
+  const selectCategory = (stepId: string) => {
+    if (
+      stepId !== 'preset'
+      && stepId !== 'summary'
+      && !categories.some((category) => category.categoryId === stepId)
+    ) return
+    setHeaderState((current) => ({ ...current, categoryId: stepId }))
+    void syncUeConfiguratorCategory(getUeBridge(true), stepId)
   }
 
   return (
     <ConfiguratorTopBar
       categories={categories}
+      activeStepId={headerState.categoryId}
       headerState={headerState}
       onAction={triggerAction}
-      onReset={() => triggerAction('reset')}
-      onSelectCategory={selectCategory}
+      onSelectStep={selectCategory}
     />
   )
 }
 
 function ConfiguratorTopBar({
   categories,
+  activeStepId,
   headerState,
   onAction,
-  onReset,
-  onSelectCategory,
+  onSelectStep,
   standalone = false,
 }: {
   categories: CatalogV2['categories']
+  activeStepId: WorkflowStepId
   headerState: UeConfiguratorHeaderState
-  onAction: (action: 'save' | 'share') => void
-  onReset?: () => void
-  onSelectCategory: (categoryId: string) => void
+  onAction: (action: 'save') => void
+  onSelectStep: (stepId: WorkflowStepId) => void
   standalone?: boolean
 }) {
+  const steps = workflowSteps(categories)
   const activeStageIndex = Math.max(
     0,
-    categories.findIndex((category) => category.categoryId === headerState.categoryId),
+    steps.findIndex((step) => step.id === activeStepId),
   )
   return (
     <header className={`configurator-header ${standalone ? 'standalone-header' : ''}`}>
@@ -379,26 +405,26 @@ function ConfiguratorTopBar({
       </h1>
       <nav
         aria-label="选配阶段"
-        style={{ gridTemplateColumns: `repeat(${Math.max(categories.length, 1)}, minmax(0, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${Math.max(steps.length, 1)}, minmax(0, 1fr))` }}
       >
-        {categories.length > 0 && <span
+        {steps.length > 0 && <span
           className="stage-indicator"
           aria-hidden="true"
           style={{
-            width: `${100 / categories.length}%`,
+            width: `${100 / steps.length}%`,
             transform: `translateX(${activeStageIndex * 100}%)`,
           }}
         />}
-        {categories.map((category, index) => (
-          <div className="header-stage" key={category.categoryId}>
+        {steps.map((step, index) => (
+          <div className="header-stage" key={step.id}>
             <button
-              className={headerState.categoryId === category.categoryId ? 'active' : ''}
-              aria-label={category.displayName}
-              aria-current={headerState.categoryId === category.categoryId ? 'step' : undefined}
-              onClick={() => onSelectCategory(category.categoryId)}
+              className={activeStepId === step.id ? 'active' : ''}
+              aria-label={step.label}
+              aria-current={activeStepId === step.id ? 'step' : undefined}
+              onClick={() => onSelectStep(step.id)}
             >
               <span>{String(index + 1).padStart(2, '0')}</span>
-              {category.displayName}
+              {step.label}
             </button>
           </div>
         ))}
@@ -407,32 +433,12 @@ function ConfiguratorTopBar({
         <span className={`header-sync ${headerState.syncState}`}>
           {headerState.syncMessage || (headerState.dirty ? '未同步更改' : '已同步')}
         </span>
-        <span className="header-total">
-          <small>参考总价</small>
-          <strong>¥{(headerState.referenceTotalMinor / 100).toLocaleString('zh-CN')}</strong>
-        </span>
-        {onReset && (
-          <button
-            className="header-reset"
-            onClick={onReset}
-            disabled={headerState.syncState === 'saving'}
-          >
-            复位
-          </button>
-        )}
         <button
           className="header-save"
           onClick={() => onAction('save')}
           disabled={headerState.syncState === 'saving' || !headerState.dirty}
         >
-          {headerState.syncState === 'saving' ? '保存中…' : '保存'}
-        </button>
-        <button
-          className="header-share"
-          onClick={() => onAction('share')}
-          disabled={headerState.syncState === 'saving'}
-        >
-          分享
+          {headerState.syncState === 'saving' ? '保存中…' : '存草稿'}
         </button>
       </div>
     </header>
@@ -633,8 +639,11 @@ function Configurator({
   offlineDraft,
   embedded,
 }: ConfiguratorProps) {
-  const [categoryId, setCategoryId] = useState(
-    categoriesInUiOrder(catalog)[0]?.categoryId ?? '',
+  const initialCategoryId = categoriesInUiOrder(catalog)[0]?.categoryId ?? ''
+  const [categoryId, setCategoryId] = useState(initialCategoryId)
+  const [activeStepId, setActiveStepId] = useState<WorkflowStepId>('preset')
+  const [selectedPresetId, setSelectedPresetId] = useState<'default' | 'imported' | null>(
+    savedPortableValue ? null : 'default',
   )
   const [componentId, setComponentId] = useState('all')
   const [surfaceId, setSurfaceId] = useState(catalog.selectionOrder[0] ?? '')
@@ -694,6 +703,22 @@ function Configurator({
     },
     0,
   )
+  const categorySurfaces = useMemo(() => {
+    const componentIds = new Set(
+      catalog.components
+        .filter((component) => component.categoryId === categoryId)
+        .map((component) => component.componentId),
+    )
+    return catalog.surfaces
+      .filter((surface) => componentIds.has(surface.componentId))
+      .sort((left, right) =>
+        catalog.selectionOrder.indexOf(left.surfaceId)
+        - catalog.selectionOrder.indexOf(right.surfaceId))
+  }, [catalog.components, catalog.selectionOrder, catalog.surfaces, categoryId])
+  const currentSurfaceIndex = Math.max(
+    0,
+    categorySurfaces.findIndex((surface) => surface.surfaceId === currentSurface.surfaceId),
+  )
 
   const focusCatalogNode = useCallback((selection: {
     categoryId?: string
@@ -715,12 +740,22 @@ function Configurator({
 
   const selectCategory = useCallback((nextCategoryId: string) => {
     if (!catalog.categories.some((category) => category.categoryId === nextCategoryId)) return
+    setActiveStepId(nextCategoryId)
     setCategoryId(nextCategoryId)
     if (embedded) {
       void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
       focusCatalogNode({ categoryId: nextCategoryId })
     }
   }, [catalog, embedded, focusCatalogNode])
+
+  const selectWorkflowStep = useCallback((stepId: WorkflowStepId) => {
+    if (stepId === 'preset' || stepId === 'summary') {
+      setActiveStepId(stepId)
+      if (embedded) void syncUeConfiguratorCategory(getUeBridge(true), stepId)
+      return
+    }
+    selectCategory(stepId)
+  }, [embedded, selectCategory])
 
   const selectComponent = (nextComponentId: string) => {
     setComponentId(nextComponentId)
@@ -737,11 +772,76 @@ function Configurator({
     focusCatalogNode({ categoryId, componentId, surfaceId: nextSurfaceId })
   }
 
+  const focusSurface = useCallback((
+    nextCategoryId: string,
+    nextSurface: CatalogV2['surfaces'][number],
+  ) => {
+    const nextCategory = catalog.categories.find(
+      (category) => category.categoryId === nextCategoryId,
+    )
+    const nextSurfacesAsComponents = nextCategory?.ui?.navigationMode === 'surfaces-as-components'
+    setActiveStepId(nextCategoryId)
+    setCategoryId(nextCategoryId)
+    setComponentId(nextSurfacesAsComponents ? nextSurface.surfaceId : nextSurface.componentId)
+    setSurfaceId(nextSurface.surfaceId)
+    if (embedded) void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
+    focusCatalogNode({
+      categoryId: nextCategoryId,
+      componentId: nextSurfacesAsComponents ? undefined : nextSurface.componentId,
+      surfaceId: nextSurface.surfaceId,
+    })
+  }, [catalog.categories, embedded, focusCatalogNode])
+
+  const moveBySurface = (direction: -1 | 1) => {
+    const nextSurface = categorySurfaces[currentSurfaceIndex + direction]
+    if (nextSurface) {
+      focusSurface(categoryId, nextSurface)
+      return
+    }
+    const categoryIndex = categories.findIndex((category) => category.categoryId === categoryId)
+    const adjacentCategory = categories[categoryIndex + direction]
+    if (!adjacentCategory) {
+      selectWorkflowStep(direction < 0 ? 'preset' : 'summary')
+      return
+    }
+    const adjacentComponentIds = new Set(
+      catalog.components
+        .filter((component) => component.categoryId === adjacentCategory.categoryId)
+        .map((component) => component.componentId),
+    )
+    const adjacentSurfaces = catalog.surfaces
+      .filter((surface) => adjacentComponentIds.has(surface.componentId))
+      .sort((left, right) =>
+        catalog.selectionOrder.indexOf(left.surfaceId)
+        - catalog.selectionOrder.indexOf(right.surfaceId))
+    const target = direction < 0 ? adjacentSurfaces.at(-1) : adjacentSurfaces[0]
+    if (target) focusSurface(adjacentCategory.categoryId, target)
+  }
+
+  const resetCurrentSurface = () => {
+    const defaults = createInitialSelections(catalog)
+    const nextSelections = { ...selections }
+    const nextCustomizations = { ...customizations }
+    const defaultOptionId = defaults[currentSurface.surfaceId]
+    if (defaultOptionId) nextSelections[currentSurface.surfaceId] = defaultOptionId
+    else delete nextSelections[currentSurface.surfaceId]
+    delete nextCustomizations[currentSurface.surfaceId]
+    setSelections(nextSelections)
+    setCustomizations(normalizeCustomizations(catalog, nextSelections, nextCustomizations))
+    setSyncState('idle')
+    setSyncMessage(`已复位${currentSurface.displayName}`)
+  }
+
   useEffect(() => {
     if (!embedded) return
     const handleCategory = (event: Event) => {
       const nextCategoryId = (event as CustomEvent<string>).detail
+      if (nextCategoryId === 'preset' || nextCategoryId === 'summary') {
+        setActiveStepId(nextCategoryId)
+        return
+      }
       if (catalog.categories.some((category) => category.categoryId === nextCategoryId)) {
+        setActiveStepId(nextCategoryId)
         setCategoryId(nextCategoryId)
         focusCatalogNode({ categoryId: nextCategoryId })
       }
@@ -752,7 +852,10 @@ function Configurator({
 
   useEffect(() => {
     const firstComponent = components[0]?.componentId
-    setComponentId(firstComponent ?? 'all')
+    setComponentId((current) =>
+      components.some((component) => component.componentId === current)
+        ? current
+        : (firstComponent ?? 'all'))
   }, [categoryId, components])
 
   useEffect(() => {
@@ -898,10 +1001,8 @@ function Configurator({
   const persist = (): string => {
     localStorage.setItem(PORTABLE_CACHE_KEY, portableValue)
     setSavedPortableValue(portableValue)
-    setImportValue(portableValue)
-    setTransferOpen(true)
     setSyncState('saved')
-    setSyncMessage('自包含配置已生成')
+    setSyncMessage('草稿已保存')
     return portableValue
   }
 
@@ -916,7 +1017,9 @@ function Configurator({
   }
 
   const share = async () => {
-    const value = persist()
+    const value = portableValue
+    setImportValue(value)
+    setTransferOpen(true)
     const url = new URL(window.location.href)
     url.searchParams.delete('configuration')
     url.searchParams.set('config', value)
@@ -941,7 +1044,9 @@ function Configurator({
       setImportValue(normalized)
       setSyncState('saved')
       setSyncMessage('配置已导入')
+      setSelectedPresetId('imported')
       setTransferOpen(false)
+      selectWorkflowStep(categories[0]?.categoryId ?? 'summary')
     } catch (reason) {
       setSyncState('error')
       setSyncMessage(reason instanceof Error ? reason.message : '配置导入失败')
@@ -961,6 +1066,7 @@ function Configurator({
     setCustomizations(initialCustomizations)
     setSavedPortableValue('')
     setCategoryId(categories[0]?.categoryId ?? '')
+    setActiveStepId('preset')
     setComponentId('all')
     setSurfaceId(catalog.selectionOrder[0] ?? '')
     setActiveView('front-left')
@@ -974,17 +1080,27 @@ function Configurator({
     setSyncMessage('已恢复默认配置')
   }
 
+  const applyDefaultPreset = () => {
+    const initialSelections = createInitialSelections(catalog)
+    const initialCustomizations = normalizeCustomizations(catalog, initialSelections, {})
+    setSelections(initialSelections)
+    setCustomizations(initialCustomizations)
+    setSelectedPresetId('default')
+    setSyncState('idle')
+    setSyncMessage('已选择默认配置')
+  }
+
   useEffect(() => {
     if (!embedded) return
     void syncUeConfiguratorHeaderState(getUeBridge(true), {
-      categoryId: categoryId as UeConfiguratorCategory,
+      categoryId: activeStepId as UeConfiguratorCategory,
       referenceTotalMinor: referenceTotal,
       syncState,
       syncMessage,
       dirty,
       online,
     })
-  }, [categoryId, dirty, embedded, online, referenceTotal, syncMessage, syncState])
+  }, [activeStepId, dirty, embedded, online, referenceTotal, syncMessage, syncState])
 
   useEffect(() => {
     if (!embedded) return
@@ -998,7 +1114,7 @@ function Configurator({
     return () => window.removeEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
   })
 
-  const visibleSurfaces = currentComponent?.ui?.layout === 'stack' ? surfaces : [currentSurface]
+  const visibleSurfaces = [currentSurface]
 
   const renderSurfaceOptions = (surface: CatalogV2['surfaces'][number]) => {
     const options = optionsForSurface(catalog, surface.surfaceId)
@@ -1323,8 +1439,9 @@ function Configurator({
         <ConfiguratorTopBar
           standalone
           categories={categories}
+          activeStepId={activeStepId}
           headerState={{
-            categoryId: categoryId as UeConfiguratorCategory,
+            categoryId: activeStepId as UeConfiguratorCategory,
             referenceTotalMinor: referenceTotal,
             syncState,
             syncMessage: syncMessage || (
@@ -1337,10 +1454,8 @@ function Configurator({
           }}
           onAction={(action) => {
             if (action === 'save') void persist()
-            if (action === 'share') void share()
           }}
-          onReset={resetConfiguration}
-          onSelectCategory={selectCategory}
+          onSelectStep={selectWorkflowStep}
         />
       )}
       <div className="configurator-workspace">
@@ -1401,30 +1516,141 @@ function Configurator({
           </div>}
 
           <div className="panel-scroll">
-          <section className="part-selector" aria-label="部件与子项">
-            <FilterGroup label="部件" items={components.map((item) => ({
-              id: item.componentId,
-              name: item.displayName,
-            }))} value={componentId} onChange={selectComponent} />
-            {!surfacesAsComponents
-              && surfaces.length > 1
-              && currentComponent?.ui?.navigationMode !== 'none' && (
-              <FilterGroup label="子项" items={surfaces.map((item) => ({
-                id: item.surfaceId,
-                name: item.displayName,
-              }))} value={currentSurface.surfaceId} onChange={selectSurface} />
-            )}
-          </section>
-          <section className="options" aria-live="polite">
-            {visibleSurfaces.map(renderSurfaceOptions)}
-          </section>
+          {activeStepId === 'preset' && (
+            <section className="preset-page" aria-label="预设配置">
+              <div className="page-heading">
+                <span>01 / PRESET</span>
+                <h2>从预设开始</h2>
+                <p>使用 SC01 默认配置，或导入已有选配码继续编辑。</p>
+              </div>
+              <div className="preset-grid">
+                <button
+                  className={`preset-card default-preset ${selectedPresetId === 'default' ? 'selected' : ''}`}
+                  aria-label="默认配置"
+                  aria-pressed={selectedPresetId === 'default'}
+                  onClick={applyDefaultPreset}
+                >
+                  <span className="preset-card-visual" aria-hidden="true">
+                    <img
+                      src={versionStaticAssetUrl('/sc01/presets/default-exterior.webp')}
+                      alt=""
+                    />
+                    {selectedPresetId === 'default' && (
+                      <img
+                        src={versionStaticAssetUrl('/sc01/presets/default-interior.webp')}
+                        alt=""
+                      />
+                    )}
+                  </span>
+                  <strong>默认配置</strong>
+                  <small>¥{(catalog.vehicle.basePriceMinor / 100).toLocaleString('zh-CN')}</small>
+                </button>
+                <button
+                  className="preset-card import-preset"
+                  aria-label="导入配置"
+                  onClick={() => {
+                    setImportValue('')
+                    setTransferOpen(true)
+                  }}
+                >
+                  <span className="preset-plus" aria-hidden="true">＋</span>
+                  <strong>导入配置</strong>
+                  <small>粘贴 SC01CFG1 选配码</small>
+                </button>
+              </div>
+            </section>
+          )}
+          {activeStepId !== 'preset' && activeStepId !== 'summary' && (
+            <>
+              <section className="part-selector" aria-label="部件与子项">
+                <FilterGroup label="部件" items={components.map((item) => ({
+                  id: item.componentId,
+                  name: item.displayName,
+                }))} value={componentId} onChange={selectComponent} />
+                {!surfacesAsComponents
+                  && surfaces.length > 1
+                  && currentComponent?.ui?.navigationMode !== 'none' && (
+                  <FilterGroup label="子项" items={surfaces.map((item) => ({
+                    id: item.surfaceId,
+                    name: item.displayName,
+                  }))} value={currentSurface.surfaceId} onChange={selectSurface} />
+                )}
+              </section>
+              <section className="options" aria-live="polite">
+                {visibleSurfaces.map(renderSurfaceOptions)}
+              </section>
+            </>
+          )}
+          {activeStepId === 'summary' && (
+            <section className="summary-page" aria-label="配置总览">
+              <div className="page-heading">
+                <span>06 / SUMMARY</span>
+                <h2>配置总览</h2>
+                <p>确认每个定制项目及对应参考价格。</p>
+              </div>
+              <div className="summary-list">
+                {catalog.selectionOrder.flatMap((summarySurfaceId) => {
+                  const summarySurface = catalog.surfaces.find(
+                    (surface) => surface.surfaceId === summarySurfaceId,
+                  )
+                  const option = catalog.options.find(
+                    (item) => item.optionId === selections[summarySurfaceId],
+                  )
+                  if (!summarySurface || !option) return []
+                  return [(
+                    <div className="summary-row" key={summarySurfaceId}>
+                      <span>
+                        <small>{summarySurface.displayName}</small>
+                        <strong>{option.displayName}</strong>
+                      </span>
+                      <b>{optionPrice(option)}</b>
+                    </div>
+                  )]
+                })}
+              </div>
+            </section>
+          )}
           </div>
-          <div className="portable-actions">
-            <button onClick={() => {
-              setImportValue('')
-              setTransferOpen(true)
-            }}>导入配置</button>
-            <button onClick={() => { void persist() }}>导出配置</button>
+          <div className="panel-footer">
+            <div className="panel-reference-total">
+              <span>参考总价</span>
+              <strong>¥{(referenceTotal / 100).toLocaleString('zh-CN')}</strong>
+            </div>
+            <div className="page-actions">
+              {activeStepId === 'preset' && (
+                <button className="primary" onClick={() => selectWorkflowStep(categories[0]?.categoryId ?? 'summary')}>
+                  下一步
+                </button>
+              )}
+              {activeStepId !== 'preset' && activeStepId !== 'summary' && (
+                <>
+                  <button onClick={() => moveBySurface(-1)}>上一步</button>
+                  <button onClick={resetCurrentSurface}>复位</button>
+                  <button className="primary" onClick={() => moveBySurface(1)}>下一步</button>
+                </>
+              )}
+              {activeStepId === 'summary' && (
+                <>
+                  <button onClick={() => {
+                    const lastCategory = categories.at(-1)
+                    if (!lastCategory) return
+                    const lastComponentIds = new Set(
+                      catalog.components
+                        .filter((component) => component.categoryId === lastCategory.categoryId)
+                        .map((component) => component.componentId),
+                    )
+                    const lastSurface = catalog.surfaces
+                      .filter((surface) => lastComponentIds.has(surface.componentId))
+                      .sort((left, right) =>
+                        catalog.selectionOrder.indexOf(left.surfaceId)
+                        - catalog.selectionOrder.indexOf(right.surfaceId))
+                      .at(-1)
+                    if (lastSurface) focusSurface(lastCategory.categoryId, lastSurface)
+                  }}>上一步</button>
+                  <button className="primary" onClick={() => { void share() }}>分享</button>
+                </>
+              )}
+            </div>
           </div>
         </aside>
       </div>

@@ -117,7 +117,7 @@ public:
 		int32 PendingCameraIndex,
 		int32 RequestedCameraIndex);
 
-	/** 平移仅对车外预设开放；车内仍可旋转和推拉。 */
+	/** 平移仅对车外预设开放；车内仍可旋转和调整 FOV。 */
 	static bool IsCameraPanAllowed(int32 CameraIndex);
 
 	/** 车外轨道旋转保持相机到车辆 Pivot 的距离。 */
@@ -127,11 +127,8 @@ public:
 		float YawDegrees,
 		float PitchDegrees);
 
-	/** 将车内运行时相机约束在预设基准位置周围，避免连续推拉穿出座舱。 */
-	static FVector ClampInteriorCameraLocation(
-		const FVector& PresetLocation,
-		const FVector& CandidateLocation,
-		float MaxDistance);
+	/** 车内滚轮只调整 FOV：正向滚轮缩小 FOV，反向滚轮扩大 FOV。 */
+	static float CalculateInteriorZoomFov(float CurrentFov, float WheelDelta);
 
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	void ToggleEnvironment();
@@ -221,6 +218,7 @@ private:
 	void RotateInteractiveCamera(float YawDegrees, float PitchDegrees);
 	void PanInteractiveCamera(float Horizontal, float Vertical);
 	void DollyInteractiveCamera(float Amount);
+	void AdjustInteriorCameraFov(float WheelDelta);
 	void SetInteractiveTargetPOV(const FMinimalViewInfo& POV);
 	void ResetInteractiveOrbit(const FMinimalViewInfo& POV, bool bResetPivot);
 	void UpdateStageProjectionOffset(float DeltaSeconds);

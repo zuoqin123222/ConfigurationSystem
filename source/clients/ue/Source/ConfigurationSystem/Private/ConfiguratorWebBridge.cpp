@@ -108,10 +108,12 @@ bool UConfiguratorWebBridge::IsSupportedQualityLevel(const FString& Quality)
 bool UConfiguratorWebBridge::IsSupportedConfiguratorCategory(
 	const FString& CategoryId)
 {
-	return CategoryId == TEXT("exterior")
+	return CategoryId == TEXT("preset")
+		|| CategoryId == TEXT("exterior")
 		|| CategoryId == TEXT("interior")
 		|| CategoryId == TEXT("performance")
-		|| CategoryId == TEXT("personalization");
+		|| CategoryId == TEXT("personalization")
+		|| CategoryId == TEXT("summary");
 }
 
 bool UConfiguratorWebBridge::IsSupportedConfiguratorHeaderAction(

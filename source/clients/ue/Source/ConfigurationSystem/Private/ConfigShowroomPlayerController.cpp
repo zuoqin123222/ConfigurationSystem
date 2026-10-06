@@ -27,6 +27,10 @@ namespace
 	constexpr int32 RequiredWindowWidth = 1600;
 	constexpr int32 RequiredWindowHeight = 900;
 	constexpr float StageProjectionInterpolationSpeed = 8.0f;
+	constexpr float CameraFovInterpolationSpeed = 10.0f;
+	constexpr float InteriorMinFov = 35.0f;
+	constexpr float InteriorMaxFov = 110.0f;
+	constexpr float InteriorFovStep = 3.0f;
 	const TCHAR* CameraTagPrefix = TEXT("Configurator.Camera.");
 	const FName InteriorCameraTag(TEXT("Configurator.Camera.Interior"));
 
@@ -294,13 +298,14 @@ FVector AConfigShowroomPlayerController::RotateExteriorCameraLocation(
 	return Pivot + OrbitRotation.Vector() * Radius;
 }
 
-FVector AConfigShowroomPlayerController::ClampInteriorCameraLocation(
-	const FVector& PresetLocation,
-	const FVector& CandidateLocation,
-	const float MaxDistance)
+float AConfigShowroomPlayerController::CalculateInteriorZoomFov(
+	const float CurrentFov,
+	const float WheelDelta)
 {
-	const FVector Offset = CandidateLocation - PresetLocation;
-	return PresetLocation + Offset.GetClampedToMaxSize(FMath::Max(0.0f, MaxDistance));
+	return FMath::Clamp(
+		CurrentFov - WheelDelta * InteriorFovStep,
+		InteriorMinFov,
+		InteriorMaxFov);
 }
 
 void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
@@ -352,8 +357,17 @@ void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 			Current.Location, InteractiveTargetPOV.Location, DeltaSeconds, 12.0f);
 		Smoothed.Rotation = FMath::RInterpTo(
 			Current.Rotation, InteractiveTargetPOV.Rotation, DeltaSeconds, 12.0f);
+		Smoothed.FOV = FMath::FInterpTo(
+			Current.FOV,
+			InteractiveTargetPOV.FOV,
+			DeltaSeconds,
+			CameraFovInterpolationSpeed);
 		if (Smoothed.Location.Equals(InteractiveTargetPOV.Location, 0.05)
-			&& Smoothed.Rotation.Equals(InteractiveTargetPOV.Rotation, 0.02))
+			&& Smoothed.Rotation.Equals(InteractiveTargetPOV.Rotation, 0.02)
+			&& FMath::IsNearlyEqual(
+				Smoothed.FOV,
+				InteractiveTargetPOV.FOV,
+				0.01f))
 		{
 			Smoothed = InteractiveTargetPOV;
 			bInteractiveSmoothingActive = false;
@@ -1001,7 +1015,7 @@ void AConfigShowroomPlayerController::PanInteractiveCamera(
 void AConfigShowroomPlayerController::DollyInteractiveCamera(const float Amount)
 {
 	AConfigRuntimeCameraActor* Camera = GetInteractiveCamera();
-	if (!IsValid(Camera))
+	if (!IsValid(Camera) || IsCurrentCameraInterior())
 	{
 		return;
 	}
@@ -1011,24 +1025,27 @@ void AConfigShowroomPlayerController::DollyInteractiveCamera(const float Amount)
 		: Camera->GetCameraPOV();
 	const FVector Candidate =
 		POV.Location + POV.Rotation.RotateVector(FVector::ForwardVector) * Amount;
-	if (IsCurrentCameraInterior())
-	{
-		FMinimalViewInfo PresetPOV;
-		if (GetCameraPresetPOV(CurrentCameraPreset, PresetPOV))
-		{
-			POV.Location = ClampInteriorCameraLocation(
-				PresetPOV.Location, Candidate, 120.0f);
-			SetInteractiveTargetPOV(POV);
-		}
-		return;
-	}
-
 	const float CandidateRadius = FVector::Distance(Candidate, OrbitPivot);
 	if (CandidateRadius >= 180.0f && CandidateRadius <= 3000.0f)
 	{
 		POV.Location = Candidate;
 		SetInteractiveTargetPOV(POV);
 	}
+}
+
+void AConfigShowroomPlayerController::AdjustInteriorCameraFov(
+	const float WheelDelta)
+{
+	AConfigRuntimeCameraActor* Camera = GetInteractiveCamera();
+	if (!IsValid(Camera) || !IsCurrentCameraInterior())
+	{
+		return;
+	}
+	FMinimalViewInfo POV = bInteractiveSmoothingActive
+		? InteractiveTargetPOV
+		: Camera->GetCameraPOV();
+	POV.FOV = CalculateInteriorZoomFov(POV.FOV, WheelDelta);
+	SetInteractiveTargetPOV(POV);
 }
 
 void AConfigShowroomPlayerController::HandleCameraHorizontal(const float Value)
@@ -1082,7 +1099,14 @@ void AConfigShowroomPlayerController::HandleCameraZoom(const float Value)
 		{
 			CancelInitialCameraReveal(true);
 		}
-		DollyInteractiveCamera(Value * 35.0f);
+		if (IsCurrentCameraInterior())
+		{
+			AdjustInteriorCameraFov(Value);
+		}
+		else
+		{
+			DollyInteractiveCamera(Value * 35.0f);
+		}
 	}
 }
 
