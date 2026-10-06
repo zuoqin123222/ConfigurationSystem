@@ -4,6 +4,7 @@
 #include "CarConfiguratorSubsystem.h"
 #include "ConfiguratorBrowserWidget.h"
 #include "ConfiguratorWebBridge.h"
+#include "PathTracingExperienceSubsystem.h"
 #include "StageCornerMask.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
@@ -797,6 +798,15 @@ FString UConfiguratorPanel::GetExperienceStateJson()
 	}
 	State->SetStringField(TEXT("lightPreset"), Controller->GetLightPreset());
 	State->SetStringField(TEXT("renderMode"), Controller->GetRenderMode());
+	const UPathTracingExperienceSubsystem* PathTracingSubsystem =
+		GetGameInstance() != nullptr
+			? GetGameInstance()->GetSubsystem<UPathTracingExperienceSubsystem>()
+			: nullptr;
+	State->SetNumberField(
+		TEXT("renderProgress"),
+		PathTracingSubsystem != nullptr
+			? PathTracingSubsystem->GetProgress01()
+			: 0.0f);
 	State->SetStringField(TEXT("quality"), Quality);
 	State->SetBoolField(TEXT("fullscreen"), bWebFullscreen);
 

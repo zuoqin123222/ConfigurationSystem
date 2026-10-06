@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchCatalog } from './api'
 import {
   bundledCatalog,
-  resolveStaticAssetUrl,
   usesBundledCatalog,
 } from './bundledCatalog'
 import type { CatalogAnimation, CatalogCameraId, CatalogInteractionCamera } from './types'
@@ -55,6 +54,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const [animationId, setAnimationId] = useState<string | null>(null)
   const [lightPreset, setLightPreset] = useState<'studio' | 'outdoor'>('studio')
   const [renderMode, setRenderMode] = useState<'realtime' | 'path-tracing'>('realtime')
+  const [renderProgress, setRenderProgress] = useState(0)
   const [quality, setQuality] = useState<UeQualityLevel>('high')
   const [fullscreen, setFullscreen] = useState(false)
   const [toolbarIdle, setToolbarIdle] = useState(false)
@@ -87,7 +87,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     }
   }, [keepToolbarAwake])
 
-  const applyState = (state: UePresentationState) => {
+  const applyState = useCallback((state: UePresentationState) => {
     setCameraId(state.cameraId ?? null)
     setCameraIndex(state.cameraIndex ?? null)
     setPendingCameraSelection((current) => (
@@ -99,9 +99,12 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     setAnimationId(state.animationId ?? null)
     setLightPreset(state.lightPreset)
     setRenderMode(state.renderMode)
+    setRenderProgress(state.renderMode === 'path-tracing'
+      ? Math.min(1, Math.max(0, state.renderProgress ?? 0))
+      : 0)
     setQuality(state.quality)
     setFullscreen(state.fullscreen)
-  }
+  }, [])
 
   useEffect(() => {
     if (!ueEnabled) return
@@ -134,7 +137,24 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       active = false
       controller.abort()
     }
-  }, [ueEnabled])
+  }, [applyState, ueEnabled])
+
+  useEffect(() => {
+    if (!ueEnabled || renderMode !== 'path-tracing') return
+    let active = true
+    const updateProgress = async () => {
+      const state = await getUePresentationState(getUeBridge(true))
+      if (active && state) applyState(state)
+    }
+    void updateProgress()
+    const timer = window.setInterval(() => {
+      void updateProgress()
+    }, 150)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [applyState, renderMode, ueEnabled])
 
   const run = async (
     createCommand: UeControlCommand | ((state: UePresentationState) => UeControlCommand),
@@ -268,7 +288,6 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
                       && (pendingCameraSelection?.cameraIndex ?? cameraIndex) === camera.legacyIndex}
                   onClick={() => void selectCamera(camera)}
                 >
-                  <img src={resolveStaticAssetUrl(camera.iconUrl)} alt="" />
                   {camera.displayName}
                 </button>
               ))}
@@ -319,7 +338,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         <button
           className="path-tracing-toggle"
           aria-pressed={renderMode === 'path-tracing'}
-          aria-label="Path Tracing"
+          aria-label="渲染"
           onClick={() => {
             void run(
               (state) => ({
@@ -332,8 +351,22 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
             )
           }}
         >
-          <span aria-hidden="true">◇</span>
-          Path Tracing
+          {renderMode === 'path-tracing'
+            ? (
+              <svg className="render-progress" viewBox="0 0 24 24" aria-hidden="true">
+                <circle className="render-progress-track" cx="12" cy="12" r="9" pathLength="100" />
+                <circle
+                  className="render-progress-value"
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  pathLength="100"
+                  style={{ strokeDashoffset: 100 - renderProgress * 100 }}
+                />
+              </svg>
+            )
+            : <span aria-hidden="true">◇</span>}
+          渲染
         </button>
         <div className="toolbar-item">
           <button

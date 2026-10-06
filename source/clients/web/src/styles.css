@@ -228,11 +228,10 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .filter-group > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .filter-group button {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center;
   border: 1px solid #d8d6ce; border-radius: 4px; padding: 7px 11px;
   color: #555850; background: #fff; cursor: pointer; font-size: 13px;
 }
-.filter-group button img { width: 16px; height: 16px; object-fit: contain; }
 .filter-group button.active { border-color: #282b26; color: #fff; background: #282b26; }
 
 .none-option {
@@ -539,8 +538,7 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   position: fixed; z-index: 20; left: 50%; bottom: 24px; transform: translateX(-50%);
   display: flex; align-items: stretch; gap: 2px; padding: 6px;
   border: 1px solid rgba(255,255,255,.13); border-radius: 18px;
-  background: rgba(43,43,43,.82); box-shadow: 0 18px 50px rgba(0,0,0,.3);
-  backdrop-filter: blur(22px);
+  background: #3d3d3b; box-shadow: none;
 }
 .experience-toolbar > button, .toolbar-item > button {
   display: grid; min-width: 72px; min-height: 52px; place-items: center; gap: 2px;
@@ -556,44 +554,61 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .experience-toolbar > button { position: relative; }
 .experience-toolbar button span { color: #fff; font-size: 17px; line-height: 1; }
+.render-progress {
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+.render-progress circle {
+  fill: none;
+  stroke-width: 2.5;
+}
+.render-progress-track { stroke: rgba(255,255,255,.2); }
+.render-progress-value {
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  transition: stroke-dashoffset .15s linear;
+}
 .toolbar-item { position: relative; }
 .control-popover {
   position: absolute; z-index: 25; bottom: calc(100% + 12px); left: 0;
-  display: grid; grid-template-columns: 1fr 1fr; min-width: 226px; padding: 6px;
-  border: 1px solid #d8d8d5; border-radius: 12px;
-  color: #1d1d1b; background: rgba(250,250,248,.98);
-  box-shadow: 0 16px 40px rgba(0,0,0,.22);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px; min-width: 226px; padding: 6px;
+  border: 1px solid rgba(255,255,255,.13); border-radius: 18px;
+  color: #d5d5d2; background: #3d3d3b;
+  box-shadow: none;
 }
 .control-popover button {
-  border: 0; border-radius: 2px; padding: 9px 11px;
-  color: #4b4b48; text-align: left; background: transparent; cursor: pointer; font-size: 11px;
+  position: relative;
+  min-height: 42px;
+  border: 0; border-radius: 12px; padding: 9px 12px;
+  color: #d5d5d2; text-align: center; background: transparent; cursor: pointer; font-size: 10px;
+  letter-spacing: .08em;
 }
 .control-popover button:hover, .control-popover button[aria-checked="true"] {
-  color: #111; background: #e8e8e5;
+  color: #fff; background: #30302f;
 }
-.control-popover button[aria-checked="true"] { box-shadow: inset 2px 0 var(--accent); }
+.control-popover button[aria-checked="true"]::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: 4px;
+  left: 12px;
+  height: 2px;
+  background: var(--accent);
+}
 .camera-popover {
-  grid-template-columns: repeat(6, max-content);
+  grid-template-columns: repeat(5, minmax(58px, 1fr));
   min-width: 0;
 }
 .camera-popover button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 52px;
-  padding-right: 9px;
-  padding-left: 9px;
+  min-width: 58px;
   text-align: center;
   white-space: nowrap;
 }
-.camera-popover button img {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-}
 .animation-popover {
-  grid-template-columns: repeat(5, max-content);
+  grid-template-columns: repeat(3, minmax(88px, 1fr));
   min-width: 0;
 }
 .animation-popover button {
@@ -936,7 +951,7 @@ html.controls-document #root::-webkit-scrollbar {
   background: #fff;
 }
 .app-shell.embedded .panel-scroll { flex: 1 1 auto; margin-top: 0; }
-.app-shell.embedded .part-selector { padding: 4px 12px 12px; }
+.app-shell.embedded .part-selector { margin-top: 0; padding: 4px 12px 12px; }
 .app-shell.embedded .options { margin-top: 14px; padding: 0 14px 14px; }
 .app-shell.embedded .material-group { background: #fff; }
 .app-shell.embedded .paint-editor { margin-top: 14px; background: #fff; }

@@ -63,6 +63,7 @@ export interface UePresentationState {
   animationId?: string | null
   lightPreset: 'studio' | 'outdoor'
   renderMode: 'realtime' | 'path-tracing'
+  renderProgress?: number
   quality: UeQualityLevel
   fullscreen: boolean
 }
@@ -289,6 +290,10 @@ export async function getUePresentationState(
         && !isCatalogNodeId(state.animationId))
       || !['studio', 'outdoor'].includes(String(state.lightPreset))
       || !['realtime', 'path-tracing'].includes(String(state.renderMode))
+      || (state.renderProgress !== undefined
+        && (!Number.isFinite(state.renderProgress)
+          || Number(state.renderProgress) < 0
+          || Number(state.renderProgress) > 1))
       || !['low', 'medium', 'high', 'epic'].includes(String(state.quality))
       || typeof state.fullscreen !== 'boolean') return null
     return state as unknown as UePresentationState

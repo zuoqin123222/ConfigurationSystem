@@ -77,6 +77,10 @@ import {
 const CACHE_KEY = 'automotive-v2-configurator'
 const PORTABLE_CACHE_KEY = `${CACHE_KEY}-portable`
 const DEFAULT_IMAGE_URL = '/sc01/option-icons/default.svg'
+const FIXED_OPTION_SWATCHES: Record<string, string> = {
+  'body-cover-red': '#FF3B3B',
+  'body-cover-silver': 'linear-gradient(135deg, #F5F6F7 0%, #C5C9CC 48%, #8F969C 100%)',
+}
 export const STANDALONE_LAYOUT = {
   headerHeight: 76,
   panelWidth: 480,
@@ -160,6 +164,8 @@ function optionSwatch(option: CatalogV2['options'][number]): string {
   if (option.parameters.color?.mode === 'custom') {
     return 'conic-gradient(#e84b4b, #e8ce4b, #55bb6a, #4b8ee8, #9855c7, #e84b4b)'
   }
+  const fixedSwatch = FIXED_OPTION_SWATCHES[option.optionId]
+  if (fixedSwatch) return fixedSwatch
   const color = option.parameters.color?.value ?? option.colorCode
   if (color && /^#[0-9a-f]{6}$/i.test(color)) return color
   if (option.pricing.isStandard) return '#171817'
@@ -232,7 +238,8 @@ function readCachedDraft(): CachedDraft | null {
 
 export default function App() {
   const view = getAppView()
-  const hasEmbeddedUeBridge = view !== 'default' && getUeBridge(true) !== null
+  const shouldCorrectUeColor = (view === 'embedded' || view === 'header')
+    && getUeBridge(true) !== null
   let content
   if (view === 'controls') {
     content = <ExperienceControls ueEnabled />
@@ -241,7 +248,7 @@ export default function App() {
   } else {
     content = <ConfiguratorApp embedded={view === 'embedded'} />
   }
-  return hasEmbeddedUeBridge
+  return shouldCorrectUeColor
     ? <UeColorCorrected>{content}</UeColorCorrected>
     : content
 }
@@ -1325,21 +1332,10 @@ function Configurator({
           </div>}
 
           <div className="panel-scroll">
-          <FilterGroup
-              label="分类"
-              items={categories.map((item) => ({
-                id: item.categoryId,
-                name: item.displayName,
-                iconUrl: item.ui?.iconUrl,
-              }))}
-              value={categoryId}
-              onChange={selectCategory}
-            />
           <section className="part-selector" aria-label="部件与子项">
             <FilterGroup label="部件" items={components.map((item) => ({
               id: item.componentId,
               name: item.displayName,
-              iconUrl: item.ui?.iconUrl,
             }))} value={componentId} onChange={selectComponent} />
             {!surfacesAsComponents
               && surfaces.length > 1
@@ -1347,7 +1343,6 @@ function Configurator({
               <FilterGroup label="子项" items={surfaces.map((item) => ({
                 id: item.surfaceId,
                 name: item.displayName,
-                iconUrl: item.ui?.iconUrl,
               }))} value={currentSurface.surfaceId} onChange={selectSurface} />
             )}
           </section>
@@ -1404,7 +1399,7 @@ function FilterGroup({
 }: {
   className?: string
   label: string
-  items: Array<{ id: string; name: string; iconUrl?: string | null }>
+  items: Array<{ id: string; name: string }>
   value: string
   onChange: (value: string) => void
 }) {
@@ -1419,11 +1414,6 @@ function FilterGroup({
             onClick={() => onChange(item.id)}
             aria-pressed={value === item.id}
           >
-            <img
-              src={versionStaticAssetUrl(item.iconUrl ?? DEFAULT_IMAGE_URL)}
-              alt=""
-              onError={useDefaultImage}
-            />
             {item.name}
           </button>
         ))}

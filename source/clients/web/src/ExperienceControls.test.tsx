@@ -79,7 +79,7 @@ describe('ExperienceControls', () => {
     expect(within(cameraMenu).getByRole('menuitemradio', { name: '轮毂' }))
       .toHaveAttribute('aria-checked', 'true')
     expect(within(cameraMenu).getByRole('menuitemradio', { name: '驾驶位' }).querySelector('img'))
-      .toHaveAttribute('src', '/camera-driver.svg')
+      .toBeNull()
     await user.click(within(cameraMenu).getByRole('menuitemradio', { name: '驾驶位' }))
     await user.click(within(toolbar).getByRole('button', { name: '动画' }))
     const animationMenu = await screen.findByRole('menu', { name: '动画列表' })
@@ -89,7 +89,7 @@ describe('ExperienceControls', () => {
     await user.click(within(toolbar).getByRole('button', { name: '动画' }))
     await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
     await user.click(within(toolbar).getByRole('button', { name: '灯光' }))
-    await user.click(within(toolbar).getByRole('button', { name: 'Path Tracing' }))
+    await user.click(within(toolbar).getByRole('button', { name: '渲染' }))
     await user.click(within(toolbar).getByRole('button', { name: '画质' }))
     await user.click(screen.getByRole('menuitemradio', { name: '极高' }))
     await user.click(within(toolbar).getByRole('button', { name: '复位' }))
@@ -114,6 +114,7 @@ describe('ExperienceControls', () => {
         animationEnabled: true,
         lightPreset: 'outdoor',
         renderMode: 'path-tracing',
+        renderProgress: 0.42,
         quality: 'epic',
         fullscreen: true,
       })),
@@ -123,7 +124,10 @@ describe('ExperienceControls', () => {
     render(<ExperienceControls ueEnabled />)
 
     const animation = screen.getByRole('button', { name: '动画' })
+    const renderButton = screen.getByRole('button', { name: '渲染' })
     await waitFor(() => expect(animation).toHaveAttribute('aria-pressed', 'true'))
+    await waitFor(() => expect(renderButton.querySelector('.render-progress-value'))
+      .toHaveStyle({ strokeDashoffset: 58 }))
     await user.click(animation)
     await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
 
@@ -152,7 +156,7 @@ describe('ExperienceControls', () => {
     render(<ExperienceControls ueEnabled />)
 
     await waitFor(() => expect(bridge.getpresentationstatejson).toHaveBeenCalled())
-    await user.click(screen.getByRole('button', { name: 'Path Tracing' }))
+    await user.click(screen.getByRole('button', { name: '渲染' }))
 
     expect(await screen.findByRole('alert'))
       .toHaveTextContent('当前 GPU、RHI 或 Shader Platform 不支持 Path Tracing。')

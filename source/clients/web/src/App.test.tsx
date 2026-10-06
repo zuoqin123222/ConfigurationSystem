@@ -97,6 +97,11 @@ async function loadProxy() {
   fireEvent.load(pending)
 }
 
+async function selectStage(name: string) {
+  await userEvent.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+    .getByRole('button', { name }))
+}
+
 describe('App v2', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -126,10 +131,7 @@ describe('App v2', () => {
 
     expect(screen.getByText('正在加载 SC01 草案目录…')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'SC01 定制' })).toBeInTheDocument()
-    const categories = screen.getByRole('region', { name: '分类筛选' })
-    expect(within(categories).getAllByRole('button')).toHaveLength(4)
-    expect(within(categories).getByRole('button', { name: '外饰' })).toHaveAttribute('aria-pressed', 'true')
-    expect(within(categories).getByRole('button', { name: '个性化' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: '分类筛选' })).not.toBeInTheDocument()
     expect(screen.getByText('参考总价')).toBeInTheDocument()
     expect(screen.getByText('¥229,800')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '复位' })).toBeInTheDocument()
@@ -144,9 +146,15 @@ describe('App v2', () => {
     expect(screen.queryByText('DRAFT · 不可报价')).not.toBeInTheDocument()
     expect(document.querySelector('.brand')).toBeNull()
     expect(document.querySelector('.vehicle-title')).toBeNull()
-    expect(screen.getByRole('region', { name: '分类筛选' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '部件筛选' }))
       .toHaveTextContent('车漆车架轮毂卡钳')
+    expect(screen.getByRole('region', { name: '部件筛选' }).querySelector('img')).toBeNull()
+    const redSwatch = screen.getByRole('button', { name: /红色，免费/ })
+      .querySelector<HTMLElement>('.color-choice-swatch')
+    const silverSwatch = screen.getByRole('button', { name: /银色，免费/ })
+      .querySelector<HTMLElement>('.color-choice-swatch')
+    expect(redSwatch).toHaveStyle({ background: '#FF3B3B' })
+    expect(silverSwatch?.style.background).toContain('linear-gradient')
     expect(screen.queryByText(/当前材质|可选材质|款可选/)).not.toBeInTheDocument()
     expect(document.querySelector('.option-card')).toBeNull()
     expect(document.querySelector('.material-family-title')).toBeNull()
@@ -307,8 +315,7 @@ describe('App v2', () => {
     expect(screen.queryByRole('group', { name: '车辆视角' })).not.toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '画质设置' })).not.toBeInTheDocument()
-    expect(screen.getByRole('region', { name: '分类筛选' }))
-      .toHaveTextContent('外饰内饰性能个性化')
+    expect(screen.queryByRole('region', { name: '分类筛选' })).not.toBeInTheDocument()
     expect(screen.getByRole('region', { name: '部件筛选' }))
       .toHaveTextContent('车漆车架轮毂卡钳')
 
@@ -374,6 +381,7 @@ describe('App v2', () => {
     expect(screen.getByRole('button', { name: '画质' })).toBeInTheDocument()
     expect(screen.queryByRole('complementary', { name: '车辆选配' })).not.toBeInTheDocument()
     expect(document.body).toHaveClass('controls-document')
+    expect(document.querySelector('.ue-color-corrected')).toBeNull()
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
       '/api/v2/catalog',
       expect.objectContaining({ headers: { Accept: 'application/json' } }),
@@ -518,8 +526,7 @@ describe('App v2', () => {
       .getByRole('button', { name: '轮毂' }))
     await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('wheel'))
 
-    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
-      .getByRole('button', { name: '内饰' }))
+    fireEvent(window, new CustomEvent('ue-configurator-category', { detail: 'interior' }))
     await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('front-cabin'))
 
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
@@ -548,8 +555,7 @@ describe('App v2', () => {
     expect(magnesiumOption)
       .toHaveAttribute('aria-pressed', 'true')
 
-    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
-      .getByRole('button', { name: '内饰' }))
+    await selectStage('内饰')
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
     expect(await screen.findByText('Black UF7')).toBeInTheDocument()
@@ -558,8 +564,7 @@ describe('App v2', () => {
     expect(screen.getByRole('button', { name: /Black UF7，奥司维，¥1,180/ }))
       .toHaveAttribute('aria-pressed', 'true')
 
-    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
-      .getByRole('button', { name: '个性化' }))
+    await selectStage('个性化')
     const personalizationParts = await screen.findByRole('region', { name: '部件筛选' })
     expect(personalizationParts).toHaveTextContent(
       '内饰全车黑色喷漆件门板口袋缝线徽标中面板横饰板换挡刹车脚垫',
@@ -573,8 +578,7 @@ describe('App v2', () => {
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
-    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
-      .getByRole('button', { name: '内饰' }))
+    await selectStage('内饰')
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '座椅' }))
 
@@ -589,8 +593,7 @@ describe('App v2', () => {
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
-    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
-      .getByRole('button', { name: '内饰' }))
+    await selectStage('内饰')
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
     const leatherFamily = within(screen.getByRole('region', { name: '牛皮材质' }))
@@ -657,8 +660,7 @@ describe('App v2', () => {
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
-    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
-      .getByRole('button', { name: '内饰' }))
+    await selectStage('内饰')
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '座椅' }))
     await user.click(within(screen.getByRole('region', { name: '子项筛选' }))
@@ -696,8 +698,7 @@ describe('App v2', () => {
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
-    await user.click(within(screen.getByRole('region', { name: '分类筛选' }))
-      .getByRole('button', { name: '内饰' }))
+    await selectStage('内饰')
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '座椅' }))
     await user.click(within(screen.getByRole('region', { name: '子项筛选' }))
