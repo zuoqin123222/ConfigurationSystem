@@ -92,7 +92,8 @@ renders/<publicationVersion>/<vehicleId>/<configurationKey>/<renderViewId>.png
 
 - `source/clients/web/` 是唯一 Web UI 源码；一次 `npm run build` 必须产出在线 Web
   目录并逐字节复制为 UE 内嵌目录。
-- UE 发布包的 NonUFS `WebUI/` 必须至少包含 `index.html`、构建后的 JS/CSS、
+- UE 发布包的 NonUFS `WebUI/` 必须至少包含在线入口 `index.html`、由同一次
+  构建内联 JS/CSS 生成的 `embedded.html`、哈希 JS/CSS、
   `catalog/sc01.catalog.v2.json`、`sc01/option-icons/` 和
   `sc01/thumbnails/`。缺少任一类资源即不得发布。
 - UE 内嵌页使用 `file:` 协议和 bundle 内 catalog，不调用 health、catalog、

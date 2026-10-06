@@ -72,9 +72,9 @@ namespace
 FString UConfiguratorPanel::GetConfiguredWebUrl()
 {
 	const FString EditorBundle = FPaths::ConvertRelativePathToFull(
-		FPaths::ProjectContentDir() / TEXT("WebUI/index.html"));
+		FPaths::ProjectContentDir() / TEXT("WebUI/embedded.html"));
 	const FString PackagedBundle = FPaths::ConvertRelativePathToFull(
-		FPaths::Combine(FPlatformProcess::BaseDir(), TEXT("WebUI/index.html")));
+		FPaths::Combine(FPlatformProcess::BaseDir(), TEXT("WebUI/embedded.html")));
 	FString BundlePath = IFileManager::Get().FileExists(*EditorBundle)
 		? EditorBundle
 		: PackagedBundle;

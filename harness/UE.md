@@ -11,7 +11,7 @@
 | Maya 规范化 | `tools/maya/README.md` |
 | 外部资产与授权 | `docs/REFERENCE_ASSET_POLICY.md` |
 | 内容包与热更新 | `docs/CONTENT_PACK_RUNTIME.md` |
-| Cook/Development/Shipping 边界 | `docs/technical-probes/PACKAGING_BOUNDARY_PROBE.md` |
+| Cook/Development/Shipping 边界 | `docs/technical-probes/PACKAGING_BOUNDARY_PROBE.md`、`docs/technical-probes/UE_OFFLINE_SELF_CONTAINED.md` |
 | Bake 与发布 | `docs/technical-probes/BAKE_RELEASE_VALIDATION.md` |
 
 完整参数以这些文件为准，不从对话记忆重写命令。

@@ -111,7 +111,7 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 	(void)Parameters;
 	const FString Url = UConfiguratorPanel::GetConfiguredWebUrl();
 	TestTrue(TEXT("UE 网页选配 URL 使用本地 file 协议"), Url.StartsWith(TEXT("file://")));
-	TestTrue(TEXT("UE 网页选配 URL 指向随包 WebUI"), Url.Contains(TEXT("WebUI/index.html")));
+	TestTrue(TEXT("UE 网页选配 URL 指向随包内联 WebUI"), Url.Contains(TEXT("WebUI/embedded.html")));
 	TestTrue(TEXT("UE 入口包含 source=ue"), Url.Contains(TEXT("source=ue")));
 	TestTrue(TEXT("UE 入口启用 embedded 视图"), Url.Contains(TEXT("view=embedded")));
 	TestTrue(
