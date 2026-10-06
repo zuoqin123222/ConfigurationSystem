@@ -71,6 +71,22 @@ namespace
 	}
 }
 
+void AConfigRuntimeCameraActor::ApplyCameraPOV(const FMinimalViewInfo& InPOV)
+{
+	CameraPOV = InPOV;
+	SetActorLocationAndRotation(InPOV.Location, InPOV.Rotation);
+	if (UCameraComponent* Component = GetCameraComponent())
+	{
+		Component->SetFieldOfView(InPOV.FOV);
+		Component->SetOrthoWidth(InPOV.OrthoWidth);
+		Component->SetAspectRatio(InPOV.AspectRatio);
+		Component->SetConstraintAspectRatio(InPOV.bConstrainAspectRatio);
+		Component->SetProjectionMode(InPOV.ProjectionMode);
+		Component->PostProcessSettings = InPOV.PostProcessSettings;
+		Component->PostProcessBlendWeight = InPOV.PostProcessBlendWeight;
+	}
+}
+
 AConfigShowroomPlayerController::AConfigShowroomPlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;

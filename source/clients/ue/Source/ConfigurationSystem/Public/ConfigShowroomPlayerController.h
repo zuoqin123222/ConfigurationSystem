@@ -19,11 +19,7 @@ class CONFIGURATIONSYSTEM_API AConfigRuntimeCameraActor final : public ACameraAc
 	GENERATED_BODY()
 
 public:
-	void ApplyCameraPOV(const FMinimalViewInfo& InPOV)
-	{
-		CameraPOV = InPOV;
-		SetActorLocationAndRotation(InPOV.Location, InPOV.Rotation);
-	}
+	void ApplyCameraPOV(const FMinimalViewInfo& InPOV);
 	const FMinimalViewInfo& GetCameraPOV() const { return CameraPOV; }
 	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override
 	{
