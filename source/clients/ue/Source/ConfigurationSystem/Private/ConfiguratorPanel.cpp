@@ -14,21 +14,16 @@
 #include "Engine/Engine.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Engine/GameInstance.h"
-#include "HttpModule.h"
+#include "HAL/FileManager.h"
 #include "HAL/PlatformProcess.h"
-#include "Interfaces/IHttpRequest.h"
-#include "Interfaces/IHttpResponse.h"
-#include "Misc/ConfigCacheIni.h"
+#include "Misc/Paths.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "Styling/SlateBrush.h"
-#include "TimerManager.h"
 
 namespace
 {
-	const TCHAR* WebConfiguratorSection = TEXT("ConfigurationSystem.WebConfigurator");
-	const TCHAR* DefaultWebConfiguratorEndpoint = TEXT("127.0.0.1:8080");
 	constexpr float ExpandedPanelWidth = 480.0f;
 	constexpr float HeaderHeight = 76.0f;
 	constexpr float HeaderShadowHeight = 18.0f;
@@ -37,7 +32,6 @@ namespace
 	constexpr float ControlsLayerWidth = 620.0f;
 	constexpr float ControlsLayerHeight = 190.0f;
 	constexpr float ControlsBottomInset = 32.0f;
-	constexpr float HealthRequestTimeoutSeconds = 3.0f;
 	constexpr int32 MaxBridgeJsonCharacters = 65536;
 
 	bool HasOnlyFields(
@@ -77,37 +71,22 @@ namespace
 
 FString UConfiguratorPanel::GetConfiguredWebUrl()
 {
-	FString Endpoint;
-	if (GConfig != nullptr)
+	const FString EditorBundle = FPaths::ConvertRelativePathToFull(
+		FPaths::ProjectContentDir() / TEXT("WebUI/index.html"));
+	const FString PackagedBundle = FPaths::ConvertRelativePathToFull(
+		FPaths::Combine(FPlatformProcess::BaseDir(), TEXT("WebUI/index.html")));
+	FString BundlePath = IFileManager::Get().FileExists(*EditorBundle)
+		? EditorBundle
+		: PackagedBundle;
+	BundlePath.ReplaceInline(TEXT("\\"), TEXT("/"));
+	BundlePath.ReplaceInline(TEXT(" "), TEXT("%20"));
+	if (!BundlePath.StartsWith(TEXT("/")))
 	{
-		GConfig->GetString(
-			WebConfiguratorSection,
-			TEXT("Endpoint"),
-			Endpoint,
-			GGameIni);
-	}
-	Endpoint.TrimStartAndEndInline();
-	const bool bLoopbackHost = Endpoint.Equals(TEXT("localhost"))
-		|| Endpoint.StartsWith(TEXT("localhost:"))
-		|| Endpoint.Equals(TEXT("127.0.0.1"))
-		|| Endpoint.StartsWith(TEXT("127.0.0.1:"))
-		|| Endpoint.Equals(TEXT("[::1]"))
-		|| Endpoint.StartsWith(TEXT("[::1]:"));
-	const bool bSafeLocalEndpoint = bLoopbackHost
-		&& !Endpoint.Contains(TEXT("/"))
-		&& !Endpoint.Contains(TEXT("?"))
-		&& !Endpoint.Contains(TEXT("#"))
-		&& !Endpoint.Contains(TEXT("@"))
-		&& (Endpoint.StartsWith(TEXT("127.0.0.1"))
-			|| Endpoint.StartsWith(TEXT("localhost"))
-			|| Endpoint.StartsWith(TEXT("[::1]")));
-	if (!bSafeLocalEndpoint)
-	{
-		Endpoint = DefaultWebConfiguratorEndpoint;
+		BundlePath = TEXT("/") + BundlePath;
 	}
 	return FString::Printf(
-		TEXT("http://%s/?source=ue&view=embedded&assetRevision=%u"),
-		*Endpoint,
+		TEXT("file://%s?source=ue&view=embedded&assetRevision=%u"),
+		*BundlePath,
 		FPlatformProcess::GetCurrentProcessId());
 }
 
@@ -123,51 +102,6 @@ FString UConfiguratorPanel::GetHeaderWebUrl()
 	FString Url = GetConfiguredWebUrl();
 	Url.ReplaceInline(TEXT("view=embedded"), TEXT("view=header"));
 	return Url;
-}
-
-FString UConfiguratorPanel::BuildHealthUrl(const FString& WebUrl)
-{
-	FString TrimmedUrl = WebUrl;
-	TrimmedUrl.TrimStartAndEndInline();
-	const int32 SchemeSeparator = TrimmedUrl.Find(TEXT("://"));
-	if (SchemeSeparator <= 0)
-	{
-		return FString();
-	}
-
-	const FString Scheme = TrimmedUrl.Left(SchemeSeparator).ToLower();
-	if (Scheme != TEXT("http") && Scheme != TEXT("https"))
-	{
-		return FString();
-	}
-
-	const int32 AuthorityStart = SchemeSeparator + 3;
-	int32 AuthorityEnd = TrimmedUrl.Len();
-	for (int32 Index = AuthorityStart; Index < TrimmedUrl.Len(); ++Index)
-	{
-		const TCHAR Character = TrimmedUrl[Index];
-		if (Character == TEXT('/') || Character == TEXT('?') || Character == TEXT('#'))
-		{
-			AuthorityEnd = Index;
-			break;
-		}
-	}
-	if (AuthorityEnd <= AuthorityStart)
-	{
-		return FString();
-	}
-	return TrimmedUrl.Left(AuthorityEnd) + TEXT("/health");
-}
-
-float UConfiguratorPanel::GetHealthRetryDelaySeconds(
-	const int32 CompletedAttemptCount)
-{
-	if (CompletedAttemptCount < 1
-		|| CompletedAttemptCount >= MaxHealthProbeAttempts)
-	{
-		return 0.0f;
-	}
-	return static_cast<float>(1 << (CompletedAttemptCount - 1));
 }
 
 bool UConfiguratorPanel::ParseWebConfigurationJson(
@@ -323,12 +257,22 @@ TSharedRef<SWidget> UConfiguratorPanel::RebuildWidget()
 void UConfiguratorPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
-	StartHealthProbe();
+	if (WebBrowser != nullptr)
+	{
+		WebBrowser->LoadURL(GetConfiguredWebUrl());
+	}
+	if (ControlsBrowser != nullptr)
+	{
+		ControlsBrowser->LoadURL(GetControlsWebUrl());
+	}
+	if (HeaderBrowser != nullptr)
+	{
+		HeaderBrowser->LoadURL(GetHeaderWebUrl());
+	}
 }
 
 void UConfiguratorPanel::NativeDestruct()
 {
-	CancelHealthProbe();
 	WebBridge = nullptr;
 	Super::NativeDestruct();
 }
@@ -482,128 +426,6 @@ void UConfiguratorPanel::BuildWidgetTree()
 		-ControlsBottomInset));
 	ControlsCanvasSlot->SetSize(FVector2D(ControlsLayerWidth, ControlsLayerHeight));
 	ControlsCanvasSlot->SetZOrder(10);
-}
-
-void UConfiguratorPanel::StartHealthProbe()
-{
-	CancelHealthProbe();
-	HealthProbeAttemptCount = 0;
-	PendingRetryDelaySeconds = 0.0f;
-	HealthProbeState = EHealthProbeState::Waiting;
-	IssueHealthProbe();
-}
-
-void UConfiguratorPanel::IssueHealthProbe()
-{
-	const FString HealthUrl = BuildHealthUrl(GetConfiguredWebUrl());
-	if (HealthUrl.IsEmpty())
-	{
-		HealthProbeAttemptCount = MaxHealthProbeAttempts;
-		HandleHealthProbeFailure();
-		return;
-	}
-
-	++HealthProbeAttemptCount;
-	PendingRetryDelaySeconds = 0.0f;
-	HealthProbeState = EHealthProbeState::Waiting;
-
-	ActiveHealthRequest = FHttpModule::Get().CreateRequest();
-	ActiveHealthRequest->SetURL(HealthUrl);
-	ActiveHealthRequest->SetVerb(TEXT("GET"));
-	ActiveHealthRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
-	ActiveHealthRequest->SetTimeout(HealthRequestTimeoutSeconds);
-	ActiveHealthRequest->OnProcessRequestComplete().BindUObject(
-		this,
-		&UConfiguratorPanel::HandleHealthProbeCompleted);
-	if (!ActiveHealthRequest->ProcessRequest())
-	{
-		ActiveHealthRequest->OnProcessRequestComplete().Unbind();
-		ActiveHealthRequest.Reset();
-		HandleHealthProbeFailure();
-	}
-}
-
-void UConfiguratorPanel::HandleHealthProbeCompleted(
-	FHttpRequestPtr Request,
-	FHttpResponsePtr Response,
-	const bool bConnectedSuccessfully)
-{
-	if (Request != ActiveHealthRequest)
-	{
-		return;
-	}
-	ActiveHealthRequest->OnProcessRequestComplete().Unbind();
-	ActiveHealthRequest.Reset();
-
-	const bool bHealthy = bConnectedSuccessfully
-		&& Response.IsValid()
-		&& Response->GetResponseCode() >= 200
-		&& Response->GetResponseCode() < 300;
-	if (bHealthy)
-	{
-		HealthProbeState = EHealthProbeState::Ready;
-		PendingRetryDelaySeconds = 0.0f;
-		if (WebBrowser != nullptr)
-		{
-			WebBrowser->LoadURL(GetConfiguredWebUrl());
-		}
-		if (ControlsBrowser != nullptr)
-		{
-			ControlsBrowser->LoadURL(GetControlsWebUrl());
-		}
-		if (HeaderBrowser != nullptr)
-		{
-			HeaderBrowser->LoadURL(GetHeaderWebUrl());
-		}
-		return;
-	}
-	HandleHealthProbeFailure();
-}
-
-void UConfiguratorPanel::HandleHealthProbeFailure()
-{
-	PendingRetryDelaySeconds =
-		GetHealthRetryDelaySeconds(HealthProbeAttemptCount);
-	if (PendingRetryDelaySeconds <= 0.0f)
-	{
-		HealthProbeState = EHealthProbeState::Failed;
-		return;
-	}
-
-	HealthProbeState = EHealthProbeState::Waiting;
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().SetTimer(
-			HealthRetryTimer,
-			this,
-			&UConfiguratorPanel::IssueHealthProbe,
-			PendingRetryDelaySeconds,
-			false);
-	}
-	else
-	{
-		HealthProbeState = EHealthProbeState::Failed;
-		PendingRetryDelaySeconds = 0.0f;
-	}
-}
-
-void UConfiguratorPanel::CancelHealthProbe()
-{
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(HealthRetryTimer);
-	}
-	HealthRetryTimer.Invalidate();
-	if (ActiveHealthRequest.IsValid())
-	{
-		FHttpRequestPtr RequestToCancel = ActiveHealthRequest;
-		ActiveHealthRequest.Reset();
-		RequestToCancel->OnProcessRequestComplete().Unbind();
-		RequestToCancel->CancelRequest();
-	}
-	HealthProbeAttemptCount = 0;
-	PendingRetryDelaySeconds = 0.0f;
-	HealthProbeState = EHealthProbeState::Idle;
 }
 
 void UConfiguratorPanel::ApplyWebConfigurationJson(

@@ -22,7 +22,7 @@ export class ApiError extends Error {
   }
 }
 
-function isCatalogV2(value: unknown): value is CatalogV2 {
+export function isCatalogV2(value: unknown): value is CatalogV2 {
   if (!value || typeof value !== 'object') return false
   const data = value as Partial<CatalogV2>
   return (

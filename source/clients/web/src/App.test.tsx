@@ -3,6 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App, { STANDALONE_LAYOUT, versionStaticAssetUrl } from './App'
 import {
+  createPortableConfiguration,
+  parsePortableConfiguration,
+} from './portableConfiguration'
+import {
   catalogFixture,
   initialSelections,
   legacyCatalogFixture,
@@ -131,7 +135,7 @@ describe('App v2', () => {
     expect(screen.getByRole('button', { name: '复位' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '保存' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '分享' })).toBeInTheDocument()
-    expect(screen.getByText('未同步更改')).toBeInTheDocument()
+    expect(screen.getByText('未保存更改')).toBeInTheDocument()
     const stageNavigation = screen.getByRole('navigation', { name: '选配阶段' })
     expect(within(stageNavigation).getAllByRole('button').map((button) => button.textContent))
       .toEqual(['01外饰', '02内饰', '03性能', '04个性化'])
@@ -175,7 +179,7 @@ describe('App v2', () => {
     expect(screen.getByText('当前展示烘焙车辆预览')).toBeInTheDocument()
   })
 
-  it('默认独立页顶栏直接保存、分享并反馈同步状态', async () => {
+  it('默认独立页顶栏保存与分享同一个自包含配置字符串', async () => {
     const user = userEvent.setup()
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
@@ -185,14 +189,44 @@ describe('App v2', () => {
 
     await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
     await user.click(screen.getByRole('button', { name: '保存' }))
-    expect(await screen.findByText('已同步 · revision 1')).toBeInTheDocument()
-    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(true)
+    expect(await screen.findByText('自包含配置已生成')).toBeInTheDocument()
+    const savedValue = localStorage.getItem('automotive-v2-configurator-portable')
+    expect(savedValue).toMatch(/^SC01CFG1\./)
+    expect(screen.getByAltText('当前配置二维码')).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(false)
 
+    await user.click(screen.getByRole('button', { name: '关闭配置传输' }))
     await user.click(screen.getByRole('button', { name: '分享' }))
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('configuration=cfg-body-cover-silver'))
+      expect(writeText).toHaveBeenCalledWith(savedValue)
     })
-    expect(screen.getByText('分享链接已复制')).toBeInTheDocument()
+    expect(screen.getByText('自包含配置字符串已复制')).toBeInTheDocument()
+  })
+
+  it('可导入自包含配置字符串并恢复选择', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+    const importedSelections = {
+      ...initialSelections,
+      'exterior-body-cover': 'body-cover-silver',
+    }
+    const portableValue = createPortableConfiguration(
+      catalogFixture,
+      importedSelections,
+      {},
+    )
+
+    await user.click(screen.getByRole('button', { name: '导入配置' }))
+    fireEvent.change(screen.getByRole('textbox', { name: '配置字符串' }), {
+      target: { value: portableValue },
+    })
+    await user.click(screen.getByRole('button', { name: '导入' }))
+
+    expect(screen.getByRole('button', { name: /银色.*免费/ }))
+      .toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('配置已导入')).toBeInTheDocument()
   })
 
   it('独立页复位会清除本地组合与分享参数并重新请求默认左前视角', async () => {
@@ -586,11 +620,15 @@ describe('App v2', () => {
       target: { value: '#123456' },
     })
     fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'save' }))
-    await waitFor(() => {
-      const saveCall = fetchMock.mock.calls.find(([url]) => url === '/api/v2/configurations')
-      expect(saveCall).toBeDefined()
-      const payload = JSON.parse(String(saveCall?.[1]?.body))
-      expect(payload.customizations['exterior-body-cover'].colorHex).toBe('#123456')
+    await waitFor(() => expect(
+      localStorage.getItem('automotive-v2-configurator-portable'),
+    ).toMatch(/^SC01CFG1\./))
+    const imported = parsePortableConfiguration(
+      String(localStorage.getItem('automotive-v2-configurator-portable')),
+      catalogFixture,
+    )
+    expect(imported.customizations['exterior-body-cover']).toMatchObject({
+      colorHex: '#123456',
     })
   })
 
@@ -615,7 +653,7 @@ describe('App v2', () => {
 
   it('座椅背板自定义颜色支持亮面与雾面切换并随保存提交参数', async () => {
     const user = userEvent.setup()
-    const fetchMock = mockApi()
+    mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
@@ -637,14 +675,16 @@ describe('App v2', () => {
     await user.click(matteButton)
     expect(matteButton).toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: '保存' }))
-    await waitFor(() => {
-      const saveCall = fetchMock.mock.calls.find(([url]) => url === '/api/v2/configurations')
-      expect(saveCall).toBeDefined()
-      const payload = JSON.parse(String(saveCall?.[1]?.body))
-      expect(payload.customizations['seat-shell-back']).toMatchObject({
-        roughness: 0.72,
-        clearCoat: 0.05,
-      })
+    await waitFor(() => expect(
+      localStorage.getItem('automotive-v2-configurator-portable'),
+    ).toMatch(/^SC01CFG1\./))
+    const imported = parsePortableConfiguration(
+      String(localStorage.getItem('automotive-v2-configurator-portable')),
+      catalogFixture,
+    )
+    expect(imported.customizations['seat-shell-back']).toMatchObject({
+      roughness: 0.72,
+      clearCoat: 0.05,
     })
     expect(screen.getByRole('button', { name: /自定义颜色，¥1,680/ }).querySelector('img'))
       .toHaveAttribute('src', '/sc01/option-icons/rainbow.svg')
@@ -696,7 +736,7 @@ describe('App v2', () => {
     expect(fetchMock.mock.calls.some(([url]) => url === '/health')).toBe(false)
   })
 
-  it('保存配置并生成可分享链接', async () => {
+  it('保存配置并生成可分享字符串与二维码', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const user = userEvent.setup()
     const writeText = vi.fn().mockResolvedValue(undefined)
@@ -711,20 +751,22 @@ describe('App v2', () => {
     fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'save' }))
     await waitFor(() => {
       const state = JSON.parse(String(setconfiguratorheaderstatejson.mock.lastCall?.[0]))
-      expect(state.syncMessage).toBe('已同步 · revision 1')
+      expect(state.syncMessage).toBe('自包含配置已生成')
       expect(state.dirty).toBe(false)
     })
-    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(true)
+    const savedValue = localStorage.getItem('automotive-v2-configurator-portable')
+    expect(savedValue).toMatch(/^SC01CFG1\./)
+    expect(screen.getByAltText('当前配置二维码')).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(false)
 
+    await user.click(screen.getByRole('button', { name: '关闭配置传输' }))
     fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'share' }))
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(
-        expect.stringContaining('configuration=cfg-body-cover-silver'),
-      )
+      expect(writeText).toHaveBeenCalledWith(savedValue)
     })
   })
 
-  it('离线时显示本地草稿状态并阻止远端保存', async () => {
+  it('离线时仍可生成自包含配置且不请求远端保存', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const user = userEvent.setup()
     const setconfiguratorheaderstatejson = vi.fn().mockResolvedValue(true)
@@ -739,7 +781,7 @@ describe('App v2', () => {
     await waitFor(() => {
       const state = JSON.parse(String(setconfiguratorheaderstatejson.mock.lastCall?.[0]))
       expect(state.online).toBe(false)
-      expect(state.syncMessage).toBe('当前离线，草稿已保存在本机，联网后可同步')
+      expect(state.syncMessage).toBe('自包含配置已生成')
     })
     expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(false)
   })

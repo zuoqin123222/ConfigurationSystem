@@ -154,7 +154,8 @@ test("安全托管 Web 构建产物并保持 API 路由优先", async (t) => {
   t.after(() => app.close());
 
   const index = await app.inject({ method: "GET", url: "/" });
-  const bundlePath = index.body.match(/src="(\/assets\/[^"]+\.js)"/)?.[1];
+  const bundleReference = index.body.match(/src="(\.\/assets\/[^"]+\.js)"/)?.[1];
+  const bundlePath = bundleReference?.slice(1);
   assert.ok(bundlePath, "index.html 必须引用生产 JS bundle");
   const bundle = await app.inject({ method: "GET", url: bundlePath });
   const manifest = await app.inject({

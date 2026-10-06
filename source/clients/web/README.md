@@ -4,7 +4,8 @@
 
 ## 功能
 
-- 启动时并行请求 `GET /health` 与 `GET /api/v1/catalog`，从健康检查响应取得 `publicationVersion`，并校验目录版本一致。
+- 在线 HTTP(S) 页面从 Server 请求 v2/v1 catalog；UE 的 `file:` 内嵌视图直接读取
+  bundle 内 catalog，不发起 health、catalog、configuration 或 render 请求。
 - 四个固定分区切换，展示中文名、差价和选项预览图。
 - 一键应用两个目录模板。
 - 按 `paint → wheel → interior → frame` 固定顺序生成 canonical key。
@@ -19,6 +20,8 @@
   兼容回退到 v1 代理图。
 - UE controls 视图提供显式 `Path Tracing` 开关，并仅通过白名单 bridge 切换
   `realtime` / `path-tracing`。
+- 保存与分享生成同一个 `SC01CFG1.` 自包含配置字符串和二维码，可从文本或 URL
+  `config` 参数导入，不依赖 Server 配置记录。
 
 canonical key 与价格始终根据本地选择即时计算，不等待图片解析。
 
@@ -42,4 +45,6 @@ npm run build
 
 API 测试覆盖启动并行请求、`publicationVersion`、版本冲突、resolve 请求体、服务端 `imageUrl` 与错误状态。UI 测试覆盖加载/重试、选配、模板、视角、本地 key/价格即时更新、解析加载、404、409、请求中止、迟到响应隔离及图片加载失败占位。
 
-构建产物输出到仓库根目录的 `package/clients/web/`，不提交到 Git。
+一次 `npm run build` 将同一构建产物输出到仓库根目录
+`package/clients/web/`，并同步到 UE 的 `Content/WebUI/` 供后续 NonUFS 打包。
+两个目录均不提交到 Git，也不得手工修改。

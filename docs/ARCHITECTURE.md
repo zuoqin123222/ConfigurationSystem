@@ -41,12 +41,37 @@ ConfigurationSystem/
 
 | 端 | 输入 | 核心职责 | 输出 | 禁止承担 |
 |---|---|---|---|---|
-| UE Runtime | catalog 映射、Primary Asset、用户输入 | 产品配置状态、价格、镜头、动作、环境、实时/Path Tracing 切换 | 当前产品配置、交互画面、可观测渲染状态 | Editor 资产保存、批量出图编排、按中文名生成 ID |
+| UE Runtime | 包内 Web bundle、catalog 映射、Primary Asset、用户输入 | 产品配置状态、价格、镜头、动作、环境、实时/Path Tracing 切换 | 当前产品配置、交互画面、可观测渲染状态 | Editor 资产保存、批量出图编排、按中文名生成 ID、依赖外部 Web Server |
 | UE Editor | 共享契约、UE 资产、发布集合 | 内容校验、项目地图生成、批量出图、Alpha 规范化、manifest 生成 | 完整且校验通过的版本化 render 集 | 进入 Development/Shipping Runtime 包 |
-| Web | catalog、resolve 结果、透明 PNG | 响应式选择流程、价格展示、视角切换、图片预加载与错误态 | 版本化 URL 和用户界面状态 | 实时 3D、资产扫描、价格重算规则分叉 |
+| Web | 在线 catalog/resolve 或包内 catalog、透明 PNG/UE 实时画面 | 响应式选择流程、价格展示、配置导入导出、视角切换、图片预加载与错误态 | 自包含配置字符串、二维码和用户界面状态 | 实时 3D、资产扫描、价格重算规则分叉 |
 | Server | catalog、bake manifest、render 文件 | 契约校验、配置解析、静态资源服务、版本冲突处理 | catalog、图片 URL、固定错误模型 | 数据库规则引擎、动态渲染、猜测缺失配置 |
 
 三个运行端以 `contracts/` 为唯一跨端事实来源。UE Content 路径、中文名称、UI 顺序和数组下标都不能成为跨端协议。
+
+## 单一 Web 源码与双部署
+
+`source/clients/web/` 是唯一可编辑 UI 源码。`npm run build` 先生成
+`package/clients/web/`，再把完全相同的目录复制到被 Git 忽略的
+`source/clients/ue/Content/WebUI/`。该目录包含相对路径 Web bundle、SC01 catalog
+快照、option icon、thumbnail 和部件参考图；UE Build.cs 将其递归声明为 NonUFS
+Runtime Dependency 并放入 `WebUI/`。
+
+在线 Web 仍从 Server 请求 `/api/v2/catalog`、`/api/v2/renders/resolve` 和
+版本化 Bake 图片。UE 中的 `file://.../WebUI/index.html?source=ue&view=...` 则只
+读取编译进 JavaScript bundle 的同一 catalog fixture 和本地相对静态资源，启动时
+不做 health/API 请求。两种部署共用 React 组件、领域逻辑和样式，禁止维护 UE 专用
+HTML/JavaScript 分叉。
+
+## 可移植配置
+
+保存与分享统一产生 `SC01CFG1.<base64url>`。编码前的 JSON 固定包含格式版本、
+`catalogVersion`、`vehicleId`、按 `selectionOrder` 排序的 `selections` 和
+`customizations`；不包含 Server 配置 ID、URL、镜头或环境状态。文本框、剪贴板、
+URL `config` 参数和二维码使用完全相同的字符串。
+
+导入端先校验前缀、格式版本、车型和目录版本，再按当前 catalog 归一化选择与定制。
+因此二维码或文本可在在线 Web 与离线 UE 间互换，但不会绕过当前目录的 option 和
+material variant 校验。旧 `configuration=<server id>` 链接仅在线 Web 兼容读取。
 
 ## UE Editor-Runtime 边界
 

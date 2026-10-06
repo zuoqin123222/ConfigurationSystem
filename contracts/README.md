@@ -88,6 +88,29 @@ renders/<publicationVersion>/<vehicleId>/<configurationKey>/<renderViewId>.png
 - 新增可选字段属于向后兼容变更；删除字段、改名、改变含义或 ID 属于破坏性变更。
 - 已发布 ID 和版本目录不可原地复用；需要调整时发布新版本。
 
+## Web/UE 发布与可移植配置契约
+
+- `source/clients/web/` 是唯一 Web UI 源码；一次 `npm run build` 必须产出在线 Web
+  目录并逐字节复制为 UE 内嵌目录。
+- UE 发布包的 NonUFS `WebUI/` 必须至少包含 `index.html`、构建后的 JS/CSS、
+  `catalog/sc01.catalog.v2.json`、`sc01/option-icons/` 和
+  `sc01/thumbnails/`。缺少任一类资源即不得发布。
+- UE 内嵌页使用 `file:` 协议和 bundle 内 catalog，不调用 health、catalog、
+  configuration 或 render API；在线 HTTP(S) 页面继续由 Server 提供 catalog 与
+  Bake resolve/image。
+- 可移植配置字符串格式固定为
+  `SC01CFG1.<LZ 压缩 JSON 的无填充 base64url>.<CRC32>`。JSON 字段固定为
+  `format=sc01-config`、`version=1`、`catalogVersion`、`vehicleId`、
+  `selections`、`customizations`；CRC32 用于发现抄写、扫码和截断错误，不作为签名。
+- 字符串最长 2200 个 ASCII 字符，保证能够生成 QR Version 40-M 范围内的二维码；
+  编码端和解码端都必须拒绝超限内容，二维码保留标准静区。
+- `selections` 与 `customizations` 按 catalog `selectionOrder` 写入。保存、分享、
+  URL `config` 参数和二维码必须使用同一字符串，不得把 Server ID 或临时 URL
+  作为二维码载荷。
+- 导入必须拒绝未知前缀/版本、校验失败、损坏压缩数据、车型不符、目录版本不符、
+  option/surface 不匹配、材料族不匹配及非法车漆参数，再通过当前 catalog
+  归一化后才可应用。
+
 ## SC01 v2 契约原子阶段
 
 SC01 不复用 v1 的固定四分区和固定价差模型。v2 使用

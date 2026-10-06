@@ -70,6 +70,7 @@
 /source/clients/web/**/.cache/
 /source/clients/web/**/.parcel-cache/
 /source/clients/web/**/.turbo/
+/source/clients/ue/Content/WebUI/
 /source/server/**/node_modules/
 /source/server/**/dist/
 /source/server/**/build/

@@ -9,8 +9,10 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "PipelineStateCache.h"
+#include "DynamicRHI.h"
 #include "RHI.h"
 #include "RHIGlobals.h"
+#include "RHIStats.h"
 #include "RenderUtils.h"
 #include "SceneManagement.h"
 #include "SceneView.h"
@@ -27,6 +29,15 @@ void PreparePathTracingRTPSO();
 
 namespace
 {
+	uint64 GetDedicatedVideoMemoryBytes()
+	{
+		FTextureMemoryStats MemoryStats;
+		RHIGetTextureMemoryStats(MemoryStats);
+		return MemoryStats.DedicatedVideoMemory > 0
+			? static_cast<uint64>(MemoryStats.DedicatedVideoMemory)
+			: 0;
+	}
+
 	void DispatchPathTracingRTPSOWarmup()
 	{
 #if UE_BUILD_SHIPPING && RHI_RAYTRACING
@@ -190,7 +201,7 @@ bool UPathTracingExperienceSubsystem::ValidatePathTracingSupport(
 		return false;
 	}
 	if (!FPathTracingWarmupPolicy::HasEnoughVideoMemory(
-		GRHIGlobals.GpuInfo.DedicatedVideoMemory))
+		GetDedicatedVideoMemoryBytes()))
 	{
 		OutFailureReason = TEXT("Path Tracing 至少需要 6 GB 独立显存。");
 		return false;
@@ -268,7 +279,7 @@ void UPathTracingExperienceSubsystem::StartPathTracingWarmup()
 		Display,
 		TEXT("开始后台预热 UE5.8 Path Tracing RTPSO；保持 Lit 画面。GPU=%s，独立显存=%.2f GiB。"),
 		*GRHIGlobals.GpuInfo.AdapterName,
-		static_cast<double>(GRHIGlobals.GpuInfo.DedicatedVideoMemory)
+		static_cast<double>(GetDedicatedVideoMemoryBytes())
 			/ (1024.0 * 1024.0 * 1024.0));
 	// 入口自身只向渲染线程排队，必须在游戏线程直接调用，避免引入无意义的
 	// 通用线程池竞态。Fence 排在预热命令之后，完成时所有 RTPSO 请求均已提交。

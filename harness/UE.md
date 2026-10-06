@@ -104,15 +104,22 @@ JSON 通过不代表 FBX 内容、Pivot、穿模、材质和授权真实性通�
 每次打包按顺序执行：
 
 1. 检查 Git 状态、当前提交和工作树。
-2. 运行 Harness、契约及受影响的 Web/Server/UE 自动化。
-3. 编译 `ConfigurationSystemEditor Win64 Development`。
-4. 使用 UAT `BuildCookRun` 完成 Build/Cook/Stage/Pak/IoStore/Archive。
-5. 检查 UAT 退出码、Cook 警告、归档文件和 Editor 模块泄漏。
-6. 启动归档后的 `ConfigurationSystem.exe`，验证窗口、地图、车辆、Web 面板和受影响功能。
-7. 大版本或视觉变更重新生成 Web build 和 Bake 图片。
-8. 校验 manifest、数量、尺寸、色彩、Alpha/RGBA 和 SHA-256 后原子发布。
+2. 在 `source/clients/web/` 运行 `npm test` 和 `npm run build`；该命令只构建一次，
+   并把同一字节集部署到在线 Web 与被忽略的 `Content/WebUI/`。
+3. 运行 Harness、契约及受影响的 Server/UE 自动化。
+4. 编译 `ConfigurationSystemEditor Win64 Development`。
+5. 使用 UAT `BuildCookRun` 完成 Build/Cook/Stage/Pak/IoStore/Archive。
+6. 检查 UAT 退出码、Cook 警告、归档文件、Editor 模块泄漏及
+   `Binaries/Win64/WebUI/index.html`、哈希 JS/CSS、catalog、icon 和 thumbnail。
+7. 在停止 Server、断开网络且没有源码/Node 的环境启动归档后的
+   `ConfigurationSystem.exe`，验证窗口、地图、车辆、全部 Web 面板、选配码和二维码。
+8. 大版本或视觉变更重新生成 Bake 图片。
+9. 校验 Web 双部署 SHA-256、Bake manifest、数量、尺寸、色彩、Alpha/RGBA 后原子发布。
 
-Shipping 不得包含 `ConfigurationSystemEditor`。Editor 编译通过不代表 Cook 或 Shipping 通过；命令行探针通过也不代表 GUI 视觉通过。
+`Content/WebUI/` 和 `package/clients/web/` 都是构建副本，不得手改或作为独立源码。
+Shipping 不得包含 `ConfigurationSystemEditor`，也不得依赖 `package/server`、
+`package/clients/web`、Node 或本机 HTTP 服务。Editor 编译通过不代表 Cook 或
+Shipping 通过；命令行探针通过也不代表 GUI 视觉通过。
 
 ## 资产变更验收
 

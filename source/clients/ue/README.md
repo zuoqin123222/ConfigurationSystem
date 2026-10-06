@@ -2,6 +2,11 @@
 
 Windows 桌面客户端基于 Unreal Engine 5.8，以 Runtime C++ 模块 `ConfigurationSystem` 为业务核心，Editor-only 资产生成和审计工具位于 `ConfigurationSystemEditor`。
 
+内嵌选配 UI 由 `source/clients/web/` 的唯一 React 源码构建。先在 Web 目录执行
+`npm run build`，同一产物会部署到被忽略的 `Content/WebUI/`；UE 以 `file://`
+加载该目录，并通过 NonUFS Runtime Dependency 把 bundle、catalog、icon 和
+thumbnail 放入 Windows 包，不需要启动 Server。
+
 ## 配置状态
 
 `UCarConfigurationState` 负责：

@@ -10,6 +10,7 @@
 #include "Materials/MaterialExpressionScalarParameter.h"
 #include "Materials/MaterialExpressionTextureCoordinate.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
+#include "MaterialShared.h"
 #include "Misc/PackageName.h"
 #include "AutomotiveMaterialLibrary.h"
 #include "UObject/Package.h"
@@ -120,8 +121,8 @@ namespace AutomotiveMaterialGeneration
 		Material->Modify();
 		// UE 5.8 的 DeleteAllMaterialExpressions 在遍历时原地移除，可能跳过元素；
 		// 先复制快照再逐个删除，保证重复生成不会累积参数或节点。
-		const TArray<UMaterialExpression*> ExistingExpressions =
-			UMaterialEditingLibrary::GetMaterialExpressions(Material);
+		const TArray<TObjectPtr<UMaterialExpression>> ExistingExpressions =
+			Material->GetExpressionCollection().Expressions;
 		for (UMaterialExpression* Expression : ExistingExpressions)
 		{
 			UMaterialEditingLibrary::DeleteMaterialExpression(Material, Expression);
@@ -302,8 +303,12 @@ namespace AutomotiveMaterialGeneration
 		{
 			BuildInterior(Material, Spec);
 		}
-		const TArray<FString> CompileErrors =
-			UMaterialEditingLibrary::RecompileMaterial(Material);
+		UMaterialEditingLibrary::RecompileMaterial(Material);
+		const FMaterialResource* MaterialResource =
+			Material->GetMaterialResource(GMaxRHIShaderPlatform);
+		const TArray<FString> CompileErrors = MaterialResource != nullptr
+			? MaterialResource->GetCompileErrors()
+			: TArray<FString>();
 		for (const FString& Error : CompileErrors)
 		{
 			Result.Errors.Add(FString::Printf(TEXT("%s: %s"), Spec.Name, *Error));

@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "HttpFwd.h"
 #include "AutomotiveConfigurationState.h"
 #include "ConfiguratorPanel.generated.h"
 
@@ -24,8 +23,6 @@ public:
 	static FString GetConfiguredWebUrl();
 	static FString GetControlsWebUrl();
 	static FString GetHeaderWebUrl();
-	static FString BuildHealthUrl(const FString& WebUrl);
-	static float GetHealthRetryDelaySeconds(int32 CompletedAttemptCount);
 	static bool ParseWebConfigurationJson(
 		const FString& ConfigurationJson,
 		TMap<FString, FString>& OutSelections,
@@ -39,7 +36,6 @@ public:
 		float ViewportWidth,
 		float LeftInset,
 		float RightInset);
-	static constexpr int32 MaxHealthProbeAttempts = 5;
 
 	void ApplyWebConfigurationJson(const FString& ConfigurationJson);
 	bool SetExperienceCamera(int32 CameraIndex);
@@ -71,23 +67,7 @@ protected:
 	virtual void NativeDestruct() override;
 
 private:
-	enum class EHealthProbeState : uint8
-	{
-		Idle,
-		Waiting,
-		Ready,
-		Failed
-	};
-
 	void BuildWidgetTree();
-	void StartHealthProbe();
-	void IssueHealthProbe();
-	void HandleHealthProbeCompleted(
-		FHttpRequestPtr Request,
-		FHttpResponsePtr Response,
-		bool bConnectedSuccessfully);
-	void HandleHealthProbeFailure();
-	void CancelHealthProbe();
 	UPROPERTY(Transient)
 	TObjectPtr<UConfiguratorBrowserWidget> WebBrowser;
 	UPROPERTY(Transient)
@@ -102,11 +82,6 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UConfiguratorWebBridge> WebBridge;
 
-	FHttpRequestPtr ActiveHealthRequest;
-	FTimerHandle HealthRetryTimer;
-	EHealthProbeState HealthProbeState = EHealthProbeState::Idle;
-	int32 HealthProbeAttemptCount = 0;
-	float PendingRetryDelaySeconds = 0.0f;
 	bool bWebFullscreen = false;
 	FString LatestConfiguratorHeaderStateJson;
 };

@@ -18,6 +18,7 @@ public class ConfigurationSystemEditor : ModuleRules
 				"InputCore",
 				"Json",
 				"MaterialEditor",
+				"RHI",
 				"Slate",
 				"SlateCore",
 				"ToolMenus",

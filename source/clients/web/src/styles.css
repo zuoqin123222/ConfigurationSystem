@@ -956,6 +956,73 @@ html.controls-document #root::-webkit-scrollbar {
   backdrop-filter: none;
 }
 
+.portable-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+  padding: 12px 0;
+}
+.portable-actions button,
+.portable-dialog-actions button {
+  flex: 1;
+  min-height: 38px;
+  border: 1px solid #d7d5cd;
+  border-radius: 10px;
+  color: var(--ink);
+  background: #fff;
+  cursor: pointer;
+}
+.portable-dialog-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 48%);
+}
+.portable-dialog {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 24px;
+  border-radius: 18px;
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
+}
+.portable-dialog h2,
+.portable-dialog p { margin: 0; }
+.portable-dialog > img {
+  width: min(280px, 100%);
+  margin: 0 auto;
+  image-rendering: pixelated;
+}
+.portable-dialog textarea {
+  min-height: 112px;
+  resize: vertical;
+  border: 1px solid #d7d5cd;
+  border-radius: 10px;
+  padding: 10px;
+  font: 12px/1.45 monospace;
+}
+.portable-dialog-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: 0;
+  font-size: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.portable-dialog-actions {
+  display: flex;
+  gap: 10px;
+}
+
 @media (max-width: 520px) {
   .app-shell.embedded { padding: 0; }
   .app-shell.embedded .config-panel {

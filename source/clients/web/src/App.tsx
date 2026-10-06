@@ -15,14 +15,12 @@ import {
   fetchInitialData,
   resolveLegacyProxy,
   resolveRender,
-  saveConfiguration,
 } from './api'
 import {
   animationIdForSelection,
   cameraIdForSelection,
   categoriesInUiOrder,
   componentsForCategory,
-  createCanonicalKey,
   createDefaultPaintCustomization,
   createInitialSelections,
   createRenderCanonicalKey,
@@ -36,7 +34,6 @@ import {
 } from './configurator'
 import type {
   CatalogV2,
-  ConfigurationV2,
   Customizations,
   LegacyCatalog,
   LegacyRender,
@@ -44,6 +41,16 @@ import type {
   RenderViewId,
   Selections,
 } from './types'
+import {
+  bundledCatalog,
+  resolveStaticAssetUrl,
+  usesBundledCatalog,
+} from './bundledCatalog'
+import {
+  createPortableConfiguration,
+  createPortableConfigurationQr,
+  parsePortableConfiguration,
+} from './portableConfiguration'
 import {
   applyUeConfiguration,
   CONFIGURATOR_CATEGORY_EVENT,
@@ -68,8 +75,8 @@ import {
 } from './interiorPartImages'
 
 const CACHE_KEY = 'automotive-v2-configurator'
+const PORTABLE_CACHE_KEY = `${CACHE_KEY}-portable`
 const DEFAULT_IMAGE_URL = '/sc01/option-icons/default.svg'
-const ASSET_REVISION_QUERY = 'assetRevision'
 export const STANDALONE_LAYOUT = {
   headerHeight: 76,
   panelWidth: 480,
@@ -101,6 +108,38 @@ export function isEmbeddedView(search = window.location.search): boolean {
   return new URLSearchParams(search).get('view') === 'embedded'
 }
 
+export function isOfflineEmbeddedRuntime(): boolean {
+  return usesBundledCatalog()
+}
+
+function readSavedPortableBaseline(
+  catalog: CatalogV2,
+  selections: Selections,
+  customizations: Customizations,
+): string {
+  const value = localStorage.getItem(PORTABLE_CACHE_KEY)
+  if (!value) return ''
+  try {
+    const imported = parsePortableConfiguration(value, catalog)
+    const importedSelections = normalizeSelections(catalog, imported.selections)
+    const importedCustomizations = normalizeCustomizations(
+      catalog,
+      importedSelections,
+      imported.customizations,
+    )
+    const normalizedSaved = createPortableConfiguration(
+      catalog,
+      importedSelections,
+      importedCustomizations,
+    )
+    const current = createPortableConfiguration(catalog, selections, customizations)
+    return normalizedSaved === current ? current : ''
+  } catch {
+    localStorage.removeItem(PORTABLE_CACHE_KEY)
+    return ''
+  }
+}
+
 export type AppView = 'default' | 'embedded' | 'controls' | 'header'
 
 export function getAppView(search = window.location.search): AppView {
@@ -129,7 +168,9 @@ function optionSwatch(option: CatalogV2['options'][number]): string {
 
 function useDefaultImage(event: SyntheticEvent<HTMLImageElement>) {
   const image = event.currentTarget
-  if (!image.src.endsWith(DEFAULT_IMAGE_URL)) image.src = DEFAULT_IMAGE_URL
+  if (!image.src.includes(DEFAULT_IMAGE_URL.slice(1))) {
+    image.src = versionStaticAssetUrl(DEFAULT_IMAGE_URL) ?? DEFAULT_IMAGE_URL
+  }
 }
 
 function customEditorLabel(displayName: string): string {
@@ -150,11 +191,7 @@ export function versionStaticAssetUrl(
   url: string | undefined,
   search = window.location.search,
 ): string | undefined {
-  if (!url || /^(?:data|blob):/i.test(url)) return url
-  const revision = new URLSearchParams(search).get(ASSET_REVISION_QUERY)
-  if (!revision) return url
-  const separator = url.includes('?') ? '&' : '?'
-  return `${url}${separator}v=${encodeURIComponent(revision)}`
+  return resolveStaticAssetUrl(url, search)
 }
 
 function Showroom() {
@@ -255,7 +292,10 @@ function ConfiguratorHeader() {
         setHeaderState(state)
       }
     })
-    void fetchCatalog(controller.signal).then((catalog) => {
+    const catalogRequest = isOfflineEmbeddedRuntime()
+      ? Promise.resolve(bundledCatalog)
+      : fetchCatalog(controller.signal)
+    void catalogRequest.then((catalog) => {
       const nextCategories = categoriesInUiOrder(catalog)
       setCategories(nextCategories)
       setHeaderState((current) => nextCategories.some(
@@ -365,14 +405,14 @@ function ConfiguratorTopBar({
         <button
           className="header-save"
           onClick={() => onAction('save')}
-          disabled={!headerState.online || headerState.syncState === 'saving' || !headerState.dirty}
+          disabled={headerState.syncState === 'saving' || !headerState.dirty}
         >
           {headerState.syncState === 'saving' ? '保存中…' : '保存'}
         </button>
         <button
           className="header-share"
           onClick={() => onAction('share')}
-          disabled={!headerState.online || headerState.syncState === 'saving'}
+          disabled={headerState.syncState === 'saving'}
         >
           分享
         </button>
@@ -386,7 +426,7 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
   const [legacyCatalog, setLegacyCatalog] = useState<LegacyCatalog | null>(null)
   const [selections, setSelections] = useState<Selections | null>(null)
   const [customizations, setCustomizations] = useState<Customizations>({})
-  const [savedConfiguration, setSavedConfiguration] = useState<ConfigurationV2 | null>(null)
+  const [savedPortableValue, setSavedPortableValue] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [offlineDraft, setOfflineDraft] = useState(false)
@@ -412,7 +452,11 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
     setError('')
     setOfflineDraft(false)
     const initialData = embedded
-      ? fetchCatalog(controller.signal).then((nextCatalog) => ({
+      ? (
+          isOfflineEmbeddedRuntime()
+            ? Promise.resolve(bundledCatalog)
+            : fetchCatalog(controller.signal)
+        ).then((nextCatalog) => ({
           catalog: nextCatalog,
           legacyCatalog: null,
         }))
@@ -420,12 +464,27 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
     initialData
       .then(async ({ catalog: nextCatalog, legacyCatalog: nextLegacyCatalog }) => {
         if (controller.signal.aborted) return
-        const configurationId = new URLSearchParams(window.location.search).get('configuration')
+        const search = new URLSearchParams(window.location.search)
+        const portableValue = search.get('config')
+        const configurationId = search.get('configuration')
         let initialSelections = createInitialSelections(nextCatalog)
         let initialCustomizations = normalizeCustomizations(nextCatalog, initialSelections, {})
-        let loadedConfiguration: ConfigurationV2 | null = null
-        if (configurationId) {
-          loadedConfiguration = await fetchConfiguration(configurationId, controller.signal)
+        let initialPortableValue = ''
+        if (portableValue) {
+          const imported = parsePortableConfiguration(portableValue, nextCatalog)
+          initialSelections = normalizeSelections(nextCatalog, imported.selections)
+          initialCustomizations = normalizeCustomizations(
+            nextCatalog,
+            initialSelections,
+            imported.customizations,
+          )
+          initialPortableValue = createPortableConfiguration(
+            nextCatalog,
+            initialSelections,
+            initialCustomizations,
+          )
+        } else if (!embedded && configurationId) {
+          const loadedConfiguration = await fetchConfiguration(configurationId, controller.signal)
           initialSelections = normalizeSelections(nextCatalog, loadedConfiguration.selections)
           initialCustomizations = normalizeCustomizations(
             nextCatalog,
@@ -443,12 +502,19 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
             )
           }
         }
+        if (!initialPortableValue) {
+          initialPortableValue = readSavedPortableBaseline(
+            nextCatalog,
+            initialSelections,
+            initialCustomizations,
+          )
+        }
         if (controller.signal.aborted) return
         setCatalog(nextCatalog)
         setLegacyCatalog(nextLegacyCatalog)
         setSelections(initialSelections)
         setCustomizations(initialCustomizations)
-        setSavedConfiguration(loadedConfiguration)
+        setSavedPortableValue(initialPortableValue)
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return
@@ -457,10 +523,16 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
           setCatalog(cached.catalog)
           const cachedSelections = normalizeSelections(cached.catalog, cached.selections)
           setSelections(cachedSelections)
-          setCustomizations(normalizeCustomizations(
+          const cachedCustomizations = normalizeCustomizations(
             cached.catalog,
             cachedSelections,
             cached.customizations ?? {},
+          )
+          setCustomizations(cachedCustomizations)
+          setSavedPortableValue(readSavedPortableBaseline(
+            cached.catalog,
+            cachedSelections,
+            cachedCustomizations,
           ))
           setOfflineDraft(true)
         } else {
@@ -507,8 +579,8 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
       setSelections={setSelections}
       customizations={customizations}
       setCustomizations={setCustomizations}
-      savedConfiguration={savedConfiguration}
-      setSavedConfiguration={setSavedConfiguration}
+      savedPortableValue={savedPortableValue}
+      setSavedPortableValue={setSavedPortableValue}
       online={online}
       offlineDraft={offlineDraft}
       embedded={embedded}
@@ -523,8 +595,8 @@ interface ConfiguratorProps {
   setSelections: (value: Selections) => void
   customizations: Customizations
   setCustomizations: (value: Customizations) => void
-  savedConfiguration: ConfigurationV2 | null
-  setSavedConfiguration: (value: ConfigurationV2 | null) => void
+  savedPortableValue: string
+  setSavedPortableValue: (value: string) => void
   online: boolean
   offlineDraft: boolean
   embedded: boolean
@@ -537,8 +609,8 @@ function Configurator({
   setSelections,
   customizations,
   setCustomizations,
-  savedConfiguration,
-  setSavedConfiguration,
+  savedPortableValue,
+  setSavedPortableValue,
   online,
   offlineDraft,
   embedded,
@@ -557,9 +629,11 @@ function Configurator({
   const [renderLoading, setRenderLoading] = useState(!embedded)
   const [renderMessage, setRenderMessage] = useState('')
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
-    savedConfiguration ? 'saved' : 'idle',
+    savedPortableValue ? 'saved' : 'idle',
   )
   const [syncMessage, setSyncMessage] = useState('')
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [importValue, setImportValue] = useState('')
   const currentCategory = catalog.categories.find((category) => category.categoryId === categoryId)
   const surfacesAsComponents = currentCategory?.ui?.navigationMode === 'surfaces-as-components'
   const components = useMemo(
@@ -581,15 +655,15 @@ function Configurator({
   const currentSurface = catalog.surfaces.find((surface) => surface.surfaceId === surfaceId)
     ?? surfaces[0]
     ?? catalog.surfaces[0]
-  const canonicalKey = createCanonicalKey(catalog, selections, customizations)
-  const savedKey = savedConfiguration
-    ? createCanonicalKey(
-        catalog,
-        normalizeSelections(catalog, savedConfiguration.selections),
-        savedConfiguration.customizations,
-      )
-    : ''
-  const dirty = canonicalKey !== savedKey
+  const portableValue = useMemo(
+    () => createPortableConfiguration(catalog, selections, customizations),
+    [catalog, customizations, selections],
+  )
+  const portableQr = useMemo(
+    () => transferOpen ? createPortableConfigurationQr(portableValue) : '',
+    [portableValue, transferOpen],
+  )
+  const dirty = portableValue !== savedPortableValue
   const renderSelectionKey = createRenderCanonicalKey(catalog, selections, customizations)
   const referenceTotal = catalog.vehicle.basePriceMinor + catalog.selectionOrder.reduce(
     (total, id) => {
@@ -803,49 +877,56 @@ function Configurator({
     setSyncMessage('')
   }
 
-  const persist = async (): Promise<ConfigurationV2 | null> => {
-    if (!online) {
-      setSyncState('error')
-      setSyncMessage('当前离线，草稿已保存在本机，联网后可同步')
-      return null
-    }
-    setSyncState('saving')
-    setSyncMessage('')
+  const persist = (): string => {
+    localStorage.setItem(PORTABLE_CACHE_KEY, portableValue)
+    setSavedPortableValue(portableValue)
+    setImportValue(portableValue)
+    setTransferOpen(true)
+    setSyncState('saved')
+    setSyncMessage('自包含配置已生成')
+    return portableValue
+  }
+
+  const copyPortableValue = async (value: string) => {
     try {
-      const stored = await saveConfiguration({
-        catalogVersion: catalog.catalogVersion,
-        vehicleId: catalog.vehicle.vehicleId,
-        selections,
-        customizations,
-        ...(savedConfiguration && dirty
-          ? {
-              configurationId: savedConfiguration.configurationId,
-              revision: savedConfiguration.revision,
-            }
-          : {}),
-      })
-      setSavedConfiguration(stored)
-      setSyncState('saved')
-      setSyncMessage(`已同步 · revision ${stored.revision}`)
-      return stored
-    } catch (reason) {
-      setSyncState('error')
-      setSyncMessage(reason instanceof Error ? reason.message : '保存失败')
-      return null
+      if (!navigator.clipboard) throw new Error('clipboard unavailable')
+      await navigator.clipboard.writeText(value)
+      setSyncMessage('自包含配置字符串已复制')
+    } catch {
+      setSyncMessage('剪贴板不可用，请从弹窗手动复制配置字符串')
     }
   }
 
   const share = async () => {
-    const stored = dirty || !savedConfiguration ? await persist() : savedConfiguration
-    if (!stored) return
+    const value = persist()
     const url = new URL(window.location.href)
-    url.searchParams.set('configuration', stored.configurationId)
-    window.history.replaceState(null, '', url)
+    url.searchParams.delete('configuration')
+    url.searchParams.set('config', value)
+    if (!embedded) window.history.replaceState(null, '', url)
+    await copyPortableValue(value)
+  }
+
+  const importPortable = () => {
     try {
-      await navigator.clipboard.writeText(url.toString())
-      setSyncMessage('分享链接已复制')
-    } catch {
-      setSyncMessage(`分享链接：${url.toString()}`)
+      const imported = parsePortableConfiguration(importValue, catalog)
+      const nextSelections = normalizeSelections(catalog, imported.selections)
+      const nextCustomizations = normalizeCustomizations(
+        catalog,
+        nextSelections,
+        imported.customizations,
+      )
+      setSelections(nextSelections)
+      setCustomizations(nextCustomizations)
+      const normalized = createPortableConfiguration(catalog, nextSelections, nextCustomizations)
+      localStorage.setItem(PORTABLE_CACHE_KEY, normalized)
+      setSavedPortableValue(normalized)
+      setImportValue(normalized)
+      setSyncState('saved')
+      setSyncMessage('配置已导入')
+      setTransferOpen(false)
+    } catch (reason) {
+      setSyncState('error')
+      setSyncMessage(reason instanceof Error ? reason.message : '配置导入失败')
     }
   }
 
@@ -854,11 +935,13 @@ function Configurator({
     const initialCustomizations = normalizeCustomizations(catalog, initialSelections, {})
     const url = new URL(window.location.href)
     url.searchParams.delete('configuration')
+    url.searchParams.delete('config')
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
     localStorage.removeItem(CACHE_KEY)
+    localStorage.removeItem(PORTABLE_CACHE_KEY)
     setSelections(initialSelections)
     setCustomizations(initialCustomizations)
-    setSavedConfiguration(null)
+    setSavedPortableValue('')
     setCategoryId(categories[0]?.categoryId ?? '')
     setComponentId('all')
     setSurfaceId(catalog.selectionOrder[0] ?? '')
@@ -978,7 +1061,7 @@ function Configurator({
           >
             {referenceImageUrl && (
               <img
-                src={referenceImageUrl}
+                src={versionStaticAssetUrl(referenceImageUrl)}
                 alt={`${surface.displayName}定制项目参考`}
                 loading="lazy"
               />
@@ -994,7 +1077,7 @@ function Configurator({
                 aria-pressed={!selections[surface.surfaceId]}
                 aria-label="默认，免费"
               >
-                <img src={DEFAULT_IMAGE_URL} alt="" />
+                <img src={versionStaticAssetUrl(DEFAULT_IMAGE_URL)} alt="" />
                 <span className="color-choice-name">默认</span>
                 <small>免费</small>
               </button>
@@ -1170,7 +1253,7 @@ function Configurator({
             syncState,
             syncMessage: syncMessage || (
               online
-                ? (offlineDraft ? '本地草稿待同步' : (dirty ? '未同步更改' : '已同步'))
+                ? (offlineDraft ? '本地草稿' : (dirty ? '未保存更改' : '已保存'))
                 : '离线 · 已保存本地'
             ),
             dirty,
@@ -1272,9 +1355,42 @@ function Configurator({
             {visibleSurfaces.map(renderSurfaceOptions)}
           </section>
           </div>
-
+          <div className="portable-actions">
+            <button onClick={() => {
+              setImportValue('')
+              setTransferOpen(true)
+            }}>导入配置</button>
+            <button onClick={() => { void persist() }}>导出配置</button>
+          </div>
         </aside>
       </div>
+      {transferOpen && (
+        <div className="portable-dialog-backdrop" role="presentation">
+          <section className="portable-dialog" role="dialog" aria-modal="true" aria-label="配置传输">
+            <button
+              className="portable-dialog-close"
+              aria-label="关闭配置传输"
+              onClick={() => setTransferOpen(false)}
+            >×</button>
+            <h2>配置传输</h2>
+            <p>保存与分享使用同一个自包含字符串；二维码编码的也是该字符串。</p>
+            <img src={portableQr} alt="当前配置二维码" />
+            <textarea
+              aria-label="配置字符串"
+              value={importValue}
+              onChange={(event) => setImportValue(event.target.value)}
+              placeholder="粘贴 SC01CFG1. 开头的配置字符串"
+            />
+            <div className="portable-dialog-actions">
+              <button onClick={importPortable}>导入</button>
+              <button onClick={() => {
+                setImportValue(portableValue)
+                void copyPortableValue(portableValue)
+              }}>复制当前配置</button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   )
 }
@@ -1303,7 +1419,11 @@ function FilterGroup({
             onClick={() => onChange(item.id)}
             aria-pressed={value === item.id}
           >
-            <img src={item.iconUrl ?? DEFAULT_IMAGE_URL} alt="" onError={useDefaultImage} />
+            <img
+              src={versionStaticAssetUrl(item.iconUrl ?? DEFAULT_IMAGE_URL)}
+              alt=""
+              onError={useDefaultImage}
+            />
             {item.name}
           </button>
         ))}

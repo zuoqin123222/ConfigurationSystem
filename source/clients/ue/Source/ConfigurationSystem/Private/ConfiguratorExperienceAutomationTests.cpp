@@ -110,8 +110,8 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 {
 	(void)Parameters;
 	const FString Url = UConfiguratorPanel::GetConfiguredWebUrl();
-	TestTrue(TEXT("网页选配 URL 使用 HTTP(S)"), Url.StartsWith(TEXT("http://"))
-		|| Url.StartsWith(TEXT("https://")));
+	TestTrue(TEXT("UE 网页选配 URL 使用本地 file 协议"), Url.StartsWith(TEXT("file://")));
+	TestTrue(TEXT("UE 网页选配 URL 指向随包 WebUI"), Url.Contains(TEXT("WebUI/index.html")));
 	TestTrue(TEXT("UE 入口包含 source=ue"), Url.Contains(TEXT("source=ue")));
 	TestTrue(TEXT("UE 入口启用 embedded 视图"), Url.Contains(TEXT("view=embedded")));
 	TestTrue(
@@ -125,38 +125,6 @@ bool FWebConfiguratorDirectionAutomationTest::RunTest(const FString& Parameters)
 	const FString HeaderUrl = UConfiguratorPanel::GetHeaderWebUrl();
 	TestTrue(TEXT("顶部栏使用独立 header 视图"), HeaderUrl.Contains(TEXT("view=header")));
 	TestFalse(TEXT("顶部栏不加载选配 embedded 视图"), HeaderUrl.Contains(TEXT("view=embedded")));
-	TestEqual(
-		TEXT("健康检查使用网页 URL 的同一 scheme 与 authority"),
-		UConfiguratorPanel::BuildHealthUrl(
-			TEXT("https://localhost:9443/configurator?source=ue#panel")),
-		FString(TEXT("https://localhost:9443/health")));
-	TestEqual(
-		TEXT("默认网页入口映射到同 Endpoint 的 /health"),
-		UConfiguratorPanel::BuildHealthUrl(Url),
-		FString(TEXT("http://127.0.0.1:8080/health")));
-	TestTrue(
-		TEXT("非 HTTP(S) URL 不生成健康检查地址"),
-		UConfiguratorPanel::BuildHealthUrl(TEXT("file:///index.html")).IsEmpty());
-
-	const TArray<float> ExpectedBackoff = {1.0f, 2.0f, 4.0f, 8.0f};
-	for (int32 CompletedAttempt = 1;
-		CompletedAttempt < UConfiguratorPanel::MaxHealthProbeAttempts;
-		++CompletedAttempt)
-	{
-		TestEqual(
-			*FString::Printf(TEXT("第 %d 次失败后的退避"), CompletedAttempt),
-			UConfiguratorPanel::GetHealthRetryDelaySeconds(CompletedAttempt),
-			ExpectedBackoff[CompletedAttempt - 1]);
-	}
-	TestEqual(
-		TEXT("最多五次后停止重试"),
-		UConfiguratorPanel::GetHealthRetryDelaySeconds(
-			UConfiguratorPanel::MaxHealthProbeAttempts),
-		0.0f);
-	TestEqual(
-		TEXT("无已完成请求时不安排退避"),
-		UConfiguratorPanel::GetHealthRetryDelaySeconds(0),
-		0.0f);
 	TestTrue(
 		TEXT("1600px 视口扣除右侧 480px 面板后偏移为 0.3"),
 		FMath::IsNearlyEqual(

@@ -128,6 +128,23 @@ GUI 操作后要记录资产路径、关键字段、执行步骤和人工判断�
 
 重大流程改造保留旧路径，新增 V2 实现并用同一 fixture 对照。新流程通过 Development、Shipping 和跨端验证后，才能移除旧流程。禁止同时改协议语义、迁移路径和删除兼容层而没有独立证据。
 
+## Web 与 UE UI 发布
+
+React/Vite 目录是唯一 UI 源码，不允许在 UE 工程中另写一套页面。发布顺序固定为：
+
+1. 在 `source/clients/web/` 执行 `npm test`。
+2. 执行一次 `npm run build`；构建同时更新在线目录 `package/clients/web/` 与 UE
+   暂存目录 `source/clients/ue/Content/WebUI/`。
+3. 核对两个目录的文件集合和字节哈希一致，并确认包含
+   `catalog/sc01.catalog.v2.json`、`sc01/option-icons/`、`sc01/thumbnails/`。
+4. 再编译或打包 UE；Build.cs 只消费上述同一构建副本，不运行第二套前端构建。
+5. Shipping 中以 `file://` 启动 embedded/header/controls 三个视图，断开 Server
+   仍应可加载目录、图标、缩略图并完成保存、分享和导入。
+
+在线 Web 的 catalog 与 Bake 图片请求必须保留 Server 行为；离线判断基于
+`file:` 运行协议，不能根据 `navigator.onLine` 猜测部署模式。`Content/WebUI/` 和
+`package/` 都是可重建产物，不提交、不手工修补。
+
 ## 原子提交与推送
 
 默认协作节奏是一项完整步骤对应一个原子提交：

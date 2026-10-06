@@ -23,8 +23,6 @@ public class ConfigurationSystem : ModuleRules
 				// 右侧选配面板由 UE5.8 WebBrowserWidget 内嵌承载。
 				"WebBrowserWidget",
 				"WebBrowser",
-				// 内嵌浏览器加载前异步探测同源 /health。
-				"HTTP",
 				// Runtime Path Tracing 探针只依赖公开的 RHI/RenderCore 接口。
 				"RHI",
 				"RenderCore",
@@ -47,34 +45,28 @@ public class ConfigurationSystem : ModuleRules
 			}
 		);
 
-		// catalog.thumbnailUrl 指向 Web 公共色卡；把同一份经校验的 WebP 以 NonUFS
-		// 资源随桌面端分发，运行时可按 URL 路径直接加载，避免 Editor-only 资产导入。
-		string ThumbnailSource = Path.GetFullPath(Path.Combine(
+		// npm run build 从唯一 Web 源码生成在线发布目录，并把同一字节集同步到
+		// Content/WebUI。这里递归分发完整 bundle、内嵌 catalog、icon 与 thumbnail，
+		// Shipping 运行时只加载本地 file:// 页面，不依赖 Server 或网络。
+		string WebUiSource = Path.GetFullPath(Path.Combine(
 			ModuleDirectory,
-			"..", "..", "..", "web", "public", "sc01", "thumbnails"));
-		if (Directory.Exists(ThumbnailSource))
+			"..", "..", "Content", "WebUI"));
+		if (!Directory.Exists(WebUiSource)
+			&& Target.Configuration == UnrealTargetConfiguration.Shipping)
 		{
-			foreach (string Thumbnail in Directory.GetFiles(ThumbnailSource, "*.webp"))
-			{
-				RuntimeDependencies.Add(
-					"$(TargetOutputDir)/sc01/thumbnails/" + Path.GetFileName(Thumbnail),
-					Thumbnail,
-					StagedFileType.NonUFS);
-			}
+			throw new BuildException(
+				"Missing embedded WebUI. Run npm run build in source/clients/web before Shipping.");
 		}
-
-		// Web 选装项在缺少实拍缩略图时使用同源 SVG 占位图。它们必须与色卡一起
-		// 进入 Shipping 的 NonUFS 目录，否则离线客户端会出现缺图而不是 NoPicture。
-		string OptionIconSource = Path.GetFullPath(Path.Combine(
-			ModuleDirectory,
-			"..", "..", "..", "web", "public", "sc01", "option-icons"));
-		if (Directory.Exists(OptionIconSource))
+		if (Directory.Exists(WebUiSource))
 		{
-			foreach (string OptionIcon in Directory.GetFiles(OptionIconSource, "*.svg"))
+			foreach (string WebFile in Directory.GetFiles(
+				WebUiSource, "*", SearchOption.AllDirectories))
 			{
+				string RelativePath = Path.GetRelativePath(
+					WebUiSource, WebFile).Replace('\\', '/');
 				RuntimeDependencies.Add(
-					"$(TargetOutputDir)/sc01/option-icons/" + Path.GetFileName(OptionIcon),
-					OptionIcon,
+					"$(TargetOutputDir)/WebUI/" + RelativePath,
+					WebFile,
 					StagedFileType.NonUFS);
 			}
 		}

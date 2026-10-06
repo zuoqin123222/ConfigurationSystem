@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchCatalog } from './api'
+import {
+  bundledCatalog,
+  resolveStaticAssetUrl,
+  usesBundledCatalog,
+} from './bundledCatalog'
 import type { CatalogAnimation, CatalogCameraId, CatalogInteractionCamera } from './types'
 import {
   executeUeControl,
@@ -101,7 +106,10 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     if (!ueEnabled) return
     let active = true
     const controller = new AbortController()
-    void fetchCatalog(controller.signal)
+    const catalogRequest = usesBundledCatalog()
+      ? Promise.resolve(bundledCatalog)
+      : fetchCatalog(controller.signal)
+    void catalogRequest
       .then((catalog) => {
         if (!active) return
         setCameras((catalog.interactionCameras ?? [])
@@ -250,7 +258,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
                       && (pendingCameraSelection?.cameraIndex ?? cameraIndex) === camera.legacyIndex}
                   onClick={() => void selectCamera(camera)}
                 >
-                  <img src={camera.iconUrl} alt="" />
+                  <img src={resolveStaticAssetUrl(camera.iconUrl)} alt="" />
                   {camera.displayName}
                 </button>
               ))}

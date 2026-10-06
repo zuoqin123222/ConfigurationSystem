@@ -15,7 +15,7 @@ namespace AutomotiveMaterialAssetAutomation
 	{
 		TSet<FName> Result;
 		for (UMaterialExpression* Expression :
-			UMaterialEditingLibrary::GetMaterialExpressions(Material))
+			Material->GetExpressionCollection().Expressions)
 		{
 			if (const UMaterialExpressionScalarParameter* Scalar =
 				Cast<UMaterialExpressionScalarParameter>(Expression))
