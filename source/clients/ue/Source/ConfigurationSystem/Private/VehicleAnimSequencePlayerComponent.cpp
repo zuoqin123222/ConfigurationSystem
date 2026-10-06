@@ -74,6 +74,17 @@ UVehicleAnimSequencePlayerComponent::FindClip(const FName AnimationId) const
 	});
 }
 
+bool UVehicleAnimSequencePlayerComponent::HasAnimationById(
+	const FName AnimationId) const
+{
+	const FVehicleAnimationClip* Clip = FindClip(AnimationId);
+	return Clip != nullptr
+		&& IsValid(Sequence)
+		&& IsValid(Mesh)
+		&& Clip->FrameRate > 0.0f
+		&& Clip->EndFrame > Clip->StartFrame;
+}
+
 bool UVehicleAnimSequencePlayerComponent::PlayAnimationById(
 	const FName AnimationId)
 {

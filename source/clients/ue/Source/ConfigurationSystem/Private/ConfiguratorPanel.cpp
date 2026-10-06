@@ -31,7 +31,7 @@ namespace
 	constexpr float StageMargin = 18.0f;
 	constexpr float StageCornerRadius = 24.0f;
 	constexpr float ControlsLayerWidth = 620.0f;
-	constexpr float ControlsLayerHeight = 190.0f;
+	constexpr float ControlsLayerHeight = 240.0f;
 	constexpr float ControlsBottomInset = 32.0f;
 	constexpr int32 MaxBridgeJsonCharacters = 65536;
 
@@ -258,6 +258,7 @@ TSharedRef<SWidget> UConfiguratorPanel::RebuildWidget()
 void UConfiguratorPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
+	SetExperienceQualityLevel(TEXT("epic"));
 	if (WebBrowser != nullptr)
 	{
 		WebBrowser->LoadURL(GetConfiguredWebUrl());
@@ -673,6 +674,16 @@ bool UConfiguratorPanel::FocusExperienceAnimation(const FString& NextAnimationId
 			|| UConfiguratorWebBridge::IsSupportedAnimationId(NextAnimationId))
 		&& Controller->FocusAnimation(
 			NextAnimationId.IsEmpty() ? NAME_None : FName(*NextAnimationId));
+}
+
+bool UConfiguratorPanel::CanPlayExperienceAnimation(
+	const FString& AnimationId) const
+{
+	const AConfigShowroomPlayerController* Controller =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
+	return Controller != nullptr
+		&& UConfiguratorWebBridge::IsSupportedAnimationId(AnimationId)
+		&& Controller->CanPlayAnimation(FName(*AnimationId));
 }
 
 bool UConfiguratorPanel::SetExperienceCameraId(const FString& CameraId)

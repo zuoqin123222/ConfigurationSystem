@@ -1087,6 +1087,12 @@ bool AConfigShowroomPlayerController::FocusAnimation(const FName NextAnimationId
 	return IsValid(Vehicle) && Vehicle->FocusVehicleAnimation(NextAnimationId);
 }
 
+bool AConfigShowroomPlayerController::CanPlayAnimation(
+	const FName AnimationId) const
+{
+	return IsValid(Vehicle) && Vehicle->CanPlayVehicleAnimation(AnimationId);
+}
+
 FName AConfigShowroomPlayerController::GetActiveAnimationId() const
 {
 	return IsValid(Vehicle) ? Vehicle->GetActiveVehicleAnimationId() : NAME_None;

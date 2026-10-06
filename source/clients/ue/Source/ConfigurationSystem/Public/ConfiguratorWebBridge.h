@@ -43,6 +43,8 @@ public:
 	UFUNCTION()
 	bool FocusAnimation(const FString& NextAnimationId);
 	UFUNCTION()
+	bool CanPlayAnimation(const FString& AnimationId) const;
+	UFUNCTION()
 	bool SetLightPreset(const FString& Preset);
 	UFUNCTION()
 	bool SetRenderMode(const FString& Mode);

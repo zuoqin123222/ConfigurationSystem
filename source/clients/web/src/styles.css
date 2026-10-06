@@ -538,7 +538,7 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   position: fixed; z-index: 20; left: 50%; bottom: 24px; transform: translateX(-50%);
   display: flex; align-items: stretch; gap: 2px; padding: 6px;
   border: 1px solid rgba(255,255,255,.13); border-radius: 18px;
-  background: #3d3d3b; box-shadow: none;
+  background: rgba(43,43,43,.82); box-shadow: none;
 }
 .experience-toolbar > button, .toolbar-item > button {
   display: grid; min-width: 72px; min-height: 52px; place-items: center; gap: 2px;
@@ -572,11 +572,19 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   transition: stroke-dashoffset .15s linear;
 }
 .toolbar-item { position: relative; }
+.toolbar-item::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: 12px;
+}
 .control-popover {
-  position: absolute; z-index: 25; bottom: calc(100% + 12px); left: 0;
+  position: absolute; z-index: 25; bottom: calc(100% + 8px); left: 0;
   display: grid; grid-template-columns: 1fr 1fr; gap: 2px; min-width: 226px; padding: 6px;
   border: 1px solid rgba(255,255,255,.13); border-radius: 18px;
-  color: #d5d5d2; background: #3d3d3b;
+  color: #d5d5d2; background: rgba(43,43,43,.82);
   box-shadow: none;
 }
 .control-popover button {
@@ -613,6 +621,10 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .animation-popover button {
   white-space: nowrap;
+}
+.compact-popover {
+  grid-template-columns: repeat(2, minmax(82px, 1fr));
+  min-width: 176px;
 }
 .quality-control { position: fixed; z-index: 22; top: 20px; right: 20px; }
 .icon-button {

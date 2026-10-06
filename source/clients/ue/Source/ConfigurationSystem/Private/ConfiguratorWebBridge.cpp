@@ -79,6 +79,14 @@ bool UConfiguratorWebBridge::FocusAnimation(const FString& NextAnimationId)
 		&& Owner->FocusExperienceAnimation(NextAnimationId);
 }
 
+bool UConfiguratorWebBridge::CanPlayAnimation(
+	const FString& AnimationId) const
+{
+	return Owner != nullptr
+		&& IsSupportedAnimationId(AnimationId)
+		&& Owner->CanPlayExperienceAnimation(AnimationId);
+}
+
 bool UConfiguratorWebBridge::IsSupportedLightPreset(const FString& Preset)
 {
 	return Preset == TEXT("studio") || Preset == TEXT("outdoor");

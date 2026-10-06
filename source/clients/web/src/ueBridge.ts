@@ -13,6 +13,7 @@ export interface ReflectedUeBridge {
   playanimation?: (animationId: string) => Promise<boolean>
   closeanimation?: (animationId: string) => Promise<boolean>
   focusanimation?: (nextAnimationId: string) => Promise<boolean>
+  canplayanimation?: (animationId: string) => Promise<boolean>
   setlightpreset?: (preset: string) => Promise<boolean>
   setrendermode?: (mode: string) => Promise<boolean>
   getrendermodeerror?: () => Promise<string>
@@ -187,6 +188,19 @@ export async function focusUeAnimation(
   if (await playUeAnimation(bridge, nextAnimationId)) return true
   if (currentAnimationId) await playUeAnimation(bridge, currentAnimationId)
   return false
+}
+
+export async function canPlayUeAnimation(
+  bridge: ReflectedUeBridge | null,
+  animationId: string,
+): Promise<boolean> {
+  if (!isCatalogNodeId(animationId)) return false
+  if (typeof bridge?.canplayanimation !== 'function') return true
+  try {
+    return await bridge.canplayanimation(animationId)
+  } catch {
+    return false
+  }
 }
 
 function isUeCameraIndex(value: unknown): value is UeCameraIndex {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   applyUeConfiguration,
+  canPlayUeAnimation,
   closeUeAnimation,
   createUeConfigurationJson,
   createUeConfiguratorHeaderStateJson,
@@ -280,6 +281,15 @@ describe('受限 UE bridge', () => {
       .resolves.toBe('当前 GPU 不支持 Path Tracing。')
     await expect(getUeRenderModeError(bridge)).resolves.toBe('')
     await expect(getUeRenderModeError({})).resolves.toBe('')
+  })
+
+  it('动画能力检查使用只读 bridge，并兼容旧 bridge', async () => {
+    const canplayanimation = vi.fn().mockResolvedValue(false)
+    await expect(canPlayUeAnimation({ canplayanimation }, 'door-left'))
+      .resolves.toBe(false)
+    expect(canplayanimation).toHaveBeenCalledWith('door-left')
+    await expect(canPlayUeAnimation({}, 'hood')).resolves.toBe(true)
+    await expect(canPlayUeAnimation({ canplayanimation }, '../hood')).resolves.toBe(false)
   })
 
   it('继续读取只有 cameraIndex 的旧 UE 展示状态', async () => {

@@ -378,7 +378,9 @@ describe('App v2', () => {
     render(<App />)
 
     expect(screen.getByRole('navigation', { name: '体验控制' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '画质' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '场景' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '画质' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '复位' })).not.toBeInTheDocument()
     expect(screen.queryByRole('complementary', { name: '车辆选配' })).not.toBeInTheDocument()
     expect(document.body).toHaveClass('controls-document')
     expect(document.querySelector('.ue-color-corrected')).toBeNull()

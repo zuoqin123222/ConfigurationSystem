@@ -844,6 +844,32 @@ bool AConfiguratorVehicleActor::IsVehicleAnimationPlaying() const
 	return !GetActiveVehicleAnimationId().IsNone();
 }
 
+bool AConfiguratorVehicleActor::CanPlayVehicleAnimation(
+	const FName AnimationId) const
+{
+	if (!UVehicleAnimSequencePlayerComponent::IsStableAnimationId(
+		AnimationId.ToString()))
+	{
+		return false;
+	}
+	if (IsValid(AnimationPlayer)
+		&& AnimationPlayer->HasAnimationById(AnimationId))
+	{
+		return true;
+	}
+	if (AnimationId == TEXT("wheel-spin"))
+	{
+		return IsValid(WheelController);
+	}
+	const UReversiblePartActuatorComponent* Actuator =
+		AnimationId == TEXT("hood") ? HoodActuator
+		: AnimationId == TEXT("trunk") ? TrunkActuator
+		: AnimationId == TEXT("door-left") ? LeftDoorActuator
+		: AnimationId == TEXT("door-right") ? RightDoorActuator
+		: nullptr;
+	return IsValid(Actuator);
+}
+
 bool AConfiguratorVehicleActor::ApplyStaticAnimationFallback(
 	const FName AnimationId,
 	const bool bOpen)

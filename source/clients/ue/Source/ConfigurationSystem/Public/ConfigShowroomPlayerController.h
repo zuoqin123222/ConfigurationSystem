@@ -156,6 +156,9 @@ public:
 	bool FocusAnimation(FName NextAnimationId);
 
 	UFUNCTION(BlueprintPure, Category="Configurator|Experience")
+	bool CanPlayAnimation(FName AnimationId) const;
+
+	UFUNCTION(BlueprintPure, Category="Configurator|Experience")
 	FName GetActiveAnimationId() const;
 
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")

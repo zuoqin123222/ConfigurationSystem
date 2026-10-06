@@ -21,7 +21,7 @@ describe('ExperienceControls', () => {
     document.body.classList.remove('controls-document')
   })
 
-  it('通过受限 bridge 控制镜头、动画、灯光、渲染、复位和全屏', async () => {
+  it('通过受限 bridge 控制镜头、动画、场景、渲染和全屏', async () => {
     const user = userEvent.setup()
     let currentState = {
       cameraId: 'wheel',
@@ -59,8 +59,6 @@ describe('ExperienceControls', () => {
         }
         return true
       }),
-      setqualitylevel: vi.fn().mockResolvedValue(true),
-      resetpresentation: vi.fn().mockResolvedValue(true),
       setfullscreen: vi.fn(async (enabled: boolean) => {
         currentState = { ...currentState, fullscreen: enabled }
         return true
@@ -70,29 +68,30 @@ describe('ExperienceControls', () => {
     render(<ExperienceControls ueEnabled />)
 
     const toolbar = screen.getByRole('navigation', { name: '体验控制' })
-    expect(within(toolbar).getAllByRole('button')).toHaveLength(7)
+    await screen.findByRole('button', { name: '动画' })
+    expect(within(toolbar).getAllByRole('button')).toHaveLength(5)
     await waitFor(() => expect(bridge.getpresentationstatejson).toHaveBeenCalled())
 
-    await user.click(within(toolbar).getByRole('button', { name: '镜头' }))
+    await user.hover(within(toolbar).getByRole('button', { name: '镜头' }))
     const cameraMenu = await screen.findByRole('menu', { name: '镜头预设' })
     expect(within(cameraMenu).getAllByRole('menuitemradio')).toHaveLength(5)
     expect(within(cameraMenu).getByRole('menuitemradio', { name: '轮毂' }))
       .toHaveAttribute('aria-checked', 'true')
     expect(within(cameraMenu).getByRole('menuitemradio', { name: '驾驶位' }).querySelector('img'))
       .toBeNull()
-    await user.click(within(cameraMenu).getByRole('menuitemradio', { name: '驾驶位' }))
-    await user.click(within(toolbar).getByRole('button', { name: '动画' }))
+    fireEvent.click(within(cameraMenu).getByRole('menuitemradio', { name: '驾驶位' }))
+    await user.unhover(within(toolbar).getByRole('button', { name: '镜头' }))
+    await user.hover(within(toolbar).getByRole('button', { name: '动画' }))
     const animationMenu = await screen.findByRole('menu', { name: '动画列表' })
     expect(within(animationMenu).getAllByRole('menuitemradio').map((item) => item.textContent))
       .toEqual(['开启机舱盖', '后盖往复', '车轮旋转'])
-    await user.click(within(animationMenu).getByRole('menuitemradio', { name: '开启机舱盖' }))
-    await user.click(within(toolbar).getByRole('button', { name: '动画' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
-    await user.click(within(toolbar).getByRole('button', { name: '灯光' }))
+    fireEvent.click(within(animationMenu).getByRole('menuitemradio', { name: '开启机舱盖' }))
+    await user.unhover(within(toolbar).getByRole('button', { name: '动画' }))
+    await user.hover(within(toolbar).getByRole('button', { name: '动画' }))
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
+    await user.unhover(within(toolbar).getByRole('button', { name: '动画' }))
+    await user.click(within(toolbar).getByRole('button', { name: '场景' }))
     await user.click(within(toolbar).getByRole('button', { name: '渲染' }))
-    await user.click(within(toolbar).getByRole('button', { name: '画质' }))
-    await user.click(screen.getByRole('menuitemradio', { name: '极高' }))
-    await user.click(within(toolbar).getByRole('button', { name: '复位' }))
     await user.click(within(toolbar).getByRole('button', { name: '全屏' }))
 
     expect(bridge.setcameraid).toHaveBeenCalledWith('driver')
@@ -100,10 +99,9 @@ describe('ExperienceControls', () => {
     expect(bridge.focusanimation).toHaveBeenNthCalledWith(2, '')
     expect(bridge.setlightpreset).toHaveBeenCalledWith('outdoor')
     expect(bridge.setrendermode).toHaveBeenCalledWith('path-tracing')
-    expect(bridge.setqualitylevel).toHaveBeenCalledWith('epic')
-    expect(bridge.resetpresentation).toHaveBeenCalledOnce()
     expect(bridge.setfullscreen).toHaveBeenCalledWith(true)
-    expect(bridge.getpresentationstatejson.mock.calls.length).toBeGreaterThanOrEqual(15)
+    expect(within(toolbar).queryByRole('button', { name: '画质' })).not.toBeInTheDocument()
+    expect(within(toolbar).queryByRole('button', { name: '复位' })).not.toBeInTheDocument()
   })
 
   it('从 UE 状态初始化控件，Promise 拒绝时不更新激活状态', async () => {
@@ -123,17 +121,87 @@ describe('ExperienceControls', () => {
     window.ue = { uebridge: bridge }
     render(<ExperienceControls ueEnabled />)
 
-    const animation = screen.getByRole('button', { name: '动画' })
+    const animation = await screen.findByRole('button', { name: '动画' })
     const renderButton = screen.getByRole('button', { name: '渲染' })
     await waitFor(() => expect(animation).toHaveAttribute('aria-pressed', 'true'))
     await waitFor(() => expect(renderButton.querySelector('.render-progress-value'))
       .toHaveStyle({ strokeDashoffset: 58 }))
-    await user.click(animation)
-    await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
+    await user.hover(animation)
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
 
     expect(await screen.findByRole('alert'))
       .toHaveTextContent('UE 控制桥不可用或命令被拒绝')
     expect(animation).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('只展示 UE 当前车辆实际支持的动画', async () => {
+    const user = userEvent.setup()
+    const bridge = {
+      getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
+        cameraId: 'wheel',
+        animationEnabled: false,
+        animationId: null,
+        lightPreset: 'studio',
+        renderMode: 'realtime',
+        quality: 'epic',
+        fullscreen: false,
+      })),
+      canplayanimation: vi.fn(async (animationId: string) => animationId !== 'trunk'),
+    }
+    window.ue = { uebridge: bridge }
+    render(<ExperienceControls ueEnabled />)
+
+    const animation = await screen.findByRole('button', { name: '动画' })
+    await user.hover(animation)
+    const menu = await screen.findByRole('menu', { name: '动画列表' })
+    expect(within(menu).queryByRole('menuitemradio', { name: '后盖往复' }))
+      .not.toBeInTheDocument()
+    expect(within(menu).getByRole('menuitemradio', { name: '开启机舱盖' }))
+      .toBeInTheDocument()
+    expect(bridge.canplayanimation).toHaveBeenCalledTimes(3)
+  })
+
+  it('一级按钮单击循环子项，悬停时只展示一个二级菜单', async () => {
+    const user = userEvent.setup()
+    let currentState = {
+      cameraId: 'wheel',
+      animationEnabled: false,
+      animationId: null as string | null,
+      lightPreset: 'studio',
+      renderMode: 'realtime',
+      quality: 'epic',
+      fullscreen: false,
+    }
+    const bridge = {
+      getpresentationstatejson: vi.fn(async () => JSON.stringify(currentState)),
+      setcameraid: vi.fn(async (cameraId: string) => {
+        currentState = { ...currentState, cameraId }
+        return true
+      }),
+      focusanimation: vi.fn(async (animationId: string) => {
+        currentState = {
+          ...currentState,
+          animationEnabled: animationId !== '',
+          animationId: animationId || null,
+        }
+        return true
+      }),
+    }
+    window.ue = { uebridge: bridge }
+    render(<ExperienceControls ueEnabled />)
+
+    const cameraButton = screen.getByRole('button', { name: '镜头' })
+    const animationButton = await screen.findByRole('button', { name: '动画' })
+    await user.click(cameraButton)
+    await waitFor(() => expect(bridge.setcameraid).toHaveBeenCalledWith('driver'))
+    await user.click(animationButton)
+    await waitFor(() => expect(bridge.focusanimation).toHaveBeenCalledWith('hood'))
+
+    await user.hover(cameraButton)
+    expect(await screen.findByRole('menu', { name: '镜头预设' })).toBeInTheDocument()
+    await user.hover(screen.getByRole('button', { name: '场景' }))
+    expect(screen.queryByRole('menu', { name: '镜头预设' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('menu', { name: '场景预设' })).toBeInTheDocument()
   })
 
   it('Path Tracing 被拒绝时显示 UE 返回的具体原因', async () => {
@@ -177,7 +245,7 @@ describe('ExperienceControls', () => {
     window.ue = { uebridge: bridge }
     render(<ExperienceControls ueEnabled />)
 
-    await userEvent.click(screen.getByRole('button', { name: '镜头' }))
+    await userEvent.hover(screen.getByRole('button', { name: '镜头' }))
     expect(await screen.findByRole('menuitemradio', { name: '驾驶位' }))
       .toHaveAttribute('aria-checked', 'true')
     expect(screen.getByRole('menuitemradio', { name: '前舱' }))
@@ -205,17 +273,19 @@ describe('ExperienceControls', () => {
     render(<ExperienceControls ueEnabled />)
 
     await waitFor(() => expect(bridge.getpresentationstatejson).toHaveBeenCalled())
-    await user.click(screen.getByRole('button', { name: '镜头' }))
+    const cameraButton = screen.getByRole('button', { name: '镜头' })
+    await user.hover(cameraButton)
     const menu = await screen.findByRole('menu', { name: '镜头预设' })
-    await user.click(within(menu).getByRole('menuitemradio', { name: '驾驶位' }))
+    fireEvent.click(within(menu).getByRole('menuitemradio', { name: '驾驶位' }))
 
-    expect(within(menu).getByRole('menuitemradio', { name: '驾驶位' }))
-      .toHaveAttribute('aria-checked', 'true')
+    await waitFor(() => expect(within(menu).getByRole('menuitemradio', { name: '驾驶位' }))
+      .toHaveAttribute('aria-checked', 'true'))
     expect(within(menu).getByRole('menuitemradio', { name: '轮毂' }))
       .toHaveAttribute('aria-checked', 'false')
 
     currentState = { ...currentState, cameraId: 'driver' }
     await act(async () => resolveCameraCommand?.(true))
+    await user.unhover(cameraButton)
     await waitFor(() => {
       expect(screen.queryByRole('menu', { name: '镜头预设' })).not.toBeInTheDocument()
     })
@@ -238,14 +308,12 @@ describe('ExperienceControls', () => {
     render(<ExperienceControls ueEnabled />)
 
     await waitFor(() => expect(bridge.getpresentationstatejson).toHaveBeenCalled())
-    await user.click(screen.getByRole('button', { name: '镜头' }))
-    await user.click(await screen.findByRole('menuitemradio', { name: '驾驶位' }))
+    const cameraButton = screen.getByRole('button', { name: '镜头' })
+    await user.hover(cameraButton)
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '驾驶位' }))
     await waitFor(() => expect(bridge.setcameraid).toHaveBeenCalledWith('driver'))
-    await waitFor(() => {
-      expect(screen.queryByRole('menu', { name: '镜头预设' })).not.toBeInTheDocument()
-    })
-
-    await user.click(screen.getByRole('button', { name: '镜头' }))
+    await user.unhover(cameraButton)
+    await user.hover(cameraButton)
     expect(await screen.findByRole('menuitemradio', { name: '驾驶位' }))
       .toHaveAttribute('aria-checked', 'true')
     expect(screen.getByRole('menuitemradio', { name: '轮毂' }))
@@ -275,16 +343,17 @@ describe('ExperienceControls', () => {
     window.ue = { uebridge: bridge }
     render(<ExperienceControls ueEnabled />)
 
-    await user.click(screen.getByRole('button', { name: '镜头' }))
+    await user.hover(screen.getByRole('button', { name: '镜头' }))
     const menu = await screen.findByRole('menu', { name: '镜头预设' })
     expect(within(menu).getByRole('menuitemradio', { name: '轮毂' }))
       .toHaveAttribute('aria-checked', 'true')
 
-    await user.click(within(menu).getByRole('menuitemradio', { name: '驾驶位' }))
-    expect(bridge.setcamera).toHaveBeenCalledWith(4)
+    fireEvent.click(within(menu).getByRole('menuitemradio', { name: '驾驶位' }))
+    await waitFor(() => expect(bridge.setcamera).toHaveBeenCalledWith(4))
 
-    await user.click(screen.getByRole('button', { name: '镜头' }))
-    await user.click(screen.getByRole('menuitemradio', { name: '座椅' }))
+    await user.unhover(screen.getByRole('button', { name: '镜头' }))
+    await user.hover(screen.getByRole('button', { name: '镜头' }))
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '座椅' }))
     expect(bridge.setcamera).toHaveBeenCalledOnce()
     expect(await screen.findByRole('alert'))
       .toHaveTextContent('UE 控制桥不可用或命令被拒绝')
@@ -294,11 +363,11 @@ describe('ExperienceControls', () => {
     const user = userEvent.setup()
     render(<ExperienceControls ueEnabled />)
 
-    const animation = screen.getByRole('button', { name: '动画' })
-    await user.click(animation)
-    await user.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
+    const animation = await screen.findByRole('button', { name: '动画' })
+    await user.hover(animation)
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
 
-    expect(screen.getByRole('alert')).toHaveTextContent('UE 控制桥不可用或命令被拒绝')
+    expect(screen.getByRole('alert')).toHaveTextContent('无法读取 UE 展示状态')
     expect(animation).toHaveAttribute('aria-pressed', 'false')
   })
 

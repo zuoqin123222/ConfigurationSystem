@@ -6,6 +6,7 @@ import {
 } from './bundledCatalog'
 import type { CatalogAnimation, CatalogCameraId, CatalogInteractionCamera } from './types'
 import {
+  canPlayUeAnimation,
   executeUeControl,
   focusUeAnimation,
   getUeBridge,
@@ -14,15 +15,21 @@ import {
   type UeControlCommand,
   type UeCameraIndex,
   type UePresentationState,
-  type UeQualityLevel,
 } from './ueBridge'
 
-const QUALITY_LEVELS: Array<{ value: UeQualityLevel; label: string }> = [
-  { value: 'low', label: '低' },
-  { value: 'medium', label: '中' },
-  { value: 'high', label: '高' },
-  { value: 'epic', label: '极高' },
-]
+const SCENE_PRESETS = [
+  { value: 'studio', label: '影棚' },
+  { value: 'outdoor', label: '外景' },
+] as const
+const RENDER_MODES = [
+  { value: 'realtime', label: '实时' },
+  { value: 'path-tracing', label: 'Path Tracing' },
+] as const
+const DISPLAY_MODES = [
+  { value: false, label: '窗口' },
+  { value: true, label: '全屏' },
+] as const
+type ControlMenu = 'camera' | 'animation' | 'scene' | 'render' | 'display'
 
 interface ExperienceControlsProps {
   ueEnabled?: boolean
@@ -42,9 +49,7 @@ function cameraSelectionMatchesState(
 }
 
 export default function ExperienceControls({ ueEnabled = false }: ExperienceControlsProps) {
-  const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
-  const [animationMenuOpen, setAnimationMenuOpen] = useState(false)
-  const [qualityMenuOpen, setQualityMenuOpen] = useState(false)
+  const [openMenu, setOpenMenu] = useState<ControlMenu | null>(null)
   const [cameras, setCameras] = useState<CatalogInteractionCamera[]>([])
   const [animations, setAnimations] = useState<CatalogAnimation[]>([])
   const [cameraId, setCameraId] = useState<CatalogCameraId | null>(null)
@@ -55,7 +60,6 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const [lightPreset, setLightPreset] = useState<'studio' | 'outdoor'>('studio')
   const [renderMode, setRenderMode] = useState<'realtime' | 'path-tracing'>('realtime')
   const [renderProgress, setRenderProgress] = useState(0)
-  const [quality, setQuality] = useState<UeQualityLevel>('high')
   const [fullscreen, setFullscreen] = useState(false)
   const [toolbarIdle, setToolbarIdle] = useState(false)
   const [error, setError] = useState('')
@@ -102,7 +106,6 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     setRenderProgress(state.renderMode === 'path-tracing'
       ? Math.min(1, Math.max(0, state.renderProgress ?? 0))
       : 0)
-    setQuality(state.quality)
     setFullscreen(state.fullscreen)
   }, [])
 
@@ -114,12 +117,21 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       ? Promise.resolve(bundledCatalog)
       : fetchCatalog(controller.signal)
     void catalogRequest
-      .then((catalog) => {
+      .then(async (catalog) => {
         if (!active) return
         setCameras((catalog.interactionCameras ?? [])
           .slice()
           .sort((left, right) => left.order - right.order))
-        setAnimations(catalog.animations ?? [])
+        const animationCandidates = catalog.animations ?? []
+        const availability = await Promise.all(animationCandidates.map(
+          (animation) => canPlayUeAnimation(
+            getUeBridge(true),
+            animation.animationId,
+          ),
+        ))
+        if (active) {
+          setAnimations(animationCandidates.filter((_, index) => availability[index]))
+        }
       })
       .catch(() => {
         if (active && !controller.signal.aborted) setError('无法读取镜头目录')
@@ -214,7 +226,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       setPendingCameraSelection(null)
       return
     }
-    setCameraMenuOpen(false)
+    setOpenMenu(null)
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const updatedState = await getUePresentationState(bridge)
       if (cameraRequestIdRef.current !== requestId) return
@@ -256,10 +268,53 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     if (accepted) {
       setAnimationId(nextId)
       setAnimationEnabled(nextId !== null)
-      setAnimationMenuOpen(false)
+      setOpenMenu(null)
       const updatedState = await getUePresentationState(bridge)
       if (updatedState) applyState(updatedState)
     }
+  }
+
+  const selectScene = (preset: 'studio' | 'outdoor') => {
+    void run(
+      { type: 'light', preset },
+      () => {
+        setLightPreset(preset)
+        setOpenMenu(null)
+      },
+    )
+  }
+
+  const selectRenderMode = (mode: 'realtime' | 'path-tracing') => {
+    void run(
+      { type: 'render', mode },
+      () => {
+        setRenderMode(mode)
+        setOpenMenu(null)
+      },
+    )
+  }
+
+  const selectDisplayMode = (enabled: boolean) => {
+    void run(
+      { type: 'fullscreen', enabled },
+      () => {
+        setFullscreen(enabled)
+        setOpenMenu(null)
+      },
+    )
+  }
+
+  const cycleCamera = () => {
+    if (cameras.length === 0) return
+    const selectedId = pendingCameraSelection?.cameraId ?? cameraId
+    const currentIndex = cameras.findIndex((camera) => camera.cameraId === selectedId)
+    void selectCamera(cameras[(currentIndex + 1 + cameras.length) % cameras.length])
+  }
+
+  const cycleAnimation = () => {
+    if (animations.length === 0) return
+    const currentIndex = animations.findIndex((animation) => animation.animationId === animationId)
+    void selectAnimation(animations[(currentIndex + 1 + animations.length) % animations.length].animationId)
   }
 
   return (
@@ -268,15 +323,19 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       onPointerMove={keepToolbarAwake}
     >
       <nav className="experience-toolbar" aria-label="体验控制">
-        <div className="toolbar-item">
+        <div
+          className="toolbar-item"
+          onMouseEnter={() => setOpenMenu('camera')}
+          onMouseLeave={() => setOpenMenu(null)}
+        >
           <button
-            aria-expanded={cameraMenuOpen}
-            onClick={() => setCameraMenuOpen((open) => !open)}
+            aria-expanded={openMenu === 'camera'}
+            onClick={cycleCamera}
           >
             <span aria-hidden="true">◉</span>
             镜头
           </button>
-          {cameraMenuOpen && (
+          {openMenu === 'camera' && (
             <div className="control-popover camera-popover" role="menu" aria-label="镜头预设">
               {cameras.map((camera) => (
                 <button
@@ -294,16 +353,20 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
             </div>
           )}
         </div>
-        <div className="toolbar-item">
+        {animations.length > 0 && <div
+          className="toolbar-item"
+          onMouseEnter={() => setOpenMenu('animation')}
+          onMouseLeave={() => setOpenMenu(null)}
+        >
           <button
-            aria-expanded={animationMenuOpen}
+            aria-expanded={openMenu === 'animation'}
             aria-pressed={animationEnabled}
-            onClick={() => setAnimationMenuOpen((open) => !open)}
+            onClick={cycleAnimation}
           >
             <span aria-hidden="true">▷</span>
             动画
           </button>
-          {animationMenuOpen && (
+          {openMenu === 'animation' && (
             <div className="control-popover animation-popover" role="menu" aria-label="动画列表">
               {animations.map((animation) => (
                 <button
@@ -317,111 +380,109 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
               ))}
             </div>
           )}
-        </div>
-        <button
-          aria-pressed={lightPreset === 'outdoor'}
-          onClick={() => {
-            void run(
-              (state) => ({
-                type: 'light',
-                preset: state.lightPreset === 'studio' ? 'outdoor' : 'studio',
-              }),
-              (state) => setLightPreset(
-                state.lightPreset === 'studio' ? 'outdoor' : 'studio',
-              ),
-            )
-          }}
+        </div>}
+        <div
+          className="toolbar-item"
+          onMouseEnter={() => setOpenMenu('scene')}
+          onMouseLeave={() => setOpenMenu(null)}
         >
-          <span aria-hidden="true">☼</span>
-          灯光
-        </button>
-        <button
-          className="path-tracing-toggle"
-          aria-pressed={renderMode === 'path-tracing'}
-          aria-label="渲染"
-          onClick={() => {
-            void run(
-              (state) => ({
-                type: 'render',
-                mode: state.renderMode === 'realtime' ? 'path-tracing' : 'realtime',
-              }),
-              (state) => setRenderMode(
-                state.renderMode === 'realtime' ? 'path-tracing' : 'realtime',
-              ),
-            )
-          }}
-        >
-          {renderMode === 'path-tracing'
-            ? (
-              <svg className="render-progress" viewBox="0 0 24 24" aria-hidden="true">
-                <circle className="render-progress-track" cx="12" cy="12" r="9" pathLength="100" />
-                <circle
-                  className="render-progress-value"
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  pathLength="100"
-                  style={{ strokeDashoffset: 100 - renderProgress * 100 }}
-                />
-              </svg>
-            )
-            : <span aria-hidden="true">◇</span>}
-          渲染
-        </button>
-        <div className="toolbar-item">
           <button
-            aria-expanded={qualityMenuOpen}
-            onClick={() => setQualityMenuOpen((open) => !open)}
+            aria-expanded={openMenu === 'scene'}
+            aria-pressed={lightPreset === 'outdoor'}
+            onClick={() => selectScene(lightPreset === 'studio' ? 'outdoor' : 'studio')}
           >
-            <span aria-hidden="true">◐</span>
-            画质
+            <span aria-hidden="true">☼</span>
+            场景
           </button>
-          {qualityMenuOpen && (
-            <div className="control-popover quality-popover" role="menu" aria-label="画质设置">
-              {QUALITY_LEVELS.map((level) => (
+          {openMenu === 'scene' && (
+            <div className="control-popover compact-popover" role="menu" aria-label="场景预设">
+              {SCENE_PRESETS.map((preset) => (
                 <button
-                  key={level.value}
+                  key={preset.value}
                   role="menuitemradio"
-                  aria-checked={quality === level.value}
-                  onClick={() => void run(
-                    { type: 'quality', quality: level.value },
-                    () => {
-                      setQuality(level.value)
-                      setQualityMenuOpen(false)
-                    },
-                  )}
+                  aria-checked={lightPreset === preset.value}
+                  onClick={() => selectScene(preset.value)}
                 >
-                  {level.label}
+                  {preset.label}
                 </button>
               ))}
             </div>
           )}
         </div>
-        <button onClick={() => {
-          cameraRequestIdRef.current += 1
-          setPendingCameraSelection(null)
-          void run(
-            { type: 'reset' },
-            () => {
-              void getUePresentationState(getUeBridge(true)).then((state) => {
-                if (state) applyState(state)
-              })
-            },
-          )
-        }}>
-          <span aria-hidden="true">↺</span>
-          复位
-        </button>
-        <button
-          aria-pressed={fullscreen}
-          onClick={() => void run(
-            (state) => ({ type: 'fullscreen', enabled: !state.fullscreen }),
-            (state) => setFullscreen(!state.fullscreen),
-          )}
+        <div
+          className="toolbar-item"
+          onMouseEnter={() => setOpenMenu('render')}
+          onMouseLeave={() => setOpenMenu(null)}
         >
-          <span aria-hidden="true">□</span>
-          全屏
-        </button>
+          <button
+            className="path-tracing-toggle"
+            aria-expanded={openMenu === 'render'}
+            aria-pressed={renderMode === 'path-tracing'}
+            aria-label="渲染"
+            onClick={() => selectRenderMode(
+              renderMode === 'realtime' ? 'path-tracing' : 'realtime',
+            )}
+          >
+            {renderMode === 'path-tracing'
+              ? (
+                <svg className="render-progress" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle className="render-progress-track" cx="12" cy="12" r="9" pathLength="100" />
+                  <circle
+                    className="render-progress-value"
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    pathLength="100"
+                    style={{ strokeDashoffset: 100 - renderProgress * 100 }}
+                  />
+                </svg>
+              )
+              : <span aria-hidden="true">◇</span>}
+            渲染
+          </button>
+          {openMenu === 'render' && (
+            <div className="control-popover compact-popover" role="menu" aria-label="渲染模式">
+              {RENDER_MODES.map((mode) => (
+                <button
+                  key={mode.value}
+                  role="menuitemradio"
+                  aria-checked={renderMode === mode.value}
+                  onClick={() => selectRenderMode(mode.value)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div
+          className="toolbar-item"
+          onMouseEnter={() => setOpenMenu('display')}
+          onMouseLeave={() => setOpenMenu(null)}
+        >
+          <button
+            aria-expanded={openMenu === 'display'}
+            aria-pressed={fullscreen}
+            onClick={() => selectDisplayMode(!fullscreen)}
+          >
+            <span aria-hidden="true">□</span>
+            全屏
+          </button>
+          {openMenu === 'display' && (
+            <div className="control-popover compact-popover" role="menu" aria-label="显示模式">
+              {DISPLAY_MODES.map((mode) => (
+                <button
+                  key={String(mode.value)}
+                  role="menuitemradio"
+                  aria-checked={fullscreen === mode.value}
+                  onClick={() => selectDisplayMode(mode.value)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </nav>
       {error && <p className="bridge-error" role="alert">{error}</p>}
     </main>

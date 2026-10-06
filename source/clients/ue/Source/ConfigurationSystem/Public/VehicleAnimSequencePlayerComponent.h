@@ -83,6 +83,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Vehicle Animation")
 	bool FocusAnimationById(FName NextAnimationId);
 
+	UFUNCTION(BlueprintPure, Category = "Vehicle Animation")
+	bool HasAnimationById(FName AnimationId) const;
+
 	/** 立即停止采样并丢弃待播请求，保留当前骨骼姿态。 */
 	UFUNCTION(BlueprintCallable, Category = "Vehicle Animation")
 	void FreezeAnimation();

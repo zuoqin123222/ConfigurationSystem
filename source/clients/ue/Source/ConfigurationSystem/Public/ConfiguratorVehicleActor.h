@@ -73,6 +73,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "车辆体验")
 	bool IsVehicleAnimationPlaying() const;
 
+	UFUNCTION(BlueprintPure, Category = "车辆体验")
+	bool CanPlayVehicleAnimation(FName AnimationId) const;
+
 	/** 从已校验的车型目录一次性加载整车骨骼网格、完整序列并转换全部帧段。 */
 	bool ConfigureAnimationFromCatalog(const AutomotiveCatalog::FCatalog& Catalog);
 

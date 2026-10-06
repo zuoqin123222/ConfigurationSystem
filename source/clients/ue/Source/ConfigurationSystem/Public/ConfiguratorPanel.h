@@ -44,6 +44,7 @@ public:
 	bool PlayExperienceAnimation(const FString& AnimationId);
 	bool CloseExperienceAnimation(const FString& AnimationId);
 	bool FocusExperienceAnimation(const FString& NextAnimationId);
+	bool CanPlayExperienceAnimation(const FString& AnimationId) const;
 	bool SetExperienceLightPreset(const FString& Preset);
 	bool SetExperienceRenderMode(const FString& Mode);
 	bool SetExperienceQualityLevel(const FString& Quality);
