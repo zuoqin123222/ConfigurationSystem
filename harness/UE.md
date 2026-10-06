@@ -103,18 +103,22 @@ JSON 通过不代表 FBX 内容、Pivot、穿模、材质和授权真实性通�
 
 每次打包按顺序执行：
 
-1. 检查 Git 状态、当前提交和工作树。
-2. 在 `source/clients/web/` 运行 `npm test` 和 `npm run build`；该命令只构建一次，
-   并把同一字节集部署到在线 Web 与被忽略的 `Content/WebUI/`。
-3. 运行 Harness、契约及受影响的 Server/UE 自动化。
-4. 编译 `ConfigurationSystemEditor Win64 Development`。
-5. 使用 UAT `BuildCookRun` 完成 Build/Cook/Stage/Pak/IoStore/Archive。
+1. 从仓库根运行 `tools/release.ps1`，不要另写临时打包命令。
+2. 用 `-Target UE`、`ServerWeb`、`BakeWeb` 或 `All` 选择目标；正式运行前先
+   `-DryRun`。
+3. 脚本检查 Git、Harness、契约和受影响测试，并只构建一次共享 Web artifact。
+4. UE 目标使用 UBT `-gather` 和 UAT `BuildCookRun`。
+5. Bake 目标生成计划、等待 UE Batch Bake 结束并调用 Server manifest 校验。
 6. 检查 UAT 退出码、Cook 警告、归档文件、Editor 模块泄漏及
    `Binaries/Win64/WebUI/index.html`、哈希 JS/CSS、catalog、icon 和 thumbnail。
 7. 在停止 Server、断开网络且没有源码/Node 的环境启动归档后的
    `ConfigurationSystem.exe`，验证窗口、地图、车辆、全部 Web 面板、选配码和二维码。
 8. 大版本或视觉变更重新生成 Bake 图片。
 9. 校验 Web 双部署 SHA-256、Bake manifest、数量、尺寸、色彩、Alpha/RGBA 后原子发布。
+
+发布脚本先准备全部目标，再做组合事务晋升；失败时恢复全部旧目录并默认保留 staging。
+每个目标根目录必须有 `release-manifest.json`。完整参数和实测证据见
+`docs/technical-probes/UNIFIED_RELEASE_PIPELINE.md`。
 
 `Content/WebUI/` 和 `package/clients/web/` 都是构建副本，不得手改或作为独立源码。
 Shipping 不得包含 `ConfigurationSystemEditor`，也不得依赖 `package/server`、

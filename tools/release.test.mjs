@@ -117,6 +117,13 @@ test("便携启动脚本将配置存储放到用户 LocalAppData 数据目录", 
   assert.match(source, /ConfigurationSystem[\\/]data[\\/]configurations-v2\.json/);
 });
 
+test("BakeWeb 等待 UnrealEditor GUI 进程并检查退出码", () => {
+  const source = readFileSync(releaseScript, "utf8");
+  assert.match(source, /Start-Process[\s\S]*-PassThru[\s\S]*-Wait/);
+  assert.match(source, /\$process\.ExitCode -ne 0/);
+  assert.match(source, /Invoke-ReleaseProcess \$editor/);
+});
+
 test("DryRun 不创建 Bake 输出目录", () => {
   const output = join(
     tmpdir(),
@@ -204,6 +211,19 @@ test("release manifest 记录 commit、目标与逐文件 SHA256", () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("写清单前拒绝发布期间发生 HEAD 变化", () => {
+  const result = runImportedPowerShell(`
+    $script:SourceCommit = '0000000000000000000000000000000000000000';
+    $script:SourceWasDirty = $true;
+    Assert-SourceStateUnchanged
+  `);
+  assert.notEqual(result.status, 0);
+  assert.match(
+    `${result.stdout}\n${result.stderr}`,
+    /HEAD changed during release/,
+  );
 });
 
 test("BakeWeb 透传 profile、mode、shard、publication、input 和 output", () => {

@@ -34,8 +34,8 @@ node harness/validate.mjs
 | UE、C++、Content、地图、材质、相机、动画 | `harness/UE.md`、`source/clients/ue/README.md` |
 | FBX、Maya、骨骼、Pivot、LOD、材质槽 | `harness/UE.md`、`docs/DCC_VEHICLE_MODELING_EXPORT_GUIDE.md`、`docs/VEHICLE_ASSET_REQUIREMENTS.md` |
 | 外部资产、授权、代理车辆 | `harness/UE.md`、`docs/REFERENCE_ASSET_POLICY.md` |
-| Cook、Stage、Shipping、打包 | `harness/UE.md`、`docs/technical-probes/PACKAGING_BOUNDARY_PROBE.md` |
-| Bake、图片、publication、发布 | `harness/UE.md`、`docs/technical-probes/BAKE_RELEASE_VALIDATION.md` |
+| Cook、Stage、Shipping、打包 | `harness/UE.md`、`docs/technical-probes/PACKAGING_BOUNDARY_PROBE.md`、`docs/technical-probes/UNIFIED_RELEASE_PIPELINE.md` |
+| Bake、图片、publication、发布 | `harness/UE.md`、`docs/technical-probes/BAKE_RELEASE_VALIDATION.md`、`docs/technical-probes/UNIFIED_RELEASE_PIPELINE.md` |
 | Web | `harness/PROJECT.md`、`source/clients/web/README.md` |
 | Server、API | `harness/PROJECT.md`、`source/server/README.md` |
 

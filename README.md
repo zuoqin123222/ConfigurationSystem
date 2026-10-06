@@ -16,6 +16,7 @@
 - [P0-3 Path Tracing 透明出图探针](docs/technical-probes/PATH_TRACING_ALPHA_PROBE.md)
 - [P0-4 车辆层级与可逆动作探针](docs/technical-probes/VEHICLE_HIERARCHY_PROBE.md)
 - [P0-5 Development/Shipping 打包边界探针](docs/technical-probes/PACKAGING_BOUNDARY_PROBE.md)
+- [统一发布流水线验证](docs/technical-probes/UNIFIED_RELEASE_PIPELINE.md)
 - [车辆资产接入规范](docs/VEHICLE_ASSET_REQUIREMENTS.md)
 - [DCC 车辆模型制作与导出指南](docs/DCC_VEHICLE_MODELING_EXPORT_GUIDE.md)
 - [参考资产政策](docs/REFERENCE_ASSET_POLICY.md)
@@ -77,6 +78,8 @@ Windows PowerShell 5.1 或更高版本可从仓库根目录执行统一发布入
   Bake manifest 校验。
 - 正式运行默认要求 Git 工作树干净，使发布清单能唯一对应提交；仅限本地试验时可显式
   使用 `-AllowDirty`，此时清单会记录 `dirty=true`。
+- 构建或校验失败时默认保留 staging 供诊断；确认不需要失败证据时可传
+  `-CleanFailedStaging`。
 - `ServerWeb`、`UE` 和非 `estimate` 的 `BakeWeb` 都先在最终目录同卷的临时目录完成
   构建、校验和清单生成。组合发布必须等待全部目标 prepare 成功后才统一事务晋升；
   任一晋升失败会按逆序恢复所有已替换目标，构建或校验失败不会覆盖旧发布。

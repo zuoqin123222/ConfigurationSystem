@@ -6,6 +6,7 @@
 
 # 项目打包与发布产物
 /package/
+/staging/
 /.trae-html-share-packages/
 
 # 内部授权资产（不得推送到公开远端）

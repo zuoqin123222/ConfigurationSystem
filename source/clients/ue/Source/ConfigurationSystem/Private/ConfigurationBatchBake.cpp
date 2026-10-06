@@ -608,9 +608,10 @@ bool FConfigurationBatchBake::SetupScene(FString& OutError)
 				|| Material->GetPathName().Contains(TEXT("DefaultMaterial")))
 			{
 				OutError = FString::Printf(
-					TEXT("Bake 材质预检失败：%s 的材质槽 %d 仍为空或使用引擎回退材质。请先提交完整车辆材质依赖。"),
+					TEXT("Bake 材质预检失败：%s 的材质槽 %d（%s）仍为空或使用引擎回退材质。请先提交完整车辆材质依赖。"),
 					*SkeletalMesh->GetPathName(),
-					MaterialIndex);
+					MaterialIndex,
+					*SkeletalMesh->GetMaterialSlotNames()[MaterialIndex].ToString());
 				return false;
 			}
 		}

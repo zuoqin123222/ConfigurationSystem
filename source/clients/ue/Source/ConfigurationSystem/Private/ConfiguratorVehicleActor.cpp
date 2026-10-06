@@ -80,6 +80,78 @@ namespace ConfiguratorVehicle
 		return Cast<T>(StaticLoadObject(T::StaticClass(), nullptr, ObjectPath, nullptr, LOAD_NoWarn));
 	}
 
+	UMaterialInterface* LoadSkeletalValidationMaterial(const FName SlotName)
+	{
+		static const TMap<FName, const TCHAR*> MaterialPaths = {
+			{TEXT("CS_Validation_Glass"),
+				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Glass.M_A5_Glass")},
+			{TEXT("CS_Validation_Interior"),
+				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Interior.M_A5_Interior")},
+			{TEXT("CS_Validation_LightClear"),
+				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_LightClear.M_A5_LightClear")},
+			{TEXT("CS_Validation_LightRed"),
+				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_LightRed.M_A5_LightRed")},
+			{TEXT("CS_Validation_Metal"),
+				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Metal.M_A5_Metal")},
+			{TEXT("CS_Validation_Paint"),
+				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Paint.M_A5_Paint")},
+			{TEXT("CS_Validation_Plastic"),
+				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Plastic.M_A5_Plastic")},
+			{TEXT("CS_Validation_Rubber"),
+				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Rubber.M_A5_Rubber")}
+		};
+		const TCHAR* const* ObjectPath = MaterialPaths.Find(SlotName);
+		return ObjectPath != nullptr
+			? LoadOptionalAsset<UMaterialInterface>(*ObjectPath)
+			: nullptr;
+	}
+
+	void PopulateMissingSkeletalMaterials(
+		USkeletalMeshComponent* Component,
+		const USkeletalMesh* Mesh)
+	{
+		if (!IsValid(Component) || !IsValid(Mesh))
+		{
+			return;
+		}
+		const TArray<FSkeletalMaterial>& Materials = Mesh->GetMaterials();
+		for (int32 Index = 0; Index < Materials.Num(); ++Index)
+		{
+			const UMaterialInterface* ExistingMaterial =
+				Component->GetMaterial(Index);
+			const bool bNeedsProjectMaterial =
+				ExistingMaterial == nullptr
+				|| ExistingMaterial->GetPathName().Contains(
+					TEXT("DefaultMaterial"))
+				|| ExistingMaterial->GetPathName().Contains(
+					TEXT("WorldGridMaterial"));
+			if (bNeedsProjectMaterial)
+			{
+				if (UMaterialInterface* Material =
+					LoadSkeletalValidationMaterial(Materials[Index].MaterialSlotName))
+				{
+					Component->SetMaterial(Index, Material);
+					UE_LOG(
+						LogTemp,
+						Display,
+						TEXT("骨骼车辆材质补齐：slot=%d name=%s material=%s"),
+						Index,
+						*Materials[Index].MaterialSlotName.ToString(),
+						*Material->GetPathName());
+				}
+				else
+				{
+					UE_LOG(
+						LogTemp,
+						Error,
+						TEXT("骨骼车辆材质补齐失败：slot=%d name=%s"),
+						Index,
+						*Materials[Index].MaterialSlotName.ToString());
+				}
+			}
+		}
+	}
+
 	void MarkPartition(
 		UActorComponent* Component,
 		const FName PartTag,
@@ -489,6 +561,9 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 	}
 
 	SkeletalVehicle->SetSkeletalMeshAsset(WholeVehicleMesh);
+	ConfiguratorVehicle::PopulateMissingSkeletalMaterials(
+		SkeletalVehicle,
+		WholeVehicleMesh);
 	TArray<FVehicleAnimationClip> Clips;
 	bAnimationSequenceReady =
 		BuildAnimationClips(Catalog, Clips)

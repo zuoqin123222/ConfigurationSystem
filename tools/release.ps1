@@ -4,6 +4,7 @@ param(
     [switch]$DryRun,
     [switch]$SkipTests,
     [switch]$AllowDirty,
+    [switch]$CleanFailedStaging,
     [ValidateSet("debug", "shipping")]
     [string]$Profile = "shipping",
     [ValidateSet("estimate", "coverage", "shard", "exhaustive")]
@@ -31,6 +32,8 @@ $WebDeployScript = Join-Path $WebRoot "scripts\deploy-embedded.mjs"
 $BakeOwnershipSentinelName = ".configuration-system-bake-output"
 $script:WebArtifact = $null
 $script:PreparedReleaseItems = @()
+$script:SourceWasDirty = $null
+$script:SourceCommit = $null
 
 function Resolve-RepositoryPath {
     param([Parameter(Mandatory = $true)][string]$Path)
@@ -235,6 +238,19 @@ function Test-GitDirty {
     return $status.Count -gt 0
 }
 
+function Assert-SourceStateUnchanged {
+    if ($null -eq $script:SourceCommit) {
+        $script:SourceCommit = Get-GitCommit
+    }
+    $currentCommit = Get-GitCommit
+    if ($currentCommit -ne $script:SourceCommit) {
+        throw "Git HEAD changed during release: $($script:SourceCommit) -> $currentCommit"
+    }
+    if ($script:SourceWasDirty -eq $false -and (Test-GitDirty)) {
+        throw "Git worktree changed during a clean release; refusing to write a misleading manifest."
+    }
+}
+
 function Write-ReleaseManifest {
     param(
         [Parameter(Mandatory = $true)][string]$Root,
@@ -245,6 +261,7 @@ function Write-ReleaseManifest {
         Write-Host "[dry-run] write release-manifest.json target=$ReleaseTarget with git commit and per-file SHA256"
         return
     }
+    Assert-SourceStateUnchanged
     $files = @(
         Get-ChildItem -LiteralPath $Root -File -Recurse |
             Where-Object { $_.FullName -ne $manifestPath } |
@@ -261,8 +278,16 @@ function Write-ReleaseManifest {
     $manifest = [ordered]@{
         schemaVersion = "1.0.0"
         generatedAtUtc = [DateTime]::UtcNow.ToString("o")
-        gitCommit = Get-GitCommit
-        dirty = Test-GitDirty
+        gitCommit = if ($null -ne $script:SourceCommit) {
+            $script:SourceCommit
+        } else {
+            Get-GitCommit
+        }
+        dirty = if ($null -eq $script:SourceWasDirty) {
+            Test-GitDirty
+        } else {
+            $script:SourceWasDirty
+        }
         target = $ReleaseTarget
         files = $files
     }
@@ -308,6 +333,35 @@ function Invoke-ReleaseCommand {
         }
     } finally {
         Pop-Location
+    }
+}
+
+function Invoke-ReleaseProcess {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [string]$WorkingDirectory = $RepositoryRoot
+    )
+    $display = Format-Command -FilePath $FilePath -Arguments $Arguments
+    if ($DryRun) {
+        Write-Host "[dry-run-wait][$WorkingDirectory] $display"
+        return
+    }
+    $argumentLine = @($Arguments | ForEach-Object {
+        if ($_ -match '[\s"]') {
+            '"' + ($_ -replace '(\\*)"', '$1$1\"') + '"'
+        } else {
+            $_
+        }
+    }) -join " "
+    Write-Host "[run-wait][$WorkingDirectory] $display"
+    $process = Start-Process -FilePath $FilePath `
+        -ArgumentList $argumentLine `
+        -WorkingDirectory $WorkingDirectory `
+        -PassThru `
+        -Wait
+    if ($process.ExitCode -ne 0) {
+        throw "Process failed with exit code $($process.ExitCode): $display"
     }
 }
 
@@ -673,7 +727,7 @@ function Build-BakeWeb {
     }
 
     $editor = Join-Path $EngineRoot "Engine\Binaries\Win64\UnrealEditor.exe"
-    Invoke-ReleaseCommand $editor @(
+    Invoke-ReleaseProcess $editor @(
         $ProjectPath,
         "/Game/Maps/L_ConfigShowroom",
         "-game",
@@ -721,6 +775,8 @@ if ($selectedTargets.Count -eq 0) {
     throw "At least one Target is required."
 }
 Assert-ReleaseInputs -SelectedTargets $selectedTargets
+$script:SourceCommit = Get-GitCommit
+$script:SourceWasDirty = Test-GitDirty
 if ($selectedTargets -contains "All") {
     $selectedTargets = @("UE", "ServerWeb", "BakeWeb")
 } else {
@@ -750,7 +806,15 @@ try {
         Write-Host "[release] completed without promotable artifacts"
     }
 } catch {
-    Remove-PreparedReleaseStaging
+    if ($CleanFailedStaging) {
+        Remove-PreparedReleaseStaging
+    } else {
+        foreach ($item in $script:PreparedReleaseItems) {
+            if (Test-Path -LiteralPath $item.StagingPath) {
+                Write-Warning "Release failed; staging preserved for diagnosis: $($item.StagingPath)"
+            }
+        }
+    }
     throw
 } finally {
     Remove-WebArtifact

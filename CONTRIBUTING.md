@@ -84,6 +84,8 @@ node harness/validate.mjs
 `contracts/`、`tools/`、`docs/` 或 `harness/`。覆盖已存在的 Bake 目录时，仅允许
 `staging/`、`package/renders/` 范围，其他位置必须预先包含
 `.configuration-system-bake-output` ownership sentinel。
+构建或校验失败时默认保留 staging 作为诊断证据；自动化环境确认无需证据时可传
+`-CleanFailedStaging`。
 
 `ServerWeb` 的最终交付目录是 `package/server-web/`，必须整体搬运；目标机安装
 Node.js 20 后执行：
