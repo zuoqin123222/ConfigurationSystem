@@ -11,6 +11,7 @@ import {
   focusUeAnimation,
   getUeBridge,
   getUePresentationState,
+  getUeRenderModeError,
   type UeControlCommand,
   type UeCameraIndex,
   type UePresentationState,
@@ -153,7 +154,16 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       ? createCommand(currentState)
       : createCommand
     const accepted = await executeUeControl(bridge, command)
-    setError(accepted ? '' : 'UE 控制桥不可用或命令被拒绝')
+    if (accepted) {
+      setError('')
+    } else if (command.type === 'render') {
+      setError(
+        await getUeRenderModeError(bridge)
+          || '当前设备无法切换到 Path Tracing',
+      )
+    } else {
+      setError('UE 控制桥不可用或命令被拒绝')
+    }
     if (accepted) {
       onSuccess?.(currentState)
       const updatedState = await getUePresentationState(bridge)

@@ -132,6 +132,33 @@ describe('ExperienceControls', () => {
     expect(animation).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('Path Tracing 被拒绝时显示 UE 返回的具体原因', async () => {
+    const user = userEvent.setup()
+    const bridge = {
+      getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
+        cameraId: 'wheel',
+        animationEnabled: false,
+        animationId: null,
+        lightPreset: 'studio',
+        renderMode: 'realtime',
+        quality: 'high',
+        fullscreen: false,
+      })),
+      setrendermode: vi.fn().mockResolvedValue(false),
+      getrendermodeerror: vi.fn()
+        .mockResolvedValue('当前 GPU、RHI 或 Shader Platform 不支持 Path Tracing。'),
+    }
+    window.ue = { uebridge: bridge }
+    render(<ExperienceControls ueEnabled />)
+
+    await waitFor(() => expect(bridge.getpresentationstatejson).toHaveBeenCalled())
+    await user.click(screen.getByRole('button', { name: 'Path Tracing' }))
+
+    expect(await screen.findByRole('alert'))
+      .toHaveTextContent('当前 GPU、RHI 或 Shader Platform 不支持 Path Tracing。')
+    expect(bridge.getrendermodeerror).toHaveBeenCalledOnce()
+  })
+
   it('兼容只有旧 cameraIndex 的 UE 展示状态', async () => {
     const bridge = {
       getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({

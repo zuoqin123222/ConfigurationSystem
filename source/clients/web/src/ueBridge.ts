@@ -15,6 +15,7 @@ export interface ReflectedUeBridge {
   focusanimation?: (nextAnimationId: string) => Promise<boolean>
   setlightpreset?: (preset: string) => Promise<boolean>
   setrendermode?: (mode: string) => Promise<boolean>
+  getrendermodeerror?: () => Promise<string>
   setqualitylevel?: (quality: string) => Promise<boolean>
   resetpresentation?: () => Promise<boolean>
   setfullscreen?: (enabled: boolean) => Promise<boolean>
@@ -293,6 +294,18 @@ export async function getUePresentationState(
     return state as unknown as UePresentationState
   } catch {
     return null
+  }
+}
+
+export async function getUeRenderModeError(
+  bridge: ReflectedUeBridge | null,
+): Promise<string> {
+  if (typeof bridge?.getrendermodeerror !== 'function') return ''
+  try {
+    const error = await bridge.getrendermodeerror()
+    return typeof error === 'string' && error.length <= 512 ? error.trim() : ''
+  } catch {
+    return ''
   }
 }
 

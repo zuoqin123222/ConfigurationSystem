@@ -53,6 +53,7 @@ public:
 	bool SetConfiguratorHeaderStateJson(const FString& StateJson);
 	bool TriggerConfiguratorHeaderAction(const FString& Action);
 	FString GetConfiguratorHeaderStateJson() const;
+	FString GetLastRenderModeError() const { return LastRenderModeError; }
 	FString GetExperienceStateJson();
 
 	/**
@@ -84,4 +85,5 @@ private:
 
 	bool bWebFullscreen = false;
 	FString LatestConfiguratorHeaderStateJson;
+	FString LastRenderModeError;
 };

@@ -486,8 +486,18 @@ bool UConfiguratorPanel::SetExperienceRenderMode(const FString& Mode)
 {
 	AConfigShowroomPlayerController* Controller =
 		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
-	FString Error;
-	return Controller != nullptr && Controller->SetRenderMode(Mode, Error);
+	LastRenderModeError.Reset();
+	if (Controller == nullptr)
+	{
+		LastRenderModeError = TEXT("展示控制器不可用。");
+		return false;
+	}
+	const bool bAccepted = Controller->SetRenderMode(Mode, LastRenderModeError);
+	if (!bAccepted && LastRenderModeError.IsEmpty())
+	{
+		LastRenderModeError = TEXT("UE 拒绝切换渲染模式。");
+	}
+	return bAccepted;
 }
 
 bool UConfiguratorPanel::SetExperienceQualityLevel(const FString& Quality)

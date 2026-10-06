@@ -163,6 +163,11 @@ bool UConfiguratorWebBridge::SetRenderMode(const FString& Mode)
 		&& Owner->SetExperienceRenderMode(Mode);
 }
 
+FString UConfiguratorWebBridge::GetRenderModeError() const
+{
+	return Owner != nullptr ? Owner->GetLastRenderModeError() : FString();
+}
+
 bool UConfiguratorWebBridge::SetQualityLevel(const FString& Quality)
 {
 	return Owner != nullptr

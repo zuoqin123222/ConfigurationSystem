@@ -47,6 +47,8 @@ public:
 	UFUNCTION()
 	bool SetRenderMode(const FString& Mode);
 	UFUNCTION()
+	FString GetRenderModeError() const;
+	UFUNCTION()
 	bool SetQualityLevel(const FString& Quality);
 	UFUNCTION()
 	bool ResetPresentation();

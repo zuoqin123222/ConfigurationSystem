@@ -8,6 +8,7 @@ import {
   getUeConfiguratorHeaderState,
   getUeBridge,
   getUePresentationState,
+  getUeRenderModeError,
   focusUeAnimation,
   isUeConfiguratorHeaderState,
   playUeAnimation,
@@ -260,6 +261,19 @@ describe('受限 UE bridge', () => {
     await expect(getUePresentationState(bridge)).resolves.toBeNull()
     bridge.getpresentationstatejson.mockResolvedValue('{"cameraIndex":99}')
     await expect(getUePresentationState(bridge)).resolves.toBeNull()
+  })
+
+  it('读取并限制 UE 渲染模式失败原因', async () => {
+    const bridge = {
+      getrendermodeerror: vi.fn()
+        .mockResolvedValueOnce('  当前 GPU 不支持 Path Tracing。  ')
+        .mockResolvedValueOnce('x'.repeat(513)),
+    }
+
+    await expect(getUeRenderModeError(bridge))
+      .resolves.toBe('当前 GPU 不支持 Path Tracing。')
+    await expect(getUeRenderModeError(bridge)).resolves.toBe('')
+    await expect(getUeRenderModeError({})).resolves.toBe('')
   })
 
   it('继续读取只有 cameraIndex 的旧 UE 展示状态', async () => {

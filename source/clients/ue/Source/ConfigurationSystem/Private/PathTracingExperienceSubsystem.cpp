@@ -100,18 +100,6 @@ bool FPathTracingWarmupPolicy::HasEnoughVideoMemory(
 	return DedicatedVideoMemoryBytes >= MinimumDedicatedVideoMemoryBytes;
 }
 
-bool FPathTracingWarmupPolicy::IsDriverSupported(
-	const FString& AdapterName,
-	const FString& UserDriverVersion)
-{
-	if (!AdapterName.Contains(TEXT("NVIDIA"), ESearchCase::IgnoreCase))
-	{
-		return true;
-	}
-	const int32 DriverMajor = FCString::Atoi(*UserDriverVersion);
-	return DriverMajor >= MinimumSafeNvidiaDriverMajor;
-}
-
 EPathTracingWarmupState FPathTracingWarmupPolicy::AdvanceWaitState(
 	const EPathTracingWarmupState State,
 	const bool bRenderFenceComplete,
@@ -204,16 +192,6 @@ bool UPathTracingExperienceSubsystem::ValidatePathTracingSupport(
 		GetDedicatedVideoMemoryBytes()))
 	{
 		OutFailureReason = TEXT("Path Tracing 至少需要 6 GB 独立显存。");
-		return false;
-	}
-	if (!FPathTracingWarmupPolicy::IsDriverSupported(
-		GRHIGlobals.GpuInfo.AdapterName,
-		GRHIGlobals.GpuInfo.AdapterUserDriverVersion))
-	{
-		OutFailureReason = FString::Printf(
-			TEXT("当前 NVIDIA 驱动 %s 低于 UE 5.8 的安全门槛 610.00；")
-			TEXT("为避免 RTPSO 编译导致进程退出，Path Tracing 已禁用。请升级驱动后重试。"),
-			*GRHIGlobals.GpuInfo.AdapterUserDriverVersion);
 		return false;
 	}
 	return true;
