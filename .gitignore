@@ -8,6 +8,7 @@
 /package/
 /staging/
 /.trae-html-share-packages/
+/material-*.png
 
 # 内部授权资产（不得推送到公开远端）
 /source/clients/ue/SourceAssets/Authorized/
