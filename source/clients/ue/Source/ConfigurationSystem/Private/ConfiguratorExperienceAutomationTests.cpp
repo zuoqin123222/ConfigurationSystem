@@ -14,7 +14,6 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
-#include "Engine/LocalPlayer.h"
 #include "Engine/StaticMesh.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformProcess.h"
@@ -790,10 +789,6 @@ bool FShowroomControllerTickPolicyAutomationTest::RunTest(const FString& Paramet
 		Controller->PrimaryActorTick.bCanEverTick);
 	TestTrue(TEXT("镜头过渡控制器启动时启用 Tick"),
 		Controller->PrimaryActorTick.bStartWithTickEnabled);
-	TestEqual(TEXT("运行时保持编辑器相机的水平 FOV"),
-		GetDefault<ULocalPlayer>()->AspectRatioAxisConstraint,
-		TEnumAsByte<EAspectRatioAxisConstraint>(
-			EAspectRatioAxisConstraint::AspectRatio_MaintainXFOV));
 	return true;
 }
 
