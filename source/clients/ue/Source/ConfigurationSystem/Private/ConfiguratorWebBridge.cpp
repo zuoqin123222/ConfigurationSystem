@@ -133,6 +133,17 @@ void UConfiguratorWebBridge::ApplyConfigurationJson(
 	}
 }
 
+FString UConfiguratorWebBridge::ApplyConfigurationTransactionJson(
+	const FString& ConfigurationJson)
+{
+	return Owner != nullptr
+		? Owner->ApplyWebConfigurationTransactionJson(ConfigurationJson)
+		: TEXT("{\"ok\":false,\"code\":\"BRIDGE_OWNER_UNAVAILABLE\","
+			"\"message\":\"UE bridge owner unavailable\","
+			"\"configurationId\":\"\",\"appliedSurfaceIds\":[],"
+			"\"unsupportedSurfaceIds\":[],\"appliedSlotIds\":[]}");
+}
+
 FString UConfiguratorWebBridge::GetPresentationStateJson() const
 {
 	return Owner != nullptr

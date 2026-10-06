@@ -32,9 +32,19 @@ describe('受限 UE bridge', () => {
     expect(getUeBridge(true)).toBe(window.ue.uebridge)
   })
 
-  it('只发送 v2 selections 和 customizations 白名单 JSON', () => {
-    const applyconfigurationjson = vi.fn()
-    const bridge = { applyconfigurationjson }
+  it('只发送 v2 白名单 JSON 并校验 UE 材质事务回执', async () => {
+    const receipt = {
+      ok: true,
+      code: 'APPLIED',
+      message: '配置与可映射材质槽已原子应用。',
+      configurationId: 'cfg-123',
+      appliedSurfaceIds: ['exterior-body-cover', 'door-middle'],
+      unsupportedSurfaceIds: [],
+      appliedSlotIds: ['CS_Validation_Paint', 'CS_Validation_Interior'],
+    }
+    const applyconfigurationtransactionjson = vi.fn()
+      .mockResolvedValue(JSON.stringify(receipt))
+    const bridge = { applyconfigurationtransactionjson }
     const selections = {
       'exterior-body-cover': 'body-cover-custom',
       'door-middle': 'door-middle-leather',
@@ -51,20 +61,46 @@ describe('受限 UE bridge', () => {
       'door-middle': { materialVariantId: 'leather-p10-1217' },
     }
 
-    expect(applyUeConfiguration(bridge, selections, customizations)).toBe(true)
-    expect(applyconfigurationjson).toHaveBeenCalledWith(createUeConfigurationJson(
+    await expect(applyUeConfiguration(bridge, selections, customizations))
+      .resolves.toEqual(receipt)
+    expect(applyconfigurationtransactionjson).toHaveBeenCalledWith(createUeConfigurationJson(
       selections,
       customizations,
     ))
-    expect(JSON.parse(applyconfigurationjson.mock.calls[0][0])).toEqual({
+    expect(JSON.parse(applyconfigurationtransactionjson.mock.calls[0][0])).toEqual({
       schemaVersion: '2.0.0',
       selections,
       customizations,
     })
   })
 
-  it('缺少白名单入口时不尝试调用其他 UE 能力', () => {
-    expect(applyUeConfiguration({}, {}, {})).toBe(false)
+  it('缺少白名单入口时返回明确失败回执', async () => {
+    await expect(applyUeConfiguration({}, {}, {})).resolves.toMatchObject({
+      ok: false,
+      code: 'BRIDGE_METHOD_UNAVAILABLE',
+    })
+  })
+
+  it('明确返回 proxy capability 缺口并拒绝非法回执', async () => {
+    const unsupported = {
+      ok: true,
+      code: 'APPLIED_WITH_UNSUPPORTED_SURFACES',
+      message: '配置已应用；1 个 surfaceId 为当前 proxy capability 明确缺口。',
+      configurationId: 'cfg-456',
+      appliedSurfaceIds: [],
+      unsupportedSurfaceIds: ['wheel-style'],
+      appliedSlotIds: [],
+    }
+    const bridge = {
+      applyconfigurationtransactionjson: vi.fn()
+        .mockResolvedValueOnce(JSON.stringify(unsupported))
+        .mockResolvedValueOnce('{"ok":true}'),
+    }
+    await expect(applyUeConfiguration(bridge, {}, {})).resolves.toEqual(unsupported)
+    await expect(applyUeConfiguration(bridge, {}, {})).resolves.toMatchObject({
+      ok: false,
+      code: 'INVALID_UE_RECEIPT',
+    })
   })
 
   it('允许目录阶段 ID 通过 bridge 联动并拒绝非法 ID', async () => {

@@ -38,6 +38,7 @@ public:
 		float RightInset);
 
 	void ApplyWebConfigurationJson(const FString& ConfigurationJson);
+	FString ApplyWebConfigurationTransactionJson(const FString& ConfigurationJson);
 	bool SetExperienceCamera(int32 CameraIndex);
 	bool SetExperienceCameraId(const FString& CameraId);
 	bool SetExperienceAnimationEnabled(bool bEnabled);

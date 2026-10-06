@@ -657,6 +657,8 @@ function Configurator({
   const focusedAnimationIdRef = useRef<string | null>(null)
   const [renderLoading, setRenderLoading] = useState(!embedded)
   const [renderMessage, setRenderMessage] = useState('')
+  const [ueMaterialMessage, setUeMaterialMessage] = useState('')
+  const ueMaterialTransactionRef = useRef(0)
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     savedPortableValue ? 'saved' : 'idle',
   )
@@ -934,7 +936,20 @@ function Configurator({
 
   useEffect(() => {
     const bridge = getUeBridge(embedded)
-    if (bridge) applyUeConfiguration(bridge, selections, customizations)
+    if (!bridge) return
+    const transaction = ++ueMaterialTransactionRef.current
+    void applyUeConfiguration(bridge, selections, customizations).then((receipt) => {
+      if (transaction !== ueMaterialTransactionRef.current) return
+      if (!receipt.ok) {
+        setUeMaterialMessage(`实时材质未应用：${receipt.message}`)
+      } else if (receipt.unsupportedSurfaceIds.length > 0) {
+        setUeMaterialMessage(
+          `当前代理车未映射：${receipt.unsupportedSurfaceIds.join('、')}`,
+        )
+      } else {
+        setUeMaterialMessage('')
+      }
+    })
   }, [customizations, embedded, selections])
 
   const selectOption = (surfaceId: string, optionId?: string) => {
@@ -1540,6 +1555,9 @@ function Configurator({
             </div>
             <span className="step">4 阶段顺序选配</span>
           </div>}
+          {embedded && ueMaterialMessage && (
+            <p className="render-message" role="status">{ueMaterialMessage}</p>
+          )}
 
           <div className="panel-scroll">
           {activeStepId === 'preset' && (

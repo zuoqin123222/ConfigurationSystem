@@ -1,0 +1,13 @@
+{
+	"schemaVersion": "1.0.0",
+	"probe": "AutomotiveMaterialGuiProbe",
+	"engineVersion": "5.8.1-56057345+++UE5+Release-5.8",
+	"success": true,
+	"failureReason": "",
+	"screenshot": "mapped-slots.png",
+	"paintComponent": "SkeletalVehicle",
+	"interiorComponent": "SkeletalVehicle",
+	"paintMaterial": "/Engine/Transient.GameEngine_0:GameInstance_0.CarConfiguratorSubsystem_0.AutomotiveMaterialBinder_0.MID_MTP_Paint_Metallic_Glint_0",
+	"interiorMaterial": "/Game/SC01/Materials/Variants/leather/MI_SC01_leather_p10_1217.MI_SC01_leather_p10_1217",
+	"transactionReceiptJson": "{\r\n\t\"ok\": true,\r\n\t\"code\": \"APPLIED\",\r\n\t\"message\": \"配置与可映射材质槽已原子应用。\",\r\n\t\"configurationId\": \"cfg-eda0b1df66f9b343f8acf336\",\r\n\t\"appliedSurfaceIds\": [\r\n\t\t\"exterior-body-cover\",\r\n\t\t\"door-middle\"\r\n\t],\r\n\t\"unsupportedSurfaceIds\": [],\r\n\t\"appliedSlotIds\": [\r\n\t\t\"CS_Validation_Paint\",\r\n\t\t\"CS_Validation_Interior\"\r\n\t]\r\n}"
+}

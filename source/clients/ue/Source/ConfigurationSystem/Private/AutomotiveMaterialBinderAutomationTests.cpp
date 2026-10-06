@@ -39,7 +39,15 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
 	UAutomotiveMaterialBinder* Binder =
 		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
-	TestTrue(TEXT("绑定明确车漆/内饰代理槽"), Binder->Bind(State, Library, Vehicle));
+	const bool bBound = Binder->Bind(State, Library, Vehicle);
+	TestTrue(TEXT("绑定明确车漆/内饰代理槽"), bBound);
+	if (!bBound)
+	{
+		AddError(FString::Printf(
+			TEXT("Binder 绑定失败：%s"),
+			*Binder->GetLastError()));
+		return false;
+	}
 	TestNotNull(TEXT("找到车漆代理槽"), Binder->GetPaintComponent());
 	TestNotNull(TEXT("找到唯一内饰代理槽"), Binder->GetInteriorComponent());
 
@@ -66,9 +74,91 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			Binder->GetAppliedInteriorFamilyId(),
 			FString(Case.FamilyId));
 		TestTrue(
-			TEXT("代理槽动态实例使用材质库中的对应 Master Material"),
-			IsValid(Binder->GetInteriorMaterialInstance())
-				&& Binder->GetInteriorMaterialInstance()->Parent == Case.Expected);
+			TEXT("代理槽直接使用材质库中的对应 Master Material"),
+			IsValid(Binder->GetInteriorComponent())
+				&& Binder->GetInteriorComponent()->GetMaterial(0) == Case.Expected);
+	}
+	TMap<FString, FString> VariantSelections = State->GetSelections();
+	VariantSelections.Add(
+		UAutomotiveMaterialBinder::InteriorProxySurfaceId,
+		TEXT("door-middle-leather"));
+	TMap<FString, FAutomotiveCustomization> VariantCustomizations =
+		State->GetCustomizations();
+	FAutomotiveCustomization VariantCustomization;
+	VariantCustomization.Kind = EAutomotiveCustomizationKind::MaterialVariant;
+	VariantCustomization.MaterialVariantId = TEXT("leather-p10-1217");
+	VariantCustomizations.Add(
+		UAutomotiveMaterialBinder::InteriorProxySurfaceId,
+		VariantCustomization);
+	const FAutomotiveMaterialTransactionResult VariantResult =
+		Binder->ApplyTransaction(VariantSelections, VariantCustomizations);
+	TestTrue(TEXT("variantId 事务成功"), VariantResult.bSuccess);
+	TestTrue(
+		TEXT("variantId 直接命中阶段3物化 MI"),
+		Binder->GetInteriorComponent()->GetMaterial(0)
+			== Library->LoadVariantMaterial(TEXT("leather-p10-1217")));
+	VariantCustomizations.Remove(UAutomotiveMaterialBinder::InteriorProxySurfaceId);
+	TestTrue(
+		TEXT("清除 variant 恢复 option 的材料族默认材质"),
+		Binder->ApplyTransaction(
+			VariantSelections,
+			VariantCustomizations).bSuccess);
+	TestTrue(
+		TEXT("清除 variant 后槽恢复 leather family"),
+		Binder->GetInteriorComponent()->GetMaterial(0)
+			== Library->LoadInteriorMaterial(TEXT("leather")));
+	const FString BeforeRejectedConfigurationId = State->GetConfigurationId();
+	UMaterialInterface* BeforeRejectedMaterial =
+		Binder->GetInteriorComponent()->GetMaterial(0);
+	const TSoftObjectPtr<UMaterialInterface> SavedVariant =
+		Library->Variants.FindRef(TEXT("leather-p10-1217"));
+	Library->Variants.Remove(TEXT("leather-p10-1217"));
+	TMap<FString, FAutomotiveCustomization> MissingAssetCustomizations =
+		VariantCustomizations;
+	MissingAssetCustomizations.Add(
+		UAutomotiveMaterialBinder::InteriorProxySurfaceId,
+		VariantCustomization);
+	const FAutomotiveMaterialTransactionResult MissingAssetResult =
+		Binder->ApplyTransaction(VariantSelections, MissingAssetCustomizations);
+	TestFalse(TEXT("缺失物化 MI 时拒绝整个事务"), MissingAssetResult.bSuccess);
+	TestEqual(
+		TEXT("缺失物化 MI 返回明确错误码"),
+		MissingAssetResult.Code,
+		FString(TEXT("MATERIAL_VARIANT_ASSET_MISSING")));
+	TestEqual(
+		TEXT("失败事务不修改配置身份"),
+		State->GetConfigurationId(),
+		BeforeRejectedConfigurationId);
+	TestTrue(
+		TEXT("失败事务不修改已显示材质"),
+		Binder->GetInteriorComponent()->GetMaterial(0) == BeforeRejectedMaterial);
+	Library->Variants.Add(TEXT("leather-p10-1217"), SavedVariant);
+
+	const TArray<FString>* UnsupportedOptions =
+		State->GetCatalogIndex().FindOptionIdsForSurface(TEXT("wheel-style"));
+	TestTrue(
+		TEXT("测试目录包含显式 capability 缺口 surface"),
+		UnsupportedOptions != nullptr && UnsupportedOptions->Num() > 1);
+	if (UnsupportedOptions != nullptr && UnsupportedOptions->Num() > 1)
+	{
+		TMap<FString, FString> UnsupportedSelections = State->GetSelections();
+		const FString Current = UnsupportedSelections.FindRef(TEXT("wheel-style"));
+		const FString* Replacement = UnsupportedOptions->FindByPredicate(
+			[&Current](const FString& Value) { return Value != Current; });
+		TestNotNull(TEXT("找到不同的未映射 option"), Replacement);
+		UnsupportedSelections.Add(TEXT("wheel-style"), *Replacement);
+		const FAutomotiveMaterialTransactionResult UnsupportedResult =
+			Binder->ApplyTransaction(
+				UnsupportedSelections,
+				State->GetCustomizations());
+		TestTrue(TEXT("显式缺口不破坏配置状态提交"), UnsupportedResult.bSuccess);
+		TestEqual(
+			TEXT("显式缺口返回稳定回执码"),
+			UnsupportedResult.Code,
+			FString(TEXT("APPLIED_WITH_UNSUPPORTED_SURFACES")));
+		TestTrue(
+			TEXT("回执明确列出未映射 surfaceId"),
+			UnsupportedResult.UnsupportedSurfaceIds.Contains(TEXT("wheel-style")));
 	}
 
 	UMaterialInstanceDynamic* PaintInstance = Binder->GetPaintMaterialInstance();
@@ -126,9 +216,17 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	TransactionCustomizations.Add(
 		UAutomotiveMaterialBinder::PaintSurfaceId,
 		PaintCustomization);
+	const FAutomotiveMaterialTransactionResult PaintResult =
+		Binder->ApplyTransaction(TransactionSelections, TransactionCustomizations);
+	TestTrue(TEXT("Binder 原子提交 v2 selections/customizations"), PaintResult.bSuccess);
 	TestTrue(
-		TEXT("ApplyTransaction 原子提交 v2 selections/customizations"),
-		State->ApplyTransaction(TransactionSelections, TransactionCustomizations));
+		TEXT("车漆事务回执包含 surface"),
+		PaintResult.AppliedSurfaceIds
+			== TArray<FString>({TEXT("exterior-body-cover")}));
+	TestTrue(
+		TEXT("车漆事务回执包含命名槽"),
+		PaintResult.AppliedSlotIds
+			== TArray<FName>({TEXT("CS_Validation_Paint")}));
 
 	PaintInstance = Binder->GetPaintMaterialInstance();
 	TestNotNull(TEXT("车身代理使用动态车漆实例"), PaintInstance);
@@ -162,6 +260,18 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 				PaintInstance->K2_GetScalarParameterValue(TEXT("FlakeIntensity")),
 				0.3f));
 	}
+	FAutomotivePaintCustomization RecoloredPaint = Paint;
+	RecoloredPaint.ColorHex = TEXT("#112233");
+	TransactionCustomizations.FindChecked(
+		UAutomotiveMaterialBinder::PaintSurfaceId).Paint = RecoloredPaint;
+	TestTrue(
+		TEXT("同一车漆 parent 二次调色事务成功"),
+		Binder->ApplyTransaction(
+			TransactionSelections,
+			TransactionCustomizations).bSuccess);
+	TestTrue(
+		TEXT("连续自定义车漆调色复用同一个 MID"),
+		Binder->GetPaintMaterialInstance() == PaintInstance);
 
 	TestTrue(
 		TEXT("真实骨骼车辆可由目录完成初始化"),
@@ -192,9 +302,8 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		if (InteriorIndex != INDEX_NONE)
 		{
 			TestTrue(
-				TEXT("骨骼内饰槽使用动态实例"),
-				SkeletalComponent->GetMaterial(InteriorIndex)
-					== Binder->GetInteriorMaterialInstance());
+				TEXT("骨骼内饰槽使用已解析材质"),
+				IsValid(SkeletalComponent->GetMaterial(InteriorIndex)));
 		}
 	}
 	return true;

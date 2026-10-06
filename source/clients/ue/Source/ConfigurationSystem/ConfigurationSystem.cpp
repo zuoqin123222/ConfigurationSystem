@@ -1,6 +1,7 @@
 #include "ConfigurationSystem.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "AutomotiveMaterialGuiProbe.h"
 #include "ConfigurationBatchBake.h"
 #include "ContentPackMountService.h"
 #include "Dom/JsonObject.h"
@@ -58,6 +59,13 @@ void FConfigurationSystemModule::StartupModule()
 		// 配置状态探针独占进程，完成纯数据检查并写出 JSON 后主动退出。
 		ConfigurationStateProbe = NewObject<UConfigurationStateProbe>();
 		ConfigurationStateProbe->Start();
+		return;
+	}
+
+	if (FParse::Param(FCommandLine::Get(), TEXT("AutomotiveMaterialGuiProbe")))
+	{
+		AutomotiveMaterialGuiProbe = NewObject<UAutomotiveMaterialGuiProbe>();
+		AutomotiveMaterialGuiProbe->Start();
 		return;
 	}
 
@@ -134,6 +142,10 @@ void FConfigurationSystemModule::ShutdownModule()
 		// 探针在请求退出前自行解除 Root；此时 UObject 数组可能已开始销毁，
 		// 模块关闭阶段不能再解引用该裸指针。
 		ConfigurationStateProbe = nullptr;
+	}
+	if (AutomotiveMaterialGuiProbe != nullptr)
+	{
+		AutomotiveMaterialGuiProbe = nullptr;
 	}
 
 	if (PackagingBoundaryProbe.IsValid())

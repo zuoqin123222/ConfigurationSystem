@@ -29,6 +29,8 @@ public:
 	UFUNCTION()
 	void ApplyConfigurationJson(const FString& ConfigurationJson);
 	UFUNCTION()
+	FString ApplyConfigurationTransactionJson(const FString& ConfigurationJson);
+	UFUNCTION()
 	FString GetPresentationStateJson() const;
 	UFUNCTION()
 	bool SetCamera(int32 CameraIndex);

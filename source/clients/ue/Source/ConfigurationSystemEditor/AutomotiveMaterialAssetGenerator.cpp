@@ -5,6 +5,7 @@
 #include "Dom/JsonObject.h"
 #include "Engine/Texture2D.h"
 #include "ImageUtils.h"
+#include "Materials/Material.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "Materials/MaterialInterface.h"
 #include "Misc/FileHelper.h"
@@ -337,6 +338,7 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 	}
 
 	TMap<FString, UMaterialInterface*> Parents;
+	TSet<UObject*> SkeletalUsageAssets;
 	for (const FFamilySpec& Spec : FamilySpecs)
 	{
 		const FString Path(Spec.ParentPath);
@@ -351,6 +353,50 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 			OutResult.Errors.Add(
 				FString::Printf(TEXT("%s 母材质加载失败：%s"), Spec.Id, Spec.ParentPath));
 			continue;
+		}
+		UMaterial* BaseMaterial = Parent->GetMaterial();
+		bool bHasSkeletalUsage = false;
+		const bool bNeedsSkeletalUsage =
+			Parent->NeedsSetMaterialUsage_Concurrent(
+				bHasSkeletalUsage,
+				MATUSAGE_SkeletalMesh);
+		if (BaseMaterial == nullptr
+			|| (bNeedsSkeletalUsage
+				&& !Parent->SetMaterialUsage(MATUSAGE_SkeletalMesh))
+			|| !Parent->CheckMaterialUsage_Concurrent(MATUSAGE_SkeletalMesh))
+		{
+			OutResult.Errors.Add(
+				FString::Printf(
+					TEXT("%s 母材质无法启用 SkeletalMesh usage：%s"),
+					Spec.Id,
+					Spec.ParentPath));
+			continue;
+		}
+		if (bNeedsSkeletalUsage)
+		{
+			BaseMaterial->PostEditChange();
+			Parent->PostEditChange();
+			bool bUsageSaved = true;
+			if (!SkeletalUsageAssets.Contains(BaseMaterial))
+			{
+				bUsageSaved = Save(BaseMaterial);
+				SkeletalUsageAssets.Add(BaseMaterial);
+			}
+			if (Parent != BaseMaterial
+				&& !SkeletalUsageAssets.Contains(Parent))
+			{
+				bUsageSaved = Save(Parent) && bUsageSaved;
+				SkeletalUsageAssets.Add(Parent);
+			}
+			if (!bUsageSaved)
+			{
+				OutResult.Errors.Add(
+					FString::Printf(
+						TEXT("%s 母材质 SkeletalMesh usage 保存失败：%s"),
+						Spec.Id,
+						*BaseMaterial->GetPathName()));
+				continue;
+			}
 		}
 		Parents.Add(Spec.Id, Parent);
 		OutResult.FamilyParentPaths.Add(Spec.Id, Path);

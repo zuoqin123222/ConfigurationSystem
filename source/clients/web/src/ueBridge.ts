@@ -2,6 +2,7 @@ import type { CatalogCameraId, Customizations, Selections } from './types'
 
 export interface ReflectedUeBridge {
   applyconfigurationjson?: (configurationJson: string) => void
+  applyconfigurationtransactionjson?: (configurationJson: string) => Promise<string>
   setconfiguratorcategory?: (categoryId: string) => Promise<boolean>
   setconfiguratorheaderstatejson?: (stateJson: string) => Promise<boolean>
   triggerconfiguratorheaderaction?: (action: string) => Promise<boolean>
@@ -20,6 +21,16 @@ export interface ReflectedUeBridge {
   setqualitylevel?: (quality: string) => Promise<boolean>
   resetpresentation?: () => Promise<boolean>
   setfullscreen?: (enabled: boolean) => Promise<boolean>
+}
+
+export interface UeConfigurationReceipt {
+  ok: boolean
+  code: string
+  message: string
+  configurationId: string
+  appliedSurfaceIds: string[]
+  unsupportedSurfaceIds: string[]
+  appliedSlotIds: string[]
 }
 
 export type UeCameraIndex = 0 | 1 | 2 | 3 | 4 | 5
@@ -95,14 +106,98 @@ export function createUeConfigurationJson(
   })
 }
 
-export function applyUeConfiguration(
+export async function applyUeConfiguration(
   bridge: ReflectedUeBridge,
   selections: Selections,
   customizations: Customizations,
-): boolean {
-  if (typeof bridge.applyconfigurationjson !== 'function') return false
-  bridge.applyconfigurationjson(createUeConfigurationJson(selections, customizations))
-  return true
+): Promise<UeConfigurationReceipt> {
+  const configurationJson = createUeConfigurationJson(selections, customizations)
+  if (typeof bridge.applyconfigurationtransactionjson === 'function') {
+    try {
+      const value: unknown = JSON.parse(
+        await bridge.applyconfigurationtransactionjson(configurationJson),
+      )
+      if (isUeConfigurationReceipt(value)) return value
+      return failedConfigurationReceipt(
+        'INVALID_UE_RECEIPT',
+        'UE 返回了非法材质事务回执。',
+      )
+    } catch {
+      return failedConfigurationReceipt(
+        'UE_TRANSACTION_REJECTED',
+        'UE 材质事务调用失败。',
+      )
+    }
+  }
+  if (typeof bridge.applyconfigurationjson === 'function') {
+    bridge.applyconfigurationjson(configurationJson)
+    return {
+      ok: true,
+      code: 'LEGACY_NO_RECEIPT',
+      message: '旧版 UE bridge 已接收配置，但不提供材质事务回执。',
+      configurationId: '',
+      appliedSurfaceIds: [],
+      unsupportedSurfaceIds: [],
+      appliedSlotIds: [],
+    }
+  }
+  return failedConfigurationReceipt('BRIDGE_METHOD_UNAVAILABLE', 'UE 材质事务入口不可用。')
+}
+
+function failedConfigurationReceipt(
+  code: string,
+  message: string,
+): UeConfigurationReceipt {
+  return {
+    ok: false,
+    code,
+    message,
+    configurationId: '',
+    appliedSurfaceIds: [],
+    unsupportedSurfaceIds: [],
+    appliedSlotIds: [],
+  }
+}
+
+export function isUeConfigurationReceipt(value: unknown): value is UeConfigurationReceipt {
+  if (!value || typeof value !== 'object') return false
+  const receipt = value as Record<string, unknown>
+  const fields = [
+    'ok',
+    'code',
+    'message',
+    'configurationId',
+    'appliedSurfaceIds',
+    'unsupportedSurfaceIds',
+    'appliedSlotIds',
+  ]
+  return Object.keys(receipt).length === fields.length
+    && Object.keys(receipt).every((field) => fields.includes(field))
+    && typeof receipt.ok === 'boolean'
+    && typeof receipt.code === 'string'
+    && /^[A-Z0-9_]+$/.test(receipt.code)
+    && typeof receipt.message === 'string'
+    && receipt.message.length <= 512
+    && typeof receipt.configurationId === 'string'
+    && receipt.configurationId.length <= 128
+    && isCatalogNodeIdArray(receipt.appliedSurfaceIds)
+    && isCatalogNodeIdArray(receipt.unsupportedSurfaceIds)
+    && isMaterialSlotIdArray(receipt.appliedSlotIds)
+}
+
+function isCatalogNodeIdArray(value: unknown): value is string[] {
+  return Array.isArray(value)
+    && value.length <= 64
+    && value.every(isCatalogNodeId)
+}
+
+function isMaterialSlotIdArray(value: unknown): value is string[] {
+  return Array.isArray(value)
+    && value.length <= 128
+    && value.every((item) => typeof item === 'string'
+      && item.length > 0
+      && item.length <= 128
+      && /^[A-Za-z0-9_]+$/.test(item))
 }
 
 export async function syncUeConfiguratorCategory(

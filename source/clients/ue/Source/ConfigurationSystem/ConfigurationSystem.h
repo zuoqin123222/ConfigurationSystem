@@ -11,6 +11,7 @@ class FConfigurationBatchBake;
 class FPackagingBoundaryProbe;
 class FVehicleHierarchyProbe;
 class UConfigurationStateProbe;
+class UAutomotiveMaterialGuiProbe;
 class FContentPackMountService;
 
 /** 游戏模块，同时按命令行显式启用相互独立的 Runtime 技术探针。 */
@@ -42,6 +43,7 @@ private:
 	TSharedPtr<FPackagingBoundaryProbe> PackagingBoundaryProbe;
 	TSharedPtr<FVehicleHierarchyProbe> VehicleHierarchyProbe;
 	UConfigurationStateProbe* ConfigurationStateProbe = nullptr;
+	UAutomotiveMaterialGuiProbe* AutomotiveMaterialGuiProbe = nullptr;
 	TUniquePtr<FContentPackMountService> ContentPackProbeService;
 	FTSTicker::FDelegateHandle ContentPackProbeTickerHandle;
 };

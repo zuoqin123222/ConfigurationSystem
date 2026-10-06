@@ -1,10 +1,13 @@
 #include "AutomotiveMaterialBinder.h"
 
 #include "Components/MeshComponent.h"
-#include "Components/SkeletalMeshComponent.h"
+#include "Dom/JsonObject.h"
+#include "Engine/Texture2D.h"
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 #include "AutomotiveMaterialLibrary.h"
 #include "AutomotiveConfigurationState.h"
 
@@ -48,6 +51,64 @@ namespace
 		}
 		return TOptional<FLinearColor>();
 	}
+
+	UTexture2D* UpdateDynamicColorTexture(
+		UTexture2D* Existing,
+		const FLinearColor& Color)
+	{
+		UTexture2D* Texture = Existing;
+		if (!IsValid(Texture))
+		{
+			Texture = UTexture2D::CreateTransient(
+				1,
+				1,
+				PF_B8G8R8A8,
+				TEXT("SC01_RuntimeColor"));
+			if (!IsValid(Texture))
+			{
+				return nullptr;
+			}
+			Texture->SRGB = true;
+			Texture->NeverStream = true;
+		}
+		FTexture2DMipMap& Mip = Texture->GetPlatformData()->Mips[0];
+		FColor* Pixel = static_cast<FColor*>(Mip.BulkData.Lock(LOCK_READ_WRITE));
+		*Pixel = Color.ToFColorSRGB();
+		Mip.BulkData.Unlock();
+		Texture->UpdateResource();
+		return Texture;
+	}
+}
+
+FString FAutomotiveMaterialTransactionResult::ToJson() const
+{
+	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetBoolField(TEXT("ok"), bSuccess);
+	Root->SetStringField(TEXT("code"), Code);
+	Root->SetStringField(TEXT("message"), Message);
+	Root->SetStringField(TEXT("configurationId"), ConfigurationId);
+	TArray<TSharedPtr<FJsonValue>> AppliedSurfaces;
+	for (const FString& SurfaceId : AppliedSurfaceIds)
+	{
+		AppliedSurfaces.Add(MakeShared<FJsonValueString>(SurfaceId));
+	}
+	Root->SetArrayField(TEXT("appliedSurfaceIds"), MoveTemp(AppliedSurfaces));
+	TArray<TSharedPtr<FJsonValue>> UnsupportedSurfaces;
+	for (const FString& SurfaceId : UnsupportedSurfaceIds)
+	{
+		UnsupportedSurfaces.Add(MakeShared<FJsonValueString>(SurfaceId));
+	}
+	Root->SetArrayField(TEXT("unsupportedSurfaceIds"), MoveTemp(UnsupportedSurfaces));
+	TArray<TSharedPtr<FJsonValue>> AppliedSlots;
+	for (const FName SlotId : AppliedSlotIds)
+	{
+		AppliedSlots.Add(MakeShared<FJsonValueString>(SlotId.ToString()));
+	}
+	Root->SetArrayField(TEXT("appliedSlotIds"), MoveTemp(AppliedSlots));
+	FString Json;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Json);
+	FJsonSerializer::Serialize(Root, Writer);
+	return Json;
 }
 
 UMeshComponent* UAutomotiveMaterialBinder::FindUniqueTaggedMesh(
@@ -81,23 +142,99 @@ UMeshComponent* UAutomotiveMaterialBinder::FindUniqueTaggedMesh(
 	return Match;
 }
 
-USkeletalMeshComponent* UAutomotiveMaterialBinder::FindVisibleSkeletalVehicle(
-	AActor* Vehicle)
+bool UAutomotiveMaterialBinder::BuildBoundSlots(AActor* Vehicle)
 {
-	TInlineComponentArray<USkeletalMeshComponent*> Meshes(Vehicle);
-	for (USkeletalMeshComponent* Mesh : Meshes)
+	BoundSlots.Reset();
+	PaintComponent = nullptr;
+	InteriorComponent = nullptr;
+	TInlineComponentArray<UMeshComponent*> Meshes(Vehicle);
+	const AutomotiveCatalog::FCatalog& Catalog =
+		State->GetCatalogIndex().GetCatalog();
+	for (const AutomotiveCatalog::FSurfaceBinding& Binding :
+		Catalog.VehicleSurfaceBinding.Bindings)
 	{
-		if (IsValid(Mesh)
-			&& Mesh->IsVisible()
-			&& !Mesh->bHiddenInGame
-			&& IsValid(Mesh->GetSkeletalMeshAsset())
-			&& Mesh->GetMaterialIndex(TEXT("CS_Validation_Paint")) != INDEX_NONE
-			&& Mesh->GetMaterialIndex(TEXT("CS_Validation_Interior")) != INDEX_NONE)
+		for (const FName SlotId : Binding.MaterialSlotIds)
 		{
-			return Mesh;
+			UMeshComponent* Match = nullptr;
+			int32 MatchIndex = INDEX_NONE;
+			FString ProxyError;
+			if (Binding.SurfaceId == PaintSurfaceId)
+			{
+				UMeshComponent* Proxy =
+					FindUniqueTaggedMesh(Vehicle, PaintProxySlotTag, ProxyError);
+				if (IsValid(Proxy) && Proxy->IsVisible() && !Proxy->bHiddenInGame)
+				{
+					Match = Proxy;
+					MatchIndex = 0;
+				}
+			}
+			else if (Binding.SurfaceId == InteriorProxySurfaceId)
+			{
+				UMeshComponent* Proxy =
+					FindUniqueTaggedMesh(Vehicle, InteriorProxySlotTag, ProxyError);
+				if (IsValid(Proxy) && Proxy->IsVisible() && !Proxy->bHiddenInGame)
+				{
+					Match = Proxy;
+					MatchIndex = 0;
+				}
+			}
+			for (UMeshComponent* Mesh : Meshes)
+			{
+				if (Match != nullptr)
+				{
+					break;
+				}
+				if (!IsValid(Mesh) || !Mesh->IsVisible() || Mesh->bHiddenInGame)
+				{
+					continue;
+				}
+				const int32 MaterialIndex = Mesh->GetMaterialIndex(SlotId);
+				if (MaterialIndex != INDEX_NONE)
+				{
+					if (Match != nullptr)
+					{
+						SetFailure(
+							TEXT("DUPLICATE_RUNTIME_MATERIAL_SLOT"),
+							FString::Printf(
+								TEXT("命名槽 %s 在多个可见 MeshComponent 上重复。"),
+								*SlotId.ToString()));
+						return false;
+					}
+					Match = Mesh;
+					MatchIndex = MaterialIndex;
+				}
+			}
+
+			// 程序化占位车没有命名 section；仅对两项已声明 proxy binding
+			// 回退到明确 ComponentTag，正式骨骼车始终走命名槽。
+			if (Match == nullptr || MatchIndex == INDEX_NONE)
+			{
+				SetFailure(
+					TEXT("RUNTIME_MATERIAL_SLOT_MISSING"),
+					FString::Printf(
+						TEXT("surfaceId=%s 的命名槽 %s 在当前车辆上不存在。"),
+						*Binding.SurfaceId,
+						*SlotId.ToString()));
+				return false;
+			}
+
+			FAutomotiveBoundMaterialSlot& Bound = BoundSlots.AddDefaulted_GetRef();
+			Bound.SurfaceId = Binding.SurfaceId;
+			Bound.SlotId = SlotId;
+			Bound.Component = Match;
+			Bound.MaterialIndex = MatchIndex;
+			Bound.OriginalMaterial = Match->GetMaterial(MatchIndex);
+			if (Binding.SurfaceId == PaintSurfaceId && PaintComponent == nullptr)
+			{
+				PaintComponent = Match;
+			}
+			if (Binding.SurfaceId == InteriorProxySurfaceId && InteriorComponent == nullptr)
+			{
+				InteriorComponent = Match;
+			}
 		}
 	}
-	return nullptr;
+	return !BoundSlots.IsEmpty();
 }
 
 bool UAutomotiveMaterialBinder::Bind(
@@ -113,55 +250,28 @@ bool UAutomotiveMaterialBinder::Bind(
 		return false;
 	}
 
-	UMeshComponent* CandidatePaint = nullptr;
-	UMeshComponent* CandidateInterior = nullptr;
-	int32 CandidatePaintIndex = 0;
-	int32 CandidateInteriorIndex = 0;
-	if (USkeletalMeshComponent* SkeletalMesh =
-		FindVisibleSkeletalVehicle(InVehicle))
-	{
-		CandidatePaint = SkeletalMesh;
-		CandidateInterior = SkeletalMesh;
-		CandidatePaintIndex =
-			SkeletalMesh->GetMaterialIndex(TEXT("CS_Validation_Paint"));
-		CandidateInteriorIndex =
-			SkeletalMesh->GetMaterialIndex(TEXT("CS_Validation_Interior"));
-	}
-	else
-	{
-		FString SlotError;
-		CandidatePaint =
-			FindUniqueTaggedMesh(InVehicle, PaintProxySlotTag, SlotError);
-		if (CandidatePaint == nullptr)
-		{
-			LastError = MoveTemp(SlotError);
-			return false;
-		}
-		CandidateInterior =
-			FindUniqueTaggedMesh(InVehicle, InteriorProxySlotTag, SlotError);
-		if (CandidateInterior == nullptr)
-		{
-			LastError = MoveTemp(SlotError);
-			return false;
-		}
-	}
-
 	State = InState;
 	Library = InLibrary;
-	PaintComponent = CandidatePaint;
-	InteriorComponent = CandidateInterior;
-	PaintMaterialIndex = CandidatePaintIndex;
-	InteriorMaterialIndex = CandidateInteriorIndex;
+	if (!BuildBoundSlots(InVehicle))
+	{
+		State = nullptr;
+		Library = nullptr;
+		return false;
+	}
 	UE_LOG(
 		LogTemp,
 		Verbose,
-		TEXT("AutomotiveMaterialBinder bound paint=%s[%d] interior=%s[%d]"),
-		*PaintComponent->GetName(),
-		PaintMaterialIndex,
-		*InteriorComponent->GetName(),
-		InteriorMaterialIndex);
+		TEXT("AutomotiveMaterialBinder bound %d material slots"),
+		BoundSlots.Num());
 	State->OnChangedNative.AddUObject(this, &UAutomotiveMaterialBinder::HandleStateChanged);
-	return ApplyCurrentConfiguration();
+	if (!ApplyCurrentConfiguration())
+	{
+		const FString BindError = LastError;
+		Unbind();
+		LastError = BindError;
+		return false;
+	}
+	return true;
 }
 
 void UAutomotiveMaterialBinder::Unbind()
@@ -170,16 +280,24 @@ void UAutomotiveMaterialBinder::Unbind()
 	{
 		State->OnChangedNative.RemoveAll(this);
 	}
+	for (FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+	{
+		if (IsValid(Bound.Component) && Bound.MaterialIndex != INDEX_NONE)
+		{
+			Bound.Component->SetMaterial(Bound.MaterialIndex, Bound.OriginalMaterial);
+		}
+	}
 	State = nullptr;
 	Library = nullptr;
 	PaintComponent = nullptr;
 	InteriorComponent = nullptr;
 	PaintMaterialInstance = nullptr;
 	InteriorMaterialInstance = nullptr;
-	PaintMaterialIndex = 0;
-	InteriorMaterialIndex = 0;
+	BoundSlots.Reset();
 	AppliedInteriorFamilyId.Reset();
 	LastError.Reset();
+	LastTransactionResult = FAutomotiveMaterialTransactionResult();
+	bApplyingTransaction = false;
 }
 
 void UAutomotiveMaterialBinder::BeginDestroy()
@@ -190,197 +308,510 @@ void UAutomotiveMaterialBinder::BeginDestroy()
 
 void UAutomotiveMaterialBinder::HandleStateChanged()
 {
-	ApplyCurrentConfiguration();
+	if (!bApplyingTransaction)
+	{
+		ApplyCurrentConfiguration();
+	}
 }
 
 bool UAutomotiveMaterialBinder::ApplyCurrentConfiguration()
 {
-	if (!IsValid(State) || !IsValid(Library)
-		|| !IsValid(PaintComponent) || !IsValid(InteriorComponent))
+	if (!IsValid(State) || !IsValid(Library) || BoundSlots.IsEmpty())
 	{
 		LastError = TEXT("Binder 尚未完成有效绑定。");
 		return false;
 	}
 
 	LastError.Reset();
-	const bool bPaintApplied = ApplyPaint();
-	const bool bInteriorApplied = ApplyInterior();
-	return bPaintApplied && bInteriorApplied;
-}
-
-bool UAutomotiveMaterialBinder::ApplyPaint()
-{
-	UMaterialInterface* PaintMaster = Library->LoadInteriorMaterial(TEXT("paint"));
-	if (!IsValid(PaintMaster))
-	{
-		LastError = TEXT("AutomotiveMaterialLibrary 缺少 CarPaint。");
-		return false;
-	}
-
-	if (!IsValid(PaintMaterialInstance)
-		|| PaintMaterialInstance->Parent != PaintMaster)
-	{
-		PaintMaterialInstance = UMaterialInstanceDynamic::Create(PaintMaster, this);
-	}
-	if (!IsValid(PaintMaterialInstance))
-	{
-		LastError = TEXT("无法创建车漆动态材质实例。");
-		return false;
-	}
-	PaintComponent->SetMaterial(PaintMaterialIndex, PaintMaterialInstance);
-
+	const TMap<FString, FString> Selections = State->GetSelections();
 	const TMap<FString, FAutomotiveCustomization> Customizations =
 		State->GetCustomizations();
-	const FAutomotiveCustomization* Customization = Customizations.Find(PaintSurfaceId);
+	for (const AutomotiveCatalog::FSurfaceBinding& Binding :
+		State->GetCatalogIndex().GetCatalog().VehicleSurfaceBinding.Bindings)
+	{
+		if (!ApplySurface(Binding.SurfaceId, Selections, Customizations))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void UAutomotiveMaterialBinder::SetFailure(
+	const FString& Code,
+	const FString& Message)
+{
+	LastError = Message;
+	LastTransactionResult = FAutomotiveMaterialTransactionResult();
+	LastTransactionResult.Code = Code;
+	LastTransactionResult.Message = Message;
+	LastTransactionResult.ConfigurationId =
+		IsValid(State) ? State->GetConfigurationId() : FString();
+}
+
+int32 UAutomotiveMaterialBinder::GetBoundSlotCount(
+	const FString& SurfaceId) const
+{
+	int32 Count = 0;
+	for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+	{
+		Count += Bound.SurfaceId == SurfaceId ? 1 : 0;
+	}
+	return Count;
+}
+
+UMaterialInterface* UAutomotiveMaterialBinder::GetAppliedMaterialForSurface(
+	const FString& SurfaceId) const
+{
+	for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+	{
+		if (Bound.SurfaceId == SurfaceId
+			&& IsValid(Bound.Component)
+			&& Bound.MaterialIndex != INDEX_NONE)
+		{
+			return Bound.Component->GetMaterial(Bound.MaterialIndex);
+		}
+	}
+	return nullptr;
+}
+
+FString UAutomotiveMaterialBinder::GetLastTransactionResultJson() const
+{
+	return LastTransactionResult.ToJson();
+}
+
+bool UAutomotiveMaterialBinder::ResolveSurfaceMaterial(
+	const FString& SurfaceId,
+	const TMap<FString, FString>& Selections,
+	const TMap<FString, FAutomotiveCustomization>& Customizations,
+	UMaterialInterface*& OutMaterial,
+	bool& bOutUseDynamic,
+	FLinearColor& OutColor,
+	FAutomotivePaintCustomization& OutPaint,
+	bool& bOutHasPaintParameters,
+	FString& OutFamilyId,
+	FString& OutErrorCode,
+	FString& OutErrorMessage) const
+{
+	OutMaterial = nullptr;
+	bOutUseDynamic = false;
+	OutColor = FLinearColor::White;
+	OutPaint = FAutomotivePaintCustomization();
+	bOutHasPaintParameters = false;
+	OutFamilyId.Reset();
+	OutErrorCode.Reset();
+	OutErrorMessage.Reset();
+
+	const FString* OptionId = Selections.Find(SurfaceId);
+	if (OptionId == nullptr)
+	{
+		return true;
+	}
+	const AutomotiveCatalog::FOption* Option =
+		State->GetCatalogIndex().FindOption(*OptionId);
+	if (Option == nullptr || !Option->MaterialFamilyId.IsSet())
+	{
+		OutErrorCode = TEXT("MATERIAL_FAMILY_UNRESOLVED");
+		OutErrorMessage = FString::Printf(
+			TEXT("surfaceId=%s 的 optionId=%s 没有可解析的 materialFamilyId。"),
+			*SurfaceId,
+			**OptionId);
+		return false;
+	}
+	OutFamilyId = Option->MaterialFamilyId.GetValue();
+
+	const FAutomotiveCustomization* Customization =
+		Customizations.Find(SurfaceId);
+	if (Customization != nullptr
+		&& Customization->Kind == EAutomotiveCustomizationKind::MaterialVariant)
+	{
+		const AutomotiveCatalog::FMaterialVariant* Variant =
+			State->GetCatalogIndex().FindMaterialVariant(
+				Customization->MaterialVariantId);
+		OutMaterial = Library->LoadVariantMaterial(
+			Customization->MaterialVariantId);
+		if (Variant == nullptr || !IsValid(OutMaterial))
+		{
+			OutErrorCode = TEXT("MATERIAL_VARIANT_ASSET_MISSING");
+			OutErrorMessage = FString::Printf(
+				TEXT("surfaceId=%s 的 variantId=%s 未命中已物化材质实例。"),
+				*SurfaceId,
+				*Customization->MaterialVariantId);
+			return false;
+		}
+		OutFamilyId = Variant->MaterialFamilyId;
+		return true;
+	}
+
+	OutMaterial = Library->LoadInteriorMaterial(OutFamilyId);
+	if (!IsValid(OutMaterial))
+	{
+		OutErrorCode = TEXT("MATERIAL_FAMILY_ASSET_MISSING");
+		OutErrorMessage = FString::Printf(
+			TEXT("surfaceId=%s 的 materialFamilyId=%s 未命中材质库。"),
+			*SurfaceId,
+			*OutFamilyId);
+		return false;
+	}
+
 	if (Customization != nullptr
 		&& Customization->Kind == EAutomotiveCustomizationKind::Paint)
 	{
-		const FAutomotivePaintCustomization& Paint = Customization->Paint;
-		PaintMaterialInstance->SetVectorParameterValue(
-			TEXT("BaseColor"),
-			FLinearColor::FromSRGBColor(FColor::FromHex(Paint.ColorHex)));
-		PaintMaterialInstance->SetScalarParameterValue(TEXT("Metallic"), Paint.Metallic);
-		PaintMaterialInstance->SetScalarParameterValue(TEXT("Roughness"), Paint.Roughness);
-		PaintMaterialInstance->SetScalarParameterValue(TEXT("ClearCoat"), Paint.ClearCoat);
-		PaintMaterialInstance->SetScalarParameterValue(TEXT("OrangePeel"), Paint.OrangePeel);
-		PaintMaterialInstance->SetScalarParameterValue(
-			TEXT("FlakeIntensity"),
-			Paint.FlakeIntensity);
-		UE_LOG(
-			LogTemp,
-			Verbose,
-			TEXT("AutomotiveMaterialBinder applied custom paint %s to %s[%d]"),
-			*Paint.ColorHex,
-			*PaintComponent->GetName(),
-			PaintMaterialIndex);
+		bOutUseDynamic = true;
+		bOutHasPaintParameters = true;
+		OutPaint = Customization->Paint;
+		OutColor = FLinearColor::FromSRGBColor(
+			FColor::FromHex(Customization->Paint.ColorHex));
 		return true;
 	}
-
-	const FString PaintOptionId = State->GetSelections().FindRef(PaintSurfaceId);
-	const AutomotiveCatalog::FOption* PaintOption =
-		State->GetCatalogIndex().FindOption(PaintOptionId);
-	if (PaintOption == nullptr || !PaintOption->ColorCode.IsSet())
+	if (Option->ColorCode.IsSet())
 	{
-		return true;
+		const TOptional<FLinearColor> FixedColor =
+			ResolveCatalogColor(Option->ColorCode.GetValue());
+		if (!FixedColor.IsSet())
+		{
+			OutErrorCode = TEXT("MATERIAL_COLOR_UNRESOLVED");
+			OutErrorMessage = FString::Printf(
+				TEXT("surfaceId=%s 的颜色 %s 无法解析。"),
+				*SurfaceId,
+				*Option->ColorCode.GetValue());
+			return false;
+		}
+		bOutUseDynamic = true;
+		OutColor = FixedColor.GetValue();
+		if (OutFamilyId == TEXT("paint"))
+		{
+			bOutHasPaintParameters = true;
+			OutPaint.ColorHex = Option->ColorCode.GetValue();
+			OutPaint.Metallic = Option->ColorCode.GetValue().Equals(
+				TEXT("silver"), ESearchCase::IgnoreCase) ? 0.8 : 0.35;
+			OutPaint.Roughness = 0.22;
+			OutPaint.ClearCoat = 0.85;
+			OutPaint.OrangePeel = 0.12;
+			OutPaint.FlakeIntensity = 0.25;
+		}
 	}
-	const TOptional<FLinearColor> FixedColor =
-		ResolveCatalogColor(PaintOption->ColorCode.GetValue());
-	if (!FixedColor.IsSet())
-	{
-		LastError = FString::Printf(
-			TEXT("无法解析标准车漆颜色 %s。"),
-			*PaintOption->ColorCode.GetValue());
-		return false;
-	}
-	PaintMaterialInstance->SetVectorParameterValue(
-		TEXT("BaseColor"),
-		FixedColor.GetValue());
-	PaintMaterialInstance->SetScalarParameterValue(
-		TEXT("Metallic"),
-		PaintOption->ColorCode.GetValue().Equals(
-			TEXT("silver"),
-			ESearchCase::IgnoreCase) ? 0.8f : 0.35f);
-	PaintMaterialInstance->SetScalarParameterValue(TEXT("Roughness"), 0.22f);
-	PaintMaterialInstance->SetScalarParameterValue(TEXT("ClearCoat"), 0.85f);
-	PaintMaterialInstance->SetScalarParameterValue(TEXT("OrangePeel"), 0.12f);
-	PaintMaterialInstance->SetScalarParameterValue(TEXT("FlakeIntensity"), 0.25f);
-	UE_LOG(
-		LogTemp,
-		Verbose,
-		TEXT("AutomotiveMaterialBinder applied fixed paint %s as %s to %s[%d]"),
-		*PaintOptionId,
-		*FixedColor.GetValue().ToString(),
-		*PaintComponent->GetName(),
-		PaintMaterialIndex);
 	return true;
 }
 
-bool UAutomotiveMaterialBinder::ApplyInterior()
+bool UAutomotiveMaterialBinder::ApplySurface(
+	const FString& SurfaceId,
+	const TMap<FString, FString>& Selections,
+	const TMap<FString, FAutomotiveCustomization>& Customizations,
+	TArray<FName>* OutAppliedSlots)
 {
-	const FString OptionId =
-		State->GetSelections().FindRef(InteriorProxySurfaceId);
-	const AutomotiveCatalog::FOption* Option =
-		State->GetCatalogIndex().FindOption(OptionId);
-	if (Option == nullptr || !Option->MaterialFamilyId.IsSet())
+	UMaterialInterface* Material = nullptr;
+	bool bUseDynamic = false;
+	FLinearColor Color;
+	FAutomotivePaintCustomization Paint;
+	bool bHasPaintParameters = false;
+	FString FamilyId;
+	FString ErrorCode;
+	FString ErrorMessage;
+	if (!ResolveSurfaceMaterial(
+		SurfaceId,
+		Selections,
+		Customizations,
+		Material,
+		bUseDynamic,
+		Color,
+		Paint,
+		bHasPaintParameters,
+		FamilyId,
+		ErrorCode,
+		ErrorMessage))
 	{
-		LastError = TEXT("内饰代理 surface 没有可解析的 materialFamilyId。");
+		SetFailure(ErrorCode, ErrorMessage);
 		return false;
 	}
 
-	FString FamilyId = Option->MaterialFamilyId.GetValue();
-	FString VariantId;
-	const TMap<FString, FAutomotiveCustomization> Customizations =
-		State->GetCustomizations();
-	const FAutomotiveCustomization* Customization =
-		Customizations.Find(InteriorProxySurfaceId);
-	if (Customization != nullptr)
+	bool bFoundTarget = false;
+	for (FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
 	{
-		if (Customization->Kind == EAutomotiveCustomizationKind::MaterialVariant)
+		if (Bound.SurfaceId != SurfaceId)
 		{
-			const AutomotiveCatalog::FMaterialVariant* Variant =
-				State->GetCatalogIndex().FindMaterialVariant(
-					Customization->MaterialVariantId);
-			if (Variant != nullptr)
+			continue;
+		}
+		bFoundTarget = true;
+		if (!IsValid(Bound.Component) || Bound.MaterialIndex == INDEX_NONE)
+		{
+			SetFailure(
+				TEXT("RUNTIME_MATERIAL_SLOT_INVALID"),
+				FString::Printf(TEXT("surfaceId=%s 的运行时槽已失效。"), *SurfaceId));
+			return false;
+		}
+		UMaterialInterface* AppliedMaterial = Material;
+		if (!IsValid(Material))
+		{
+			AppliedMaterial = Bound.OriginalMaterial;
+		}
+		else if (bUseDynamic)
+		{
+			if (!IsValid(Bound.DynamicInstance)
+				|| Bound.DynamicParent != Material)
 			{
-				FamilyId = Variant->MaterialFamilyId;
-				VariantId = Variant->VariantId;
+				Bound.DynamicInstance =
+					UMaterialInstanceDynamic::Create(Material, this);
+				Bound.DynamicParent = Material;
+			}
+			if (!IsValid(Bound.DynamicInstance))
+			{
+				SetFailure(
+					TEXT("DYNAMIC_MATERIAL_CREATE_FAILED"),
+					FString::Printf(
+						TEXT("surfaceId=%s 的槽 %s 无法创建 MID。"),
+						*SurfaceId,
+						*Bound.SlotId.ToString()));
+				return false;
+			}
+			Bound.DynamicInstance->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			Bound.DynamicInstance->SetVectorParameterValue(TEXT("Color"), Color);
+			Bound.DynamicColorTexture = UpdateDynamicColorTexture(
+				Bound.DynamicColorTexture,
+				Color);
+			if (IsValid(Bound.DynamicColorTexture))
+			{
+				static const FName ColorTextureParameters[] = {
+					TEXT("Diffuse Color Map"),
+					TEXT("Color Map"),
+					TEXT("Base Color Map")
+				};
+				for (const FName ParameterName : ColorTextureParameters)
+				{
+					Bound.DynamicInstance->SetTextureParameterValue(
+						ParameterName,
+						Bound.DynamicColorTexture);
+				}
+			}
+			if (bHasPaintParameters)
+			{
+				Bound.DynamicInstance->SetScalarParameterValue(
+					TEXT("Metallic"), Paint.Metallic);
+				Bound.DynamicInstance->SetScalarParameterValue(
+					TEXT("Roughness"), Paint.Roughness);
+				Bound.DynamicInstance->SetScalarParameterValue(
+					TEXT("ClearCoat"), Paint.ClearCoat);
+				Bound.DynamicInstance->SetScalarParameterValue(
+					TEXT("OrangePeel"), Paint.OrangePeel);
+				Bound.DynamicInstance->SetScalarParameterValue(
+					TEXT("FlakeIntensity"), Paint.FlakeIntensity);
+			}
+			AppliedMaterial = Bound.DynamicInstance;
+		}
+		Bound.Component->SetMaterial(Bound.MaterialIndex, AppliedMaterial);
+		if (OutAppliedSlots != nullptr)
+		{
+			OutAppliedSlots->Add(Bound.SlotId);
+		}
+		if (SurfaceId == PaintSurfaceId)
+		{
+			PaintMaterialInstance = Cast<UMaterialInstanceDynamic>(AppliedMaterial);
+		}
+		if (SurfaceId == InteriorProxySurfaceId)
+		{
+			InteriorMaterialInstance = Cast<UMaterialInstanceDynamic>(AppliedMaterial);
+			AppliedInteriorFamilyId = FamilyId;
+		}
+	}
+	if (!bFoundTarget)
+	{
+		SetFailure(
+			TEXT("RUNTIME_SURFACE_TARGET_MISSING"),
+			FString::Printf(TEXT("surfaceId=%s 没有已绑定运行时槽。"), *SurfaceId));
+		return false;
+	}
+	return true;
+}
+
+FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction(
+	const TMap<FString, FString>& InSelections,
+	const TMap<FString, FAutomotiveCustomization>& InCustomizations)
+{
+	LastTransactionResult = FAutomotiveMaterialTransactionResult();
+	if (!IsValid(State) || !IsValid(Library) || BoundSlots.IsEmpty())
+	{
+		SetFailure(TEXT("BINDER_UNAVAILABLE"), TEXT("材质 Binder 尚未完成有效绑定。"));
+		return LastTransactionResult;
+	}
+	if (!State->CanApplyTransaction(InSelections, InCustomizations))
+	{
+		SetFailure(
+			TEXT("INVALID_CONFIGURATION_TRANSACTION"),
+			TEXT("配置事务未通过目录与定制参数校验。"));
+		return LastTransactionResult;
+	}
+
+	const TMap<FString, FString> PreviousSelections = State->GetSelections();
+	const TMap<FString, FAutomotiveCustomization> PreviousCustomizations =
+		State->GetCustomizations();
+	TSet<FString> ChangedSet;
+	TArray<FString> ChangedSurfaceIds;
+	for (const FString& SurfaceId :
+		State->GetCatalogIndex().GetCatalog().SelectionOrder)
+	{
+		const FString* PreviousOption = PreviousSelections.Find(SurfaceId);
+		const FString* NextOption = InSelections.Find(SurfaceId);
+		const bool bSelectionChanged =
+			(PreviousOption == nullptr) != (NextOption == nullptr)
+			|| (PreviousOption != nullptr && NextOption != nullptr
+				&& *PreviousOption != *NextOption);
+		const FAutomotiveCustomization* PreviousCustomization =
+			PreviousCustomizations.Find(SurfaceId);
+		const FAutomotiveCustomization* NextCustomization =
+			InCustomizations.Find(SurfaceId);
+		const bool bCustomizationChanged =
+			(PreviousCustomization == nullptr) != (NextCustomization == nullptr)
+			|| (PreviousCustomization != nullptr && NextCustomization != nullptr
+				&& !(*PreviousCustomization == *NextCustomization));
+		if (bSelectionChanged || bCustomizationChanged)
+		{
+			ChangedSet.Add(SurfaceId);
+			ChangedSurfaceIds.Add(SurfaceId);
+		}
+	}
+
+	TMap<FString, TArray<FName>> BindingTargets;
+	TSet<FString> UnsupportedSet;
+	AutomotiveCatalog::FError BindingError;
+	if (!State->GetCatalogIndex().ResolveSurfaceBindingTransaction(
+		ChangedSet,
+		BindingTargets,
+		UnsupportedSet,
+		BindingError))
+	{
+		SetFailure(BindingError.Code, BindingError.Message);
+		return LastTransactionResult;
+	}
+
+	// 在提交状态前加载并验证本事务所需的所有材质，保证缺资产时零修改。
+	for (const FString& SurfaceId : ChangedSurfaceIds)
+	{
+		if (!BindingTargets.Contains(SurfaceId))
+		{
+			continue;
+		}
+		UMaterialInterface* Material = nullptr;
+		bool bUseDynamic = false;
+		FLinearColor Color;
+		FAutomotivePaintCustomization Paint;
+		bool bHasPaintParameters = false;
+		FString FamilyId;
+		FString ErrorCode;
+		FString ErrorMessage;
+		if (!ResolveSurfaceMaterial(
+			SurfaceId,
+			InSelections,
+			InCustomizations,
+			Material,
+			bUseDynamic,
+			Color,
+			Paint,
+			bHasPaintParameters,
+			FamilyId,
+			ErrorCode,
+			ErrorMessage))
+		{
+			SetFailure(ErrorCode, ErrorMessage);
+			return LastTransactionResult;
+		}
+		int32 PreparedSlotCount = 0;
+		for (FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+		{
+			if (Bound.SurfaceId != SurfaceId)
+			{
+				continue;
+			}
+			++PreparedSlotCount;
+			if (!IsValid(Bound.Component) || Bound.MaterialIndex == INDEX_NONE)
+			{
+				SetFailure(
+					TEXT("RUNTIME_MATERIAL_SLOT_INVALID"),
+					FString::Printf(
+						TEXT("surfaceId=%s 的运行时槽已失效。"),
+						*SurfaceId));
+				return LastTransactionResult;
+			}
+			if (bUseDynamic
+				&& (!IsValid(Bound.DynamicInstance)
+					|| Bound.DynamicParent != Material))
+			{
+				Bound.DynamicInstance =
+					UMaterialInstanceDynamic::Create(Material, this);
+				Bound.DynamicParent = Material;
+				if (!IsValid(Bound.DynamicInstance))
+				{
+					SetFailure(
+						TEXT("DYNAMIC_MATERIAL_CREATE_FAILED"),
+						FString::Printf(
+							TEXT("surfaceId=%s 的槽 %s 无法创建 MID。"),
+							*SurfaceId,
+							*Bound.SlotId.ToString()));
+					return LastTransactionResult;
+				}
 			}
 		}
+		if (PreparedSlotCount != BindingTargets.FindChecked(SurfaceId).Num())
+		{
+			SetFailure(
+				TEXT("RUNTIME_SURFACE_TARGET_MISMATCH"),
+				FString::Printf(
+					TEXT("surfaceId=%s 的运行时槽数量与 binding 不一致。"),
+					*SurfaceId));
+			return LastTransactionResult;
+		}
 	}
 
-	UMaterialInterface* InteriorMaterial = !VariantId.IsEmpty()
-		? Library->LoadVariantMaterial(VariantId)
-		: Library->LoadInteriorMaterial(FamilyId);
-	if (!IsValid(InteriorMaterial))
+	bApplyingTransaction = true;
+	const bool bCommitted =
+		State->ApplyTransaction(InSelections, InCustomizations);
+	bApplyingTransaction = false;
+	if (!bCommitted)
 	{
-		LastError = FString::Printf(
-			TEXT("内饰代理不支持 materialFamilyId=%s。"),
-			*FamilyId);
-		return false;
+		SetFailure(State->GetLastErrorCode(), TEXT("配置状态原子提交失败。"));
+		return LastTransactionResult;
 	}
-	if (!IsValid(InteriorMaterialInstance)
-		|| InteriorMaterialInstance->Parent != InteriorMaterial)
+
+	LastError.Reset();
+	LastTransactionResult.bSuccess = true;
+	LastTransactionResult.ConfigurationId = State->GetConfigurationId();
+	for (const FString& SurfaceId : ChangedSurfaceIds)
 	{
-		InteriorMaterialInstance =
-			UMaterialInstanceDynamic::Create(InteriorMaterial, this);
-	}
-	if (!IsValid(InteriorMaterialInstance))
-	{
-		LastError = TEXT("无法创建内饰动态材质实例。");
-		return false;
-	}
-	if (const AutomotiveCatalog::FMaterialVariant* Variant =
-		Customization != nullptr
-			&& Customization->Kind == EAutomotiveCustomizationKind::MaterialVariant
-			? State->GetCatalogIndex().FindMaterialVariant(
-				Customization->MaterialVariantId)
-			: nullptr;
-		Variant != nullptr && Variant->ColorCode.IsSet())
-	{
-		const TOptional<FLinearColor> VariantColor = ResolveCatalogColor(
-			Variant->ColorCode.GetValue(),
-			Variant->DisplayColorHex);
-		if (VariantColor.IsSet())
+		if (BindingTargets.Contains(SurfaceId))
 		{
-			InteriorMaterialInstance->SetVectorParameterValue(
-				TEXT("BaseColor"),
-				VariantColor.GetValue());
+			if (!ApplySurface(
+				SurfaceId,
+				InSelections,
+				InCustomizations,
+				&LastTransactionResult.AppliedSlotIds))
+			{
+				// 此处所需资产和槽均已在提交前验证，正常运行不应到达。
+				LastTransactionResult.bSuccess = false;
+				LastTransactionResult.Code = TEXT("MATERIAL_APPLY_INVARIANT_FAILED");
+				LastTransactionResult.Message = LastError;
+				return LastTransactionResult;
+			}
+			LastTransactionResult.AppliedSurfaceIds.Add(SurfaceId);
+		}
+		if (UnsupportedSet.Contains(SurfaceId))
+		{
+			LastTransactionResult.UnsupportedSurfaceIds.Add(SurfaceId);
 		}
 	}
-	else if (Option->ColorCode.IsSet())
+	if (LastTransactionResult.UnsupportedSurfaceIds.IsEmpty())
 	{
-		const TOptional<FLinearColor> OptionColor =
-			ResolveCatalogColor(Option->ColorCode.GetValue());
-		if (OptionColor.IsSet())
-		{
-			InteriorMaterialInstance->SetVectorParameterValue(
-				TEXT("BaseColor"),
-				OptionColor.GetValue());
-		}
+		LastTransactionResult.Code = ChangedSurfaceIds.IsEmpty()
+			? TEXT("NO_CHANGE")
+			: TEXT("APPLIED");
+		LastTransactionResult.Message = ChangedSurfaceIds.IsEmpty()
+			? TEXT("配置未变化。")
+			: TEXT("配置与可映射材质槽已原子应用。");
 	}
-	InteriorComponent->SetMaterial(
-		InteriorMaterialIndex,
-		InteriorMaterialInstance);
-	AppliedInteriorFamilyId = MoveTemp(FamilyId);
-	return true;
+	else
+	{
+		LastTransactionResult.Code = TEXT("APPLIED_WITH_UNSUPPORTED_SURFACES");
+		LastTransactionResult.Message = FString::Printf(
+			TEXT("配置已应用；%d 个 surfaceId 为当前 proxy capability 明确缺口。"),
+			LastTransactionResult.UnsupportedSurfaceIds.Num());
+	}
+	return LastTransactionResult;
 }

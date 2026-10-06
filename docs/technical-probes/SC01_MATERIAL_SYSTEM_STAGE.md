@@ -1,4 +1,4 @@
-# SC01 材质体系阶段 3
+# SC01 材质体系阶段 3–4
 
 ## 结论
 
@@ -65,6 +65,34 @@
 本阶段完成的是母材质选择、MI 物化和 Overview 对照。正式 SC01 模型尚未到位，
 因此不能对真实 UV、曲率、座椅花纹物理尺寸或整车 Path Tracing 效果作最终结论。
 
+## 阶段 4：surface binding 实时事务
+
+`UAutomotiveMaterialBinder` 现直接消费 catalog 的 `vehicleSurfaceBinding`：
+
+- 一个 `surfaceId` 可映射一个或多个稳定命名槽；绑定时保存各槽原材质，清除可选
+  selection 时恢复原材质。
+- Web bridge 使用 `ApplyConfigurationTransactionJson` 返回强类型 JSON 回执，包含
+  `code`、`configurationId`、已应用 `surfaceId`、明确 unsupported `surfaceId` 和
+  实际命中的槽名。当前 proxy capability 只支持 `exterior-body-cover` 与
+  `door-middle`，其余 36 项以 `APPLIED_WITH_UNSUPPORTED_SURFACES` 明确返回。
+- 事务先校验完整配置、binding、运行时槽和全部目标材质，再一次提交状态并更新槽；
+  缺 MI/variant 时保持配置身份和当前显示材质不变。
+- `variantId` 直接使用阶段 3 物化 MI；材料族/固定色与自定义车漆使用按槽缓存的 MID。
+  自定义车漆更新同一 MID 及 1×1 transient 颜色纹理，不生成或保存烘焙资产。
+- 阶段 3 生成器同时为被复用的 Substrate 母材质持久化
+  `SkeletalMesh` usage，使物化 MI 可用于当前骨骼代理车；不复制或改写材质图。
+
+机器证据：
+
+- [UE5.8 DX12 GUI 槽映射截图](assets/sc01-materials-stage4/mapped-slots.png)
+- [GUI 探针事务与实际材质路径](assets/sc01-materials-stage4/gui-report.json)
+
+GUI 报告确认 `SkeletalVehicle` 上的 `CS_Validation_Paint` 使用缓存动态车漆 MID，
+`CS_Validation_Interior` 使用
+`MI_SC01_leather_p10_1217`，事务回执同时列出两个 surface 与两个槽。截图中的车辆
+仍是内部授权 Audi A5 代理，不代表正式 SC01 视觉验收；未映射的原代理材质槽也不在
+阶段 4 的完成范围内。
+
 ## 验证
 
 - `ConfigurationSystemEditor Win64 Development`：通过；
@@ -73,3 +101,7 @@
 - 重复生成：不创建重名资产，原位刷新；
 - `ConfigurationSystem.Editor.AutomotiveCatalog`：通过；
 - Overview 实时 Lit 与 Path Tracing GPU 出图：完成。
+- `ConfigurationSystem.Runtime.AutomotiveMaterials.Binder`：通过，覆盖 variant、
+  清除恢复、缺 MI 原子拒绝、明确 capability 缺口、自定义车漆 MID 复用。
+- Web：88 项 Vitest 通过，生产 build 通过。
+- UE5.8.1 DX12 `AutomotiveMaterialGuiProbe`：通过，真实 viewport 命中两个可映射槽。

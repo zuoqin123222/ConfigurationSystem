@@ -1,5 +1,6 @@
 #include "ConfiguratorPanel.h"
 
+#include "AutomotiveMaterialBinder.h"
 #include "ConfigShowroomPlayerController.h"
 #include "CarConfiguratorSubsystem.h"
 #include "ConfiguratorBrowserWidget.h"
@@ -433,6 +434,12 @@ void UConfiguratorPanel::BuildWidgetTree()
 void UConfiguratorPanel::ApplyWebConfigurationJson(
 	const FString& ConfigurationJson)
 {
+	ApplyWebConfigurationTransactionJson(ConfigurationJson);
+}
+
+FString UConfiguratorPanel::ApplyWebConfigurationTransactionJson(
+	const FString& ConfigurationJson)
+{
 	TMap<FString, FString> Selections;
 	TMap<FString, FAutomotiveCustomization> Customizations;
 	FString Error;
@@ -440,82 +447,48 @@ void UConfiguratorPanel::ApplyWebConfigurationJson(
 		ConfigurationJson, Selections, Customizations, Error))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("拒绝 Web 选配 JSON：%s"), *Error);
-		return;
+		FAutomotiveMaterialTransactionResult Result;
+		Result.Code = TEXT("INVALID_BRIDGE_PAYLOAD");
+		Result.Message = Error;
+		return Result.ToJson();
 	}
 
 	UGameInstance* GameInstance = GetGameInstance();
 	UCarConfiguratorSubsystem* Configurator = IsValid(GameInstance)
 		? GameInstance->GetSubsystem<UCarConfiguratorSubsystem>()
 		: nullptr;
-	UAutomotiveConfigurationState* State = IsValid(Configurator)
-		? Configurator->GetAutomotiveConfigurationState()
+	UAutomotiveMaterialBinder* Binder = IsValid(Configurator)
+		? Configurator->GetAutomotiveMaterialBinder()
 		: nullptr;
-	if (IsValid(State))
+	if (!IsValid(Binder))
 	{
-		TSet<FString> TransactionSurfaceIds;
-		const TMap<FString, FString> PreviousSelections = State->GetSelections();
-		const TMap<FString, FAutomotiveCustomization> PreviousCustomizations =
-			State->GetCustomizations();
-		for (const FString& SurfaceId :
-			State->GetCatalogIndex().GetCatalog().SelectionOrder)
-		{
-			const FString* PreviousOption = PreviousSelections.Find(SurfaceId);
-			const FString* NextOption = Selections.Find(SurfaceId);
-			const bool bSelectionChanged =
-				(PreviousOption == nullptr) != (NextOption == nullptr)
-				|| (PreviousOption != nullptr && NextOption != nullptr
-					&& *PreviousOption != *NextOption);
-			const FAutomotiveCustomization* PreviousCustomization =
-				PreviousCustomizations.Find(SurfaceId);
-			const FAutomotiveCustomization* NextCustomization =
-				Customizations.Find(SurfaceId);
-			const bool bCustomizationChanged =
-				(PreviousCustomization == nullptr) != (NextCustomization == nullptr)
-				|| (PreviousCustomization != nullptr && NextCustomization != nullptr
-					&& !(*PreviousCustomization == *NextCustomization));
-			if (bSelectionChanged || bCustomizationChanged)
-			{
-				TransactionSurfaceIds.Add(SurfaceId);
-			}
-		}
-		TMap<FString, TArray<FName>> BindingTargets;
-		TSet<FString> UnsupportedSurfaceIds;
-		AutomotiveCatalog::FError BindingError;
-		if (!State->GetCatalogIndex().ResolveSurfaceBindingTransaction(
-			TransactionSurfaceIds,
-			BindingTargets,
-			UnsupportedSurfaceIds,
-			BindingError))
-		{
-			UE_LOG(LogTemp, Warning,
-				TEXT("拒绝 Web 选配事务：%s 未命中 binding 或显式 capability 缺口。"),
-				*BindingError.Message);
-			return;
-		}
-		for (const TPair<FString, TArray<FName>>& Target : BindingTargets)
-		{
-			UE_LOG(LogTemp, Verbose,
-				TEXT("Web 选配事务 surface=%s 命中 %d 个独占 material slot。"),
-				*Target.Key, Target.Value.Num());
-		}
-		for (const FString& SurfaceId : UnsupportedSurfaceIds)
-		{
-			UE_LOG(LogTemp, Verbose,
-				TEXT("Web 选配事务命中代理 capability 显式缺口：%s；仅提交配置状态。"),
-				*SurfaceId);
-		}
+		FAutomotiveMaterialTransactionResult Result;
+		Result.Code = TEXT("BINDER_UNAVAILABLE");
+		Result.Message = TEXT("车辆材质 Binder 不可用。");
+		return Result.ToJson();
 	}
-	if (!IsValid(State) || !State->ApplyTransaction(Selections, Customizations))
+	const FAutomotiveMaterialTransactionResult Result =
+		Binder->ApplyTransaction(Selections, Customizations);
+	if (Result.bSuccess)
 	{
-		const FString StateError = IsValid(State)
-			? State->GetLastErrorCode()
-			: TEXT("AUTOMOTIVE_STATE_UNAVAILABLE");
+		UE_LOG(
+			LogTemp,
+			Verbose,
+			TEXT("Web 材质事务回执 code=%s applied=%d unsupported=%d"),
+			*Result.Code,
+			Result.AppliedSurfaceIds.Num(),
+			Result.UnsupportedSurfaceIds.Num());
+	}
+	else
+	{
 		UE_LOG(
 			LogTemp,
 			Warning,
-			TEXT("Web 选配 JSON 未能应用到 UE v2 状态：%s"),
-			*StateError);
+			TEXT("Web 材质事务拒绝 code=%s message=%s"),
+			*Result.Code,
+			*Result.Message);
 	}
+	return Result.ToJson();
 }
 
 bool UConfiguratorPanel::SetExperienceCamera(const int32 CameraIndex)
