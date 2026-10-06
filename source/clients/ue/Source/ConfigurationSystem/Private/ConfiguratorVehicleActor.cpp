@@ -182,6 +182,10 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	SkeletalVehicle = CreateDefaultSubobject<USkeletalMeshComponent>(
 		TEXT("SkeletalVehicle"));
 	SkeletalVehicle->SetupAttachment(ContentRoot);
+	// 骨骼 FBX 已在 DCC 阶段将最低点归零；抵消静态分件代理专用的 Z 抬升，
+	// 但保留 ContentRoot 的 X 几何居中偏移。
+	SkeletalVehicle->SetRelativeLocation(
+		FVector(0.0, 0.0, -ConfiguratorVehicle::ContentRootOffset.Z));
 	SkeletalVehicle->SetVisibility(false);
 	SkeletalVehicle->SetHiddenInGame(true);
 

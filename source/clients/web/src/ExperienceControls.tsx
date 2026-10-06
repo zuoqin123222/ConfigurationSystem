@@ -60,12 +60,15 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const [error, setError] = useState('')
   const idleTimer = useRef<number | null>(null)
   const cameraRequestIdRef = useRef(0)
+  const animationRequestIdRef = useRef(0)
+  const animationCandidatesRef = useRef<CatalogAnimation[]>([])
 
   useEffect(() => {
     document.documentElement.classList.add('controls-document')
     document.body.classList.add('controls-document')
     return () => {
       cameraRequestIdRef.current += 1
+      animationRequestIdRef.current += 1
       document.documentElement.classList.remove('controls-document')
       document.body.classList.remove('controls-document')
     }
@@ -105,6 +108,32 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     setFullscreen(state.fullscreen)
   }, [])
 
+  const refreshAnimationAvailability = useCallback(async (
+    candidates = animationCandidatesRef.current,
+  ) => {
+    if (!ueEnabled || candidates.length === 0) return
+    const requestId = animationRequestIdRef.current + 1
+    animationRequestIdRef.current = requestId
+    const bridge = getUeBridge(true)
+    const supported: CatalogAnimation[] = []
+    for (const animation of candidates) {
+      let available = false
+      for (let attempt = 0; attempt < 3 && !available; attempt += 1) {
+        available = await canPlayUeAnimation(bridge, animation.animationId)
+        if (!available && attempt < 2) {
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, 120)
+          })
+        }
+      }
+      if (available) supported.push(animation)
+    }
+    if (animationRequestIdRef.current !== requestId) return
+    // 车辆至少有静态执行器回退；全 false 更可能是 CEF/Owner 尚未就绪。
+    // 保留目录候选项，避免一次启动瞬态让整个动画入口永久消失。
+    setAnimations(supported.length > 0 ? supported : candidates)
+  }, [ueEnabled])
+
   useEffect(() => {
     if (!ueEnabled) return
     let active = true
@@ -119,15 +148,9 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
           .slice()
           .sort((left, right) => left.order - right.order))
         const animationCandidates = catalog.animations ?? []
-        const availability = await Promise.all(animationCandidates.map(
-          (animation) => canPlayUeAnimation(
-            getUeBridge(true),
-            animation.animationId,
-          ),
-        ))
-        if (active) {
-          setAnimations(animationCandidates.filter((_, index) => availability[index]))
-        }
+        animationCandidatesRef.current = animationCandidates
+        setAnimations(animationCandidates)
+        await refreshAnimationAvailability(animationCandidates)
       })
       .catch(() => {
         if (active && !controller.signal.aborted) setError('无法读取镜头目录')
@@ -145,7 +168,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       active = false
       controller.abort()
     }
-  }, [applyState, ueEnabled])
+  }, [applyState, refreshAnimationAvailability, ueEnabled])
 
   useEffect(() => {
     if (!ueEnabled
@@ -347,7 +370,10 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         </div>
         {animations.length > 0 && <div
           className="toolbar-item"
-          onMouseEnter={() => setOpenMenu('animation')}
+          onMouseEnter={() => {
+            setOpenMenu('animation')
+            void refreshAnimationAvailability()
+          }}
           onMouseLeave={() => setOpenMenu(null)}
         >
           <button

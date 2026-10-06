@@ -237,6 +237,7 @@ private:
 	void ToggleWheelsInput();
 	void CancelInitialCameraReveal(bool bSnapToPreset);
 	void StartInitialCameraReveal();
+	void FinishInitialCameraReveal();
 	void FinishInteriorExteriorCameraSwitch();
 	FVector GetVehicleCameraPivot() const;
 
@@ -278,6 +279,7 @@ private:
 	/** 当前非对称投影补偿；独立于机位 Transform，便于关闭后无损回退。 */
 	float CurrentStageProjectionOffsetX = 0.0f;
 	FTimerHandle InitialRevealTimer;
+	FTimerHandle InitialRevealCompletionTimer;
 	FTimerHandle CameraZoneTransitionTimer;
 	FTimerHandle PersistenceDebounceTimer;
 	bool bOrbitTransitionActive = false;

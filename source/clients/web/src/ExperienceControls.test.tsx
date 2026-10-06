@@ -155,11 +155,44 @@ describe('ExperienceControls', () => {
     const animation = await screen.findByRole('button', { name: '动画' })
     await user.hover(animation)
     const menu = await screen.findByRole('menu', { name: '动画列表' })
-    expect(within(menu).queryByRole('menuitemradio', { name: '后盖往复' }))
-      .not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(within(menu).queryByRole('menuitemradio', { name: '后盖往复' }))
+        .not.toBeInTheDocument()
+    })
     expect(within(menu).getByRole('menuitemradio', { name: '开启机舱盖' }))
       .toBeInTheDocument()
-    expect(bridge.canplayanimation).toHaveBeenCalledTimes(3)
+    expect(bridge.canplayanimation).toHaveBeenCalledWith('hood')
+    expect(bridge.canplayanimation).toHaveBeenCalledWith('trunk')
+    expect(bridge.canplayanimation).toHaveBeenCalledWith('wheel-spin')
+  })
+
+  it('动画能力首次瞬态失败后自动重试并保留菜单项', async () => {
+    const user = userEvent.setup()
+    let hoodAttempts = 0
+    const bridge = {
+      getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
+        cameraId: 'wheel',
+        animationEnabled: false,
+        animationId: null,
+        lightPreset: 'studio',
+        renderMode: 'realtime',
+        quality: 'epic',
+        fullscreen: false,
+      })),
+      canplayanimation: vi.fn(async (animationId: string) => {
+        if (animationId !== 'hood') return true
+        hoodAttempts += 1
+        return hoodAttempts > 1
+      }),
+    }
+    window.ue = { uebridge: bridge }
+    render(<ExperienceControls ueEnabled />)
+
+    await waitFor(() => expect(hoodAttempts).toBeGreaterThanOrEqual(2))
+    const animation = screen.getByRole('button', { name: '动画' })
+    await user.hover(animation)
+    expect(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
+      .toBeInTheDocument()
   })
 
   it('一级按钮单击循环子项，悬停时只展示一个二级菜单', async () => {

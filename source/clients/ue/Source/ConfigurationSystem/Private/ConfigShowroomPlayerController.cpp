@@ -74,6 +74,7 @@ namespace
 AConfigShowroomPlayerController::AConfigShowroomPlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 }
 
 FVector AConfigShowroomPlayerController::InterpolateOrbitLocation(
@@ -147,7 +148,10 @@ FMinimalViewInfo AConfigShowroomPlayerController::BuildRevealStartPOV(
 		TargetRelative.RotateAngleAxis(-32.0f, FVector::UpVector) * 1.45f;
 	Result.Location = Pivot + OrbitedRelative + FVector(0.0, 0.0, 90.0);
 	Result.Rotation = (Pivot - Result.Location).Rotation();
-	Result.FOV = FMath::Max(Target.FOV, 48.0f);
+	// Reveal 只改变轨道位置，不改变关卡预设的镜头光学参数。
+	// 否则低 FOV 车型机位会在启动时被强行放大为广角，一旦过渡 Tick
+	// 受阻，用户就会永久停留在错误的远景构图。
+	Result.FOV = Target.FOV;
 	return Result;
 }
 
@@ -308,12 +312,18 @@ void AConfigShowroomPlayerController::Tick(const float DeltaSeconds)
 
 		if (Alpha >= 1.0f)
 		{
-			bOrbitTransitionActive = false;
-			bInitialRevealActive = false;
-			ApplyRuntimeCameraPOV(CameraTransitionEndPOV);
-			ResetInteractiveOrbit(
-				CameraTransitionEndPOV,
-				!IsCurrentCameraInterior());
+			if (bInitialRevealActive)
+			{
+				FinishInitialCameraReveal();
+			}
+			else
+			{
+				bOrbitTransitionActive = false;
+				ApplyRuntimeCameraPOV(CameraTransitionEndPOV);
+				ResetInteractiveOrbit(
+					CameraTransitionEndPOV,
+					!IsCurrentCameraInterior());
+			}
 		}
 		return;
 	}
@@ -680,7 +690,9 @@ bool AConfigShowroomPlayerController::SwitchToCamera(
 	const bool bReplacingPendingBlackTransition =
 		IsValid(PendingCameraPreset) && !bSameCamera;
 	GetWorldTimerManager().ClearTimer(InitialRevealTimer);
+	GetWorldTimerManager().ClearTimer(InitialRevealCompletionTimer);
 	bInitialRevealPending = false;
+	bInitialRevealActive = false;
 	bOrbitTransitionActive = false;
 	bInteractiveSmoothingActive = false;
 	GetWorldTimerManager().ClearTimer(CameraZoneTransitionTimer);
@@ -841,19 +853,51 @@ void AConfigShowroomPlayerController::StartInitialCameraReveal()
 	{
 		return;
 	}
+	FMinimalViewInfo LatestPresetPOV;
+	if (!GetCameraPresetPOV(CurrentCameraPreset, LatestPresetPOV))
+	{
+		return;
+	}
+	CameraTransitionEndPOV = LatestPresetPOV;
 	CameraTransitionElapsed = 0.0f;
 	CameraTransitionDuration = 2.0f;
 	bInitialRevealActive = true;
 	bOrbitTransitionActive = true;
+	GetWorldTimerManager().SetTimer(
+		InitialRevealCompletionTimer,
+		this,
+		&AConfigShowroomPlayerController::FinishInitialCameraReveal,
+		CameraTransitionDuration + 0.05f,
+		false);
+}
+
+void AConfigShowroomPlayerController::FinishInitialCameraReveal()
+{
+	GetWorldTimerManager().ClearTimer(InitialRevealCompletionTimer);
+	if (!bInitialRevealActive || !IsValid(RuntimeCamera))
+	{
+		return;
+	}
+	FMinimalViewInfo LatestPresetPOV;
+	if (GetCameraPresetPOV(CurrentCameraPreset, LatestPresetPOV))
+	{
+		CameraTransitionEndPOV = LatestPresetPOV;
+		ApplyRuntimeCameraPOV(CameraTransitionEndPOV);
+		ResetInteractiveOrbit(
+			CameraTransitionEndPOV,
+			!IsCurrentCameraInterior());
+	}
+	bInitialRevealActive = false;
+	bOrbitTransitionActive = false;
 }
 
 void AConfigShowroomPlayerController::CancelInitialCameraReveal(
 	const bool bSnapToPreset)
 {
 	GetWorldTimerManager().ClearTimer(InitialRevealTimer);
+	GetWorldTimerManager().ClearTimer(InitialRevealCompletionTimer);
 	bInitialRevealPending = false;
 	bInitialRevealActive = false;
-	bOrbitTransitionActive = false;
 	bOrbitTransitionActive = false;
 	if (!bSnapToPreset || !IsValid(RuntimeCamera))
 	{

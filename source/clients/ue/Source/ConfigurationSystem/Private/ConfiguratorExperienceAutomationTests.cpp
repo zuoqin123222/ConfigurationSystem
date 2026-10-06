@@ -11,6 +11,7 @@
 #include "VehicleAnimSequencePlayerComponent.h"
 
 #include "Components/SceneComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/StaticMesh.h"
@@ -775,6 +776,23 @@ bool FSmoothWheelControllerAutomationTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FShowroomControllerTickPolicyAutomationTest,
+	"ConfigurationSystem.Runtime.Experience.ShowroomControllerTickPolicy",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
+bool FShowroomControllerTickPolicyAutomationTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	const AConfigShowroomPlayerController* Controller =
+		GetDefault<AConfigShowroomPlayerController>();
+	TestTrue(TEXT("镜头过渡控制器允许 Tick"),
+		Controller->PrimaryActorTick.bCanEverTick);
+	TestTrue(TEXT("镜头过渡控制器启动时启用 Tick"),
+		Controller->PrimaryActorTick.bStartWithTickEnabled);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FVehiclePresentationHierarchyAutomationTest,
 	"ConfigurationSystem.Runtime.Experience.VehiclePresentationHierarchy",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
@@ -804,6 +822,17 @@ bool FVehiclePresentationHierarchyAutomationTest::RunTest(const FString& Paramet
 				0.01));
 		TestTrue(TEXT("内容根把轮胎最低点抬到地面 Z=0"),
 			FMath::IsNearlyZero(Offset.Z - 32.3401680, 0.01));
+	}
+	USkeletalMeshComponent* SkeletalVehicle =
+		FindObjectFast<USkeletalMeshComponent>(Vehicle, TEXT("SkeletalVehicle"));
+	TestNotNull(TEXT("车辆包含骨骼整车组件"), SkeletalVehicle);
+	if (SkeletalVehicle != nullptr && ContentRoot != nullptr)
+	{
+		TestTrue(TEXT("骨骼整车抵消静态代理 Z 抬升并落地"),
+			FMath::IsNearlyZero(
+				ContentRoot->GetRelativeLocation().Z
+					+ SkeletalVehicle->GetRelativeLocation().Z,
+				0.01));
 	}
 
 	const TCHAR* WheelNames[] = {
