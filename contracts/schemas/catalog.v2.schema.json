@@ -221,7 +221,7 @@
           ]
         },
         "control": {
-          "enum": ["swatch", "thumbnail", "color-picker", "material-variant"]
+          "enum": ["swatch", "thumbnail", "color-picker", "material-variant", "material-strip"]
         },
         "defaultParameters": {
           "type": "object",

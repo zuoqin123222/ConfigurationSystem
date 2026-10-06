@@ -318,8 +318,20 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
     "背板"
   );
   assert.equal(byId.get("seat-shell-carbon-original").displayName, "高光原色碳纤维");
-  assert.equal(byId.get("seat-shell-custom").displayName, "自定义取色");
+  assert.equal(byId.get("seat-shell-custom").displayName, "自定义颜色");
   assert.equal(byId.get("seat-shell-custom").parameters.color.mode, "custom");
+  assert.ok(
+    catalog.options
+      .filter((option) => ["ultrasuede", "alcantara", "microfiber", "leather"]
+        .includes(option.materialFamilyId)
+        && option.parameters.color?.mode === "variant")
+      .every((option) => option.ui?.control === "material-strip")
+  );
+  assert.ok(
+    catalog.options
+      .filter((option) => option.materialFamilyId === "woven-wool")
+      .every((option) => option.ui?.control === "material-variant")
+  );
   assert.deepEqual(
     catalog.components
       .filter((component) => component.categoryId === "personalization")

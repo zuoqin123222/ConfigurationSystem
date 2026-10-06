@@ -422,7 +422,7 @@ export function validateCatalog(catalog) {
       );
       check(
         option.ui.control === undefined
-          || ["swatch", "thumbnail", "color-picker", "material-variant"]
+          || ["swatch", "thumbnail", "color-picker", "material-variant", "material-strip"]
             .includes(option.ui.control),
         `${option.optionId}.ui.control 非法`
       );

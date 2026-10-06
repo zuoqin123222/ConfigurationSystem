@@ -113,7 +113,7 @@ export interface CatalogOption extends CatalogNode {
   ui?: {
     order?: number
     iconUrl?: string | null
-    control?: 'swatch' | 'thumbnail' | 'color-picker' | 'material-variant'
+    control?: 'swatch' | 'thumbnail' | 'color-picker' | 'material-variant' | 'material-strip'
     defaultParameters?: Partial<PaintCustomization>
   }
 }

@@ -344,7 +344,8 @@ function validateCatalogUi(catalog: AutomotiveCatalog): void {
         && ui.iconUrl !== null
         && (typeof ui.iconUrl !== "string" || !ui.iconUrl.startsWith("/")))
       || (ui.control !== undefined
-        && !["swatch", "thumbnail", "color-picker", "material-variant"].includes(String(ui.control)))) {
+        && !["swatch", "thumbnail", "color-picker", "material-variant", "material-strip"]
+          .includes(String(ui.control)))) {
       throw new Error(`车型目录 v2 选项 ${option.optionId} ui 非法`);
     }
     if (ui.defaultParameters !== undefined) {

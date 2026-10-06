@@ -6888,7 +6888,10 @@
           "page": 1,
           "locator": "全车身覆盖件 / 红色 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "body-cover-silver",
@@ -6925,7 +6928,10 @@
           "page": 1,
           "locator": "全车身覆盖件 / 银色 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "body-cover-custom",
@@ -7008,7 +7014,10 @@
           "page": 1,
           "locator": "轮毂材质 / 铝合金 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "wheel-magnesium-alloy",
@@ -7041,7 +7050,10 @@
           "page": 1,
           "locator": "轮毂材质 / 镁合金 / 5800 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "wheel-style-multispoke",
@@ -7074,7 +7086,10 @@
           "page": 1,
           "locator": "轮毂造型 / 多条幅轮毂 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "wheel-style-carbon-extension",
@@ -7107,7 +7122,10 @@
           "page": 1,
           "locator": "轮毂造型 / 多条幅轮毂碳纤维拓展 / 500 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "wheel-color-bright-silver",
@@ -7140,7 +7158,10 @@
           "page": 1,
           "locator": "轮毂颜色 / 亮银色 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "wheel-color-black",
@@ -7177,7 +7198,10 @@
           "page": 1,
           "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "wheel-color-dark-gray",
@@ -7214,7 +7238,10 @@
           "page": 1,
           "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "wheel-color-carbon-fiber",
@@ -7247,7 +7274,10 @@
           "page": 1,
           "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "wheel-color-gold",
@@ -7284,7 +7314,10 @@
           "page": 1,
           "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "wheel-color-bronze",
@@ -7321,7 +7354,10 @@
           "page": 1,
           "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "lower-skirt-aluminum",
@@ -7354,7 +7390,10 @@
           "page": 1,
           "locator": "车辆下护板 / 铝 / 3000 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "front-caliper-black",
@@ -7387,7 +7426,10 @@
           "page": 1,
           "locator": "前卡钳 / 黑色 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "front-caliper-blue",
@@ -7424,7 +7466,10 @@
           "page": 1,
           "locator": "前卡钳 / 蓝/黄/红/橙 / 1050 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "front-caliper-yellow",
@@ -7461,7 +7506,10 @@
           "page": 1,
           "locator": "前卡钳 / 蓝/黄/红/橙 / 1050 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "front-caliper-red",
@@ -7498,7 +7546,10 @@
           "page": 1,
           "locator": "前卡钳 / 蓝/黄/红/橙 / 1050 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "front-caliper-orange",
@@ -7535,7 +7586,10 @@
           "page": 1,
           "locator": "前卡钳 / 蓝/黄/红/橙 / 1050 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "rear-caliper-black",
@@ -7568,7 +7622,10 @@
           "page": 1,
           "locator": "后卡钳 / 黑色 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "rear-caliper-blue",
@@ -7605,7 +7662,10 @@
           "page": 1,
           "locator": "后卡钳 / 蓝/黄/红/橙 / 950 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "rear-caliper-yellow",
@@ -7642,7 +7702,10 @@
           "page": 1,
           "locator": "后卡钳 / 蓝/黄/红/橙 / 950 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "rear-caliper-red",
@@ -7679,7 +7742,10 @@
           "page": 1,
           "locator": "后卡钳 / 蓝/黄/红/橙 / 950 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "rear-caliper-orange",
@@ -7716,7 +7782,10 @@
           "page": 1,
           "locator": "后卡钳 / 蓝/黄/红/橙 / 950 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "engine-cover-silver",
@@ -7753,7 +7822,10 @@
           "page": 1,
           "locator": "机舱盖板 / PPG / 4800 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "engine-cover-ppg-custom",
@@ -7836,7 +7908,10 @@
           "page": 1,
           "locator": "表皮 / Ultrasuede（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "steering-skin-ultrasuede-custom",
@@ -7873,7 +7948,10 @@
           "page": 1,
           "locator": "表皮 / Ultrasuede（色彩拓展） / 1180 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "steering-skin-alcantara",
@@ -7910,7 +7988,10 @@
           "page": 1,
           "locator": "表皮 / Alcantara / 1200 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "steering-skin-leather",
@@ -7947,7 +8028,10 @@
           "page": 1,
           "locator": "表皮 / 牛皮 / 1280 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "steering-addon-eva",
@@ -7980,7 +8064,10 @@
           "page": 1,
           "locator": "加粗 / EVA高频 / 1180 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "steering-center-standard",
@@ -8013,7 +8100,10 @@
           "page": 1,
           "locator": "回中标 / Ultrasuede/Alcantara超纤/牛皮 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "steering-center-microfiber-custom",
@@ -8050,7 +8140,10 @@
           "page": 1,
           "locator": "回中标 / Ultrasuede/Alcantara超纤/牛皮 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "steering-center-ultrasuede",
@@ -8087,7 +8180,10 @@
           "page": 1,
           "locator": "回中标 / Ultrasuede/Alcantara超纤/牛皮 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "steering-center-alcantara",
@@ -8124,7 +8220,10 @@
           "page": 1,
           "locator": "回中标 / Ultrasuede/Alcantara超纤/牛皮 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "steering-center-leather",
@@ -8161,7 +8260,10 @@
           "page": 1,
           "locator": "回中标 / Ultrasuede/Alcantara超纤/牛皮 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-back-ultrasuede-black",
@@ -8194,7 +8296,10 @@
           "page": 1,
           "locator": "接触面 / Ultrasuede（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "seat-back-ultrasuede-custom",
@@ -8231,7 +8336,10 @@
           "page": 1,
           "locator": "接触面 / Ultrasuede（色彩拓展） / 2480*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-back-alcantara",
@@ -8268,7 +8376,10 @@
           "page": 1,
           "locator": "接触面 / Alcantara（35%用户选择） / 2600*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-back-leather",
@@ -8305,7 +8416,10 @@
           "page": 1,
           "locator": "接触面 / 牛皮（50%用户选择） / 5500*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-bolster-microfiber-black",
@@ -8338,7 +8452,10 @@
           "page": 1,
           "locator": "边皮 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "seat-bolster-microfiber-custom",
@@ -8375,7 +8492,10 @@
           "page": 1,
           "locator": "边皮 / 超纤（色彩拓展） / 500*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-bolster-leather",
@@ -8412,7 +8532,10 @@
           "page": 1,
           "locator": "边皮 / 牛皮（80%用户选择） / 1580*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-bolster-alcantara",
@@ -8449,7 +8572,10 @@
           "page": 1,
           "locator": "边皮 / Alcantara / 1580*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-bolster-ultrasuede",
@@ -8486,7 +8612,10 @@
           "page": 1,
           "locator": "边皮 / Ultrasuede / 1500*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-shell-carbon-original",
@@ -8519,7 +8648,10 @@
           "page": 1,
           "locator": "碳纤维背板颜色 / 高光原色碳纤维 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "seat-shell-custom",
@@ -8606,7 +8738,10 @@
           "page": 2,
           "locator": "回中标 / 奥司维 / 免费"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-headrest-mark-alcantara",
@@ -8643,7 +8778,10 @@
           "page": 2,
           "locator": "回中标 / Alcantara / 免费"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-headrest-mark-microfiber",
@@ -8680,7 +8818,10 @@
           "page": 2,
           "locator": "回中标 / 超纤皮 / 免费"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "seat-headrest-mark-leather",
@@ -8717,7 +8858,10 @@
           "page": 2,
           "locator": "回中标 / 牛皮 / 免费"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-upper-microfiber-black",
@@ -8750,7 +8894,10 @@
           "page": 2,
           "locator": "上段 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "door-upper-microfiber-custom",
@@ -8787,7 +8934,10 @@
           "page": 2,
           "locator": "上段 / 超纤（色彩拓展） / 960*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-upper-ultrasuede",
@@ -8824,7 +8974,10 @@
           "page": 2,
           "locator": "上段 / Ultrasuede / 1180*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-upper-alcantara",
@@ -8861,7 +9014,10 @@
           "page": 2,
           "locator": "上段 / Alcantara / 1280*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-upper-leather",
@@ -8898,7 +9054,10 @@
           "page": 2,
           "locator": "上段 / 牛皮（80%用户选择） / 1380*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-middle-ultrasuede-black",
@@ -8931,7 +9090,10 @@
           "page": 2,
           "locator": "中面板 / Ultrasuede（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "door-middle-microfiber",
@@ -8964,7 +9126,10 @@
           "page": 2,
           "locator": "中面板 / 超纤 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "door-middle-ultrasuede-custom",
@@ -9001,7 +9166,10 @@
           "page": 2,
           "locator": "中面板 / Ultrasuede（色彩拓展） / 680*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-middle-alcantara",
@@ -9038,7 +9206,10 @@
           "page": 2,
           "locator": "中面板 / Alcantara / 800*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-middle-leather",
@@ -9075,7 +9246,10 @@
           "page": 2,
           "locator": "中面板 / 牛皮 / 800*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-middle-woven-wool",
@@ -9112,7 +9286,10 @@
           "page": 2,
           "locator": "中面板 / 织物羊毛（20%用户选择） / 2880*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "door-armrest-microfiber-black",
@@ -9145,7 +9322,10 @@
           "page": 2,
           "locator": "扶手 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "door-armrest-microfiber-custom",
@@ -9182,7 +9362,10 @@
           "page": 2,
           "locator": "扶手 / 超纤（色彩拓展） / 400*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-armrest-ultrasuede",
@@ -9219,7 +9402,10 @@
           "page": 2,
           "locator": "扶手 / Ultrasuede / 500*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-armrest-alcantara",
@@ -9256,7 +9442,10 @@
           "page": 2,
           "locator": "扶手 / Alcantara / 600*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-armrest-leather",
@@ -9293,7 +9482,10 @@
           "page": 2,
           "locator": "扶手 / 牛皮（66%用户选择） / 680*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-armrest-woven-wool",
@@ -9330,7 +9522,10 @@
           "page": 2,
           "locator": "扶手 / 织物羊毛 / 960*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "door-armrest-skin-microfiber-black",
@@ -9363,7 +9558,10 @@
           "page": 2,
           "locator": "扶手表皮 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "door-armrest-skin-microfiber-custom",
@@ -9400,7 +9598,10 @@
           "page": 2,
           "locator": "扶手表皮 / 超纤（色彩拓展，60%用户选择） / 400 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-armrest-skin-ultrasuede",
@@ -9437,7 +9638,10 @@
           "page": 2,
           "locator": "扶手表皮 / Ultrasuede / 500 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-armrest-skin-alcantara",
@@ -9474,7 +9678,10 @@
           "page": 2,
           "locator": "扶手表皮 / Alcantara / 600 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-armrest-skin-leather",
@@ -9511,7 +9718,10 @@
           "page": 2,
           "locator": "扶手表皮 / 牛皮 / 680 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "door-armrest-skin-woven-wool",
@@ -9548,7 +9758,10 @@
           "page": 2,
           "locator": "扶手表皮 / 织物羊毛 / 960 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "ip-wings-microfiber-black",
@@ -9581,7 +9794,10 @@
           "page": 2,
           "locator": "两侧翼 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "ip-wings-microfiber-custom",
@@ -9618,7 +9834,10 @@
           "page": 2,
           "locator": "两侧翼 / 超纤（色彩拓展） / 780 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-wings-ultrasuede",
@@ -9655,7 +9874,10 @@
           "page": 2,
           "locator": "两侧翼 / Ultrasuede（15%用户选择） / 920 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-wings-alcantara",
@@ -9692,7 +9914,10 @@
           "page": 2,
           "locator": "两侧翼 / Alcantara（15%用户选择） / 1080 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-wings-leather",
@@ -9729,7 +9954,10 @@
           "page": 2,
           "locator": "两侧翼 / 牛皮（60%用户选择） / 1180 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-middle-microfiber-black",
@@ -9762,7 +9990,10 @@
           "page": 2,
           "locator": "中翼 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "ip-middle-microfiber-custom",
@@ -9799,7 +10030,10 @@
           "page": 2,
           "locator": "中翼 / 超纤（色彩拓展） / 780 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-middle-ultrasuede",
@@ -9836,7 +10070,10 @@
           "page": 2,
           "locator": "中翼 / Ultrasuede（15%用户选择） / 920 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-middle-alcantara",
@@ -9873,7 +10110,10 @@
           "page": 2,
           "locator": "中翼 / Alcantara（15%用户选择） / 1080 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-middle-leather",
@@ -9910,7 +10150,10 @@
           "page": 2,
           "locator": "中翼 / 牛皮（60%用户选择） / 1180 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-instrument-cover-microfiber-black",
@@ -9943,7 +10186,10 @@
           "page": 2,
           "locator": "仪表盖 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "ip-instrument-cover-microfiber-custom",
@@ -9980,7 +10226,10 @@
           "page": 2,
           "locator": "仪表盖 / 超纤（色彩拓展） / 400*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-instrument-cover-ultrasuede",
@@ -10017,7 +10266,10 @@
           "page": 2,
           "locator": "仪表盖 / Ultrasuede / 600*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-instrument-cover-alcantara",
@@ -10054,7 +10306,10 @@
           "page": 2,
           "locator": "仪表盖 / Alcantara / 800*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-instrument-cover-leather",
@@ -10091,7 +10346,10 @@
           "page": 2,
           "locator": "仪表盖 / 牛皮 / 1080*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-instrument-cover-woven-wool",
@@ -10128,7 +10386,10 @@
           "page": 2,
           "locator": "仪表盖 / 织物羊毛 / 1200*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "ip-upper-trim-microfiber-black",
@@ -10161,7 +10422,10 @@
           "page": 3,
           "locator": "上层软包 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "ip-upper-trim-microfiber-custom",
@@ -10198,7 +10462,10 @@
           "page": 3,
           "locator": "上层软包 / 超纤（色彩拓展） / 1280 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-upper-trim-ultrasuede",
@@ -10235,7 +10502,10 @@
           "page": 3,
           "locator": "上层软包 / Ultrasuede / 1890 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-upper-trim-alcantara",
@@ -10272,7 +10542,10 @@
           "page": 3,
           "locator": "上层软包 / Alcantara / 2180 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-upper-trim-leather",
@@ -10309,7 +10582,10 @@
           "page": 3,
           "locator": "上层软包 / 牛皮（40%用户选择） / 2680 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-upper-trim-woven-wool",
@@ -10346,7 +10622,10 @@
           "page": 3,
           "locator": "上层软包 / 织物羊毛 / 3500 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "ip-lower-trim-microfiber-black",
@@ -10379,7 +10658,10 @@
           "page": 3,
           "locator": "下层软包 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "ip-lower-trim-microfiber-custom",
@@ -10416,7 +10698,10 @@
           "page": 3,
           "locator": "下层软包 / 超纤（色彩拓展） / 1160 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-lower-trim-ultrasuede",
@@ -10453,7 +10738,10 @@
           "page": 3,
           "locator": "下层软包 / Ultrasuede / 1680 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-lower-trim-alcantara",
@@ -10490,7 +10778,10 @@
           "page": 3,
           "locator": "下层软包 / Alcantara（37%用户选择） / 1880 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-lower-trim-leather",
@@ -10527,7 +10818,10 @@
           "page": 3,
           "locator": "下层软包 / 牛皮（37%用户选择） / 1960 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-lower-trim-woven-wool",
@@ -10564,7 +10858,10 @@
           "page": 3,
           "locator": "下层软包 / 织物羊毛 / 3500 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "ip-center-mark-uncovered-black",
@@ -10598,7 +10895,10 @@
           "page": 3,
           "locator": "回中标 / 无包覆(黑) / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "ip-center-mark-ultrasuede",
@@ -10635,7 +10935,10 @@
           "page": 3,
           "locator": "回中标 / 皮质/翻毛 / 奥司维 / 100 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-center-mark-alcantara",
@@ -10672,7 +10975,10 @@
           "page": 3,
           "locator": "回中标 / 皮质/翻毛 / Alcantara / 100 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-center-mark-microfiber",
@@ -10709,7 +11015,10 @@
           "page": 3,
           "locator": "回中标 / 皮质/翻毛 / 超纤皮 / 100 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "ip-center-mark-leather",
@@ -10746,7 +11055,10 @@
           "page": 3,
           "locator": "回中标 / 皮质/翻毛 / 牛皮 / 100 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "storage-soft-bag-microfiber-black",
@@ -10779,7 +11091,10 @@
           "page": 3,
           "locator": "软包 / 超纤（黑，30%用户选择） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "storage-soft-bag-microfiber-custom",
@@ -10816,7 +11131,10 @@
           "page": 3,
           "locator": "软包 / 超纤（色彩拓展） / 460*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "storage-soft-bag-leather",
@@ -10853,7 +11171,10 @@
           "page": 3,
           "locator": "软包 / 牛皮（60%用户选择） / 860*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "storage-soft-bag-ultrasuede",
@@ -10890,7 +11211,10 @@
           "page": 3,
           "locator": "软包 / Ultrasuede / 960*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "storage-soft-bag-alcantara",
@@ -10927,7 +11251,10 @@
           "page": 3,
           "locator": "软包 / Alcantara / 1160*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "storage-soft-bag-woven-wool",
@@ -10964,7 +11291,10 @@
           "page": 3,
           "locator": "软包 / 织物羊毛 / 2600*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "console-armrest-cover-microfiber-black",
@@ -10997,7 +11327,10 @@
           "page": 3,
           "locator": "扶手盖子 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "console-armrest-cover-microfiber-custom",
@@ -11034,7 +11367,10 @@
           "page": 3,
           "locator": "扶手盖子 / 超纤（色彩拓展） / 460 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "console-armrest-cover-ultrasuede",
@@ -11071,7 +11407,10 @@
           "page": 3,
           "locator": "扶手盖子 / Ultrasuede / 560 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "console-armrest-cover-alcantara",
@@ -11108,7 +11447,10 @@
           "page": 3,
           "locator": "扶手盖子 / Alcantara / 580 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "console-armrest-cover-leather",
@@ -11145,7 +11487,10 @@
           "page": 3,
           "locator": "扶手盖子 / 牛皮（25%用户选择） / 960 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "console-armrest-cover-woven-wool",
@@ -11182,7 +11527,10 @@
           "page": 3,
           "locator": "扶手盖子 / 织物羊毛 / 960 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "console-armrest-side-microfiber-black",
@@ -11215,7 +11563,10 @@
           "page": 3,
           "locator": "扶手侧边 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "console-armrest-side-microfiber-custom",
@@ -11252,7 +11603,10 @@
           "page": 3,
           "locator": "扶手侧边 / 超纤（色彩拓展） / 460 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "console-armrest-side-ultrasuede",
@@ -11289,7 +11643,10 @@
           "page": 3,
           "locator": "扶手侧边 / Ultrasuede / 560 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "console-armrest-side-alcantara",
@@ -11326,7 +11683,10 @@
           "page": 3,
           "locator": "扶手侧边 / Alcantara / 580 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "console-armrest-side-leather",
@@ -11363,7 +11723,10 @@
           "page": 3,
           "locator": "扶手侧边 / 牛皮 / 860 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "console-armrest-side-woven-wool",
@@ -11400,7 +11763,10 @@
           "page": 3,
           "locator": "扶手侧边 / 织物羊毛 / 960 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "handbrake-microfiber-black",
@@ -11433,7 +11799,10 @@
           "page": 3,
           "locator": "手刹把 / 超纤（黑） / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "handbrake-microfiber-custom",
@@ -11470,7 +11839,10 @@
           "page": 3,
           "locator": "手刹把 / 超纤（色彩拓展） / 460 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "handbrake-leather",
@@ -11507,7 +11879,10 @@
           "page": 3,
           "locator": "手刹把 / 牛皮（60%用户选择） / 780 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "handbrake-ultrasuede",
@@ -11544,7 +11919,10 @@
           "page": 3,
           "locator": "手刹把 / Ultrasuede / 620 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "handbrake-alcantara",
@@ -11581,7 +11959,10 @@
           "page": 3,
           "locator": "手刹把 / Alcantara / 660 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "handbrake-woven-wool",
@@ -11618,7 +11999,10 @@
           "page": 3,
           "locator": "手刹把 / 织物羊毛 / 880 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-variant"
+      }
     },
     {
       "optionId": "roof-woven-standard",
@@ -11655,7 +12039,10 @@
           "page": 3,
           "locator": "棚面 / 织布 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "roof-microfiber",
@@ -11692,7 +12079,10 @@
           "page": 3,
           "locator": "棚面 / 超纤 / 2880 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "roof-ultrasuede",
@@ -11729,7 +12119,10 @@
           "page": 3,
           "locator": "棚面 / Ultrasuede（60%用户选择） / 4280 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "roof-alcantara",
@@ -11766,7 +12159,10 @@
           "page": 3,
           "locator": "棚面 / Alcantara / 4680 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "roof-leather",
@@ -11803,7 +12199,10 @@
           "page": 3,
           "locator": "棚面 / 牛皮 / 5880 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "a-pillar-woven",
@@ -11840,7 +12239,10 @@
           "page": 4,
           "locator": "A柱 / 织布 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "a-pillar-microfiber",
@@ -11877,7 +12279,10 @@
           "page": 4,
           "locator": "A柱 / 超纤 / 480*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "a-pillar-ultrasuede",
@@ -11914,7 +12319,10 @@
           "page": 4,
           "locator": "A柱 / Ultrasuede（60%用户选择） / 560*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "a-pillar-alcantara",
@@ -11951,7 +12359,10 @@
           "page": 4,
           "locator": "A柱 / Alcantara / 660*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "a-pillar-leather",
@@ -11988,7 +12399,10 @@
           "page": 4,
           "locator": "A柱 / 牛皮 / 860*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "interior-painted-spray",
@@ -12021,7 +12435,10 @@
           "page": 4,
           "locator": "内饰全车黑色喷漆件 / 喷漆 / 1680 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "door-sill-leather",
@@ -12058,7 +12475,10 @@
           "page": 4,
           "locator": "门板口袋 / 牛皮 / 880*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "material-strip"
+      }
     },
     {
       "optionId": "embroidered-logo-standard",
@@ -12091,7 +12511,10 @@
           "page": 4,
           "locator": "缝线徽标 / 黑/红/蓝/绿 / 标配"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "embroidered-logo-custom",
@@ -12124,7 +12547,10 @@
           "page": 4,
           "locator": "缝线徽标 / 缝线颜色拓展 / 600 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "center-panel-trim-custom",
@@ -12157,7 +12583,10 @@
           "page": 4,
           "locator": "中面板横饰板 / 缝线颜色拓展 / 300*2 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "shift-knob-copper",
@@ -12190,7 +12619,10 @@
           "page": 4,
           "locator": "换挡 / 铜 / 880 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "shift-knob-stainless",
@@ -12223,7 +12655,10 @@
           "page": 4,
           "locator": "换挡 / 不锈钢 / 860 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "shift-knob-carbon",
@@ -12256,7 +12691,10 @@
           "page": 4,
           "locator": "换挡 / 碳纤维 / 980 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "brake-handle-flamed-blue",
@@ -12289,7 +12727,10 @@
           "page": 4,
           "locator": "刹车 / 火烧钢蓝 / 1288 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "brake-handle-door-panel",
@@ -12322,7 +12763,10 @@
           "page": 4,
           "locator": "刹车 / 门板中刹柄 / 1688 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "pedal-racing",
@@ -12355,7 +12799,10 @@
           "page": 4,
           "locator": "脚垫 / 赛车版 / 560 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "pedal-short-wool",
@@ -12388,7 +12835,10 @@
           "page": 4,
           "locator": "脚垫 / 短绒毛 / 980 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     },
     {
       "optionId": "pedal-luxury-carpet",
@@ -12421,7 +12871,10 @@
           "page": 4,
           "locator": "脚垫 / 豪华地毯（90%用户选择） / 1680 元"
         }
-      ]
+      ],
+      "ui": {
+        "control": "swatch"
+      }
     }
   ],
   "assetManifest": "/sc01/crop-manifest.json",

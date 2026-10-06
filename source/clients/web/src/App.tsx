@@ -31,6 +31,7 @@ import {
   sortMaterialVariants,
   supportsMaterialVariants,
   surfacesForComponent,
+  usesMaterialStrip,
 } from './configurator'
 import type {
   CatalogV2,
@@ -69,6 +70,7 @@ import {
 } from './ueBridge'
 import ExperienceControls from './ExperienceControls'
 import InlineColorPicker from './InlineColorPicker'
+import MaterialColorStrip from './MaterialColorStrip'
 import {
   BLACK_REFERENCE_SURFACES,
   INTERIOR_PART_IMAGES,
@@ -1110,6 +1112,8 @@ function Configurator({
                 materialFamily.ui?.variantSort,
               )
                 .map((variant) => ({ option, variant })))
+            const stripChoices = variantChoices.filter(({ option }) => usesMaterialStrip(option))
+            const cardVariantChoices = variantChoices.filter(({ option }) => !usesMaterialStrip(option))
             const remainingFamilyOptions = familyOptions.filter(
               (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
             )
@@ -1139,14 +1143,14 @@ function Configurator({
                   <strong>{materialFamily.displayName}</strong>
                   <span className="check" aria-hidden="true">{familySelected ? '✓' : ''}</span>
                 </button>
-                <div className="choice-grid">
+                <div className="choice-grid material-family-defaults">
                   {standardFamilyOption && renderFlatOption(
                     standardFamilyOption,
                     standardFamilyOption.displayName,
                     standardFamilyOption.ui?.iconUrl ?? standardFamilyOption.thumbnailUrl,
                   )}
                   {remainingFamilyOptions.map((option) => renderFlatOption(option))}
-                  {variantChoices
+                  {cardVariantChoices
                     .map(({ option, variant }) => {
                       const variantSelected = selections[surface.surfaceId] === option.optionId
                         && currentCustomization
@@ -1176,6 +1180,39 @@ function Configurator({
                       )
                     })}
                 </div>
+                {stripChoices.length > 0 && (
+                  <MaterialColorStrip
+                    familyName={materialFamily.displayName}
+                    choices={stripChoices}
+                    selectedOptionId={selectedOption?.optionId}
+                    selectedVariantId={
+                      currentCustomization && 'materialVariantId' in currentCustomization
+                        ? currentCustomization.materialVariantId
+                        : undefined
+                    }
+                    selectedDefault={
+                      standardFamilyOption
+                        && selectedOption?.optionId === standardFamilyOption.optionId
+                        && !(currentCustomization && 'materialVariantId' in currentCustomization)
+                        ? {
+                            name: standardFamilyOption.displayName,
+                            price: optionPrice(standardFamilyOption),
+                            imageUrl: standardFamilyOption.ui?.iconUrl
+                              ?? standardFamilyOption.thumbnailUrl
+                              ?? DEFAULT_IMAGE_URL,
+                          }
+                        : undefined
+                    }
+                    formatPrice={optionPrice}
+                    resolveImageUrl={versionStaticAssetUrl}
+                    onImageError={useDefaultImage}
+                    onCommit={({ option, variant }) => setMaterialVariant(
+                      surface.surfaceId,
+                      variant.variantId,
+                      option.optionId,
+                    )}
+                  />
+                )}
               </section>
             )
           })}

@@ -246,8 +246,13 @@ export interface MaterialOptionGroup {
 
 export function supportsMaterialVariants(option: CatalogOption): boolean {
   return (option.ui?.control === 'material-variant'
+    || option.ui?.control === 'material-strip'
     || (!option.ui?.control && option.parameters.color?.mode === 'variant'))
     && option.materialFamilyId !== null
+}
+
+export function usesMaterialStrip(option: CatalogOption): boolean {
+  return option.ui?.control === 'material-strip'
 }
 
 export function materialVariantsForOption(
