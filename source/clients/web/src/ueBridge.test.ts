@@ -248,6 +248,7 @@ describe('受限 UE bridge', () => {
       lightPreset: 'outdoor',
       renderMode: 'path-tracing',
       renderProgress: 0.42,
+      renderAvailability: 'ready',
       quality: 'epic',
       fullscreen: true,
     } as const
@@ -264,6 +265,11 @@ describe('受限 UE bridge', () => {
     bridge.getpresentationstatejson.mockResolvedValue(JSON.stringify({
       ...state,
       renderProgress: 1.2,
+    }))
+    await expect(getUePresentationState(bridge)).resolves.toBeNull()
+    bridge.getpresentationstatejson.mockResolvedValue(JSON.stringify({
+      ...state,
+      renderAvailability: 'waiting',
     }))
     await expect(getUePresentationState(bridge)).resolves.toBeNull()
     bridge.getpresentationstatejson.mockResolvedValue('{"cameraIndex":99}')

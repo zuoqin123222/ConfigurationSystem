@@ -42,7 +42,8 @@ bool FPathTracingWarmupPolicyAutomationTest::RunTest(const FString& Parameters)
 			EPathTracingWarmupState::WaitingForRenderFence,
 			false,
 			0,
-			1.0),
+			1.0,
+			0.0),
 		EPathTracingWarmupState::WaitingForRenderFence);
 	TestEqual(
 		TEXT("渲染栅栏完成后开始观察 PipelineStateCache"),
@@ -50,7 +51,8 @@ bool FPathTracingWarmupPolicyAutomationTest::RunTest(const FString& Parameters)
 			EPathTracingWarmupState::WaitingForRenderFence,
 			true,
 			0,
-			1.0),
+			1.0,
+			0.0),
 		EPathTracingWarmupState::WaitingForPipelineCache);
 	TestEqual(
 		TEXT("仍有活跃 PSO 任务时不允许切换"),
@@ -58,15 +60,44 @@ bool FPathTracingWarmupPolicyAutomationTest::RunTest(const FString& Parameters)
 			EPathTracingWarmupState::WaitingForPipelineCache,
 			true,
 			1,
-			10.0),
+			10.0,
+			0.0),
 		EPathTracingWarmupState::WaitingForPipelineCache);
 	TestEqual(
-		TEXT("活跃 PSO 任务清零后预热就绪"),
+		TEXT("活跃 PSO 任务清零后进入稳定等待"),
 		FPathTracingWarmupPolicy::AdvanceWaitState(
 			EPathTracingWarmupState::WaitingForPipelineCache,
 			true,
 			0,
-			10.0),
+			10.0,
+			0.0),
+		EPathTracingWarmupState::WaitingForStableFrames);
+	TestEqual(
+		TEXT("稳定等待不足一秒时不开放 Path Tracing"),
+		FPathTracingWarmupPolicy::AdvanceWaitState(
+			EPathTracingWarmupState::WaitingForStableFrames,
+			true,
+			0,
+			10.5,
+			0.5),
+		EPathTracingWarmupState::WaitingForStableFrames);
+	TestEqual(
+		TEXT("稳定等待期间出现新 PSO 任务时退回等待"),
+		FPathTracingWarmupPolicy::AdvanceWaitState(
+			EPathTracingWarmupState::WaitingForStableFrames,
+			true,
+			1,
+			10.5,
+			0.5),
+		EPathTracingWarmupState::WaitingForPipelineCache);
+	TestEqual(
+		TEXT("连续稳定一秒后才允许 Path Tracing"),
+		FPathTracingWarmupPolicy::AdvanceWaitState(
+			EPathTracingWarmupState::WaitingForStableFrames,
+			true,
+			0,
+			11.0,
+			FPathTracingWarmupPolicy::RequiredStableSeconds),
 		EPathTracingWarmupState::Ready);
 	TestEqual(
 		TEXT("达到 90 秒时进入失败态"),
@@ -74,18 +105,9 @@ bool FPathTracingWarmupPolicyAutomationTest::RunTest(const FString& Parameters)
 			EPathTracingWarmupState::WaitingForPipelineCache,
 			true,
 			1,
-			FPathTracingWarmupPolicy::TimeoutSeconds),
+			FPathTracingWarmupPolicy::TimeoutSeconds,
+			0.0),
 		EPathTracingWarmupState::Failed);
-	TestFalse(
-		TEXT("未请求 Path Tracing 时预热完成仍保持 Lit"),
-		FPathTracingWarmupPolicy::ShouldApplyPathTracing(
-			EPathTracingWarmupState::Ready,
-			false));
-	TestTrue(
-		TEXT("预热完成且请求仍有效时才切换 Path Tracing"),
-		FPathTracingWarmupPolicy::ShouldApplyPathTracing(
-			EPathTracingWarmupState::Ready,
-			true));
 	return true;
 }
 

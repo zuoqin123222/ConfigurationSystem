@@ -18,6 +18,7 @@ enum class EPathTracingWarmupState : uint8
 	Starting,
 	WaitingForRenderFence,
 	WaitingForPipelineCache,
+	WaitingForStableFrames,
 	Ready,
 	Failed
 };
@@ -28,16 +29,15 @@ struct CONFIGURATIONSYSTEM_API FPathTracingWarmupPolicy
 	static constexpr uint64 MinimumDedicatedVideoMemoryBytes =
 		6ull * 1024ull * 1024ull * 1024ull;
 	static constexpr double TimeoutSeconds = 90.0;
+	static constexpr double RequiredStableSeconds = 1.0;
 
 	static bool HasEnoughVideoMemory(uint64 DedicatedVideoMemoryBytes);
 	static EPathTracingWarmupState AdvanceWaitState(
 		EPathTracingWarmupState State,
 		bool bRenderFenceComplete,
 		uint32 ActivePipelinePrecacheRequests,
-		double ElapsedSeconds);
-	static bool ShouldApplyPathTracing(
-		EPathTracingWarmupState State,
-		bool bPathTracingRequested);
+		double ElapsedSeconds,
+		double StableElapsedSeconds);
 };
 
 /**
@@ -62,6 +62,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Configurator|Path Tracing")
 	bool IsPreparingPathTracing() const;
+
+	UFUNCTION(BlueprintPure, Category="Configurator|Path Tracing")
+	FString GetAvailability() const;
 
 	UFUNCTION(BlueprintPure, Category="Configurator|Path Tracing")
 	float GetProgress01() const;
@@ -98,8 +101,8 @@ private:
 	FRenderCommandFence WarmupRenderFence;
 	EPathTracingWarmupState WarmupState = EPathTracingWarmupState::Idle;
 	double WarmupStartSeconds = 0.0;
+	double WarmupStableStartSeconds = 0.0;
 	FString WarmupFailureReason;
-	bool bPathTracingRequested = false;
 	bool bPathTracingEnabled = false;
 	int32 CurrentSample = 0;
 	int32 TargetSamples = 0;

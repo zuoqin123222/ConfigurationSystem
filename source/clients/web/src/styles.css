@@ -549,6 +549,12 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .experience-toolbar button:hover,
 .experience-toolbar button[aria-pressed="true"],
 .experience-toolbar button[aria-expanded="true"] { color: #fff; background: #30302f; }
+.experience-toolbar button:disabled {
+  color: #fff;
+  background: #30302f;
+  cursor: wait;
+  opacity: .78;
+}
 .experience-toolbar > button[aria-pressed="true"]::after {
   content: ""; position: absolute; bottom: 3px; width: 18px; height: 2px; background: var(--accent);
 }
@@ -571,6 +577,18 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   stroke-dasharray: 100;
   transition: stroke-dashoffset .15s linear;
 }
+.render-warmup-loader {
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+  transform-origin: center;
+  animation: render-warmup-spin .9s steps(8) infinite;
+}
+.render-warmup-loader polygon { fill: #fff; }
+.render-warmup-loader polygon:nth-child(2) { opacity: .76; }
+.render-warmup-loader polygon:nth-child(3) { opacity: .52; }
+.render-warmup-loader polygon:nth-child(4) { opacity: .28; }
+@keyframes render-warmup-spin { to { transform: rotate(360deg); } }
 .toolbar-item { position: relative; }
 .toolbar-item::before {
   content: "";

@@ -87,7 +87,6 @@ void UPathTracingExperienceSubsystem::Initialize(FSubsystemCollectionBase& Colle
 
 void UPathTracingExperienceSubsystem::Deinitialize()
 {
-	bPathTracingRequested = false;
 	FString IgnoredFailureReason;
 	ApplyViewMode(false, IgnoredFailureReason);
 	ViewExtension.Reset();
@@ -104,7 +103,8 @@ EPathTracingWarmupState FPathTracingWarmupPolicy::AdvanceWaitState(
 	const EPathTracingWarmupState State,
 	const bool bRenderFenceComplete,
 	const uint32 ActivePipelinePrecacheRequests,
-	const double ElapsedSeconds)
+	const double ElapsedSeconds,
+	const double StableElapsedSeconds)
 {
 	if (ElapsedSeconds >= TimeoutSeconds)
 	{
@@ -119,16 +119,20 @@ EPathTracingWarmupState FPathTracingWarmupPolicy::AdvanceWaitState(
 	if (State == EPathTracingWarmupState::WaitingForPipelineCache
 		&& ActivePipelinePrecacheRequests == 0)
 	{
-		return EPathTracingWarmupState::Ready;
+		return EPathTracingWarmupState::WaitingForStableFrames;
+	}
+	if (State == EPathTracingWarmupState::WaitingForStableFrames)
+	{
+		if (ActivePipelinePrecacheRequests > 0)
+		{
+			return EPathTracingWarmupState::WaitingForPipelineCache;
+		}
+		if (StableElapsedSeconds >= RequiredStableSeconds)
+		{
+			return EPathTracingWarmupState::Ready;
+		}
 	}
 	return State;
-}
-
-bool FPathTracingWarmupPolicy::ShouldApplyPathTracing(
-	const EPathTracingWarmupState State,
-	const bool bPathTracingRequested)
-{
-	return State == EPathTracingWarmupState::Ready && bPathTracingRequested;
 }
 
 bool UPathTracingExperienceSubsystem::SetPathTracingEnabled(
@@ -138,35 +142,48 @@ bool UPathTracingExperienceSubsystem::SetPathTracingEnabled(
 	OutFailureReason.Reset();
 	if (!bEnabled)
 	{
-		bPathTracingRequested = false;
 		return ApplyViewMode(false, OutFailureReason);
 	}
 
 	if (!ValidatePathTracingSupport(OutFailureReason))
 	{
-		bPathTracingRequested = false;
 		return false;
 	}
-	bPathTracingRequested = true;
 
 	if (WarmupState == EPathTracingWarmupState::Ready)
 	{
 		return ApplyViewMode(true, OutFailureReason);
 	}
-	if (IsPreparingPathTracing())
+	if (WarmupState == EPathTracingWarmupState::Failed)
 	{
-		return true;
+		OutFailureReason = WarmupFailureReason.IsEmpty()
+			? TEXT("Path Tracing 预热失败。")
+			: WarmupFailureReason;
+		return false;
 	}
-
-	StartPathTracingWarmup();
-	return true;
+	OutFailureReason = TEXT("Path Tracing 正在准备，请稍后重试。");
+	return false;
 }
 
 bool UPathTracingExperienceSubsystem::IsPreparingPathTracing() const
 {
 	return WarmupState == EPathTracingWarmupState::Starting
 		|| WarmupState == EPathTracingWarmupState::WaitingForRenderFence
-		|| WarmupState == EPathTracingWarmupState::WaitingForPipelineCache;
+		|| WarmupState == EPathTracingWarmupState::WaitingForPipelineCache
+		|| WarmupState == EPathTracingWarmupState::WaitingForStableFrames;
+}
+
+FString UPathTracingExperienceSubsystem::GetAvailability() const
+{
+	if (WarmupState == EPathTracingWarmupState::Ready)
+	{
+		return TEXT("ready");
+	}
+	if (WarmupState == EPathTracingWarmupState::Failed)
+	{
+		return TEXT("unavailable");
+	}
+	return TEXT("preparing");
 }
 
 bool UPathTracingExperienceSubsystem::ValidatePathTracingSupport(
@@ -251,6 +268,7 @@ void UPathTracingExperienceSubsystem::StartPathTracingWarmup()
 	ApplyViewMode(false, IgnoredFailureReason);
 	WarmupFailureReason.Reset();
 	WarmupStartSeconds = FPlatformTime::Seconds();
+	WarmupStableStartSeconds = 0.0;
 	SetWarmupState(EPathTracingWarmupState::Starting);
 	UE_LOG(
 		LogPathTracingExperience,
@@ -279,7 +297,6 @@ void UPathTracingExperienceSubsystem::SetWarmupState(
 void UPathTracingExperienceSubsystem::FailWarmup(const FString& FailureReason)
 {
 	WarmupFailureReason = FailureReason;
-	bPathTracingRequested = false;
 	FString IgnoredFailureReason;
 	ApplyViewMode(false, IgnoredFailureReason);
 	SetWarmupState(EPathTracingWarmupState::Failed);
@@ -321,15 +338,23 @@ void UPathTracingExperienceSubsystem::Tick(const float DeltaTime)
 	}
 	if (IsPreparingPathTracing())
 	{
-		const double ElapsedSeconds = FPlatformTime::Seconds() - WarmupStartSeconds;
+		const double CurrentSeconds = FPlatformTime::Seconds();
+		const double ElapsedSeconds = CurrentSeconds - WarmupStartSeconds;
+		const int32 ActivePipelinePrecacheRequests = FMath::Max(
+			PipelineStateCache::GetNumActivePipelinePrecompileTasks(),
+			0);
+		const double StableElapsedSeconds =
+			WarmupState == EPathTracingWarmupState::WaitingForStableFrames
+				&& WarmupStableStartSeconds > 0.0
+			? CurrentSeconds - WarmupStableStartSeconds
+			: 0.0;
 		const EPathTracingWarmupState NextState =
 			FPathTracingWarmupPolicy::AdvanceWaitState(
 				WarmupState,
 				WarmupRenderFence.IsFenceComplete(),
-				static_cast<uint32>(FMath::Max(
-					PipelineStateCache::GetNumActivePipelinePrecompileTasks(),
-					0)),
-				ElapsedSeconds);
+				static_cast<uint32>(ActivePipelinePrecacheRequests),
+				ElapsedSeconds,
+				StableElapsedSeconds);
 		if (NextState == EPathTracingWarmupState::Failed)
 		{
 			FailWarmup(TEXT("Path Tracing 管线预热超过 90 秒，已保持实时渲染。"));
@@ -337,6 +362,14 @@ void UPathTracingExperienceSubsystem::Tick(const float DeltaTime)
 		}
 		if (NextState != WarmupState)
 		{
+			if (NextState == EPathTracingWarmupState::WaitingForStableFrames)
+			{
+				WarmupStableStartSeconds = CurrentSeconds;
+			}
+			else if (NextState == EPathTracingWarmupState::WaitingForPipelineCache)
+			{
+				WarmupStableStartSeconds = 0.0;
+			}
 			SetWarmupState(NextState);
 			if (NextState == EPathTracingWarmupState::Ready)
 			{
@@ -345,19 +378,6 @@ void UPathTracingExperienceSubsystem::Tick(const float DeltaTime)
 					Display,
 					TEXT("Path Tracing RTPSO 后台预热完成，耗时 %.2f 秒。"),
 					ElapsedSeconds);
-			}
-		}
-		if (FPathTracingWarmupPolicy::ShouldApplyPathTracing(
-			WarmupState, bPathTracingRequested))
-		{
-			FString FailureReason;
-			if (!ApplyViewMode(true, FailureReason))
-			{
-				FailWarmup(FailureReason);
-			}
-			else
-			{
-				OnWarmupStateChanged.Broadcast();
 			}
 		}
 	}

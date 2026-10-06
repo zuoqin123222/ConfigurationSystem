@@ -818,6 +818,11 @@ FString UConfiguratorPanel::GetExperienceStateJson()
 		PathTracingSubsystem != nullptr
 			? PathTracingSubsystem->GetProgress01()
 			: 0.0f);
+	State->SetStringField(
+		TEXT("renderAvailability"),
+		PathTracingSubsystem != nullptr
+			? PathTracingSubsystem->GetAvailability()
+			: TEXT("unavailable"));
 	State->SetStringField(TEXT("quality"), Quality);
 	State->SetBoolField(TEXT("fullscreen"), bWebFullscreen);
 

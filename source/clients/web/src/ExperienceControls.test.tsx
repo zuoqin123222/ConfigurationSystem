@@ -29,6 +29,7 @@ describe('ExperienceControls', () => {
       animationId: null as string | null,
       lightPreset: 'studio',
       renderMode: 'realtime',
+      renderAvailability: 'ready' as const,
       quality: 'high',
       fullscreen: false,
     }
@@ -213,6 +214,7 @@ describe('ExperienceControls', () => {
         animationId: null,
         lightPreset: 'studio',
         renderMode: 'realtime',
+        renderAvailability: 'ready',
         quality: 'high',
         fullscreen: false,
       })),
@@ -229,6 +231,41 @@ describe('ExperienceControls', () => {
     expect(await screen.findByRole('alert'))
       .toHaveTextContent('当前 GPU、RHI 或 Shader Platform 不支持 Path Tracing。')
     expect(bridge.getrendermodeerror).toHaveBeenCalledOnce()
+  })
+
+  it('预热期间禁用渲染按钮并显示非环形旋转标识', async () => {
+    const user = userEvent.setup()
+    let renderAvailability: 'preparing' | 'ready' = 'preparing'
+    const setrendermode = vi.fn().mockResolvedValue(true)
+    const bridge = {
+      getpresentationstatejson: vi.fn(async () => JSON.stringify({
+        cameraId: 'wheel',
+        animationEnabled: false,
+        animationId: null,
+        lightPreset: 'studio',
+        renderMode: 'realtime',
+        renderAvailability,
+        quality: 'high',
+        fullscreen: false,
+      })),
+      setrendermode,
+    }
+    window.ue = { uebridge: bridge }
+    render(<ExperienceControls ueEnabled />)
+
+    const renderButton = screen.getByRole('button', { name: '渲染' })
+    await waitFor(() => expect(renderButton).toBeDisabled())
+    expect(renderButton).toHaveAttribute('aria-busy', 'true')
+    expect(renderButton.querySelector('.render-warmup-loader')).toBeInTheDocument()
+    expect(renderButton.querySelector('.render-progress')).not.toBeInTheDocument()
+    expect(renderButton.querySelectorAll('polygon')).toHaveLength(4)
+    await user.click(renderButton)
+    expect(setrendermode).not.toHaveBeenCalled()
+
+    renderAvailability = 'ready'
+    await waitFor(() => expect(renderButton).toBeEnabled())
+    expect(renderButton).toHaveAttribute('aria-busy', 'false')
+    expect(renderButton.querySelector('.render-warmup-loader')).not.toBeInTheDocument()
   })
 
   it('兼容只有旧 cameraIndex 的 UE 展示状态', async () => {

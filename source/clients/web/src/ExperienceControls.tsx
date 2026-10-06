@@ -15,6 +15,7 @@ import {
   type UeControlCommand,
   type UeCameraIndex,
   type UePresentationState,
+  type UeRenderAvailability,
 } from './ueBridge'
 
 const SCENE_PRESETS = [
@@ -52,6 +53,8 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const [lightPreset, setLightPreset] = useState<'studio' | 'outdoor'>('studio')
   const [renderMode, setRenderMode] = useState<'realtime' | 'path-tracing'>('realtime')
   const [renderProgress, setRenderProgress] = useState(0)
+  const [renderAvailability, setRenderAvailability] =
+    useState<UeRenderAvailability>(ueEnabled ? 'preparing' : 'ready')
   const [fullscreen, setFullscreen] = useState(false)
   const [toolbarIdle, setToolbarIdle] = useState(false)
   const [error, setError] = useState('')
@@ -98,6 +101,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     setRenderProgress(state.renderMode === 'path-tracing'
       ? Math.min(1, Math.max(0, state.renderProgress ?? 0))
       : 0)
+    setRenderAvailability(state.renderAvailability ?? 'ready')
     setFullscreen(state.fullscreen)
   }, [])
 
@@ -144,7 +148,8 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   }, [applyState, ueEnabled])
 
   useEffect(() => {
-    if (!ueEnabled || renderMode !== 'path-tracing') return
+    if (!ueEnabled
+      || (renderMode !== 'path-tracing' && renderAvailability !== 'preparing')) return
     let active = true
     const updateProgress = async () => {
       const state = await getUePresentationState(getUeBridge(true))
@@ -158,7 +163,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       active = false
       window.clearInterval(timer)
     }
-  }, [applyState, renderMode, ueEnabled])
+  }, [applyState, renderAvailability, renderMode, ueEnabled])
 
   const run = async (
     createCommand: UeControlCommand | ((state: UePresentationState) => UeControlCommand),
@@ -277,6 +282,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   }
 
   const selectRenderMode = (mode: 'realtime' | 'path-tracing') => {
+    if (mode === 'path-tracing' && renderAvailability === 'preparing') return
     void run(
       { type: 'render', mode },
       () => setRenderMode(mode),
@@ -398,12 +404,26 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         <button
           className="path-tracing-toggle"
           aria-pressed={renderMode === 'path-tracing'}
+          aria-busy={renderAvailability === 'preparing'}
           aria-label="渲染"
+          disabled={renderAvailability === 'preparing'}
+          title={renderAvailability === 'preparing'
+            ? 'Path Tracing 正在准备'
+            : undefined}
           onClick={() => selectRenderMode(
             renderMode === 'realtime' ? 'path-tracing' : 'realtime',
           )}
         >
-          {renderMode === 'path-tracing'
+          {renderAvailability === 'preparing'
+            ? (
+              <svg className="render-warmup-loader" viewBox="0 0 24 24" aria-hidden="true">
+                <polygon points="12,1 15,5 12,9 9,5" />
+                <polygon points="23,12 19,15 15,12 19,9" />
+                <polygon points="12,23 9,19 12,15 15,19" />
+                <polygon points="1,12 5,9 9,12 5,15" />
+              </svg>
+            )
+            : renderMode === 'path-tracing'
             ? (
               <svg className="render-progress" viewBox="0 0 24 24" aria-hidden="true">
                 <circle className="render-progress-track" cx="12" cy="12" r="9" pathLength="100" />

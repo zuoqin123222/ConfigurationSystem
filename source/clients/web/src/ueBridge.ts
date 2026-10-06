@@ -45,6 +45,7 @@ export type UeControlCommand =
   | { type: 'fullscreen'; enabled: boolean }
 
 export type UeQualityLevel = 'low' | 'medium' | 'high' | 'epic'
+export type UeRenderAvailability = 'preparing' | 'ready' | 'unavailable'
 export type UeConfiguratorHeaderAction = 'save' | 'share' | 'reset'
 export type UeConfiguratorSyncState = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -65,6 +66,7 @@ export interface UePresentationState {
   lightPreset: 'studio' | 'outdoor'
   renderMode: 'realtime' | 'path-tracing'
   renderProgress?: number
+  renderAvailability?: UeRenderAvailability
   quality: UeQualityLevel
   fullscreen: boolean
 }
@@ -308,6 +310,10 @@ export async function getUePresentationState(
         && (!Number.isFinite(state.renderProgress)
           || Number(state.renderProgress) < 0
           || Number(state.renderProgress) > 1))
+      || (state.renderAvailability !== undefined
+        && !['preparing', 'ready', 'unavailable'].includes(
+          String(state.renderAvailability),
+        ))
       || !['low', 'medium', 'high', 'epic'].includes(String(state.quality))
       || typeof state.fullscreen !== 'boolean') return null
     return state as unknown as UePresentationState
