@@ -16,6 +16,8 @@ struct FAdminImportSelection
 	EAdminImportAssetKind Kind = EAdminImportAssetKind::Model;
 	FString FbxFile;
 	FString SidecarFile;
+	/** Optional independent v1 surface-binding contract; does not alter model/rigged sidecar meaning. */
+	FString SurfaceBindingFile;
 };
 
 struct FAdminImportItemResult
@@ -23,6 +25,7 @@ struct FAdminImportItemResult
 	EAdminImportAssetKind Kind = EAdminImportAssetKind::Model;
 	FString FbxFile;
 	FString SidecarFile;
+	FString SurfaceBindingFile;
 	FString DeclaredArtifactPath;
 	FString ExpectedSha256;
 	FString ActualSha256;
@@ -37,6 +40,8 @@ struct FAdminImportItemResult
 	bool bPassed = false;
 	TArray<FString> Errors;
 	TArray<FString> Warnings;
+	int32 SurfaceBindingCount = 0;
+	int32 AuditedLodCount = 0;
 };
 
 struct FAdminImportedAssetResult

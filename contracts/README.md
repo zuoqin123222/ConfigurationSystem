@@ -11,6 +11,7 @@
 - `schemas/vehicle-model-sidecar.schema.json`：DCC 模型交付的坐标、FBX、层级、Pivot、材质槽、LOD、授权与哈希。
 - `schemas/vehicle-animation-sidecar.schema.json`：动画 clip、目标节点、可逆性、模型引用、授权与动画 FBX 哈希。
 - `schemas/rigged-vehicle-sidecar.schema.json`：首选 v2 交付；单个 FBX 同时包含 SkeletalMesh、Skeleton 和一条完整 AnimSequence，并声明非循环片段帧范围。
+- `schemas/vehicle-surface-binding.schema.json`：独立且不改变既有 sidecar 含义的 surface → material slot 映射，以及 Maya 显式面选择规则。
 - `schemas/content-pack-manifest.schema.json`：Runtime 内容包版本、兼容目标、白名单挂载点、pak 大小/SHA-256 与 PrimaryAssetId。
 - `schemas/reference-asset-normalization.schema.json`：Maya 2025 对用户已导出 FBX 执行规范化的来源、输入、输出与固定参数。
 - `schemas/catalog.v2.schema.json`：SC01 的 category/component/surface/material/option 多层草案目录。
@@ -21,6 +22,7 @@
 - `fixtures/vehicle-*.valid.json`：可通过车辆 sidecar 契约的模型与动画样例。
 - `fixtures/vehicle-*.invalid.json`：验证器必须拒绝的负向样例。
 - `fixtures/rigged-vehicle.valid.json` / `rigged-vehicle.invalid.json`：单 FBX 骨骼车辆 v2 正反样例。
+- `fixtures/vehicle-surface-binding.valid.json` / `vehicle-surface-binding.invalid.json`：按 `selectionOrder` 覆盖 SC01 38 surface 的正反样例；只用于契约和工具测试，不代表正式车模映射。
 - `fixtures/content-pack.valid.json` / `content-pack.invalid.json`：内容包 manifest 正反样例。
 - `fixtures/reference-asset-normalization.example.json`：参考资产 FBX 规范化作业清单示例，不对应仓库内真实资产。
 - `fixtures/sc01.catalog.draft.v2.json`：SC01 产品、UI 展示与页签镜头绑定的统一配置源。
@@ -173,7 +175,7 @@ node tools/validate-sc01-v2.mjs
 node --test tools/validate-sc01-v2.test.mjs
 ```
 
-聚合验证器检查 11 个 Schema 文件是有效 JSON，保留 v1 的 16 个唯一组合、
+聚合验证器检查 12 个 Schema 文件是有效 JSON，保留 v1 的 16 个唯一组合、
 4 个视角和 64 个图片期望，并验证 SC01 v2 的层级引用、正反配置、稳定身份
 黄金向量和禁止报价结果。它还覆盖参考资产规范化、P0-3、content-pack 与车辆
 sidecar。
@@ -185,6 +187,8 @@ sidecar。
 ```powershell
 node tools/validate-vehicle-sidecars.mjs
 node --test tools/validate-vehicle-sidecars.test.mjs
+node tools/validate-vehicle-surface-bindings.mjs
+node --test tools/validate-vehicle-surface-bindings.test.mjs
 node tools/validate-content-pack.mjs contracts/fixtures/content-pack.valid.json
 node --test tools/validate-content-pack.test.mjs
 node tools/validate-source-assets.mjs

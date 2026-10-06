@@ -44,15 +44,16 @@ thumbnail 放入 Windows 包，不需要启动 Server。
 
 ## Editor-only 管理员导入
 
-在 Unreal Editor 中打开 `Tools > Configuration System 管理员导入`。模型和动画可以单独或同时接入，每一类都必须选择一个 `.fbx` 和对应的 sidecar `.json`。
+在 Unreal Editor 中打开 `Tools > Configuration System 管理员导入`。模型和动画可以单独或同时接入，每一类都必须选择一个 `.fbx` 和对应的 sidecar `.json`。骨骼车辆还可选择独立 `vehicle-surface-binding` 契约；该扩展不改变既有 sidecar 含义。
 
 工作流固定为：
 
 1. 选择 FBX 与 sidecar。
 2. 点击“运行 C++ 预检”。
 3. 确认关键字段、授权中的 `unreal-import`、文件存在性、字节数和 SHA-256 均通过。
-4. 点击“批准并导入暂存区”。
-5. 在暂存资产人工验收完成后，再通过后续发布流程移动到正式目录；首版工具本身不提供正式发布按钮。
+4. 提供 surface-binding 时，确认其车型和模型版本与骨骼车辆 sidecar 一致。
+5. 点击“批准并导入暂存区”；导入完成后自动审计 38 个命名槽以及每一级 LOD 的实际槽引用，失败会删除本次新增暂存资产。
+6. 在暂存资产人工验收完成后，再通过后续发布流程移动到正式目录；首版工具本身不提供正式发布按钮。
 
 每次预检生成新会话，导入目标只能是：
 
@@ -78,7 +79,7 @@ Saved/ConfigurationSystem/AdminImportReports/<session>.json
   '-TestExit=Automation Test Queue Empty' -log
 ```
 
-测试覆盖标准 SHA-256 向量、有效模型/动画 sidecar、固定暂存路径、报告写出和哈希不匹配拒绝。
+测试覆盖标准 SHA-256 向量、有效模型/动画 sidecar、固定暂存路径、报告写出、哈希不匹配拒绝，以及 surface-binding 的 slot/LOD 正反审计。
 
 ## Runtime 内容包
 
@@ -109,6 +110,10 @@ Editor 的 `Tools > Configuration System 管理员导入` 同时提供材质包 
 ```
 
 动画参数为 `-AdminAnimationFbx` 与 `-AdminAnimationSidecar`，可和模型参数同时使用。探针通过返回 `0`，失败返回 `7`，并始终尝试写出 JSON 报告。
+
+骨骼车辆可追加 `-AdminSurfaceBinding=<vehicle-surface-binding.json>`。该参数只做
+预检；和 `-AdminImportApprovedProbe` 一起使用时，还会在导入后执行 slot/LOD
+审计。
 
 真实 pak 内容包预检参数：
 

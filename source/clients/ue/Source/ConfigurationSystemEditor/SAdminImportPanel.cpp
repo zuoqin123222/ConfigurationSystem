@@ -143,6 +143,16 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
+				.Padding(0.0f, 3.0f)
+				[
+					MakeFileRow(
+						LOCTEXT("SurfaceBinding", "surface-binding"),
+						SurfaceBindingTextBox,
+						FOnClicked::CreateSP(this, &SAdminImportPanel::BrowseSurfaceBinding),
+						InvalidateDelegate)
+				]
+				+ SVerticalBox::Slot()
+				.AutoHeight()
 				.Padding(0.0f, 12.0f, 0.0f, 4.0f)
 				[
 					SNew(STextBlock)
@@ -386,6 +396,14 @@ FReply SAdminImportPanel::BrowseRiggedVehicleSidecar()
 		TEXT("JSON (*.json)|*.json"));
 }
 
+FReply SAdminImportPanel::BrowseSurfaceBinding()
+{
+	return BrowseInto(
+		SurfaceBindingTextBox,
+		TEXT("选择 vehicle surface-binding 契约"),
+		TEXT("JSON (*.json)|*.json"));
+}
+
 FReply SAdminImportPanel::BrowseModelFbx()
 {
 	return BrowseInto(ModelFbxTextBox, TEXT("选择模型 FBX"), TEXT("FBX (*.fbx)|*.fbx"));
@@ -460,12 +478,15 @@ FReply SAdminImportPanel::RunPreflight()
 		RiggedVehicleFbxTextBox->GetText().ToString().TrimStartAndEnd();
 	const FString RiggedVehicleSidecar =
 		RiggedVehicleSidecarTextBox->GetText().ToString().TrimStartAndEnd();
-	if (!RiggedVehicleFbx.IsEmpty() || !RiggedVehicleSidecar.IsEmpty())
+	const FString SurfaceBinding =
+		SurfaceBindingTextBox->GetText().ToString().TrimStartAndEnd();
+	if (!RiggedVehicleFbx.IsEmpty() || !RiggedVehicleSidecar.IsEmpty() || !SurfaceBinding.IsEmpty())
 	{
 		FAdminImportSelection& Selection = Selections.AddDefaulted_GetRef();
 		Selection.Kind = EAdminImportAssetKind::RiggedVehicle;
 		Selection.FbxFile = RiggedVehicleFbx;
 		Selection.SidecarFile = RiggedVehicleSidecar;
+		Selection.SurfaceBindingFile = SurfaceBinding;
 	}
 
 	const FString ModelFbx = ModelFbxTextBox->GetText().ToString().TrimStartAndEnd();
@@ -529,7 +550,7 @@ void SAdminImportPanel::RefreshStatus()
 	for (const FAdminImportItemResult& Item : Result.Items)
 	{
 		Status += FString::Printf(
-			TEXT("\n[%s] %s\n文件：%s\n大小：%lld / %lld\nSHA-256：%s\n"),
+			TEXT("\n[%s] %s\n文件：%s\n大小：%lld / %lld\nSHA-256：%s\nsurface-binding：%s\nsurface/LOD：%d / %d\n"),
 			Item.Kind == EAdminImportAssetKind::RiggedVehicle
 				? TEXT("骨骼车辆")
 				: Item.Kind == EAdminImportAssetKind::Model ? TEXT("模型") : TEXT("动画"),
@@ -537,7 +558,10 @@ void SAdminImportPanel::RefreshStatus()
 			*Item.FbxFile,
 			Item.ActualBytes,
 			Item.ExpectedBytes,
-			*Item.ActualSha256);
+			*Item.ActualSha256,
+			Item.SurfaceBindingFile.IsEmpty() ? TEXT("未提供") : *Item.SurfaceBindingFile,
+			Item.SurfaceBindingCount,
+			Item.AuditedLodCount);
 		for (const FString& Error : Item.Errors)
 		{
 			Status += TEXT("错误：") + Error + TEXT("\n");

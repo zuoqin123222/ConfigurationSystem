@@ -20,6 +20,7 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
+#include "VehicleSurfaceBindingAudit.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogAdminImport, Log, All);
 
@@ -768,10 +769,18 @@ namespace AdminImport
 				{
 					AddError(Item, Context + TEXT(".reversible 必须是布尔值。"));
 				}
+				else if (!bReversible)
+				{
+					AddError(Item, Context + TEXT(".reversible 必须为 true。"));
+				}
 				bool bLoop = false;
 				if (!Clip->TryGetBoolField(TEXT("loop"), bLoop))
 				{
 					AddError(Item, Context + TEXT(".loop 必须是布尔值。"));
+				}
+				else if (bLoop)
+				{
+					AddError(Item, Context + TEXT(".loop 必须为 false。"));
 				}
 			}
 		}
@@ -783,6 +792,9 @@ namespace AdminImport
 		Item.Kind = Selection.Kind;
 		Item.FbxFile = FPaths::ConvertRelativePathToFull(Selection.FbxFile);
 		Item.SidecarFile = FPaths::ConvertRelativePathToFull(Selection.SidecarFile);
+		Item.SurfaceBindingFile = Selection.SurfaceBindingFile.IsEmpty()
+			? FString()
+			: FPaths::ConvertRelativePathToFull(Selection.SurfaceBindingFile);
 
 		if (Selection.FbxFile.IsEmpty())
 		{
@@ -872,6 +884,45 @@ namespace AdminImport
 			ValidateAnimation(Root, Item);
 		}
 
+		if (!Item.SurfaceBindingFile.IsEmpty())
+		{
+			if (Selection.Kind != EAdminImportAssetKind::RiggedVehicle)
+			{
+				AddError(Item, TEXT("surface-binding 契约仅允许随骨骼车辆导入。"));
+			}
+			else
+			{
+				FVehicleSurfaceBindingContract BindingContract;
+				TArray<FString> BindingErrors;
+				if (!FVehicleSurfaceBindingAudit::LoadContractFile(
+					Item.SurfaceBindingFile,
+					BindingContract,
+					BindingErrors))
+				{
+					for (const FString& Error : BindingErrors)
+					{
+						AddError(Item, TEXT("surface-binding: ") + Error);
+					}
+				}
+				else
+				{
+					Item.SurfaceBindingCount = BindingContract.SurfaceIds.Num();
+					FString VehicleId;
+					FString ModelVersion;
+					Root->TryGetStringField(TEXT("vehicleId"), VehicleId);
+					Root->TryGetStringField(TEXT("modelVersion"), ModelVersion);
+					if (BindingContract.VehicleId != VehicleId)
+					{
+						AddError(Item, TEXT("surface-binding.vehicleId 与车辆 sidecar 不一致。"));
+					}
+					if (BindingContract.ModelVersion != ModelVersion)
+					{
+						AddError(Item, TEXT("surface-binding.modelVersion 与车辆 sidecar 不一致。"));
+					}
+				}
+			}
+		}
+
 		if (!Item.DeclaredArtifactPath.IsEmpty()
 			&& !FPaths::GetCleanFilename(Item.DeclaredArtifactPath).Equals(
 				FPaths::GetCleanFilename(Item.FbxFile), ESearchCase::IgnoreCase))
@@ -917,11 +968,14 @@ namespace AdminImport
 		Json->SetStringField(TEXT("kind"), KindToString(Item.Kind));
 		Json->SetStringField(TEXT("fbxFile"), Item.FbxFile);
 		Json->SetStringField(TEXT("sidecarFile"), Item.SidecarFile);
+		Json->SetStringField(TEXT("surfaceBindingFile"), Item.SurfaceBindingFile);
 		Json->SetStringField(TEXT("declaredArtifactPath"), Item.DeclaredArtifactPath);
 		Json->SetStringField(TEXT("expectedSha256"), Item.ExpectedSha256);
 		Json->SetStringField(TEXT("actualSha256"), Item.ActualSha256);
 		Json->SetNumberField(TEXT("expectedBytes"), static_cast<double>(Item.ExpectedBytes));
 		Json->SetNumberField(TEXT("actualBytes"), static_cast<double>(Item.ActualBytes));
+		Json->SetNumberField(TEXT("surfaceBindingCount"), Item.SurfaceBindingCount);
+		Json->SetNumberField(TEXT("auditedLodCount"), Item.AuditedLodCount);
 		if (Item.Kind == EAdminImportAssetKind::RiggedVehicle)
 		{
 			Json->SetStringField(TEXT("sequenceId"), Item.SequenceId);
@@ -1163,6 +1217,7 @@ bool FAdminImportService::ImportApproved(FAdminImportPreflightResult& Result)
 		Selection.Kind = Item.Kind;
 		Selection.FbxFile = Item.FbxFile;
 		Selection.SidecarFile = Item.SidecarFile;
+		Selection.SurfaceBindingFile = Item.SurfaceBindingFile;
 	}
 	// Close the time-of-check/time-of-use gap for files edited after the UI pass.
 	Result = FAdminImportPreflight::Run(Selections, Result.SessionId);
@@ -1327,6 +1382,32 @@ bool FAdminImportService::ImportApproved(FAdminImportPreflightResult& Result)
 					TEXT("AnimSequence 帧数不匹配：sidecar=%d，实际=%d。"),
 					ExpectedFrames,
 					ActualFrames));
+			}
+		}
+		if (ImportedMesh != nullptr && !Item.SurfaceBindingFile.IsEmpty())
+		{
+			FVehicleSurfaceBindingContract BindingContract;
+			TArray<FString> BindingErrors;
+			if (!FVehicleSurfaceBindingAudit::LoadContractFile(
+				Item.SurfaceBindingFile,
+				BindingContract,
+				BindingErrors))
+			{
+				for (const FString& Error : BindingErrors)
+				{
+					AdminImport::AddError(Item, TEXT("surface-binding: ") + Error);
+				}
+			}
+			else
+			{
+				const FVehicleSurfaceBindingAuditResult Audit =
+					FVehicleSurfaceBindingAudit::AuditSkeletalMesh(BindingContract, ImportedMesh);
+				Item.SurfaceBindingCount = Audit.SurfaceCount;
+				Item.AuditedLodCount = Audit.LodCount;
+				for (const FString& Issue : Audit.Issues)
+				{
+					AdminImport::AddError(Item, TEXT("surface-binding audit: ") + Issue);
+				}
 			}
 		}
 		Item.bPassed = Item.Errors.IsEmpty();

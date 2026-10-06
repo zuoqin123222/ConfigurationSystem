@@ -388,12 +388,16 @@ void FConfigurationSystemEditorModule::RunAdminImportProbe()
 		FParse::Value(FCommandLine::Get(), TEXT("AdminRiggedVehicleFbx="), Fbx);
 	const bool bHasRiggedVehicleSidecar =
 		FParse::Value(FCommandLine::Get(), TEXT("AdminRiggedVehicleSidecar="), Sidecar);
-	if (bHasRiggedVehicleFbx || bHasRiggedVehicleSidecar)
+	FString SurfaceBinding;
+	const bool bHasSurfaceBinding =
+		FParse::Value(FCommandLine::Get(), TEXT("AdminSurfaceBinding="), SurfaceBinding);
+	if (bHasRiggedVehicleFbx || bHasRiggedVehicleSidecar || bHasSurfaceBinding)
 	{
 		FAdminImportSelection& Selection = Selections.AddDefaulted_GetRef();
 		Selection.Kind = EAdminImportAssetKind::RiggedVehicle;
 		Selection.FbxFile = Fbx;
 		Selection.SidecarFile = Sidecar;
+		Selection.SurfaceBindingFile = SurfaceBinding;
 	}
 
 	Fbx.Reset();

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSidecarFixtures } from "./validate-vehicle-sidecars.mjs";
+import { validateSurfaceBindingFixtures } from "./validate-vehicle-surface-bindings.mjs";
 import { validateContentPackManifest } from "./validate-content-pack.mjs";
 import { validateSourceAssets } from "./validate-source-assets.mjs";
 import {
@@ -57,6 +58,7 @@ const schemaNames = [
   "vehicle-model-sidecar.schema.json",
   "vehicle-animation-sidecar.schema.json",
   "rigged-vehicle-sidecar.schema.json",
+  "vehicle-surface-binding.schema.json",
   "content-pack-manifest.schema.json",
   "reference-asset-normalization.schema.json",
   "catalog.v2.schema.json",
@@ -387,6 +389,13 @@ try {
 }
 
 try {
+  const surfaceBindingResult = await validateSurfaceBindingFixtures();
+  failures.push(...surfaceBindingResult.failures);
+} catch (error) {
+  failures.push(`车辆 surface-binding 验证器执行失败 (${error.message})`);
+}
+
+try {
   const validContentPack = await readJson(resolve(fixtureDir, "content-pack.valid.json"));
   const invalidContentPack = await readJson(resolve(fixtureDir, "content-pack.invalid.json"));
   const validResult = validateContentPackManifest(validContentPack, {
@@ -479,5 +488,5 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log("契约验证通过：11 个 Schema JSON；v1 发布配置完整覆盖目录笛卡尔积与全部视角并校验动态任务规模；SC01 v2 草案通过有效/无效配置、禁止报价 price-result、稳定身份黄金向量与 coverage 生成校验；参考资产、content-pack、P0-3 与车辆 sidecar 验证通过。");
+  console.log("契约验证通过：12 个 Schema JSON；v1 发布配置完整覆盖目录笛卡尔积与全部视角并校验动态任务规模；SC01 v2 草案通过有效/无效配置、禁止报价 price-result、稳定身份黄金向量与 coverage 生成校验；参考资产、content-pack、P0-3、车辆 sidecar 与 38 surface-binding 验证通过。");
 }

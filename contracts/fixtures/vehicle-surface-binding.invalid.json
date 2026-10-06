@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "vehicle-surface-binding",
+  "vehicleId": "sc01",
+  "catalogVersion": "sc01-draft-20260121",
+  "modelVersion": "sc01-surface-ready-2026-01",
+  "sourceFbx": {
+    "path": "fixtures/sc01-surface-ready.fbx",
+    "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "bytes": 1
+  },
+  "bindings": [
+    {
+      "surfaceId": "exterior-body-cover",
+      "materialSlotId": "sc01_shared_slot",
+      "selectors": [
+        {
+          "targetNode": "ExteriorMesh",
+          "sourceMaterialId": "SRC_BODY",
+          "faceRanges": ["0:99"]
+        }
+      ]
+    },
+    {
+      "surfaceId": "unknown-surface",
+      "materialSlotId": "sc01_shared_slot",
+      "selectors": [
+        {
+          "targetNode": "ExteriorMesh",
+          "sourceMaterialId": "SRC_BODY",
+          "faceRanges": ["50:149"]
+        }
+      ]
+    }
+  ]
+}

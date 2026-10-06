@@ -21,6 +21,7 @@ public:
 private:
 	FReply BrowseRiggedVehicleFbx();
 	FReply BrowseRiggedVehicleSidecar();
+	FReply BrowseSurfaceBinding();
 	FReply BrowseModelFbx();
 	FReply BrowseModelSidecar();
 	FReply BrowseAnimationFbx();
@@ -53,6 +54,7 @@ private:
 
 	TSharedPtr<SEditableTextBox> RiggedVehicleFbxTextBox;
 	TSharedPtr<SEditableTextBox> RiggedVehicleSidecarTextBox;
+	TSharedPtr<SEditableTextBox> SurfaceBindingTextBox;
 	TSharedPtr<SEditableTextBox> ModelFbxTextBox;
 	TSharedPtr<SEditableTextBox> ModelSidecarTextBox;
 	TSharedPtr<SEditableTextBox> AnimationFbxTextBox;
