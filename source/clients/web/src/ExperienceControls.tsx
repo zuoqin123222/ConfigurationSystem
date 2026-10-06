@@ -21,15 +21,7 @@ const SCENE_PRESETS = [
   { value: 'studio', label: '影棚' },
   { value: 'outdoor', label: '外景' },
 ] as const
-const RENDER_MODES = [
-  { value: 'realtime', label: '实时' },
-  { value: 'path-tracing', label: 'Path Tracing' },
-] as const
-const DISPLAY_MODES = [
-  { value: false, label: '窗口' },
-  { value: true, label: '全屏' },
-] as const
-type ControlMenu = 'camera' | 'animation' | 'scene' | 'render' | 'display'
+type ControlMenu = 'camera' | 'animation' | 'scene'
 
 interface ExperienceControlsProps {
   ueEnabled?: boolean
@@ -287,20 +279,14 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const selectRenderMode = (mode: 'realtime' | 'path-tracing') => {
     void run(
       { type: 'render', mode },
-      () => {
-        setRenderMode(mode)
-        setOpenMenu(null)
-      },
+      () => setRenderMode(mode),
     )
   }
 
   const selectDisplayMode = (enabled: boolean) => {
     void run(
       { type: 'fullscreen', enabled },
-      () => {
-        setFullscreen(enabled)
-        setOpenMenu(null)
-      },
+      () => setFullscreen(enabled),
     )
   }
 
@@ -409,80 +395,38 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
             </div>
           )}
         </div>
-        <div
-          className="toolbar-item"
-          onMouseEnter={() => setOpenMenu('render')}
-          onMouseLeave={() => setOpenMenu(null)}
-        >
-          <button
-            className="path-tracing-toggle"
-            aria-expanded={openMenu === 'render'}
-            aria-pressed={renderMode === 'path-tracing'}
-            aria-label="渲染"
-            onClick={() => selectRenderMode(
-              renderMode === 'realtime' ? 'path-tracing' : 'realtime',
-            )}
-          >
-            {renderMode === 'path-tracing'
-              ? (
-                <svg className="render-progress" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle className="render-progress-track" cx="12" cy="12" r="9" pathLength="100" />
-                  <circle
-                    className="render-progress-value"
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    pathLength="100"
-                    style={{ strokeDashoffset: 100 - renderProgress * 100 }}
-                  />
-                </svg>
-              )
-              : <span aria-hidden="true">◇</span>}
-            渲染
-          </button>
-          {openMenu === 'render' && (
-            <div className="control-popover compact-popover" role="menu" aria-label="渲染模式">
-              {RENDER_MODES.map((mode) => (
-                <button
-                  key={mode.value}
-                  role="menuitemradio"
-                  aria-checked={renderMode === mode.value}
-                  onClick={() => selectRenderMode(mode.value)}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
+        <button
+          className="path-tracing-toggle"
+          aria-pressed={renderMode === 'path-tracing'}
+          aria-label="渲染"
+          onClick={() => selectRenderMode(
+            renderMode === 'realtime' ? 'path-tracing' : 'realtime',
           )}
-        </div>
-        <div
-          className="toolbar-item"
-          onMouseEnter={() => setOpenMenu('display')}
-          onMouseLeave={() => setOpenMenu(null)}
         >
-          <button
-            aria-expanded={openMenu === 'display'}
-            aria-pressed={fullscreen}
-            onClick={() => selectDisplayMode(!fullscreen)}
-          >
-            <span aria-hidden="true">□</span>
-            全屏
-          </button>
-          {openMenu === 'display' && (
-            <div className="control-popover compact-popover" role="menu" aria-label="显示模式">
-              {DISPLAY_MODES.map((mode) => (
-                <button
-                  key={String(mode.value)}
-                  role="menuitemradio"
-                  aria-checked={fullscreen === mode.value}
-                  onClick={() => selectDisplayMode(mode.value)}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+          {renderMode === 'path-tracing'
+            ? (
+              <svg className="render-progress" viewBox="0 0 24 24" aria-hidden="true">
+                <circle className="render-progress-track" cx="12" cy="12" r="9" pathLength="100" />
+                <circle
+                  className="render-progress-value"
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  pathLength="100"
+                  style={{ strokeDashoffset: 100 - renderProgress * 100 }}
+                />
+              </svg>
+            )
+            : <span aria-hidden="true">◇</span>}
+          渲染
+        </button>
+        <button
+          aria-pressed={fullscreen}
+          onClick={() => selectDisplayMode(!fullscreen)}
+        >
+          <span aria-hidden="true">□</span>
+          全屏
+        </button>
       </nav>
       {error && <p className="bridge-error" role="alert">{error}</p>}
     </main>

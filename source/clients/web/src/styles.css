@@ -538,7 +538,7 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   position: fixed; z-index: 20; left: 50%; bottom: 24px; transform: translateX(-50%);
   display: flex; align-items: stretch; gap: 2px; padding: 6px;
   border: 1px solid rgba(255,255,255,.13); border-radius: 18px;
-  background: rgba(43,43,43,.82); box-shadow: none;
+  background: rgba(10,10,10,.68); box-shadow: none;
 }
 .experience-toolbar > button, .toolbar-item > button {
   display: grid; min-width: 72px; min-height: 52px; place-items: center; gap: 2px;
@@ -584,7 +584,7 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   position: absolute; z-index: 25; bottom: calc(100% + 8px); left: 0;
   display: grid; grid-template-columns: 1fr 1fr; gap: 2px; min-width: 226px; padding: 6px;
   border: 1px solid rgba(255,255,255,.13); border-radius: 18px;
-  color: #d5d5d2; background: rgba(43,43,43,.82);
+  color: #d5d5d2; background: rgba(10,10,10,.68);
   box-shadow: none;
 }
 .control-popover button {
