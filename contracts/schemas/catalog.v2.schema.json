@@ -15,6 +15,7 @@
     "optionIdAliases",
     "skeletalMeshPath",
     "sequencePath",
+    "vehicleSurfaceBinding",
     "animations",
     "regions",
     "categories",
@@ -65,6 +66,7 @@
     },
     "skeletalMeshPath": { "$ref": "#/$defs/ueObjectPath" },
     "sequencePath": { "$ref": "#/$defs/ueObjectPath" },
+    "vehicleSurfaceBinding": { "$ref": "#/$defs/runtimeSurfaceBinding" },
     "animations": {
       "type": "array",
       "minItems": 1,
@@ -121,6 +123,43 @@
     "ueObjectPath": {
       "type": "string",
       "pattern": "^/Game/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+    },
+    "materialSlotName": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+    },
+    "runtimeSurfaceBindingItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surfaceId", "materialSlotIds"],
+      "properties": {
+        "surfaceId": { "$ref": "#/$defs/id" },
+        "materialSlotIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/materialSlotName" }
+        }
+      }
+    },
+    "runtimeSurfaceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "capability", "bindings", "unsupportedSurfaceIds"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "capability": { "enum": ["complete", "proxy"] },
+        "bindings": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/runtimeSurfaceBindingItem" }
+        },
+        "unsupportedSurfaceIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
     },
     "cameraId": {
       "anyOf": [

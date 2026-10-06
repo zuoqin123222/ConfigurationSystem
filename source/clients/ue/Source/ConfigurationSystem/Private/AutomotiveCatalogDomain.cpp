@@ -246,6 +246,65 @@ namespace AutomotiveCatalog
 					TEXT("animations 必须是非空数组"));
 				return false;
 			}
+			const TSharedPtr<FJsonObject>* SurfaceBinding = nullptr;
+			const TArray<TSharedPtr<FJsonValue>>* BindingItems = nullptr;
+			const TArray<TSharedPtr<FJsonValue>>* UnsupportedItems = nullptr;
+			if (!Root->TryGetObjectField(TEXT("vehicleSurfaceBinding"), SurfaceBinding)
+				|| SurfaceBinding == nullptr
+				|| !ReadString(*SurfaceBinding, TEXT("schemaVersion"),
+					Out.VehicleSurfaceBinding.SchemaVersion, OutError)
+				|| !ReadString(*SurfaceBinding, TEXT("capability"),
+					Out.VehicleSurfaceBinding.Capability, OutError)
+				|| !(*SurfaceBinding)->TryGetArrayField(TEXT("bindings"), BindingItems)
+				|| BindingItems == nullptr
+				|| !(*SurfaceBinding)->TryGetArrayField(
+					TEXT("unsupportedSurfaceIds"), UnsupportedItems)
+				|| UnsupportedItems == nullptr)
+			{
+				SetError(OutError, TEXT("INVALID_SURFACE_BINDING"),
+					TEXT("vehicleSurfaceBinding 结构非法"));
+				return false;
+			}
+			for (const TSharedPtr<FJsonValue>& Value : *BindingItems)
+			{
+				const TSharedPtr<FJsonObject>* Object = nullptr;
+				const TArray<TSharedPtr<FJsonValue>>* SlotValues = nullptr;
+				FSurfaceBinding Binding;
+				if (!Value.IsValid() || !Value->TryGetObject(Object)
+					|| !ReadString(*Object, TEXT("surfaceId"), Binding.SurfaceId, OutError)
+					|| !(*Object)->TryGetArrayField(TEXT("materialSlotIds"), SlotValues)
+					|| SlotValues == nullptr || SlotValues->IsEmpty())
+				{
+					SetError(OutError, TEXT("INVALID_SURFACE_BINDING"),
+						TEXT("vehicleSurfaceBinding.bindings 字段非法"));
+					return false;
+				}
+				for (const TSharedPtr<FJsonValue>& SlotValue : *SlotValues)
+				{
+					FString SlotId;
+					if (!SlotValue.IsValid() || !SlotValue->TryGetString(SlotId)
+						|| SlotId.IsEmpty())
+					{
+						SetError(OutError, TEXT("INVALID_SURFACE_BINDING"),
+							TEXT("materialSlotIds 必须包含非空字符串"));
+						return false;
+					}
+					Binding.MaterialSlotIds.Add(FName(*SlotId));
+				}
+				Out.VehicleSurfaceBinding.Bindings.Add(MoveTemp(Binding));
+			}
+			for (const TSharedPtr<FJsonValue>& Value : *UnsupportedItems)
+			{
+				FString SurfaceId;
+				if (!Value.IsValid() || !Value->TryGetString(SurfaceId)
+					|| SurfaceId.IsEmpty())
+				{
+					SetError(OutError, TEXT("INVALID_SURFACE_BINDING"),
+						TEXT("unsupportedSurfaceIds 包含非法 surfaceId"));
+					return false;
+				}
+				Out.VehicleSurfaceBinding.UnsupportedSurfaceIds.Add(MoveTemp(SurfaceId));
+			}
 			for (const TSharedPtr<FJsonValue>& Value : *Animations)
 			{
 				const TSharedPtr<FJsonObject>* Object = nullptr;
@@ -679,6 +738,8 @@ namespace AutomotiveCatalog
 		TMap<FString, TArray<FString>> CandidateSurfacesByCategory;
 		TMap<FString, TArray<FString>> CandidateVariantsByFamily;
 		TMap<FString, FString> CandidateDefaultsBySurface;
+		TMap<FString, TArray<FName>> CandidateMaterialSlotsBySurface;
+		TSet<FString> CandidateUnsupportedSurfaceBindings;
 		TSet<FString> SurfaceIds;
 		TSet<FString> FamilyIds;
 
@@ -832,6 +893,77 @@ namespace AutomotiveCatalog
 			CandidateSurfacesByCategory.FindChecked(CategoryId).Add(SurfaceId);
 		}
 
+		const FVehicleSurfaceBinding& SurfaceBinding = Candidate.VehicleSurfaceBinding;
+		if (SurfaceBinding.SchemaVersion != TEXT("1.0.0")
+			|| !(SurfaceBinding.Capability == TEXT("complete")
+				|| SurfaceBinding.Capability == TEXT("proxy"))
+			|| SurfaceBinding.Bindings.IsEmpty())
+		{
+			Private::SetError(OutError, TEXT("INVALID_SURFACE_BINDING"),
+				TEXT("surface binding 版本、capability 或 bindings 非法"));
+			return false;
+		}
+		TSet<FName> BoundSlots;
+		for (const FSurfaceBinding& Binding : SurfaceBinding.Bindings)
+		{
+			if (!SurfaceIds.Contains(Binding.SurfaceId)
+				|| CandidateMaterialSlotsBySurface.Contains(Binding.SurfaceId)
+				|| Binding.MaterialSlotIds.IsEmpty())
+			{
+				Private::SetError(OutError, TEXT("INVALID_SURFACE_BINDING"),
+					Binding.SurfaceId);
+				return false;
+			}
+			TSet<FName> LocalSlots;
+			for (const FName SlotId : Binding.MaterialSlotIds)
+			{
+				if (SlotId.IsNone() || LocalSlots.Contains(SlotId)
+					|| BoundSlots.Contains(SlotId))
+				{
+					Private::SetError(OutError, TEXT("SURFACE_SLOT_COLLISION"),
+						SlotId.ToString());
+					return false;
+				}
+				LocalSlots.Add(SlotId);
+				BoundSlots.Add(SlotId);
+			}
+			CandidateMaterialSlotsBySurface.Add(
+				Binding.SurfaceId, Binding.MaterialSlotIds);
+		}
+		for (const FString& SurfaceId : SurfaceBinding.UnsupportedSurfaceIds)
+		{
+			if (!SurfaceIds.Contains(SurfaceId)
+				|| CandidateMaterialSlotsBySurface.Contains(SurfaceId)
+				|| CandidateUnsupportedSurfaceBindings.Contains(SurfaceId))
+			{
+				Private::SetError(OutError, TEXT("INVALID_SURFACE_BINDING"),
+					SurfaceId);
+				return false;
+			}
+			CandidateUnsupportedSurfaceBindings.Add(SurfaceId);
+		}
+		for (const FString& SurfaceId : Candidate.SelectionOrder)
+		{
+			if (!CandidateMaterialSlotsBySurface.Contains(SurfaceId)
+				&& !CandidateUnsupportedSurfaceBindings.Contains(SurfaceId))
+			{
+				Private::SetError(OutError, TEXT("INCOMPLETE_SURFACE_BINDING"),
+					SurfaceId);
+				return false;
+			}
+		}
+		if ((SurfaceBinding.Capability == TEXT("complete")
+				&& !CandidateUnsupportedSurfaceBindings.IsEmpty())
+			|| (SurfaceBinding.Capability == TEXT("proxy")
+				&& CandidateUnsupportedSurfaceBindings.IsEmpty())
+			|| CandidateMaterialSlotsBySurface.Num()
+				+ CandidateUnsupportedSurfaceBindings.Num() != RequiredSelectionCount)
+		{
+			Private::SetError(OutError, TEXT("INVALID_SURFACE_BINDING_CAPABILITY"),
+				SurfaceBinding.Capability);
+			return false;
+		}
+
 		for (int32 Index = 0; Index < Candidate.MaterialFamilies.Num(); ++Index)
 		{
 			const FMaterialFamily& Family = Candidate.MaterialFamilies[Index];
@@ -970,6 +1102,8 @@ namespace AutomotiveCatalog
 		SurfaceIdsByCategory = MoveTemp(CandidateSurfacesByCategory);
 		VariantIdsByFamily = MoveTemp(CandidateVariantsByFamily);
 		DefaultOptionIdBySurface = MoveTemp(CandidateDefaultsBySurface);
+		MaterialSlotIdsBySurface = MoveTemp(CandidateMaterialSlotsBySurface);
+		UnsupportedSurfaceBindingIds = MoveTemp(CandidateUnsupportedSurfaceBindings);
 		bValid = true;
 		return true;
 	}
@@ -1065,6 +1199,62 @@ namespace AutomotiveCatalog
 	{
 		const int32* Index = AnimationIndexById.Find(AnimationId);
 		return bValid && Index != nullptr ? &Catalog.Animations[*Index] : nullptr;
+	}
+
+	const TArray<FName>* FCatalogIndex::FindMaterialSlotIdsForSurface(
+		const FString& SurfaceId) const
+	{
+		return bValid ? MaterialSlotIdsBySurface.Find(SurfaceId) : nullptr;
+	}
+
+	bool FCatalogIndex::IsSurfaceBindingExplicitlyUnsupported(
+		const FString& SurfaceId) const
+	{
+		return bValid && UnsupportedSurfaceBindingIds.Contains(SurfaceId);
+	}
+
+	bool FCatalogIndex::IsSurfaceBindingCovered(const FString& SurfaceId) const
+	{
+		return FindMaterialSlotIdsForSurface(SurfaceId) != nullptr
+			|| IsSurfaceBindingExplicitlyUnsupported(SurfaceId);
+	}
+
+	bool FCatalogIndex::ResolveSurfaceBindingTransaction(
+		const TSet<FString>& SurfaceIds,
+		TMap<FString, TArray<FName>>& OutTargets,
+		TSet<FString>& OutUnsupportedSurfaceIds,
+		FError& OutError) const
+	{
+		OutTargets.Reset();
+		OutUnsupportedSurfaceIds.Reset();
+		OutError.Reset();
+		if (!bValid)
+		{
+			Private::SetError(OutError, TEXT("INVALID_SURFACE_BINDING"),
+				TEXT("catalog 未初始化"));
+			return false;
+		}
+		for (const FString& SurfaceId : SurfaceIds)
+		{
+			if (const TArray<FName>* Slots =
+				FindMaterialSlotIdsForSurface(SurfaceId))
+			{
+				OutTargets.Add(SurfaceId, *Slots);
+			}
+			else if (IsSurfaceBindingExplicitlyUnsupported(SurfaceId))
+			{
+				OutUnsupportedSurfaceIds.Add(SurfaceId);
+			}
+			else
+			{
+				Private::SetError(OutError, TEXT("UNBOUND_TRANSACTION_SURFACE"),
+					SurfaceId);
+				OutTargets.Reset();
+				OutUnsupportedSurfaceIds.Reset();
+				return false;
+			}
+		}
+		return true;
 	}
 
 	int64 CalculateOptionsPriceMinor(

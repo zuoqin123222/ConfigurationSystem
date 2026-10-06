@@ -114,6 +114,20 @@ namespace AutomotiveCatalog
 		FString ThumbnailUrl;
 	};
 
+	struct CONFIGURATIONSYSTEM_API FSurfaceBinding
+	{
+		FString SurfaceId;
+		TArray<FName> MaterialSlotIds;
+	};
+
+	struct CONFIGURATIONSYSTEM_API FVehicleSurfaceBinding
+	{
+		FString SchemaVersion;
+		FString Capability;
+		TArray<FSurfaceBinding> Bindings;
+		TArray<FString> UnsupportedSurfaceIds;
+	};
+
 	struct CONFIGURATIONSYSTEM_API FCatalog
 	{
 		FString SchemaVersion;
@@ -130,6 +144,7 @@ namespace AutomotiveCatalog
 		TMap<FString, FString> OptionIdAliases;
 		FString SkeletalMeshPath;
 		FString SequencePath;
+		FVehicleSurfaceBinding VehicleSurfaceBinding;
 		TArray<FAnimation> Animations;
 		TArray<FRegion> Regions;
 		TArray<FCategory> Categories;
@@ -168,6 +183,14 @@ namespace AutomotiveCatalog
 		const FSurface* FindSurface(const FString& SurfaceId) const;
 		const FMaterialFamily* FindMaterialFamily(const FString& MaterialFamilyId) const;
 		const FAnimation* FindAnimation(const FString& AnimationId) const;
+		const TArray<FName>* FindMaterialSlotIdsForSurface(const FString& SurfaceId) const;
+		bool IsSurfaceBindingExplicitlyUnsupported(const FString& SurfaceId) const;
+		bool IsSurfaceBindingCovered(const FString& SurfaceId) const;
+		bool ResolveSurfaceBindingTransaction(
+			const TSet<FString>& SurfaceIds,
+			TMap<FString, TArray<FName>>& OutTargets,
+			TSet<FString>& OutUnsupportedSurfaceIds,
+			FError& OutError) const;
 
 	private:
 		FCatalog Catalog;
@@ -187,6 +210,8 @@ namespace AutomotiveCatalog
 		TMap<FString, TArray<FString>> SurfaceIdsByCategory;
 		TMap<FString, TArray<FString>> VariantIdsByFamily;
 		TMap<FString, FString> DefaultOptionIdBySurface;
+		TMap<FString, TArray<FName>> MaterialSlotIdsBySurface;
+		TSet<FString> UnsupportedSurfaceBindingIds;
 		bool bValid = false;
 	};
 

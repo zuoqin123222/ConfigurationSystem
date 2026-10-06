@@ -39,14 +39,25 @@ export function validateSurfaceBindingSemantics(contract, catalog) {
 
   const expectedSurfaceIds = catalog.selectionOrder ?? [];
   const catalogSurfaceIds = new Set((catalog.surfaces ?? []).map((surface) => surface.surfaceId));
-  const actualSurfaceIds = (contract.bindings ?? []).map((binding) => binding.surfaceId);
+  const boundSurfaceIds = (contract.bindings ?? []).map((binding) => binding.surfaceId);
+  const unsupportedSurfaceIds = contract.unsupportedSurfaceIds ?? [];
+  const coveredSurfaceIds = new Set([...boundSurfaceIds, ...unsupportedSurfaceIds]);
   if (
-    actualSurfaceIds.length !== expectedSurfaceIds.length
-    || actualSurfaceIds.some((surfaceId, index) => surfaceId !== expectedSurfaceIds[index])
+    coveredSurfaceIds.size !== expectedSurfaceIds.length
+    || expectedSurfaceIds.some((surfaceId) => !coveredSurfaceIds.has(surfaceId))
   ) {
     errors.push(
-      `$.bindings: 必须按 catalog.selectionOrder 显式覆盖全部 ${expectedSurfaceIds.length} 个 surface`
+      `$.bindings/unsupportedSurfaceIds: 必须显式覆盖全部 ${expectedSurfaceIds.length} 个 surface`
     );
+  }
+  if (contract.capability === "complete"
+    && (unsupportedSurfaceIds.length > 0
+      || boundSurfaceIds.length !== expectedSurfaceIds.length
+      || boundSurfaceIds.some((surfaceId, index) => surfaceId !== expectedSurfaceIds[index]))) {
+    errors.push("$.bindings: complete capability 必须按 catalog.selectionOrder 绑定全部 surface");
+  }
+  if (contract.capability === "proxy" && unsupportedSurfaceIds.length === 0) {
+    errors.push("$.unsupportedSurfaceIds: proxy capability 必须显式声明缺口");
   }
 
   const seenSurfaces = new Set();
@@ -61,10 +72,15 @@ export function validateSurfaceBindingSemantics(contract, catalog) {
       errors.push(`${path}.surfaceId: surfaceId 重复 ${binding.surfaceId}`);
     }
     seenSurfaces.add(binding.surfaceId);
-    if (seenSlots.has(binding.materialSlotId)) {
-      errors.push(`${path}.materialSlotId: materialSlotId 重复 ${binding.materialSlotId}`);
+    if (unsupportedSurfaceIds.includes(binding.surfaceId)) {
+      errors.push(`${path}.surfaceId: 已绑定 surface 不得同时声明为 unsupported`);
     }
-    seenSlots.add(binding.materialSlotId);
+    for (const materialSlotId of binding.materialSlotIds ?? []) {
+      if (seenSlots.has(materialSlotId)) {
+        errors.push(`${path}.materialSlotIds: material slot 重复 ${materialSlotId}`);
+      }
+      seenSlots.add(materialSlotId);
+    }
 
     for (const [selectorIndex, selector] of (binding.selectors ?? []).entries()) {
       const selectorPath = `${path}.selectors[${selectorIndex}]`;
@@ -93,6 +109,11 @@ export function validateSurfaceBindingSemantics(contract, catalog) {
         }
       }
       selectedFaces.set(key, state);
+    }
+  }
+  for (const [index, surfaceId] of unsupportedSurfaceIds.entries()) {
+    if (!catalogSurfaceIds.has(surfaceId)) {
+      errors.push(`$.unsupportedSurfaceIds[${index}]: catalog 中不存在 ${surfaceId}`);
     }
   }
   return errors;

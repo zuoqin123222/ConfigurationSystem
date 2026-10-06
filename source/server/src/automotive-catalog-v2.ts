@@ -97,6 +97,12 @@ export interface AutomotiveCatalog {
   interactionCameras?: CatalogInteractionCamera[];
   skeletalMeshPath: string;
   sequencePath: string;
+  vehicleSurfaceBinding: {
+    schemaVersion: "1.0.0";
+    capability: "complete" | "proxy";
+    bindings: Array<{ surfaceId: string; materialSlotIds: string[] }>;
+    unsupportedSurfaceIds: string[];
+  };
   animations: CatalogAnimation[];
   categories: Array<{ categoryId: string; ui?: CatalogNodeUi; [key: string]: unknown }>;
   components: Array<{ componentId: string; ui?: CatalogNodeUi; [key: string]: unknown }>;
@@ -239,6 +245,51 @@ function validateCatalogUi(catalog: AutomotiveCatalog): void {
   }
   if (!isGameObjectPath(catalog.sequencePath)) {
     throw new Error("车型目录 v2 sequencePath 必须是 /Game/ 下的完整对象路径");
+  }
+  const surfaceIds = new Set(catalog.surfaces.map((surface) => surface.surfaceId));
+  const binding = catalog.vehicleSurfaceBinding;
+  if (!isRecord(binding)
+    || binding.schemaVersion !== "1.0.0"
+    || !["complete", "proxy"].includes(String(binding.capability))
+    || !Array.isArray(binding.bindings)
+    || binding.bindings.length === 0
+    || !Array.isArray(binding.unsupportedSurfaceIds)) {
+    throw new Error("车型目录 v2 vehicleSurfaceBinding 字段非法");
+  }
+  const covered = new Set<string>();
+  const slots = new Set<string>();
+  for (const item of binding.bindings) {
+    if (!isRecord(item)
+      || typeof item.surfaceId !== "string"
+      || !surfaceIds.has(item.surfaceId)
+      || covered.has(item.surfaceId)
+      || !Array.isArray(item.materialSlotIds)
+      || item.materialSlotIds.length === 0) {
+      throw new Error("车型目录 v2 vehicleSurfaceBinding binding 非法");
+    }
+    covered.add(item.surfaceId);
+    for (const slotId of item.materialSlotIds) {
+      if (typeof slotId !== "string"
+        || !/^[A-Za-z][A-Za-z0-9_]*$/.test(slotId)
+        || slots.has(slotId)) {
+        throw new Error("车型目录 v2 vehicleSurfaceBinding slot 非法或重复");
+      }
+      slots.add(slotId);
+    }
+  }
+  for (const surfaceId of binding.unsupportedSurfaceIds) {
+    if (typeof surfaceId !== "string"
+      || !surfaceIds.has(surfaceId)
+      || covered.has(surfaceId)) {
+      throw new Error("车型目录 v2 vehicleSurfaceBinding 显式缺口非法");
+    }
+    covered.add(surfaceId);
+  }
+  if (covered.size !== catalog.selectionOrder.length
+    || catalog.selectionOrder.some((surfaceId) => !covered.has(surfaceId))
+    || (binding.capability === "complete" && binding.unsupportedSurfaceIds.length > 0)
+    || (binding.capability === "proxy" && binding.unsupportedSurfaceIds.length === 0)) {
+    throw new Error("车型目录 v2 vehicleSurfaceBinding 必须完整覆盖 38 surface");
   }
   if (!Array.isArray(catalog.animations) || catalog.animations.length === 0) {
     throw new Error("车型目录 v2 animations 必须是非空数组");

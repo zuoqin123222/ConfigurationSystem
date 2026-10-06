@@ -126,6 +126,12 @@ bool FVehicleSurfaceBindingAudit::LoadContractJson(
 	{
 		OutErrors.Add(TEXT("$.modelVersion 必须是非空字符串。"));
 	}
+	FString Capability;
+	if (!Root->TryGetStringField(TEXT("capability"), Capability)
+		|| Capability != TEXT("complete"))
+	{
+		OutErrors.Add(TEXT("$.capability 必须为 complete；代理缺口不能通过正式导入审计。"));
+	}
 
 	const TArray<TSharedPtr<FJsonValue>>* Bindings = nullptr;
 	if (!Root->TryGetArrayField(TEXT("bindings"), Bindings) || Bindings == nullptr
@@ -149,7 +155,6 @@ bool FVehicleSurfaceBindingAudit::LoadContractJson(
 			continue;
 		}
 		FString SurfaceId;
-		FString SlotId;
 		if (!Binding->TryGetStringField(TEXT("surfaceId"), SurfaceId) || SurfaceId.IsEmpty())
 		{
 			OutErrors.Add(FString::Printf(
@@ -174,23 +179,35 @@ bool FVehicleSurfaceBindingAudit::LoadContractJson(
 			}
 		}
 
-		if (!Binding->TryGetStringField(TEXT("materialSlotId"), SlotId)
-			|| !SlotId.StartsWith(TEXT("sc01_")))
+		const TArray<TSharedPtr<FJsonValue>>* SlotIds = nullptr;
+		if (!Binding->TryGetArrayField(TEXT("materialSlotIds"), SlotIds)
+			|| SlotIds == nullptr || SlotIds->IsEmpty())
 		{
 			OutErrors.Add(FString::Printf(
-				TEXT("$.bindings[%d].materialSlotId 必须是 sc01_ 前缀的稳定槽名。"), Index));
+				TEXT("$.bindings[%d].materialSlotIds 必须是非空数组。"), Index));
 			continue;
 		}
-		const FName SlotName(*SlotId);
-		if (SeenSlots.Contains(SlotName))
+		for (const TSharedPtr<FJsonValue>& SlotValue : *SlotIds)
 		{
-			OutErrors.Add(FString::Printf(
-				TEXT("$.bindings[%d].materialSlotId 重复：%s。"), Index, *SlotId));
-		}
-		else
-		{
-			SeenSlots.Add(SlotName);
-			OutContract.MaterialSlotIds.Add(SlotName);
+			FString SlotId;
+			if (!SlotValue.IsValid() || !SlotValue->TryGetString(SlotId)
+				|| !SlotId.StartsWith(TEXT("sc01_")))
+			{
+				OutErrors.Add(FString::Printf(
+					TEXT("$.bindings[%d].materialSlotIds 包含非法稳定槽名。"), Index));
+				continue;
+			}
+			const FName SlotName(*SlotId);
+			if (SeenSlots.Contains(SlotName))
+			{
+				OutErrors.Add(FString::Printf(
+					TEXT("$.bindings[%d].materialSlotIds 重复：%s。"), Index, *SlotId));
+			}
+			else
+			{
+				SeenSlots.Add(SlotName);
+				OutContract.MaterialSlotIds.Add(SlotName);
+			}
 		}
 	}
 	return OutErrors.IsEmpty();
@@ -201,14 +218,14 @@ FVehicleSurfaceBindingAuditResult FVehicleSurfaceBindingAudit::AuditSnapshot(
 	const FVehicleSurfaceBindingMeshSnapshot& Snapshot)
 {
 	FVehicleSurfaceBindingAuditResult Result;
-	Result.SurfaceCount = Contract.MaterialSlotIds.Num();
+	Result.SurfaceCount = Contract.SurfaceIds.Num();
 	Result.LodCount = Snapshot.LodMaterialSlotIds.Num();
-	if (Contract.MaterialSlotIds.Num() != VehicleSurfaceBinding::Sc01SurfaceCount)
+	if (Contract.SurfaceIds.Num() != VehicleSurfaceBinding::Sc01SurfaceCount)
 	{
 		Result.Issues.Add(FString::Printf(
-			TEXT("surface-binding 必须包含 %d 个唯一槽，实际为 %d。"),
+			TEXT("surface-binding 必须包含 %d 个 surface，实际为 %d。"),
 			VehicleSurfaceBinding::Sc01SurfaceCount,
-			Contract.MaterialSlotIds.Num()));
+			Contract.SurfaceIds.Num()));
 	}
 	VehicleSurfaceBinding::AddMissingAndDuplicateIssues(
 		Contract.MaterialSlotIds,

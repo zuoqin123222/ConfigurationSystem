@@ -133,6 +133,58 @@
   ],
   "skeletalMeshPath": "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2.automotive-configurator-audi-a5-rigged-v2",
   "sequencePath": "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2_Anim.automotive-configurator-audi-a5-rigged-v2_Anim",
+  "vehicleSurfaceBinding": {
+    "schemaVersion": "1.0.0",
+    "capability": "proxy",
+    "bindings": [
+      {
+        "surfaceId": "exterior-body-cover",
+        "materialSlotIds": ["CS_Validation_Paint"]
+      },
+      {
+        "surfaceId": "door-middle",
+        "materialSlotIds": ["CS_Validation_Interior"]
+      }
+    ],
+    "unsupportedSurfaceIds": [
+      "engine-bay-cover",
+      "wheel-material",
+      "wheel-style",
+      "wheel-color",
+      "front-caliper-color",
+      "rear-caliper-color",
+      "steering-wheel-skin",
+      "steering-wheel-addon",
+      "steering-center-mark",
+      "ip-wings",
+      "ip-middle",
+      "ip-instrument-cover",
+      "ip-upper-trim",
+      "ip-lower-trim",
+      "ip-center-mark",
+      "a-pillar-surface",
+      "seat-backrest",
+      "seat-bolster",
+      "seat-shell-back",
+      "seat-headrest-mark",
+      "door-upper",
+      "door-armrest",
+      "door-armrest-skin",
+      "storage-soft-bag",
+      "console-armrest-cover",
+      "console-armrest-side",
+      "handbrake",
+      "roof-surface",
+      "lower-skirt",
+      "interior-painted-parts",
+      "door-sill",
+      "embroidered-logo",
+      "center-panel-trim",
+      "shift-knob",
+      "brake-handle",
+      "pedal"
+    ]
+  },
   "animations": [
     {
       "animationId": "hood",

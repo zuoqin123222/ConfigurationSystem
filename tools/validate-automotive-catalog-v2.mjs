@@ -208,6 +208,7 @@ export function validateCatalog(catalog) {
     "optionIdAliases",
     "skeletalMeshPath",
     "sequencePath",
+    "vehicleSurfaceBinding",
     "animations",
     "regions",
     "categories",
@@ -254,6 +255,59 @@ export function validateCatalog(catalog) {
     "materialVariants"
   );
   const options = uniqueIndex(catalog.options, "optionId", "options");
+  const surfaceBinding = catalog.vehicleSurfaceBinding;
+  check(isRecord(surfaceBinding), "vehicleSurfaceBinding 必须是 object");
+  assertAllowedKeys(
+    surfaceBinding,
+    ["schemaVersion", "capability", "bindings", "unsupportedSurfaceIds"],
+    [],
+    "vehicleSurfaceBinding"
+  );
+  check(surfaceBinding.schemaVersion === "1.0.0",
+    "vehicleSurfaceBinding.schemaVersion 必须为 1.0.0");
+  check(surfaceBinding.capability === "complete" || surfaceBinding.capability === "proxy",
+    "vehicleSurfaceBinding.capability 非法");
+  check(Array.isArray(surfaceBinding.bindings) && surfaceBinding.bindings.length > 0,
+    "vehicleSurfaceBinding.bindings 必须是非空数组");
+  check(Array.isArray(surfaceBinding.unsupportedSurfaceIds),
+    "vehicleSurfaceBinding.unsupportedSurfaceIds 必须是数组");
+  const coveredSurfaceIds = new Set();
+  const materialSlotIds = new Set();
+  for (const [index, binding] of surfaceBinding.bindings.entries()) {
+    check(isRecord(binding), `vehicleSurfaceBinding.bindings[${index}] 必须是 object`);
+    assertAllowedKeys(binding, ["surfaceId", "materialSlotIds"], [],
+      `vehicleSurfaceBinding.bindings[${index}]`);
+    check(surfaces.has(binding.surfaceId),
+      `vehicleSurfaceBinding.bindings[${index}].surfaceId 未知`);
+    check(!coveredSurfaceIds.has(binding.surfaceId),
+      `vehicleSurfaceBinding surfaceId 重复：${binding.surfaceId}`);
+    coveredSurfaceIds.add(binding.surfaceId);
+    check(Array.isArray(binding.materialSlotIds) && binding.materialSlotIds.length > 0,
+      `vehicleSurfaceBinding.bindings[${index}].materialSlotIds 必须非空`);
+    for (const slotId of binding.materialSlotIds) {
+      check(typeof slotId === "string" && /^[A-Za-z][A-Za-z0-9_]*$/.test(slotId),
+        `vehicleSurfaceBinding material slot 非法：${slotId}`);
+      check(!materialSlotIds.has(slotId),
+        `vehicleSurfaceBinding material slot 重复：${slotId}`);
+      materialSlotIds.add(slotId);
+    }
+  }
+  for (const surfaceId of surfaceBinding.unsupportedSurfaceIds) {
+    check(surfaces.has(surfaceId),
+      `vehicleSurfaceBinding.unsupportedSurfaceIds 包含未知 surface：${surfaceId}`);
+    check(!coveredSurfaceIds.has(surfaceId),
+      `vehicleSurfaceBinding surface 同时绑定并声明缺口：${surfaceId}`);
+    coveredSurfaceIds.add(surfaceId);
+  }
+  check(coveredSurfaceIds.size === catalog.selectionOrder.length
+    && catalog.selectionOrder.every((surfaceId) => coveredSurfaceIds.has(surfaceId)),
+  "vehicleSurfaceBinding 必须以绑定或显式缺口覆盖全部 38 surface");
+  check(surfaceBinding.capability !== "complete"
+    || surfaceBinding.unsupportedSurfaceIds.length === 0,
+  "complete vehicleSurfaceBinding 不得包含显式缺口");
+  check(surfaceBinding.capability !== "proxy"
+    || surfaceBinding.unsupportedSurfaceIds.length > 0,
+  "proxy vehicleSurfaceBinding 必须包含显式缺口");
   const cameras = new Map();
   for (const camera of catalog.interactionCameras ?? []) {
     check(isRecord(camera), "interactionCamera 必须是 object");

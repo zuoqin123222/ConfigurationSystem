@@ -171,6 +171,26 @@ export const catalogFixture: CatalogV2 = {
   ],
   skeletalMeshPath: '/Game/Configurator/AuthorizedAudiA5/SK_A5_Car.SK_A5_Car',
   sequencePath: '/Game/Configurator/AuthorizedAudiA5/Animations/A_A5_FullVehicle.A_A5_FullVehicle',
+  vehicleSurfaceBinding: {
+    schemaVersion: '1.0.0',
+    capability: 'proxy',
+    bindings: [
+      { surfaceId: 'exterior-body-cover', materialSlotIds: ['CS_Validation_Paint'] },
+      { surfaceId: 'door-middle', materialSlotIds: ['CS_Validation_Interior'] },
+    ],
+    unsupportedSurfaceIds: [
+      'wheel-material', 'wheel-style', 'wheel-color', 'lower-skirt',
+      'front-caliper-color', 'rear-caliper-color', 'engine-bay-cover',
+      'steering-wheel-addon', 'steering-center-mark', 'seat-backrest',
+      'seat-bolster', 'seat-shell-back', 'seat-headrest-mark', 'door-upper',
+      'door-armrest', 'door-armrest-skin', 'ip-wings', 'ip-middle',
+      'ip-instrument-cover', 'ip-upper-trim', 'ip-lower-trim', 'ip-center-mark',
+      'storage-soft-bag', 'console-armrest-cover', 'console-armrest-side',
+      'handbrake', 'roof-surface', 'a-pillar-surface', 'interior-painted-parts',
+      'door-sill', 'embroidered-logo', 'center-panel-trim', 'shift-knob',
+      'brake-handle', 'pedal', 'steering-wheel-skin',
+    ],
+  },
   animations: [
     {
       animationId: 'hood',

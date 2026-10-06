@@ -76,11 +76,16 @@ def load_contract(path: Path) -> dict[str, Any]:
     slots: set[str] = set()
     selectors: set[tuple[str, str, str]] = set()
     for index, binding in enumerate(bindings):
-        slot = binding.get("materialSlotId")
-        require(isinstance(slot, str) and SLOT_PATTERN.fullmatch(slot),
-                f"bindings[{index}].materialSlotId: 非法 SC01 slot ID")
-        require(slot not in slots, f"bindings[{index}].materialSlotId: 重复 {slot}")
-        slots.add(slot)
+        slot_ids = binding.get("materialSlotIds")
+        require(isinstance(slot_ids, list) and slot_ids,
+                f"bindings[{index}].materialSlotIds: 必须是非空 array")
+        require(len(slot_ids) == 1,
+                f"bindings[{index}].materialSlotIds: Maya 面选择生产当前要求每个 surface 一个目标槽")
+        for slot in slot_ids:
+            require(isinstance(slot, str) and SLOT_PATTERN.fullmatch(slot),
+                    f"bindings[{index}].materialSlotIds: 非法 SC01 slot ID")
+            require(slot not in slots, f"bindings[{index}].materialSlotIds: 重复 {slot}")
+            slots.add(slot)
         rules = binding.get("selectors")
         require(isinstance(rules, list) and rules,
                 f"bindings[{index}].selectors: 必须是非空 array")
@@ -190,7 +195,7 @@ def rebuild_slots(cmds, contract: dict[str, Any]) -> dict[str, int]:
     claimed: set[str] = set()
     counts: dict[str, int] = {}
     for binding in contract["bindings"]:
-        slot = binding["materialSlotId"]
+        slot = binding["materialSlotIds"][0]
         require(not cmds.objExists(slot) and not cmds.objExists(f"{slot}_SG"),
                 f"目标材质或 shadingEngine 已存在，拒绝非幂等覆盖: {slot}")
         faces: list[str] = []

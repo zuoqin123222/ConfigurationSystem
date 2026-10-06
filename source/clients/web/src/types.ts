@@ -153,6 +153,15 @@ export interface CatalogV2 {
   interactionCameras?: CatalogInteractionCamera[]
   skeletalMeshPath: string
   sequencePath: string
+  vehicleSurfaceBinding: {
+    schemaVersion: '1.0.0'
+    capability: 'complete' | 'proxy'
+    bindings: Array<{
+      surfaceId: string
+      materialSlotIds: string[]
+    }>
+    unsupportedSurfaceIds: string[]
+  }
   animations: CatalogAnimation[]
   regions: Array<CatalogNode & { regionId: string }>
   categories: CatalogCategory[]
