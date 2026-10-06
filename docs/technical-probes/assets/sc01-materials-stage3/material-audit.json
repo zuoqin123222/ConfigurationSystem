@@ -1,0 +1,29 @@
+{
+  "engineVersion": "5.8.1-56057345+++UE5+Release-5.8",
+  "scope": "/Game/SubstrateMaterials/Maps/Overview",
+  "policy": "reuse-only-no-parent-copy",
+  "familyCount": 17,
+  "variantInstanceCount": 352,
+  "variantTextureCount": 352,
+  "families": [
+    {"materialFamilyId":"alcantara","parentMaterialPath":"/Game/SubstrateMaterials/Materials/02_Upholstery/6_Suede/MI_Suede_Black.MI_Suede_Black","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"aluminum-alloy","parentMaterialPath":"/Game/SubstrateMaterials/Materials/03_Metals/1_Basic/MI_Aluminum.MI_Aluminum","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"carbon-fiber","parentMaterialPath":"/Game/SubstrateMaterials/Materials/04_Carbon/1_CarbonFiber/Templates/MTP_CarbonFiber_OPBR.MTP_CarbonFiber_OPBR","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"carpet","parentMaterialPath":"/Game/SubstrateMaterials/Materials/02_Upholstery/0_Templates/MTP_Carpet.MTP_Carpet","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"eva","parentMaterialPath":"/Game/SubstrateMaterials/Materials/07_Rubbers/0_Templates/MTP_Rubber_OPBR.MTP_Rubber_OPBR","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"felt","parentMaterialPath":"/Game/SubstrateMaterials/Materials/02_Upholstery/0_Templates/MTP_Fabric_Velvet_OPBR.MTP_Fabric_Velvet_OPBR","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"leather","parentMaterialPath":"/Game/SubstrateMaterials/Materials/02_Upholstery/0_Templates/MTP_Leather_OPBR.MTP_Leather_OPBR","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"magnesium-alloy","parentMaterialPath":"/Game/SubstrateMaterials/Materials/03_Metals/1_Basic/MI_Titanium_Dark.MI_Titanium_Dark","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"metal","parentMaterialPath":"/Game/SubstrateMaterials/Materials/03_Metals/0_Templates/MTP_Metal.MTP_Metal","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"microfiber","parentMaterialPath":"/Game/SubstrateMaterials/Materials/02_Upholstery/2_PlasticLeather/MI_Plastic_Leather_Black_OPBR.MI_Plastic_Leather_Black_OPBR","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"paint","parentMaterialPath":"/Game/SubstrateMaterials/Materials/01_Paints/0_Templates/MTP_Paint_Metallic_Glint.MTP_Paint_Metallic_Glint","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"ppg","parentMaterialPath":"/Game/SubstrateMaterials/Materials/01_Paints/0_Templates/MTP_Paint_Dielectric.MTP_Paint_Dielectric","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"rubber","parentMaterialPath":"/Game/SubstrateMaterials/Materials/07_Rubbers/0_Templates/MTP_Rubber_OPBR.MTP_Rubber_OPBR","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"spray","parentMaterialPath":"/Game/SubstrateMaterials/Materials/01_Paints/0_Templates/MTP_Paint_Dielectric.MTP_Paint_Dielectric","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"ultrasuede","parentMaterialPath":"/Game/SubstrateMaterials/Materials/02_Upholstery/6_Suede/MI_Suede_Charcoal.MI_Suede_Charcoal","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"woven-fabric","parentMaterialPath":"/Game/SubstrateMaterials/Materials/02_Upholstery/0_Templates/MTP_Fabric_OPBR.MTP_Fabric_OPBR","insideRepositorySubstrateMaterials":true},
+    {"materialFamilyId":"woven-wool","parentMaterialPath":"/Game/SubstrateMaterials/Materials/02_Upholstery/4_Fabric/MI_Fabric_Weave_OPBR.MI_Fabric_Weave_OPBR","insideRepositorySubstrateMaterials":true}
+  ],
+  "errors": [],
+  "passed": true
+}

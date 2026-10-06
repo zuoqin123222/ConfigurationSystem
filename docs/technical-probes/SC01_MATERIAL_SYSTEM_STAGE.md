@@ -1,100 +1,75 @@
-# SC01 材质体系阶段
+# SC01 材质体系阶段 3
 
 ## 结论
 
-当前工程已从零生成六个独立 Master Material，并通过
-`Sc01MaterialLibrary` Primary Asset 提供给 Runtime。实现未读取、复制或
-引用 Epic Automotive Configurator 的材质、材质函数或纹理。
+阶段 3 已在 UE 5.8.1 中审计仓库自带
+`/Game/SubstrateMaterials/Maps/Overview`，为 catalog 的 17 个材料族建立显式母材质映射，
+并物化 352 个 `UMaterialInstanceConstant`。实现不创建 `M_SC01_*` 母材质，也不复制
+`SubstrateMaterials` 资产；所有 Parent 路径均位于 `/Game/SubstrateMaterials/`。
 
-生成资产：
+机器证据：
 
-- `M_SC01_CarPaint`
-- `M_SC01_Alcantara`
-- `M_SC01_Ultrasuede`
-- `M_SC01_Microfiber`
-- `M_SC01_Leather`
-- `M_SC01_WovenWool`
-- `DA_SC01MaterialLibrary`
+- [17 族映射和数量审计](assets/sc01-materials-stage3/material-audit.json)
+- [Overview 实时 Lit](assets/sc01-materials-stage3/overview-realtime.png)
+- [Overview Path Tracing](assets/sc01-materials-stage3/overview-pathtracing.png)
 
-## 参数契约
+## 物化规则
 
-车漆材质使用 Clear Coat Shading Model，并暴露：
+- 输出：`/Game/SC01/Materials/Variants/<materialFamilyId>/MI_SC01_*`
+- 颜色纹理：`/Game/SC01/Materials/VariantTextures/<materialFamilyId>/T_SC01_*`
+- `DA_SC01MaterialLibrary` 索引 17 个 Parent 和 352 个 MI。
+- 336 个纯色色卡使用 catalog `ui.sortColorHex` 生成 1×1 sRGB 纹理，写入
+  `Diffuse Color Map` 或 `Color Map`，保留母材质的法线、粗糙度和绒毛响应。
+- 16 个织物羊毛直接使用仓库内 PDF 缩略图的 PNG 派生源，写入 `Color Map`；
+  方向固定为缩略图方向（`Rotation=0`），按花型分组设置尺度：
+  `SQUARES=1.25`、`PEPITA=1.15`、`SOLM=1.0`、`MADRAS=0.9`、
+  `TARTAN=0.85`、`FLANELL STREIFEN=0.8`。
+- 每个 MI 写入 `SC01.VariantId`、`SC01.MaterialFamilyId`、
+  `SC01.ThumbnailUrl` 元数据；羊毛额外写入尺度与方向。
 
-- `BaseColor`
-- `Metallic`
-- `Roughness`
-- `ClearCoat`
-- `ClearCoatRoughness`
-- `OrangePeel`
-- `FlakeIntensity`
+## 17 个材料族 Parent
 
-橘皮和金属闪片由两级程序 Noise 分别扰动粗糙度和底色。五类内饰材质分别
-使用独立默认参数，并统一暴露：
+完整对象路径见 JSON 审计。选择原则如下：
 
-- `BaseColor`
-- `Roughness`
-- `Specular`
-- `MicrostructureScale`
-- `MicrostructureStrength`
-- `FuzzAmount`
-- `FuzzExponent`
+| 材料族 | Overview 复用方向 |
+|---|---|
+| paint | metallic glint paint |
+| aluminum-alloy | aluminum |
+| magnesium-alloy | dark matte titanium 近似金属基线 |
+| carbon-fiber | carbon fiber OPBR |
+| metal | generic metal |
+| ppg | dielectric paint |
+| ultrasuede | charcoal suede |
+| alcantara | black suede |
+| leather | leather OPBR |
+| microfiber | plastic leather OPBR |
+| eva | rubber OPBR |
+| woven-fabric | fabric OPBR |
+| woven-wool | fabric weave OPBR |
+| felt | fabric velvet OPBR |
+| spray | dielectric paint |
+| carpet | carpet |
+| rubber | rubber OPBR |
 
-微结构由 UV、程序 Noise 和粗糙度扰动构成，绒毛响应由 Fresnel 控制。
-PDF 色卡只作为颜色参考与 UI 缩略图，不作为法线、粗糙度或纤维纹理。
+`magnesium-alloy` 当前使用 Overview 中最接近的深色哑光钛作为物理近似；
+该映射是明确的审计选择，不宣称其化学成分等同镁合金。
 
-## 生成与打包
+## UE 5.8 视觉审计
 
-`FSc01MaterialAssetGenerator` 只位于 Editor 模块，并使用
-`UMaterialEditingLibrary` 公开 API 创建表达式、连接 Material Property、
-重编译和保存。重复运行会先删除旧表达式再重建，不累积节点。
+使用同一 Overview 关卡、DX12 和 RTX 5080 对照：
 
-Runtime 模块不依赖 `MaterialEditor` 或 `UnrealEd`。材质库通过 Asset
-Manager 的 `AlwaysCook` 规则进入包体，运行时只加载已 Cook 材质、创建
-MID 并写 uniform 参数。
+- Lit：成功出图，但原样地图在 game viewport 中显示 SkyDome coverage 警告；
+- Path Tracing：64 spp，关闭 progress overlay，并将曝光补偿调到 `+4 EV` 后出图；
+- 两张图均保留原始地图构图，不把 Overview 样例冒充 SC01 正式车辆或最终内饰验收。
 
-## 运行时绑定
-
-`USc01MaterialBinder` 监听 `USc01V2ConfigurationState`：
-
-- `exterior-body-cover` 驱动
-  `Configurator.Slot.paint_body`；
-- `door-middle` 驱动
-  `Configurator.Slot.sc01_interior_material_proxy`。
-
-这是明确的代理映射，仅用于验证材质族切换。没有把其余 SC01 surface
-伪装成已绑定。正式车辆仍必须按 surface、ComponentTag 和 material slot
-逐项验收。
-
-## GUI 证据
-
-![自定义蓝色车漆](assets/sc01-materials/custom-paint-blue.png)
-
-保存的 `#336699` 自定义车漆已在重新启动后恢复，并实际驱动车身 MID。
-画面可见蓝色底色与清漆高光。
-
-![牛皮内饰代理](assets/sc01-materials/leather-proxy.png)
-
-在“门板 → 中面”选择牛皮后，内饰代理舱由深色 Ultrasuede 切换为棕色
-牛皮 Master Material；选中状态和画面同步变化。
-
-![Shipping 车漆](assets/sc01-materials/shipping-carpaint.png)
-
-上图来自本阶段 fresh Shipping 包。默认红色 Clear Coat 车漆和 v2 动态
-面板在无 Editor 模块环境中正常加载。
+本阶段完成的是母材质选择、MI 物化和 Overview 对照。正式 SC01 模型尚未到位，
+因此不能对真实 UV、曲率、座椅花纹物理尺寸或整车 Path Tracing 效果作最终结论。
 
 ## 验证
 
 - `ConfigurationSystemEditor Win64 Development`：通过；
-- `ConfigurationSystem Win64 Development`：通过；
-- `ConfigurationSystem.Editor.SC01Materials.GenerateIdempotently`：通过；
-- `ConfigurationSystem.Runtime.SC01Materials.Binder`：通过；
-- 真实 Editor `-game` GUI：自定义车漆和内饰材料切换通过；
-- fresh Shipping Build/Cook/Stage/Pak/Archive：通过；
-- fresh Shipping GUI：材质库、默认 Clear Coat 车漆和动态面板加载通过。
-
-## 当前边界
-
-当前程序材质完成的是可运行的质量基线，不等同于正式 SC01 美术验收。
-正式车模到位后仍需在真实 UV、曲率、尺度、灯光和 Path Tracing 条件下逐项
-调校橘皮、闪片、微孔、织纹和绒毛方向，并补齐其余十个材料族。任何视觉
-结论不得由代理立方体直接外推到正式车辆。
+- `ConfigurationSystem.Editor.AutomotiveMaterials.MaterializeCatalogVariants`：通过；
+- 结果：17 个材料族、352 个 MI、352 个颜色/花纹纹理、错误 0；
+- 重复生成：不创建重名资产，原位刷新；
+- `ConfigurationSystem.Editor.AutomotiveCatalog`：通过；
+- Overview 实时 Lit 与 Path Tracing GPU 出图：完成。

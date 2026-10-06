@@ -3,3 +3,6 @@ source/clients/ue/Content/Configurator/AuthorizedAudiA5/**/*.uasset filter=lfs d
 source/clients/ue/Content/Configurator/AuthorizedAudiA5/*.uasset filter=lfs diff=lfs merge=lfs -text
 source/clients/ue/Content/SubstrateMaterials/**/*.uasset filter=lfs diff=lfs merge=lfs -text
 source/clients/ue/Content/SubstrateMaterials/**/*.umap filter=lfs diff=lfs merge=lfs -text
+source/clients/ue/Content/SC01/Materials/Variants/**/*.uasset filter=lfs diff=lfs merge=lfs -text
+source/clients/ue/Content/SC01/Materials/VariantTextures/**/*.uasset filter=lfs diff=lfs merge=lfs -text
+source/clients/ue/SourceAssets/SC01/WovenWool/*.png filter=lfs diff=lfs merge=lfs -text

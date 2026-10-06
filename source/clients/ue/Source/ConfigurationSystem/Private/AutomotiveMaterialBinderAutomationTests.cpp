@@ -50,11 +50,11 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		UMaterialInterface* Expected;
 	};
 	const FInteriorCase InteriorCases[] = {
-		{TEXT("door-middle-ultrasuede-black"), TEXT("ultrasuede"), Library->Ultrasuede.LoadSynchronous()},
-		{TEXT("door-middle-alcantara"), TEXT("alcantara"), Library->Alcantara.LoadSynchronous()},
-		{TEXT("door-middle-leather"), TEXT("leather"), Library->Leather.LoadSynchronous()},
-		{TEXT("door-middle-microfiber"), TEXT("microfiber"), Library->Microfiber.LoadSynchronous()},
-		{TEXT("door-middle-woven-wool"), TEXT("woven-wool"), Library->WovenWool.LoadSynchronous()}
+		{TEXT("door-middle-ultrasuede-black"), TEXT("ultrasuede"), Library->LoadInteriorMaterial(TEXT("ultrasuede"))},
+		{TEXT("door-middle-alcantara"), TEXT("alcantara"), Library->LoadInteriorMaterial(TEXT("alcantara"))},
+		{TEXT("door-middle-leather"), TEXT("leather"), Library->LoadInteriorMaterial(TEXT("leather"))},
+		{TEXT("door-middle-microfiber"), TEXT("microfiber"), Library->LoadInteriorMaterial(TEXT("microfiber"))},
+		{TEXT("door-middle-woven-wool"), TEXT("woven-wool"), Library->LoadInteriorMaterial(TEXT("woven-wool"))}
 	};
 	for (const FInteriorCase& Case : InteriorCases)
 	{

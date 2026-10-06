@@ -2,129 +2,89 @@
 
 #include "AutomotiveMaterialAssetGenerator.h"
 
-#include "MaterialEditingLibrary.h"
-#include "Materials/Material.h"
-#include "Materials/MaterialExpressionScalarParameter.h"
-#include "Materials/MaterialExpressionVectorParameter.h"
-#include "Misc/AutomationTest.h"
 #include "AutomotiveMaterialLibrary.h"
-
-namespace AutomotiveMaterialAssetAutomation
-{
-	TSet<FName> ParameterNames(const UMaterial* Material)
-	{
-		TSet<FName> Result;
-		for (UMaterialExpression* Expression :
-			Material->GetExpressionCollection().Expressions)
-		{
-			if (const UMaterialExpressionScalarParameter* Scalar =
-				Cast<UMaterialExpressionScalarParameter>(Expression))
-			{
-				Result.Add(Scalar->ParameterName);
-			}
-			else if (const UMaterialExpressionVectorParameter* Vector =
-				Cast<UMaterialExpressionVectorParameter>(Expression))
-			{
-				Result.Add(Vector->ParameterName);
-			}
-		}
-		return Result;
-	}
-}
+#include "Materials/MaterialInstanceConstant.h"
+#include "Misc/AutomationTest.h"
+#include "Misc/Paths.h"
+#include "UObject/MetaData.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAutomotiveMaterialAssetGenerationAutomationTest,
-	"ConfigurationSystem.Editor.AutomotiveMaterials.GenerateIdempotently",
+	"ConfigurationSystem.Editor.AutomotiveMaterials.MaterializeCatalogVariants",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAutomotiveMaterialAssetGenerationAutomationTest::RunTest(const FString& Parameters)
+bool FAutomotiveMaterialAssetGenerationAutomationTest::RunTest(
+	const FString& Parameters)
 {
 	(void)Parameters;
-	using namespace AutomotiveMaterialAssetAutomation;
-
 	FAutomotiveMaterialGenerationResult First;
-	TestTrue(TEXT("第一次生成六个 Master Material 与材质库"), FAutomotiveMaterialAssetGenerator::Generate(First));
+	TestTrue(
+		TEXT("UE5.8 从仓库 SubstrateMaterials 物化 352 个 MI"),
+		FAutomotiveMaterialAssetGenerator::Generate(First));
 	for (const FString& Error : First.Errors)
 	{
 		AddError(Error);
 	}
-	TestEqual(TEXT("Master Material 数量"), First.Materials.Num(), 6);
-	TestNotNull(TEXT("生成 AutomotiveMaterialLibrary"), First.Library);
+	TestEqual(TEXT("材料族母材质映射数"), First.FamilyParentPaths.Num(), 17);
+	TestEqual(TEXT("catalog MI 数量"), First.Variants.Num(), 352);
+	TestNotNull(TEXT("生成可 Cook 材质库"), First.Library);
 	if (!First.Succeeded())
 	{
 		return false;
 	}
-
-	TMap<FString, int32> ExpressionCounts;
-	for (UMaterial* Material : First.Materials)
-	{
-		ExpressionCounts.Add(
-			Material->GetPathName(),
-			UMaterialEditingLibrary::GetNumMaterialExpressions(Material));
-	}
-
-	FAutomotiveMaterialGenerationResult Second;
-	TestTrue(TEXT("第二次生成成功"), FAutomotiveMaterialAssetGenerator::Generate(Second));
-	TestEqual(TEXT("重复生成不创建新资产"), Second.CreatedAssetCount, 0);
-	TestEqual(TEXT("重复生成原位刷新七个资产"), Second.UpdatedAssetCount, 7);
-	TestEqual(TEXT("重复生成仍恰好六个材质"), Second.Materials.Num(), 6);
-	for (UMaterial* Material : Second.Materials)
-	{
-		TestEqual(
-			*FString::Printf(TEXT("%s 节点数不累积"), *Material->GetName()),
-			UMaterialEditingLibrary::GetNumMaterialExpressions(Material),
-			ExpressionCounts.FindRef(Material->GetPathName()));
-	}
-
-	const TSet<FName> PaintParameters = ParameterNames(Second.Materials[0]);
-	for (const FName Required : {
-		FName(TEXT("BaseColor")),
-		FName(TEXT("Metallic")),
-		FName(TEXT("Roughness")),
-		FName(TEXT("ClearCoat")),
-		FName(TEXT("ClearCoatRoughness")),
-		FName(TEXT("OrangePeel")),
-		FName(TEXT("FlakeIntensity")) })
+	for (const TPair<FString, FString>& Pair : First.FamilyParentPaths)
 	{
 		TestTrue(
-			*FString::Printf(TEXT("车漆包含参数 %s"), *Required.ToString()),
-			PaintParameters.Contains(Required));
+			*FString::Printf(TEXT("%s 仅复用仓库 SubstrateMaterials"), *Pair.Key),
+			Pair.Value.StartsWith(TEXT("/Game/SubstrateMaterials/")));
 	}
+	TestEqual(TEXT("材质库包含 17 个母材质"), First.Library->FamilyParents.Num(), 17);
+	TestEqual(TEXT("材质库包含 352 个 MI"), First.Library->Variants.Num(), 352);
 
-	for (int32 Index = 1; Index < Second.Materials.Num(); ++Index)
+	int32 WovenWoolCount = 0;
+	for (UMaterialInstanceConstant* Variant : First.Variants)
 	{
-		const TSet<FName> InteriorParameters = ParameterNames(Second.Materials[Index]);
-		for (const FName Required : {
-			FName(TEXT("BaseColor")),
-			FName(TEXT("Roughness")),
-			FName(TEXT("MicrostructureScale")),
-			FName(TEXT("MicrostructureStrength")),
-			FName(TEXT("FuzzAmount")),
-			FName(TEXT("FuzzExponent")) })
+		TestNotNull(TEXT("MI 有 Parent"), Variant != nullptr ? Variant->Parent.Get() : nullptr);
+		TestTrue(
+			TEXT("资产类型是 Material Instance 而不是 Master Material"),
+			Variant != nullptr
+				&& Variant->GetPathName().StartsWith(
+					TEXT("/Game/SC01/Materials/Variants/")));
+		if (Variant != nullptr
+			&& Variant->GetPathName().Contains(TEXT("/woven-wool/")))
 		{
-			TestTrue(
-				*FString::Printf(
-					TEXT("%s 包含程序微结构/绒毛参数 %s"),
-					*Second.Materials[Index]->GetName(),
-					*Required.ToString()),
-				InteriorParameters.Contains(Required));
+			++WovenWoolCount;
+			const FString Scale = Variant->GetOutermost()->GetMetaData().GetValue(
+				Variant, TEXT("SC01.PatternScale"));
+			const FString Rotation = Variant->GetOutermost()->GetMetaData().GetValue(
+				Variant, TEXT("SC01.PatternRotationDegrees"));
+			TestFalse(TEXT("羊毛记录花纹尺度"), Scale.IsEmpty());
+			TestEqual(TEXT("羊毛按缩略图方向不旋转"), Rotation, FString(TEXT("0")));
 		}
 	}
+	TestEqual(TEXT("羊毛花纹 MI 数量"), WovenWoolCount, 16);
 
-	TestEqual(
-		TEXT("材质库 Primary Asset 类型"),
-		Second.Library->GetPrimaryAssetId().PrimaryAssetType,
-		UAutomotiveMaterialLibrary::PrimaryAssetType);
-	TestEqual(
-		TEXT("材质库 Primary Asset 名称"),
-		Second.Library->GetPrimaryAssetId().PrimaryAssetName,
-		UAutomotiveMaterialLibrary::DefaultAssetName);
-	TestNotNull(TEXT("材质库车漆引用有效"), Second.Library->CarPaint.LoadSynchronous());
-	TestNotNull(TEXT("材质库 Alcantara 引用有效"), Second.Library->Alcantara.LoadSynchronous());
-	TestNotNull(TEXT("材质库 Ultrasuede 引用有效"), Second.Library->Ultrasuede.LoadSynchronous());
-	TestNotNull(TEXT("材质库牛皮引用有效"), Second.Library->Leather.LoadSynchronous());
-	TestNotNull(TEXT("材质库超纤引用有效"), Second.Library->Microfiber.LoadSynchronous());
-	TestNotNull(TEXT("材质库织物引用有效"), Second.Library->WovenWool.LoadSynchronous());
+	const int32 FirstCreatedCount = First.CreatedAssetCount;
+	FAutomotiveMaterialGenerationResult Second;
+	TestTrue(
+		TEXT("重复物化成功"),
+		FAutomotiveMaterialAssetGenerator::Generate(Second));
+	for (const FString& Error : Second.Errors)
+	{
+		AddError(Error);
+	}
+	TestEqual(TEXT("重复物化不创建新资产"), Second.CreatedAssetCount, 0);
+	TestEqual(TEXT("重复物化仍为 352 个 MI"), Second.Variants.Num(), 352);
+	TestTrue(TEXT("第一次确实创建了资产或刷新已有资产"),
+		FirstCreatedCount > 0 || First.UpdatedAssetCount > 0);
+
+	const FString AuditPath = FPaths::ConvertRelativePathToFull(
+		FPaths::ProjectSavedDir(),
+		TEXT("MaterialAudit/sc01-material-stage3-audit.json"));
+	TestTrue(
+		TEXT("写出 UE5.8 母材质审计证据"),
+		FAutomotiveMaterialAssetGenerator::WriteAuditReport(AuditPath, Second));
+	TestTrue(TEXT("审计报告存在"), FPaths::FileExists(AuditPath));
 	return true;
 }
 

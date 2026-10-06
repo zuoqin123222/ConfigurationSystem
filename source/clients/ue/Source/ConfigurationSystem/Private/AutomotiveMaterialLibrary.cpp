@@ -14,26 +14,14 @@ FPrimaryAssetId UAutomotiveMaterialLibrary::GetPrimaryAssetId() const
 UMaterialInterface* UAutomotiveMaterialLibrary::LoadInteriorMaterial(
 	const FString& MaterialFamilyId) const
 {
-	const TSoftObjectPtr<UMaterialInterface>* Material = nullptr;
-	if (MaterialFamilyId == TEXT("alcantara"))
-	{
-		Material = &Alcantara;
-	}
-	else if (MaterialFamilyId == TEXT("ultrasuede"))
-	{
-		Material = &Ultrasuede;
-	}
-	else if (MaterialFamilyId == TEXT("leather"))
-	{
-		Material = &Leather;
-	}
-	else if (MaterialFamilyId == TEXT("microfiber"))
-	{
-		Material = &Microfiber;
-	}
-	else if (MaterialFamilyId == TEXT("woven-wool"))
-	{
-		Material = &WovenWool;
-	}
+	const TSoftObjectPtr<UMaterialInterface>* Material =
+		FamilyParents.Find(MaterialFamilyId);
+	return Material != nullptr ? Material->LoadSynchronous() : nullptr;
+}
+
+UMaterialInterface* UAutomotiveMaterialLibrary::LoadVariantMaterial(
+	const FString& VariantId) const
+{
+	const TSoftObjectPtr<UMaterialInterface>* Material = Variants.Find(VariantId);
 	return Material != nullptr ? Material->LoadSynchronous() : nullptr;
 }

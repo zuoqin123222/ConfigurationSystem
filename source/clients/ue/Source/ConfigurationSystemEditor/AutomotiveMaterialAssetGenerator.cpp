@@ -1,53 +1,67 @@
 #include "AutomotiveMaterialAssetGenerator.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "MaterialEditingLibrary.h"
-#include "Materials/Material.h"
-#include "Materials/MaterialExpressionAdd.h"
-#include "Materials/MaterialExpressionFresnel.h"
-#include "Materials/MaterialExpressionMultiply.h"
-#include "Materials/MaterialExpressionNoise.h"
-#include "Materials/MaterialExpressionScalarParameter.h"
-#include "Materials/MaterialExpressionTextureCoordinate.h"
-#include "Materials/MaterialExpressionVectorParameter.h"
-#include "MaterialShared.h"
-#include "Misc/PackageName.h"
 #include "AutomotiveMaterialLibrary.h"
+#include "Dom/JsonObject.h"
+#include "Engine/Texture2D.h"
+#include "ImageUtils.h"
+#include "Materials/MaterialInstanceConstant.h"
+#include "Materials/MaterialInterface.h"
+#include "Misc/FileHelper.h"
+#include "Misc/PackageName.h"
+#include "Misc/Paths.h"
+#include "Misc/EngineVersion.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
+#include "UObject/MetaData.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
 
 namespace AutomotiveMaterialGeneration
 {
-	struct FMaterialSpec
+	struct FFamilySpec
 	{
-		const TCHAR* Name;
-		FLinearColor BaseColor;
-		float Roughness;
-		float MicrostructureScale;
-		float MicrostructureStrength;
-		float FuzzAmount;
-		float FuzzExponent;
+		const TCHAR* Id;
+		const TCHAR* ParentPath;
 	};
 
-	template <typename AssetType>
-	AssetType* LoadOrCreate(
-		const FString& PackageName,
-		const FString& AssetName,
-		bool& bOutCreated)
+	// 这些资产均属于随仓库提交的 /Game/SubstrateMaterials/Overview 内容。
+	// 映射按材料的物理外观和用途选择；没有为 SC01 复制或重建任何母材质图。
+	const FFamilySpec FamilySpecs[] = {
+		{TEXT("paint"), TEXT("/Game/SubstrateMaterials/Materials/01_Paints/0_Templates/MTP_Paint_Metallic_Glint.MTP_Paint_Metallic_Glint")},
+		{TEXT("aluminum-alloy"), TEXT("/Game/SubstrateMaterials/Materials/03_Metals/1_Basic/MI_Aluminum.MI_Aluminum")},
+		{TEXT("magnesium-alloy"), TEXT("/Game/SubstrateMaterials/Materials/03_Metals/1_Basic/MI_Titanium_Dark.MI_Titanium_Dark")},
+		{TEXT("carbon-fiber"), TEXT("/Game/SubstrateMaterials/Materials/04_Carbon/1_CarbonFiber/Templates/MTP_CarbonFiber_OPBR.MTP_CarbonFiber_OPBR")},
+		{TEXT("metal"), TEXT("/Game/SubstrateMaterials/Materials/03_Metals/0_Templates/MTP_Metal.MTP_Metal")},
+		{TEXT("ppg"), TEXT("/Game/SubstrateMaterials/Materials/01_Paints/0_Templates/MTP_Paint_Dielectric.MTP_Paint_Dielectric")},
+		{TEXT("ultrasuede"), TEXT("/Game/SubstrateMaterials/Materials/02_Upholstery/6_Suede/MI_Suede_Charcoal.MI_Suede_Charcoal")},
+		{TEXT("alcantara"), TEXT("/Game/SubstrateMaterials/Materials/02_Upholstery/6_Suede/MI_Suede_Black.MI_Suede_Black")},
+		{TEXT("leather"), TEXT("/Game/SubstrateMaterials/Materials/02_Upholstery/0_Templates/MTP_Leather_OPBR.MTP_Leather_OPBR")},
+		{TEXT("microfiber"), TEXT("/Game/SubstrateMaterials/Materials/02_Upholstery/2_PlasticLeather/MI_Plastic_Leather_Black_OPBR.MI_Plastic_Leather_Black_OPBR")},
+		{TEXT("eva"), TEXT("/Game/SubstrateMaterials/Materials/07_Rubbers/0_Templates/MTP_Rubber_OPBR.MTP_Rubber_OPBR")},
+		{TEXT("woven-fabric"), TEXT("/Game/SubstrateMaterials/Materials/02_Upholstery/0_Templates/MTP_Fabric_OPBR.MTP_Fabric_OPBR")},
+		{TEXT("woven-wool"), TEXT("/Game/SubstrateMaterials/Materials/02_Upholstery/4_Fabric/MI_Fabric_Weave_OPBR.MI_Fabric_Weave_OPBR")},
+		{TEXT("felt"), TEXT("/Game/SubstrateMaterials/Materials/02_Upholstery/0_Templates/MTP_Fabric_Velvet_OPBR.MTP_Fabric_Velvet_OPBR")},
+		{TEXT("spray"), TEXT("/Game/SubstrateMaterials/Materials/01_Paints/0_Templates/MTP_Paint_Dielectric.MTP_Paint_Dielectric")},
+		{TEXT("carpet"), TEXT("/Game/SubstrateMaterials/Materials/02_Upholstery/0_Templates/MTP_Carpet.MTP_Carpet")},
+		{TEXT("rubber"), TEXT("/Game/SubstrateMaterials/Materials/07_Rubbers/0_Templates/MTP_Rubber_OPBR.MTP_Rubber_OPBR")}
+	};
+
+	FString CatalogFilename()
 	{
-		const FString ObjectPath =
-			FString::Printf(TEXT("%s.%s"), *PackageName, *AssetName);
-		if (AssetType* Existing = LoadObject<AssetType>(nullptr, *ObjectPath))
-		{
-			bOutCreated = false;
-			return Existing;
-		}
-		UPackage* Package = CreatePackage(*PackageName);
-		bOutCreated = true;
-		return NewObject<AssetType>(
-			Package,
-			*AssetName,
-			RF_Public | RF_Standalone);
+		return FPaths::ConvertRelativePathToFull(
+			FPaths::ProjectDir(),
+			TEXT("../../../contracts/fixtures/sc01.catalog.draft.v2.json"));
+	}
+
+	FString WoolSourceFilename(const FString& VariantId)
+	{
+		return FPaths::ConvertRelativePathToFull(
+			FPaths::ProjectDir(),
+			FPaths::Combine(
+				TEXT("SourceAssets/SC01/WovenWool"),
+				VariantId + TEXT(".png")));
 	}
 
 	bool Save(UObject* Asset)
@@ -66,260 +80,245 @@ namespace AutomotiveMaterialGeneration
 			Args);
 	}
 
-	template <typename ExpressionType>
-	ExpressionType* AddExpression(UMaterial* Material, const int32 X, const int32 Y)
+	template <typename AssetType>
+	AssetType* LoadOrCreate(
+		const FString& PackageName,
+		const FString& AssetName,
+		bool& bOutCreated)
 	{
-		return CastChecked<ExpressionType>(
-			UMaterialEditingLibrary::CreateMaterialExpression(
-				Material,
-				ExpressionType::StaticClass(),
-				X,
-				Y));
-	}
-
-	UMaterialExpressionScalarParameter* AddScalar(
-		UMaterial* Material,
-		const TCHAR* Name,
-		const float Default,
-		const int32 X,
-		const int32 Y)
-	{
-		UMaterialExpressionScalarParameter* Result =
-			AddExpression<UMaterialExpressionScalarParameter>(Material, X, Y);
-		Result->ParameterName = Name;
-		Result->DefaultValue = Default;
-		return Result;
-	}
-
-	UMaterialExpressionVectorParameter* AddColor(
-		UMaterial* Material,
-		const FLinearColor& Default,
-		const int32 X,
-		const int32 Y)
-	{
-		UMaterialExpressionVectorParameter* Result =
-			AddExpression<UMaterialExpressionVectorParameter>(Material, X, Y);
-		Result->ParameterName = TEXT("BaseColor");
-		Result->DefaultValue = Default;
-		return Result;
-	}
-
-	void Connect(
-		UMaterialExpression* From,
-		UMaterialExpression* To,
-		const TCHAR* Input)
-	{
-		UMaterialEditingLibrary::ConnectMaterialExpressions(
-			From,
-			TEXT(""),
-			To,
-			Input);
-	}
-
-	void ResetMaterial(UMaterial* Material)
-	{
-		Material->Modify();
-		// UE 5.8 的 DeleteAllMaterialExpressions 在遍历时原地移除，可能跳过元素；
-		// 先复制快照再逐个删除，保证重复生成不会累积参数或节点。
-		const TArray<TObjectPtr<UMaterialExpression>> ExistingExpressions =
-			Material->GetExpressionCollection().Expressions;
-		for (UMaterialExpression* Expression : ExistingExpressions)
+		const FString ObjectPath = PackageName + TEXT(".") + AssetName;
+		if (FPackageName::DoesPackageExist(PackageName))
 		{
-			UMaterialEditingLibrary::DeleteMaterialExpression(Material, Expression);
+			if (AssetType* Existing = LoadObject<AssetType>(nullptr, *ObjectPath))
+			{
+				bOutCreated = false;
+				return Existing;
+			}
 		}
-		Material->MaterialDomain = MD_Surface;
-		Material->BlendMode = BLEND_Opaque;
-		Material->TwoSided = false;
+		UPackage* Package = CreatePackage(*PackageName);
+		AssetType* Result = NewObject<AssetType>(
+			Package, *AssetName, RF_Public | RF_Standalone);
+		bOutCreated = Result != nullptr;
+		if (Result != nullptr)
+		{
+			FAssetRegistryModule::AssetCreated(Result);
+		}
+		return Result;
 	}
 
-	void BuildCarPaint(UMaterial* Material)
+	FString AssetSafeName(const FString& StableId, const TCHAR* Prefix)
 	{
-		ResetMaterial(Material);
-		Material->SetShadingModel(MSM_ClearCoat);
-
-		UMaterialExpressionVectorParameter* BaseColor =
-			AddColor(Material, FLinearColor(0.55f, 0.015f, 0.02f), -900, -280);
-		UMaterialExpressionScalarParameter* Metallic =
-			AddScalar(Material, TEXT("Metallic"), 0.82f, -900, -120);
-		UMaterialExpressionScalarParameter* Roughness =
-			AddScalar(Material, TEXT("Roughness"), 0.22f, -900, 20);
-		UMaterialExpressionScalarParameter* ClearCoat =
-			AddScalar(Material, TEXT("ClearCoat"), 1.0f, -900, 160);
-		UMaterialExpressionScalarParameter* ClearCoatRoughness =
-			AddScalar(Material, TEXT("ClearCoatRoughness"), 0.08f, -900, 300);
-		UMaterialExpressionScalarParameter* OrangePeel =
-			AddScalar(Material, TEXT("OrangePeel"), 0.08f, -900, 440);
-		UMaterialExpressionScalarParameter* FlakeIntensity =
-			AddScalar(Material, TEXT("FlakeIntensity"), 0.18f, -900, 580);
-
-		UMaterialExpressionNoise* OrangeNoise =
-			AddExpression<UMaterialExpressionNoise>(Material, -620, 400);
-		OrangeNoise->Scale = 180.0f;
-		OrangeNoise->Quality = 1;
-		OrangeNoise->Levels = 2;
-		OrangeNoise->OutputMin = -0.5f;
-		OrangeNoise->OutputMax = 0.5f;
-		UMaterialExpressionMultiply* OrangeAmount =
-			AddExpression<UMaterialExpressionMultiply>(Material, -380, 300);
-		Connect(OrangeNoise, OrangeAmount, TEXT("A"));
-		Connect(OrangePeel, OrangeAmount, TEXT("B"));
-		UMaterialExpressionAdd* FinalRoughness =
-			AddExpression<UMaterialExpressionAdd>(Material, -120, 100);
-		Connect(Roughness, FinalRoughness, TEXT("A"));
-		Connect(OrangeAmount, FinalRoughness, TEXT("B"));
-
-		UMaterialExpressionNoise* FlakeNoise =
-			AddExpression<UMaterialExpressionNoise>(Material, -620, -520);
-		FlakeNoise->Scale = 900.0f;
-		FlakeNoise->Quality = 1;
-		FlakeNoise->Levels = 1;
-		FlakeNoise->OutputMin = 0.0f;
-		FlakeNoise->OutputMax = 0.12f;
-		UMaterialExpressionMultiply* FlakeAmount =
-			AddExpression<UMaterialExpressionMultiply>(Material, -380, -420);
-		Connect(FlakeNoise, FlakeAmount, TEXT("A"));
-		Connect(FlakeIntensity, FlakeAmount, TEXT("B"));
-		UMaterialExpressionAdd* FinalColor =
-			AddExpression<UMaterialExpressionAdd>(Material, -120, -260);
-		Connect(BaseColor, FinalColor, TEXT("A"));
-		Connect(FlakeAmount, FinalColor, TEXT("B"));
-
-		UMaterialEditingLibrary::ConnectMaterialProperty(
-			FinalColor, TEXT(""), MP_BaseColor);
-		UMaterialEditingLibrary::ConnectMaterialProperty(
-			Metallic, TEXT(""), MP_Metallic);
-		UMaterialEditingLibrary::ConnectMaterialProperty(
-			FinalRoughness, TEXT(""), MP_Roughness);
-		UMaterialEditingLibrary::ConnectMaterialProperty(
-			ClearCoat, TEXT(""), MP_CustomData0);
-		UMaterialEditingLibrary::ConnectMaterialProperty(
-			ClearCoatRoughness, TEXT(""), MP_CustomData1);
+		FString Result = StableId;
+		for (TCHAR& Character : Result)
+		{
+			if (!FChar::IsAlnum(Character))
+			{
+				Character = TEXT('_');
+			}
+		}
+		return FString(Prefix) + Result;
 	}
 
-	void BuildInterior(UMaterial* Material, const FMaterialSpec& Spec)
+	bool ParseHexColor(const FString& Hex, FLinearColor& OutColor)
 	{
-		ResetMaterial(Material);
-		Material->SetShadingModel(MSM_DefaultLit);
-
-		UMaterialExpressionVectorParameter* BaseColor =
-			AddColor(Material, Spec.BaseColor, -900, -300);
-		UMaterialExpressionScalarParameter* Roughness =
-			AddScalar(Material, TEXT("Roughness"), Spec.Roughness, -900, -140);
-		UMaterialExpressionScalarParameter* MicroScale =
-			AddScalar(
-				Material,
-				TEXT("MicrostructureScale"),
-				Spec.MicrostructureScale,
-				-900,
-				20);
-		UMaterialExpressionScalarParameter* MicroStrength =
-			AddScalar(
-				Material,
-				TEXT("MicrostructureStrength"),
-				Spec.MicrostructureStrength,
-				-900,
-				160);
-		UMaterialExpressionScalarParameter* FuzzAmount =
-			AddScalar(Material, TEXT("FuzzAmount"), Spec.FuzzAmount, -900, 300);
-		UMaterialExpressionScalarParameter* FuzzExponent =
-			AddScalar(Material, TEXT("FuzzExponent"), Spec.FuzzExponent, -900, 440);
-
-		UMaterialExpressionTextureCoordinate* TexCoord =
-			AddExpression<UMaterialExpressionTextureCoordinate>(Material, -650, -20);
-		UMaterialExpressionMultiply* ScaledUv =
-			AddExpression<UMaterialExpressionMultiply>(Material, -430, 20);
-		Connect(TexCoord, ScaledUv, TEXT("A"));
-		Connect(MicroScale, ScaledUv, TEXT("B"));
-		UMaterialExpressionNoise* MicroNoise =
-			AddExpression<UMaterialExpressionNoise>(Material, -210, 20);
-		MicroNoise->Scale = 1.0f;
-		MicroNoise->Quality = 1;
-		MicroNoise->Levels = 2;
-		MicroNoise->OutputMin = -0.5f;
-		MicroNoise->OutputMax = 0.5f;
-		Connect(ScaledUv, MicroNoise, TEXT("Position"));
-		UMaterialExpressionMultiply* MicroAmount =
-			AddExpression<UMaterialExpressionMultiply>(Material, 20, 40);
-		Connect(MicroNoise, MicroAmount, TEXT("A"));
-		Connect(MicroStrength, MicroAmount, TEXT("B"));
-		UMaterialExpressionAdd* FinalRoughness =
-			AddExpression<UMaterialExpressionAdd>(Material, 250, -60);
-		Connect(Roughness, FinalRoughness, TEXT("A"));
-		Connect(MicroAmount, FinalRoughness, TEXT("B"));
-
-		UMaterialExpressionFresnel* Fresnel =
-			AddExpression<UMaterialExpressionFresnel>(Material, -420, -400);
-		Connect(FuzzExponent, Fresnel, TEXT("ExponentIn"));
-		UMaterialExpressionMultiply* Fuzz =
-			AddExpression<UMaterialExpressionMultiply>(Material, -180, -350);
-		Connect(Fresnel, Fuzz, TEXT("A"));
-		Connect(FuzzAmount, Fuzz, TEXT("B"));
-		UMaterialExpressionAdd* FinalColor =
-			AddExpression<UMaterialExpressionAdd>(Material, 80, -270);
-		Connect(BaseColor, FinalColor, TEXT("A"));
-		Connect(Fuzz, FinalColor, TEXT("B"));
-
-		UMaterialEditingLibrary::ConnectMaterialProperty(
-			FinalColor, TEXT(""), MP_BaseColor);
-		UMaterialEditingLibrary::ConnectMaterialProperty(
-			FinalRoughness, TEXT(""), MP_Roughness);
-		UMaterialExpressionScalarParameter* Specular =
-			AddScalar(Material, TEXT("Specular"), 0.35f, 20, 220);
-		UMaterialEditingLibrary::ConnectMaterialProperty(
-			Specular, TEXT(""), MP_Specular);
+		if (Hex.Len() != 7 || Hex[0] != TEXT('#'))
+		{
+			return false;
+		}
+		for (int32 Index = 1; Index < Hex.Len(); ++Index)
+		{
+			if (!FChar::IsHexDigit(Hex[Index]))
+			{
+				return false;
+			}
+		}
+		OutColor = FLinearColor::FromSRGBColor(FColor::FromHex(Hex));
+		return true;
 	}
 
-	UMaterial* GenerateMaterial(
-		const FMaterialSpec& Spec,
-		const bool bCarPaint,
+	FName FindVectorParameter(
+		UMaterialInterface* Parent,
+		const TArray<FName>& Candidates)
+	{
+		TArray<FMaterialParameterInfo> Parameters;
+		TArray<FGuid> Ids;
+		Parent->GetAllVectorParameterInfo(Parameters, Ids);
+		for (const FName Candidate : Candidates)
+		{
+			if (Parameters.ContainsByPredicate([Candidate](const FMaterialParameterInfo& Info)
+				{ return Info.Name == Candidate; }))
+			{
+				return Candidate;
+			}
+		}
+		return NAME_None;
+	}
+
+	FName FindTextureParameter(
+		UMaterialInterface* Parent,
+		const TArray<FName>& Candidates)
+	{
+		TArray<FMaterialParameterInfo> Parameters;
+		TArray<FGuid> Ids;
+		Parent->GetAllTextureParameterInfo(Parameters, Ids);
+		for (const FName Candidate : Candidates)
+		{
+			if (Parameters.ContainsByPredicate([Candidate](const FMaterialParameterInfo& Info)
+				{ return Info.Name == Candidate; }))
+			{
+				return Candidate;
+			}
+		}
+		return NAME_None;
+	}
+
+	void SetFirstScalar(
+		UMaterialInstanceConstant* Instance,
+		UMaterialInterface* Parent,
+		const TArray<FName>& Candidates,
+		const float Value)
+	{
+		TArray<FMaterialParameterInfo> Parameters;
+		TArray<FGuid> Ids;
+		Parent->GetAllScalarParameterInfo(Parameters, Ids);
+		for (const FName Candidate : Candidates)
+		{
+			if (Parameters.ContainsByPredicate([Candidate](const FMaterialParameterInfo& Info)
+				{ return Info.Name == Candidate; }))
+			{
+				Instance->SetScalarParameterValueEditorOnly(
+					FMaterialParameterInfo(Candidate), Value);
+				return;
+			}
+		}
+	}
+
+	UTexture2D* LoadOrCreateWoolTexture(
+		const FString& VariantId,
+		const FString& SourceFilename,
 		FAutomotiveMaterialGenerationResult& Result)
 	{
-		const FString AssetName(Spec.Name);
+		const FString AssetName = AssetSafeName(VariantId, TEXT("T_SC01_"));
 		const FString PackageName =
-			FString::Printf(TEXT("%s/%s"), FAutomotiveMaterialAssetGenerator::AssetRoot, Spec.Name);
-		bool bCreated = false;
-		UMaterial* Material =
-			LoadOrCreate<UMaterial>(PackageName, AssetName, bCreated);
-		if (Material == nullptr)
+			FString(FAutomotiveMaterialAssetGenerator::TextureRoot)
+			+ TEXT("/WovenWool/") + AssetName;
+		if (FPackageName::DoesPackageExist(PackageName))
 		{
-			Result.Errors.Add(FString::Printf(TEXT("无法创建材质 %s。"), Spec.Name));
+			if (UTexture2D* Existing = LoadObject<UTexture2D>(
+				nullptr, *(PackageName + TEXT(".") + AssetName)))
+			{
+				++Result.ImportedTextureCount;
+				return Existing;
+			}
+		}
+		if (!FPaths::FileExists(SourceFilename))
+		{
+			Result.Errors.Add(TEXT("羊毛缩略图不存在：") + SourceFilename);
+			return nullptr;
+		}
+		FImage Image;
+		if (!FImageUtils::LoadImage(*SourceFilename, Image))
+		{
+			Result.Errors.Add(TEXT("UE5.8 无法解码羊毛缩略图：") + SourceFilename);
+			return nullptr;
+		}
+		Image.ChangeFormat(ERawImageFormat::BGRA8, EGammaSpace::sRGB);
+		UPackage* Package = CreatePackage(*PackageName);
+		UTexture2D* Texture = NewObject<UTexture2D>(
+			Package, *AssetName, RF_Public | RF_Standalone);
+		if (Texture == nullptr)
+		{
+			Result.Errors.Add(TEXT("无法物化羊毛纹理：") + VariantId);
+			return nullptr;
+		}
+		Texture->Source.Init(
+			Image.SizeX,
+			Image.SizeY,
+			1,
+			1,
+			TSF_BGRA8,
+			Image.RawData.GetData());
+		Texture->SRGB = true;
+		Texture->NeverStream = false;
+		Texture->PostEditChange();
+		FAssetRegistryModule::AssetCreated(Texture);
+		if (!Save(Texture))
+		{
+			Result.Errors.Add(TEXT("无法保存羊毛纹理：") + VariantId);
+			return nullptr;
+		}
+		++Result.CreatedAssetCount;
+		++Result.ImportedTextureCount;
+		return Texture;
+	}
+
+	UTexture2D* LoadOrCreateColorTexture(
+		const FString& VariantId,
+		const FString& FamilyId,
+		const FLinearColor& LinearColor,
+		FAutomotiveMaterialGenerationResult& Result)
+	{
+		const FString AssetName = AssetSafeName(VariantId, TEXT("T_SC01_"));
+		const FString PackageName =
+			FString(FAutomotiveMaterialAssetGenerator::TextureRoot)
+			+ TEXT("/") + FamilyId + TEXT("/") + AssetName;
+		bool bCreated = false;
+		UTexture2D* Texture =
+			LoadOrCreate<UTexture2D>(PackageName, AssetName, bCreated);
+		if (Texture == nullptr)
+		{
+			Result.Errors.Add(TEXT("无法创建色卡纹理：") + VariantId);
+			return nullptr;
+		}
+		const FColor Color = LinearColor.ToFColorSRGB();
+		const uint8 Pixel[] = {Color.B, Color.G, Color.R, Color.A};
+		Texture->Source.Init(1, 1, 1, 1, TSF_BGRA8, Pixel);
+		Texture->SRGB = true;
+		Texture->NeverStream = true;
+		Texture->PostEditChange();
+		if (!Save(Texture))
+		{
+			Result.Errors.Add(TEXT("无法保存色卡纹理：") + VariantId);
 			return nullptr;
 		}
 		if (bCreated)
 		{
-			FAssetRegistryModule::AssetCreated(Material);
 			++Result.CreatedAssetCount;
 		}
 		else
 		{
 			++Result.UpdatedAssetCount;
 		}
+		++Result.ImportedTextureCount;
+		return Texture;
+	}
 
-		if (bCarPaint)
+	float WoolScale(const FString& DisplayName)
+	{
+		if (DisplayName.StartsWith(TEXT("SQUARES"))) return 1.25f;
+		if (DisplayName.StartsWith(TEXT("PEPITA"))) return 1.15f;
+		if (DisplayName.StartsWith(TEXT("SOLM"))) return 1.0f;
+		if (DisplayName.StartsWith(TEXT("MADRAS"))) return 0.9f;
+		if (DisplayName.StartsWith(TEXT("TARTAN"))) return 0.85f;
+		return 0.8f;
+	}
+
+	bool LoadCatalog(TSharedPtr<FJsonObject>& OutRoot, FString& OutError)
+	{
+		FString Json;
+		const FString Filename = CatalogFilename();
+		if (!FFileHelper::LoadFileToString(Json, *Filename))
 		{
-			BuildCarPaint(Material);
+			OutError = TEXT("无法读取 catalog：") + Filename;
+			return false;
 		}
-		else
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Json);
+		if (!FJsonSerializer::Deserialize(Reader, OutRoot) || !OutRoot.IsValid())
 		{
-			BuildInterior(Material, Spec);
+			OutError = TEXT("catalog JSON 非法：") + Filename;
+			return false;
 		}
-		UMaterialEditingLibrary::RecompileMaterial(Material);
-		const FMaterialResource* MaterialResource =
-			Material->GetMaterialResource(GMaxRHIShaderPlatform);
-		const TArray<FString> CompileErrors = MaterialResource != nullptr
-			? MaterialResource->GetCompileErrors()
-			: TArray<FString>();
-		for (const FString& Error : CompileErrors)
-		{
-			Result.Errors.Add(FString::Printf(TEXT("%s: %s"), Spec.Name, *Error));
-		}
-		Material->PostEditChange();
-		if (!Save(Material))
-		{
-			Result.Errors.Add(FString::Printf(TEXT("保存材质 %s 失败。"), Spec.Name));
-		}
-		Result.Materials.Add(Material);
-		return Material;
+		return true;
 	}
 }
 
@@ -329,57 +328,177 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 	using namespace AutomotiveMaterialGeneration;
 	OutResult = FAutomotiveMaterialGenerationResult();
 
-	const FMaterialSpec Specs[] = {
-		{TEXT("M_SC01_CarPaint"), FLinearColor(0.55f, 0.015f, 0.02f), 0.22f, 0, 0, 0, 0},
-		{TEXT("M_SC01_Alcantara"), FLinearColor(0.035f, 0.038f, 0.042f), 0.78f, 260.0f, 0.16f, 0.12f, 4.0f},
-		{TEXT("M_SC01_Ultrasuede"), FLinearColor(0.07f, 0.075f, 0.08f), 0.74f, 310.0f, 0.13f, 0.10f, 4.8f},
-		{TEXT("M_SC01_Leather"), FLinearColor(0.11f, 0.045f, 0.022f), 0.46f, 95.0f, 0.09f, 0.025f, 6.0f},
-		{TEXT("M_SC01_Microfiber"), FLinearColor(0.025f, 0.028f, 0.032f), 0.70f, 420.0f, 0.12f, 0.08f, 5.0f},
-		{TEXT("M_SC01_WovenWool"), FLinearColor(0.10f, 0.095f, 0.085f), 0.86f, 180.0f, 0.20f, 0.14f, 3.5f}
-	};
-
-	TMap<FString, UMaterial*> ByName;
-	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Specs); ++Index)
+	TSharedPtr<FJsonObject> Catalog;
+	FString CatalogError;
+	if (!LoadCatalog(Catalog, CatalogError))
 	{
-		if (UMaterial* Material =
-			GenerateMaterial(Specs[Index], Index == 0, OutResult))
-		{
-			ByName.Add(Specs[Index].Name, Material);
-		}
+		OutResult.Errors.Add(MoveTemp(CatalogError));
+		return false;
 	}
-	if (ByName.Num() != UE_ARRAY_COUNT(Specs))
+
+	TMap<FString, UMaterialInterface*> Parents;
+	for (const FFamilySpec& Spec : FamilySpecs)
+	{
+		const FString Path(Spec.ParentPath);
+		if (!Path.StartsWith(TEXT("/Game/SubstrateMaterials/")))
+		{
+			OutResult.Errors.Add(TEXT("母材质越出仓库 SubstrateMaterials：") + Path);
+			continue;
+		}
+		UMaterialInterface* Parent = LoadObject<UMaterialInterface>(nullptr, *Path);
+		if (Parent == nullptr)
+		{
+			OutResult.Errors.Add(
+				FString::Printf(TEXT("%s 母材质加载失败：%s"), Spec.Id, Spec.ParentPath));
+			continue;
+		}
+		Parents.Add(Spec.Id, Parent);
+		OutResult.FamilyParentPaths.Add(Spec.Id, Path);
+	}
+	if (Parents.Num() != UE_ARRAY_COUNT(FamilySpecs))
 	{
 		return false;
 	}
 
-	const FString LibraryAssetName(TEXT("DA_SC01MaterialLibrary"));
+	const TArray<TSharedPtr<FJsonValue>>* Variants = nullptr;
+	if (!Catalog->TryGetArrayField(TEXT("materialVariants"), Variants)
+		|| Variants == nullptr || Variants->Num() != 352)
+	{
+		OutResult.Errors.Add(TEXT("catalog 必须恰好包含 352 个 materialVariants。"));
+		return false;
+	}
+
+	TMap<FString, TSoftObjectPtr<UMaterialInterface>> VariantReferences;
+	for (const TSharedPtr<FJsonValue>& Value : *Variants)
+	{
+		const TSharedPtr<FJsonObject>* Object = nullptr;
+		FString VariantId;
+		FString FamilyId;
+		FString DisplayName;
+		FString ThumbnailUrl;
+		if (!Value.IsValid() || !Value->TryGetObject(Object)
+			|| !(*Object)->TryGetStringField(TEXT("variantId"), VariantId)
+			|| !(*Object)->TryGetStringField(TEXT("materialFamilyId"), FamilyId)
+			|| !(*Object)->TryGetStringField(TEXT("displayName"), DisplayName)
+			|| !(*Object)->TryGetStringField(TEXT("thumbnailUrl"), ThumbnailUrl))
+		{
+			OutResult.Errors.Add(TEXT("materialVariant 缺少稳定字段。"));
+			continue;
+		}
+		UMaterialInterface* Parent = Parents.FindRef(FamilyId);
+		if (Parent == nullptr)
+		{
+			OutResult.Errors.Add(VariantId + TEXT(" 引用了未审计的材料族 ") + FamilyId);
+			continue;
+		}
+
+		const FString AssetName = AssetSafeName(VariantId, TEXT("MI_SC01_"));
+		const FString PackageName =
+			FString(VariantRoot) + TEXT("/") + FamilyId + TEXT("/") + AssetName;
+		bool bCreated = false;
+		UMaterialInstanceConstant* Instance =
+			LoadOrCreate<UMaterialInstanceConstant>(PackageName, AssetName, bCreated);
+		if (Instance == nullptr)
+		{
+			OutResult.Errors.Add(TEXT("无法创建 MI：") + VariantId);
+			continue;
+		}
+		bCreated ? ++OutResult.CreatedAssetCount : ++OutResult.UpdatedAssetCount;
+		Instance->Modify();
+		Instance->ClearParameterValuesEditorOnly();
+		Instance->SetParentEditorOnly(Parent);
+
+		const TSharedPtr<FJsonObject>* Ui = nullptr;
+		FString ColorHex;
+		UTexture2D* ColorTexture = nullptr;
+		if ((*Object)->TryGetObjectField(TEXT("ui"), Ui)
+			&& Ui != nullptr
+			&& (*Ui)->TryGetStringField(TEXT("sortColorHex"), ColorHex))
+		{
+			FLinearColor Color;
+			if (!ParseHexColor(ColorHex, Color))
+			{
+				OutResult.Errors.Add(VariantId + TEXT(" 的 sortColorHex 非法。"));
+			}
+			else
+			{
+				ColorTexture = LoadOrCreateColorTexture(
+					VariantId, FamilyId, Color, OutResult);
+			}
+		}
+		else if (FamilyId == TEXT("woven-wool"))
+		{
+			ColorTexture = LoadOrCreateWoolTexture(
+				VariantId, WoolSourceFilename(VariantId), OutResult);
+		}
+		else
+		{
+			OutResult.Errors.Add(VariantId + TEXT(" 既无 sortColorHex 也不是羊毛花纹。"));
+		}
+		const FName TextureParameter = FindTextureParameter(
+			Parent,
+			{TEXT("Diffuse Color Map"), TEXT("Color Map"), TEXT("Base Color Map")});
+		if (ColorTexture == nullptr || TextureParameter.IsNone())
+		{
+			OutResult.Errors.Add(VariantId + TEXT(" 的母材质没有可写颜色纹理参数。"));
+		}
+		else
+		{
+			Instance->SetTextureParameterValueEditorOnly(
+				FMaterialParameterInfo(TextureParameter), ColorTexture);
+		}
+		if (FamilyId == TEXT("woven-wool"))
+		{
+			SetFirstScalar(
+				Instance, Parent,
+				{TEXT("Tile Uniform Scale"), TEXT("Uniform Scale")},
+				WoolScale(DisplayName));
+			SetFirstScalar(
+				Instance, Parent,
+				{TEXT("Rotation"), TEXT("UV Rotation")},
+				0.0f);
+		}
+
+		FMetaData& MetaData = Instance->GetOutermost()->GetMetaData();
+		MetaData.SetValue(Instance, TEXT("SC01.VariantId"), *VariantId);
+		MetaData.SetValue(Instance, TEXT("SC01.MaterialFamilyId"), *FamilyId);
+		MetaData.SetValue(Instance, TEXT("SC01.ThumbnailUrl"), *ThumbnailUrl);
+		if (FamilyId == TEXT("woven-wool"))
+		{
+			MetaData.SetValue(
+				Instance, TEXT("SC01.PatternScale"),
+				*FString::SanitizeFloat(WoolScale(DisplayName)));
+			MetaData.SetValue(Instance, TEXT("SC01.PatternRotationDegrees"), TEXT("0"));
+		}
+		Instance->PostEditChange();
+		if (!Save(Instance))
+		{
+			OutResult.Errors.Add(TEXT("保存 MI 失败：") + VariantId);
+		}
+		OutResult.Variants.Add(Instance);
+		VariantReferences.Add(
+			VariantId,
+			TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(Instance)));
+	}
+
 	bool bLibraryCreated = false;
 	UAutomotiveMaterialLibrary* Library = LoadOrCreate<UAutomotiveMaterialLibrary>(
-		LibraryPackageName,
-		LibraryAssetName,
-		bLibraryCreated);
+		LibraryPackageName, TEXT("DA_SC01MaterialLibrary"), bLibraryCreated);
 	if (Library == nullptr)
 	{
 		OutResult.Errors.Add(TEXT("无法创建 DA_SC01MaterialLibrary。"));
 		return false;
 	}
-	if (bLibraryCreated)
-	{
-		FAssetRegistryModule::AssetCreated(Library);
-		++OutResult.CreatedAssetCount;
-	}
-	else
-	{
-		++OutResult.UpdatedAssetCount;
-	}
-
+	bLibraryCreated ? ++OutResult.CreatedAssetCount : ++OutResult.UpdatedAssetCount;
 	Library->Modify();
-	Library->CarPaint = ByName.FindRef(TEXT("M_SC01_CarPaint"));
-	Library->Alcantara = ByName.FindRef(TEXT("M_SC01_Alcantara"));
-	Library->Ultrasuede = ByName.FindRef(TEXT("M_SC01_Ultrasuede"));
-	Library->Leather = ByName.FindRef(TEXT("M_SC01_Leather"));
-	Library->Microfiber = ByName.FindRef(TEXT("M_SC01_Microfiber"));
-	Library->WovenWool = ByName.FindRef(TEXT("M_SC01_WovenWool"));
+	Library->FamilyParents.Reset();
+	for (const TPair<FString, UMaterialInterface*>& Pair : Parents)
+	{
+		Library->FamilyParents.Add(
+			Pair.Key,
+			TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(Pair.Value)));
+	}
+	Library->Variants = MoveTemp(VariantReferences);
 	Library->PostEditChange();
 	if (!Save(Library))
 	{
@@ -387,4 +506,49 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 	}
 	OutResult.Library = Library;
 	return OutResult.Succeeded();
+}
+
+bool FAutomotiveMaterialAssetGenerator::WriteAuditReport(
+	const FString& Filename,
+	const FAutomotiveMaterialGenerationResult& Result)
+{
+	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetStringField(TEXT("engineVersion"), FEngineVersion::Current().ToString());
+	Root->SetStringField(TEXT("scope"), TEXT("/Game/SubstrateMaterials/Maps/Overview"));
+	Root->SetStringField(TEXT("policy"), TEXT("reuse-only-no-parent-copy"));
+	Root->SetNumberField(TEXT("familyCount"), Result.FamilyParentPaths.Num());
+	Root->SetNumberField(TEXT("variantInstanceCount"), Result.Variants.Num());
+	Root->SetNumberField(TEXT("variantTextureCount"), Result.ImportedTextureCount);
+	TArray<TSharedPtr<FJsonValue>> Families;
+	TArray<FString> FamilyIds;
+	Result.FamilyParentPaths.GetKeys(FamilyIds);
+	FamilyIds.Sort();
+	for (const FString& FamilyId : FamilyIds)
+	{
+		TSharedRef<FJsonObject> Family = MakeShared<FJsonObject>();
+		const FString& ParentPath = Result.FamilyParentPaths.FindChecked(FamilyId);
+		Family->SetStringField(TEXT("materialFamilyId"), FamilyId);
+		Family->SetStringField(TEXT("parentMaterialPath"), ParentPath);
+		Family->SetBoolField(
+			TEXT("insideRepositorySubstrateMaterials"),
+			ParentPath.StartsWith(TEXT("/Game/SubstrateMaterials/")));
+		Families.Add(MakeShared<FJsonValueObject>(Family));
+	}
+	Root->SetArrayField(TEXT("families"), Families);
+	TArray<TSharedPtr<FJsonValue>> Errors;
+	for (const FString& Error : Result.Errors)
+	{
+		Errors.Add(MakeShared<FJsonValueString>(Error));
+	}
+	Root->SetArrayField(TEXT("errors"), Errors);
+	Root->SetBoolField(TEXT("passed"), Result.Succeeded());
+
+	FString Json;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Json);
+	if (!FJsonSerializer::Serialize(Root, Writer))
+	{
+		return false;
+	}
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename), true);
+	return FFileHelper::SaveStringToFile(Json, *Filename, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 }

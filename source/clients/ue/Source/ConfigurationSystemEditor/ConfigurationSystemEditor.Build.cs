@@ -16,6 +16,7 @@ public class ConfigurationSystemEditor : ModuleRules
 				"AssetTools",
 				"DesktopPlatform",
 				"InputCore",
+				"ImageCore",
 				"Json",
 				"MaterialEditor",
 				"RHI",

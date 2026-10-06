@@ -210,7 +210,7 @@ bool UAutomotiveMaterialBinder::ApplyCurrentConfiguration()
 
 bool UAutomotiveMaterialBinder::ApplyPaint()
 {
-	UMaterialInterface* PaintMaster = Library->CarPaint.LoadSynchronous();
+	UMaterialInterface* PaintMaster = Library->LoadInteriorMaterial(TEXT("paint"));
 	if (!IsValid(PaintMaster))
 	{
 		LastError = TEXT("AutomotiveMaterialLibrary 缺少 CarPaint。");
@@ -308,6 +308,7 @@ bool UAutomotiveMaterialBinder::ApplyInterior()
 	}
 
 	FString FamilyId = Option->MaterialFamilyId.GetValue();
+	FString VariantId;
 	const TMap<FString, FAutomotiveCustomization> Customizations =
 		State->GetCustomizations();
 	const FAutomotiveCustomization* Customization =
@@ -322,12 +323,14 @@ bool UAutomotiveMaterialBinder::ApplyInterior()
 			if (Variant != nullptr)
 			{
 				FamilyId = Variant->MaterialFamilyId;
+				VariantId = Variant->VariantId;
 			}
 		}
 	}
 
-	UMaterialInterface* InteriorMaterial =
-		Library->LoadInteriorMaterial(FamilyId);
+	UMaterialInterface* InteriorMaterial = !VariantId.IsEmpty()
+		? Library->LoadVariantMaterial(VariantId)
+		: Library->LoadInteriorMaterial(FamilyId);
 	if (!IsValid(InteriorMaterial))
 	{
 		LastError = FString::Printf(
