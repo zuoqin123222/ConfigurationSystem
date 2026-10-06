@@ -2,9 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import MaterialColorStrip, { type MaterialStripChoice } from './MaterialColorStrip'
-import type { CatalogMaterialVariant, CatalogOption } from './types'
+import type { CatalogOption } from './types'
 
-function option(optionId: string, unitPriceMinor: number): CatalogOption {
+function option(optionId: string, unitPriceMinor: number, isStandard = false): CatalogOption {
   return {
     optionId,
     surfaceId: 'seat-backrest',
@@ -21,7 +21,7 @@ function option(optionId: string, unitPriceMinor: number): CatalogOption {
       unitPriceMinor,
       quantity: 1,
       pricingUnit: 'per-seat',
-      isStandard: false,
+      isStandard,
       status: 'confirmed',
       quotable: false,
     },
@@ -31,38 +31,41 @@ function option(optionId: string, unitPriceMinor: number): CatalogOption {
   }
 }
 
-function variant(
-  variantId: string,
+function choice(
+  optionValue: CatalogOption,
+  choiceId: string,
   displayName: string,
-  sortColorHex: string,
-): CatalogMaterialVariant {
+  colorHex: string,
+  materialVariantId?: string,
+): MaterialStripChoice {
   return {
-    variantId,
-    materialFamilyId: 'ultrasuede',
+    option: optionValue,
+    choiceId,
     displayName,
-    colorCode: displayName,
-    ui: { sortColorHex },
-    thumbnailUrl: `/sc01/thumbnails/${variantId}.webp`,
-    reviewRequired: false,
+    colorHex,
+    imageUrl: `/sc01/thumbnails/${choiceId}.webp`,
+    materialVariantId,
   }
 }
 
+const standardOption = option('seat-ultrasuede-black', 0, true)
 const mainOption = option('seat-ultrasuede-main', 118000)
 const premiumOption = option('seat-ultrasuede-premium', 168000)
 const choices: MaterialStripChoice[] = [
-  { option: mainOption, variant: variant('ultrasuede-black', 'Black UF7', '#151515') },
-  { option: mainOption, variant: variant('ultrasuede-red', 'Red US3', '#8D2429') },
-  { option: premiumOption, variant: variant('ultrasuede-blue', 'Blue UB8', '#263E5C') },
+  choice(standardOption, 'ultrasuede-black-default', '奥司维（黑）', '#111111'),
+  choice(mainOption, 'ultrasuede-black', 'Black UF7', '#151515', 'ultrasuede-black'),
+  choice(mainOption, 'ultrasuede-red', 'Red US3', '#8D2429', 'ultrasuede-red'),
+  choice(premiumOption, 'ultrasuede-blue', 'Blue UB8', '#263E5C', 'ultrasuede-blue'),
 ]
 
 function Harness({ onCommit }: { onCommit: (choice: MaterialStripChoice) => void }) {
-  const [selected, setSelected] = useState(choices[0])
+  const [selected, setSelected] = useState(choices[1])
   return (
     <MaterialColorStrip
       familyName="奥司维"
       choices={choices}
       selectedOptionId={selected.option.optionId}
-      selectedVariantId={selected.variant.variantId}
+      selectedVariantId={selected.materialVariantId}
       formatPrice={(item) => `¥${(item.pricing.unitPriceMinor ?? 0) / 100}`}
       resolveImageUrl={(url) => url}
       onImageError={() => undefined}
@@ -81,12 +84,7 @@ describe('MaterialColorStrip', () => {
         familyName="奥司维"
         choices={choices}
         selectedOptionId="seat-ultrasuede-black"
-        selectedDefault={{
-          name: '奥司维（黑）',
-          price: '免费',
-          imageUrl: '/sc01/thumbnails/ultrasuede-black-default.webp',
-        }}
-        formatPrice={() => '¥1,180'}
+        formatPrice={(item) => item.pricing.isStandard ? '免费' : '¥1,180'}
         resolveImageUrl={(url) => url}
         onImageError={() => undefined}
         onCommit={() => undefined}
@@ -95,7 +93,7 @@ describe('MaterialColorStrip', () => {
 
     expect(screen.getByRole('img', { name: '奥司维（黑）材质实拍' }))
       .toHaveAttribute('src', '/sc01/thumbnails/ultrasuede-black-default.webp')
-    expect(screen.getByText('免费')).toBeInTheDocument()
+    expect(screen.getAllByText('免费')).toHaveLength(2)
   })
 
   it('按价格拆分色彩条并保留传入顺序', () => {
@@ -113,13 +111,13 @@ describe('MaterialColorStrip', () => {
     render(<Harness onCommit={onCommit} />)
     const firstStrip = screen.getAllByRole('slider')[0]
 
-    fireEvent.input(firstStrip, { target: { value: '1' } })
+    fireEvent.input(firstStrip, { target: { value: '2' } })
     expect(screen.getByRole('img', { name: 'Black UF7材质实拍' })).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: 'Red US3材质实拍' })).not.toBeInTheDocument()
     expect(onCommit).not.toHaveBeenCalled()
 
     fireEvent.pointerUp(firstStrip, { pointerId: 1 })
-    expect(onCommit).toHaveBeenCalledWith(choices[1])
+    expect(onCommit).toHaveBeenCalledWith(choices[2])
     expect(screen.getByRole('img', { name: 'Red US3材质实拍' })).toBeInTheDocument()
   })
 })

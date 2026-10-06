@@ -8,11 +8,15 @@ import {
   type PointerEvent,
   type SyntheticEvent,
 } from 'react'
-import type { CatalogMaterialVariant, CatalogOption } from './types'
+import type { CatalogOption } from './types'
 
 export interface MaterialStripChoice {
   option: CatalogOption
-  variant: CatalogMaterialVariant
+  choiceId: string
+  displayName: string
+  imageUrl: string
+  colorHex: string
+  materialVariantId?: string
 }
 
 interface MaterialColorStripProps {
@@ -20,11 +24,6 @@ interface MaterialColorStripProps {
   choices: MaterialStripChoice[]
   selectedOptionId?: string
   selectedVariantId?: string
-  selectedDefault?: {
-    name: string
-    price: string
-    imageUrl: string
-  }
   formatPrice: (option: CatalogOption) => string
   resolveImageUrl: (url: string) => string | undefined
   onCommit: (choice: MaterialStripChoice) => void
@@ -37,7 +36,7 @@ function priceGroupKey(option: CatalogOption): string {
 }
 
 function choiceColor(choice: MaterialStripChoice): string {
-  return choice.variant.ui?.sortColorHex ?? '#777a74'
+  return choice.colorHex
 }
 
 function stripGradient(choices: MaterialStripChoice[]): string {
@@ -56,7 +55,6 @@ export default function MaterialColorStrip({
   choices,
   selectedOptionId,
   selectedVariantId,
-  selectedDefault,
   formatPrice,
   resolveImageUrl,
   onCommit,
@@ -64,53 +62,58 @@ export default function MaterialColorStrip({
 }: MaterialColorStripProps) {
   const groups = useMemo(() => {
     const result: Array<{ key: string; option: CatalogOption; choices: MaterialStripChoice[] }> = []
-    for (const choice of choices) {
+    const standardChoices = choices.filter(({ option }) => option.pricing.isStandard)
+    const pricedChoices = choices.filter(({ option }) => !option.pricing.isStandard)
+    for (const choice of pricedChoices) {
       const key = priceGroupKey(choice.option)
       const existing = result.find((group) => group.key === key)
       if (existing) existing.choices.push(choice)
       else result.push({ key, option: choice.option, choices: [choice] })
     }
+    if (standardChoices.length > 0) {
+      if (result.length > 0) result[0].choices.unshift(...standardChoices)
+      else {
+        result.push({
+          key: 'standard',
+          option: standardChoices[0].option,
+          choices: standardChoices,
+        })
+      }
+    }
     return result
   }, [choices])
 
-  const committedChoice = choices.find(({ option, variant }) =>
-    option.optionId === selectedOptionId && variant.variantId === selectedVariantId)
-  const fallbackChoice = committedChoice ?? choices[0]
-  const summary = selectedDefault ?? (fallbackChoice
-    ? {
-        name: fallbackChoice.variant.displayName,
-        price: formatPrice(fallbackChoice.option),
-        imageUrl: fallbackChoice.variant.thumbnailUrl,
-      }
-    : null)
+  const committedChoice = choices.find(({ option, materialVariantId }) =>
+    option.optionId === selectedOptionId && materialVariantId === selectedVariantId)
+  const summary = committedChoice ?? choices[0]
 
   return (
     <div className="material-strip-layout">
       {summary && (
         <div className="material-strip-summary" aria-live="polite">
           <div className="material-strip-copy">
-            <strong>{summary.name}</strong>
+            <strong>{summary.displayName}</strong>
             <span>{familyName}</span>
-            <small>{summary.price}</small>
+            <small>{formatPrice(summary.option)}</small>
           </div>
           <img
             src={resolveImageUrl(summary.imageUrl)}
-            alt={`${summary.name}材质实拍`}
+            alt={`${summary.displayName}材质实拍`}
             onError={onImageError}
           />
         </div>
       )}
       <div className="material-strip-groups">
         {groups.map((group, groupIndex) => {
-          const selectedIndex = group.choices.findIndex(({ option, variant }) =>
-            option.optionId === selectedOptionId && variant.variantId === selectedVariantId)
+          const selectedIndex = group.choices.findIndex(({ option, materialVariantId }) =>
+            option.optionId === selectedOptionId && materialVariantId === selectedVariantId)
           return (
             <MaterialStripRange
               key={group.key}
               label={groups.length > 1 ? `价格组 ${groupIndex + 1}` : '色彩'}
               choices={group.choices}
               selectedIndex={selectedIndex}
-              price={formatPrice(group.option)}
+              formatPrice={formatPrice}
               onCommit={onCommit}
             />
           )
@@ -124,7 +127,7 @@ interface MaterialStripRangeProps {
   label: string
   choices: MaterialStripChoice[]
   selectedIndex: number
-  price: string
+  formatPrice: (option: CatalogOption) => string
   onCommit: (choice: MaterialStripChoice) => void
 }
 
@@ -132,7 +135,7 @@ function MaterialStripRange({
   label,
   choices,
   selectedIndex,
-  price,
+  formatPrice,
   onCommit,
 }: MaterialStripRangeProps) {
   const initialIndex = selectedIndex >= 0 ? selectedIndex : 0
@@ -170,7 +173,7 @@ function MaterialStripRange({
     <div className={`material-strip-control ${selectedIndex >= 0 ? 'selected' : ''}`}>
       <div className="material-strip-label">
         <span>{label}</span>
-        <small>{price}</small>
+        <small>{draftChoice ? formatPrice(draftChoice.option) : ''}</small>
       </div>
       <div
         className="material-strip-track"
@@ -187,7 +190,7 @@ function MaterialStripRange({
           step={1}
           value={draftIndex}
           aria-label={`${label}，拖动选择材质颜色`}
-          aria-valuetext={draftChoice?.variant.displayName}
+          aria-valuetext={draftChoice?.displayName}
           onInput={(event) => setDraft(event.currentTarget.value)}
           onChange={(event) => setDraft(event.currentTarget.value)}
           onPointerUp={handlePointerUp}
@@ -197,7 +200,7 @@ function MaterialStripRange({
         />
         <span className="material-strip-indicator" aria-hidden="true" />
       </div>
-      <div className="material-strip-draft-name">{draftChoice?.variant.displayName}</div>
+      <div className="material-strip-draft-name">{draftChoice?.displayName}</div>
     </div>
   )
 }

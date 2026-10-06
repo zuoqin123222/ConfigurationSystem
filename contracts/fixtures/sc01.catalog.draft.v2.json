@@ -9099,12 +9099,16 @@
       "optionId": "door-middle-microfiber",
       "surfaceId": "door-middle",
       "materialFamilyId": "microfiber",
-      "displayName": "超纤皮",
+      "displayName": "超纤皮（色彩拓展）",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
       "parameters": {
-        "color": null,
+        "color": {
+          "mode": "variant",
+          "value": null,
+          "required": true
+        },
         "material": {
           "materialFamilyId": "microfiber",
           "variantId": null
@@ -9113,10 +9117,10 @@
       "thumbnailUrl": null,
       "reviewRequired": false,
       "pricing": {
-        "unitPriceMinor": 0,
-        "quantity": 1,
+        "unitPriceMinor": 40000,
+        "quantity": 2,
         "pricingUnit": "per-piece",
-        "isStandard": true,
+        "isStandard": false,
         "status": "confirmed",
         "quotable": false
       },
@@ -9124,11 +9128,11 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 2,
-          "locator": "中面板 / 超纤 / 标配"
+          "locator": "中面板 / 超纤（色彩拓展） / 400*2 元"
         }
       ],
       "ui": {
-        "control": "swatch"
+        "control": "material-strip"
       }
     },
     {

@@ -320,6 +320,24 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
   assert.equal(byId.get("seat-shell-carbon-original").displayName, "高光原色碳纤维");
   assert.equal(byId.get("seat-shell-custom").displayName, "自定义颜色");
   assert.equal(byId.get("seat-shell-custom").parameters.color.mode, "custom");
+  assert.deepEqual(
+    {
+      displayName: byId.get("door-middle-microfiber").displayName,
+      colorMode: byId.get("door-middle-microfiber").parameters.color.mode,
+      unitPriceMinor: byId.get("door-middle-microfiber").pricing.unitPriceMinor,
+      quantity: byId.get("door-middle-microfiber").pricing.quantity,
+      isStandard: byId.get("door-middle-microfiber").pricing.isStandard,
+      control: byId.get("door-middle-microfiber").ui.control
+    },
+    {
+      displayName: "超纤皮（色彩拓展）",
+      colorMode: "variant",
+      unitPriceMinor: 40000,
+      quantity: 2,
+      isStandard: false,
+      control: "material-strip"
+    }
+  );
   assert.ok(
     catalog.options
       .filter((option) => ["ultrasuede", "alcantara", "microfiber", "leather"]

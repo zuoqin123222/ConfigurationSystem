@@ -670,7 +670,7 @@ describe('App v2', () => {
 
     expect(screen.getByRole('button', { name: /高光原色碳纤维，免费/ }))
       .toHaveAttribute('aria-pressed', 'true')
-    await user.click(screen.getByRole('button', { name: /自定义颜色，¥1,680/ }))
+    await user.click(screen.getByRole('button', { name: /自定义颜色，¥3,360/ }))
     const editor = screen.getByRole('region', { name: '自定义颜色' })
     const finishGroup = within(editor).getByRole('group', { name: '背板表面效果' })
     const glossButton = within(finishGroup).getByRole('button', { name: '亮面' })
@@ -690,7 +690,7 @@ describe('App v2', () => {
       roughness: 0.72,
       clearCoat: 0.05,
     })
-    expect(screen.getByRole('button', { name: /自定义颜色，¥1,680/ }).querySelector('img'))
+    expect(screen.getByRole('button', { name: /自定义颜色，¥3,360/ }).querySelector('img'))
       .toHaveAttribute('src', '/sc01/option-icons/rainbow.svg')
   })
 

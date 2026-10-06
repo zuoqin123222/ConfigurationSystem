@@ -83,6 +83,14 @@ const FIXED_OPTION_SWATCHES: Record<string, string> = {
   'body-cover-red': '#FF3B3B',
   'body-cover-silver': 'linear-gradient(135deg, #F5F6F7 0%, #C5C9CC 48%, #8F969C 100%)',
 }
+const UPHOLSTERY_MATERIAL_FAMILIES = new Set([
+  'ultrasuede',
+  'alcantara',
+  'microfiber',
+  'leather',
+  'woven-wool',
+  'woven-fabric',
+])
 export const STANDALONE_LAYOUT = {
   headerHeight: 76,
   panelWidth: 480,
@@ -157,7 +165,8 @@ export function getAppView(search = window.location.search): AppView {
 function optionPrice(option: CatalogV2['options'][number]): string {
   if (option.pricing.isStandard || option.pricing.unitPriceMinor === 0) return '免费'
   if (option.pricing.unitPriceMinor !== null) {
-    return `¥${(option.pricing.unitPriceMinor / 100).toLocaleString('zh-CN')}`
+    const totalPriceMinor = option.pricing.unitPriceMinor * (option.pricing.quantity ?? 1)
+    return `¥${(totalPriceMinor / 100).toLocaleString('zh-CN')}`
   }
   return '价格待确认'
 }
@@ -993,17 +1002,19 @@ function Configurator({
 
   const renderSurfaceOptions = (surface: CatalogV2['surfaces'][number]) => {
     const options = optionsForSurface(catalog, surface.surfaceId)
-    const variantFamilyIds = new Set(
+    const groupedFamilyIds = new Set(
       options.flatMap((option) =>
-        supportsMaterialVariants(option) && option.materialFamilyId
+        option.materialFamilyId
+          && (supportsMaterialVariants(option)
+            || UPHOLSTERY_MATERIAL_FAMILIES.has(option.materialFamilyId))
           ? [option.materialFamilyId]
           : []),
     )
     const flatOptions = options.filter(
-      (option) => !option.materialFamilyId || !variantFamilyIds.has(option.materialFamilyId),
+      (option) => !option.materialFamilyId || !groupedFamilyIds.has(option.materialFamilyId),
     )
     const materialGroups = catalog.materialFamilies.flatMap((materialFamily) => {
-      if (!variantFamilyIds.has(materialFamily.materialFamilyId)) return []
+      if (!groupedFamilyIds.has(materialFamily.materialFamilyId)) return []
       const familyOptions = options.filter(
         (option) => option.materialFamilyId === materialFamily.materialFamilyId,
       )
@@ -1112,8 +1123,30 @@ function Configurator({
                 materialFamily.ui?.variantSort,
               )
                 .map((variant) => ({ option, variant })))
-            const stripChoices = variantChoices.filter(({ option }) => usesMaterialStrip(option))
+            const variantStripChoices = variantChoices.filter(({ option }) => usesMaterialStrip(option))
             const cardVariantChoices = variantChoices.filter(({ option }) => !usesMaterialStrip(option))
+            const standardInStrip = Boolean(standardFamilyOption && variantStripChoices.length > 0)
+            const stripChoices = [
+              ...(standardInStrip && standardFamilyOption
+                ? [{
+                    option: standardFamilyOption,
+                    choiceId: standardFamilyOption.optionId,
+                    displayName: standardFamilyOption.displayName,
+                    imageUrl: standardFamilyOption.ui?.iconUrl
+                      ?? standardFamilyOption.thumbnailUrl
+                      ?? DEFAULT_IMAGE_URL,
+                    colorHex: optionSwatch(standardFamilyOption),
+                  }]
+                : []),
+              ...variantStripChoices.map(({ option, variant }) => ({
+                option,
+                choiceId: `${option.optionId}:${variant.variantId}`,
+                displayName: variant.displayName,
+                imageUrl: variant.thumbnailUrl,
+                colorHex: variant.ui?.sortColorHex ?? '#777a74',
+                materialVariantId: variant.variantId,
+              })),
+            ]
             const remainingFamilyOptions = familyOptions.filter(
               (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
             )
@@ -1127,6 +1160,8 @@ function Configurator({
                   firstVariantChoice.variant.variantId,
                   firstVariantChoice.option.optionId,
                 )
+              } else if (familyOptions[0]) {
+                selectOption(surface.surfaceId, familyOptions[0].optionId)
               }
             }
             return (
@@ -1144,7 +1179,7 @@ function Configurator({
                   <span className="check" aria-hidden="true">{familySelected ? '✓' : ''}</span>
                 </button>
                 <div className="choice-grid material-family-defaults">
-                  {standardFamilyOption && renderFlatOption(
+                  {standardFamilyOption && !standardInStrip && renderFlatOption(
                     standardFamilyOption,
                     standardFamilyOption.displayName,
                     standardFamilyOption.ui?.iconUrl ?? standardFamilyOption.thumbnailUrl,
@@ -1190,27 +1225,16 @@ function Configurator({
                         ? currentCustomization.materialVariantId
                         : undefined
                     }
-                    selectedDefault={
-                      standardFamilyOption
-                        && selectedOption?.optionId === standardFamilyOption.optionId
-                        && !(currentCustomization && 'materialVariantId' in currentCustomization)
-                        ? {
-                            name: standardFamilyOption.displayName,
-                            price: optionPrice(standardFamilyOption),
-                            imageUrl: standardFamilyOption.ui?.iconUrl
-                              ?? standardFamilyOption.thumbnailUrl
-                              ?? DEFAULT_IMAGE_URL,
-                          }
-                        : undefined
-                    }
                     formatPrice={optionPrice}
                     resolveImageUrl={versionStaticAssetUrl}
                     onImageError={useDefaultImage}
-                    onCommit={({ option, variant }) => setMaterialVariant(
-                      surface.surfaceId,
-                      variant.variantId,
-                      option.optionId,
-                    )}
+                    onCommit={({ option, materialVariantId }) => {
+                      if (materialVariantId) {
+                        setMaterialVariant(surface.surfaceId, materialVariantId, option.optionId)
+                      } else {
+                        selectOption(surface.surfaceId, option.optionId)
+                      }
+                    }}
                   />
                 )}
               </section>
