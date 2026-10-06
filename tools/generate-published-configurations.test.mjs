@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   enumerateValidConfigurations,
@@ -84,8 +86,31 @@ const v2Catalog = {
     wheel: "wheel-a"
   },
   options: [
-    { optionId: "paint-red", surfaceId: "paint", renderRelevant: true },
-    { optionId: "paint-blue", surfaceId: "paint", renderRelevant: true },
+    {
+      optionId: "paint-red",
+      surfaceId: "paint",
+      renderRelevant: true,
+      ui: { control: "swatch" }
+    },
+    {
+      optionId: "paint-blue",
+      surfaceId: "paint",
+      renderRelevant: true,
+      ui: { control: "swatch" }
+    },
+    {
+      optionId: "paint-pearl",
+      surfaceId: "paint",
+      renderRelevant: true,
+      ui: { control: "swatch" }
+    },
+    {
+      optionId: "paint-custom",
+      surfaceId: "paint",
+      renderRelevant: true,
+      ui: { control: "color-picker" },
+      parameters: { color: { mode: "custom" } }
+    },
     { optionId: "wheel-a", surfaceId: "wheel", renderRelevant: true },
     {
       optionId: "wheel-b",
@@ -117,32 +142,38 @@ test("v2 只估算 BigInt 全空间，不直接展开笛卡尔积", () => {
     secondsPerRender: 10
   });
   assert.deepEqual(scale, {
-    configurationCount: "8",
-    renderCount: "32",
+    configurationCount: "16",
+    renderCount: "64",
     viewCount: 4,
     secondsPerRender: 10,
-    estimatedSeconds: "320",
+    estimatedSeconds: "640",
     estimatedYears: "0"
   });
   assert.throws(() => enumerateValidConfigurations(v2Catalog), /v2 请使用/);
 });
 
-test("v2 coverage 保证每个 renderRelevant 选项至少出现一次", () => {
+test("v2 coverage 覆盖 Bake 选项但排除 color-picker，普通 paint 色卡不受影响", () => {
   const coverage = generateV2Coverage(v2Catalog);
   const covered = new Set(
     coverage.configurations.flatMap(({ selections }) => Object.values(selections))
   );
   for (const option of v2Catalog.options.filter(
-    ({ renderRelevant, availability }) =>
-      renderRelevant && availability?.status !== "disabled"
+    ({ renderRelevant, availability, ui }) =>
+      renderRelevant
+      && availability?.status !== "disabled"
+      && ui?.control !== "color-picker"
   )) {
     assert.ok(covered.has(option.optionId), `${option.optionId} 应被 coverage 覆盖`);
   }
+  assert.equal(covered.has("paint-custom"), false);
   assert.equal(covered.has("trim-gray"), false);
-  assert.equal(coverage.coveredRenderRelevantOptionCount, 5);
+  assert.equal(covered.has("paint-pearl"), true);
+  assert.equal(coverage.renderRelevantOptionCount, 6);
+  assert.equal(coverage.coveredRenderRelevantOptionCount, 6);
+  assert.equal(coverage.excludedColorPickerOptionCount, 1);
   assert.equal(coverage.availableMaterialVariantCount, 2);
   assert.equal(coverage.coveredMaterialVariantCount, 2);
-  assert.equal(coverage.configurations.length, 6);
+  assert.equal(coverage.configurations.length, 7);
   assert.ok(
     coverage.configurations.some(({ selections, customizations }) =>
       selections.paint === "paint-red"
@@ -190,4 +221,42 @@ test("v2 shard 确定性拆分 coverage，合并后不重不漏", () => {
   assert.equal(plan.expectedRenderCount, plan.configurations.length * 4);
   assert.equal(plan.estimatedSeconds, String(plan.expectedRenderCount * 10));
   assert.throws(() => shardV2Coverage(coverage, 2, 2), /shardIndex/);
+});
+
+test("SC01 coverage 规模排除五个 color-picker 且保留普通车漆色卡", async () => {
+  const sc01 = JSON.parse(await readFile(resolve(
+    import.meta.dirname,
+    "../contracts/fixtures/sc01.catalog.draft.v2.json"
+  ), "utf8"));
+  const coverage = generateV2Coverage(sc01);
+  const plan = generateV2Plan(sc01, "sc01-v2");
+  const covered = new Set(
+    coverage.configurations.flatMap(({ selections }) => Object.values(selections))
+  );
+  const colorPickerIds = sc01.options
+    .filter((option) => option.ui?.control === "color-picker")
+    .map((option) => option.optionId);
+
+  assert.deepEqual(colorPickerIds, [
+    "body-cover-custom",
+    "engine-cover-ppg-custom",
+    "seat-shell-custom",
+    "interior-painted-spray",
+    "center-panel-trim-custom"
+  ]);
+  assert.ok(sc01.options
+    .filter((option) => colorPickerIds.includes(option.optionId))
+    .every((option) =>
+      option.renderRelevant === true
+      && option.parameters?.color?.mode === "custom"
+    ));
+  assert.ok(colorPickerIds.every((optionId) => !covered.has(optionId)));
+  assert.ok(covered.has("body-cover-red"));
+  assert.ok(covered.has("body-cover-silver"));
+  assert.equal(coverage.renderRelevantOptionCount, 165);
+  assert.equal(coverage.excludedColorPickerOptionCount, 5);
+  assert.equal(coverage.availableMaterialVariantCount, 352);
+  assert.equal(coverage.coveredMaterialVariantCount, 352);
+  assert.equal(coverage.configurations.length, 482);
+  assert.equal(plan.expectedRenderCount, 1928);
 });

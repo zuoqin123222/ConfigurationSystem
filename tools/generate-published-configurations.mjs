@@ -171,9 +171,17 @@ function selectionsForV2Option(catalog, bySurface, baseline, option) {
 export function generateV2Coverage(catalog) {
   const bySurface = indexV2Options(catalog);
   const baseline = baselineV2Selections(catalog, bySurface);
-  const renderRelevant = (catalog.options ?? []).filter(
-    (option) => option.renderRelevant === true
+  const excludedColorPickerOptions = (catalog.options ?? []).filter(
+    (option) =>
+      option.renderRelevant === true
       && option.availability?.status !== "disabled"
+      && option.ui?.control === "color-picker"
+  );
+  const bakeCoverageOptions = (catalog.options ?? []).filter(
+    (option) =>
+      option.renderRelevant === true
+      && option.availability?.status !== "disabled"
+      && option.ui?.control !== "color-picker"
   );
   const uniqueSelections = new Map();
   const baselineIdentity = deriveConfigurationIdentity(catalog, baseline);
@@ -184,7 +192,7 @@ export function generateV2Coverage(catalog) {
     selections: baseline,
     customizations: {}
   });
-  for (const option of renderRelevant) {
+  for (const option of bakeCoverageOptions) {
     const selections = selectionsForV2Option(catalog, bySurface, baseline, option);
     const identity = deriveConfigurationIdentity(catalog, selections);
     uniqueSelections.set(identity.renderKey, {
@@ -199,6 +207,7 @@ export function generateV2Coverage(catalog) {
     (option) =>
       option.renderRelevant === true
       && option.availability?.status !== "disabled"
+      && option.ui?.control !== "color-picker"
       && option.parameters?.color?.mode === "variant"
       && option.pricing?.isStandard === false
       && option.pricing?.unitPriceMinor !== null
@@ -227,9 +236,9 @@ export function generateV2Coverage(catalog) {
   const covered = new Set(
     configurations.flatMap((configuration) => Object.values(configuration.selections))
   );
-  const uncovered = renderRelevant.filter((option) => !covered.has(option.optionId));
+  const uncovered = bakeCoverageOptions.filter((option) => !covered.has(option.optionId));
   if (uncovered.length > 0) {
-    throw new Error(`coverage 未覆盖 renderRelevant 选项：${uncovered.map((o) => o.optionId).join(", ")}`);
+    throw new Error(`coverage 未覆盖 Bake 选项：${uncovered.map((o) => o.optionId).join(", ")}`);
   }
   const coveredVariants = new Set(
     configurations.flatMap((configuration) =>
@@ -248,8 +257,9 @@ export function generateV2Coverage(catalog) {
   }
   return {
     configurations,
-    renderRelevantOptionCount: renderRelevant.length,
-    coveredRenderRelevantOptionCount: renderRelevant.length,
+    renderRelevantOptionCount: bakeCoverageOptions.length,
+    coveredRenderRelevantOptionCount: bakeCoverageOptions.length,
+    excludedColorPickerOptionCount: excludedColorPickerOptions.length,
     availableMaterialVariantCount: availableMaterialVariants.length,
     coveredMaterialVariantCount: coveredVariants.size
   };
@@ -302,6 +312,7 @@ export function generateV2Plan(
     coverage: {
       renderRelevantOptionCount: coverage.renderRelevantOptionCount,
       coveredRenderRelevantOptionCount: coverage.coveredRenderRelevantOptionCount,
+      excludedColorPickerOptionCount: coverage.excludedColorPickerOptionCount,
       availableMaterialVariantCount: coverage.availableMaterialVariantCount,
       coveredMaterialVariantCount: coverage.coveredMaterialVariantCount,
       totalConfigurationCount: coverage.configurations.length
@@ -377,6 +388,8 @@ async function main() {
   console.log(
     `v2 ${mode}：全空间 ${scale.configurationCount} 个组合；输出 `
       + `${plan.configurations.length}/${plan.coverage.totalConfigurationCount} 个覆盖配置，`
+      + `覆盖 ${plan.coverage.coveredRenderRelevantOptionCount} 个 Bake 选项，`
+      + `排除 ${plan.coverage.excludedColorPickerOptionCount} 个 color-picker，`
       + `${plan.expectedRenderCount} 个渲染任务，预计 ${plan.estimatedSeconds} 秒：${outputPath}`
   );
 }

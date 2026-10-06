@@ -9,12 +9,13 @@
 
 namespace VehicleSurfaceBinding
 {
-	constexpr int32 Sc01SurfaceCount = 38;
+	constexpr int32 Sc01SurfaceCount = 40;
 
 	const TArray<FString>& Sc01SurfaceIds()
 	{
 		static const TArray<FString> SurfaceIds{
 			TEXT("exterior-body-cover"), TEXT("engine-bay-cover"),
+			TEXT("rear-wing"),
 			TEXT("wheel-material"), TEXT("wheel-style"), TEXT("wheel-color"),
 			TEXT("front-caliper-color"), TEXT("rear-caliper-color"),
 			TEXT("steering-wheel-skin"), TEXT("steering-wheel-addon"),
@@ -28,8 +29,9 @@ namespace VehicleSurfaceBinding
 			TEXT("console-armrest-cover"), TEXT("console-armrest-side"),
 			TEXT("handbrake"), TEXT("roof-surface"), TEXT("lower-skirt"),
 			TEXT("interior-painted-parts"), TEXT("door-sill"),
-			TEXT("embroidered-logo"), TEXT("center-panel-trim"),
-			TEXT("shift-knob"), TEXT("brake-handle"), TEXT("pedal")
+			TEXT("embroidered-logo"), TEXT("headrest-embroidery"),
+			TEXT("door-panel-embroidery"), TEXT("center-panel-trim"),
+			TEXT("nameplate"), TEXT("pedal")
 		};
 		return SurfaceIds;
 	}

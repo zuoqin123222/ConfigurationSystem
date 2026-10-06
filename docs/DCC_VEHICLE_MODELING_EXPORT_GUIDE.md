@@ -16,9 +16,9 @@
 | `DCC-PART-001` | `paint`、`wheel`、`interior`、`frame` 四个分区在 `partBindings` 中恰好各出现一次。 |
 | `DCC-PART-002` | 每个分区绑定的目标节点和材质槽都必须存在。 |
 | `DCC-MATERIAL-001` | 材质槽 ID 稳定、唯一，并在全部 LOD 中保持同一全集。 |
-| `DCC-SURFACE-001` | 独立 surface-binding 按 Catalog `selectionOrder` 显式覆盖 SC01 38 surface，不改变既有模型或骨骼 sidecar 含义。 |
+| `DCC-SURFACE-001` | 独立 surface-binding 按 Catalog `selectionOrder` 显式覆盖 SC01 40 surface，不改变既有模型或骨骼 sidecar 含义。 |
 | `DCC-SURFACE-002` | 每个 surface 使用唯一 `sc01_*` 材质槽，面选择必须声明目标节点、来源材质 ID 和面范围，禁止按名称相似度推断或重叠分配。 |
-| `DCC-SURFACE-003` | UE 导入后的 SkeletalMesh 必须存在全部 38 个槽，且每一级 LOD 都实际引用全部 surface 槽。 |
+| `DCC-SURFACE-003` | UE 导入后的 SkeletalMesh 必须存在全部 40 个槽，且每一级 LOD 都实际引用全部 surface 槽。 |
 | `DCC-LOD-001` | LOD 连续编号，屏幕阈值和三角形数严格递减。 |
 | `DCC-ANIM-001` | clip 目标存在、标签匹配、帧区间有效且动作可逆。 |
 | `DCC-RIGGED-001` | 单个 FBX 必须同时包含骨骼网格、骨骼和且仅一条完整动画序列。 |
@@ -186,7 +186,7 @@ Vehicle_Root [Vehicle.Root]
 
 SC01 v2 使用独立的 `vehicle-surface-binding` 1.0 契约，不向
 `vehicle-model` 1.0 或 `rigged-vehicle` 2.0 原地增加新含义。契约中的
-`bindings` 必须与 Catalog `selectionOrder` 逐项同序，38 个 surface 各自对应
+`bindings` 必须与 Catalog `selectionOrder` 逐项同序，40 个 surface 各自对应
 唯一 `sc01_*` 材质槽。`selectors` 只接受资产作者确认的目标节点、来源材质 ID
 和面范围；`*` 表示该节点上当前由指定来源材质分配的全部面，不表示整个节点。
 

@@ -15,16 +15,16 @@ const [schema, catalog, valid] = await Promise.all([
   json("contracts/fixtures/vehicle-surface-binding.valid.json")
 ]);
 
-test("SC01 surface-binding 按 selectionOrder 显式覆盖 38 个 surface", () => {
+test("SC01 surface-binding 按 selectionOrder 显式覆盖 40 个 surface", () => {
   assert.deepEqual(validateSurfaceBinding(valid, schema, catalog), []);
-  assert.equal(valid.bindings.length, 38);
+  assert.equal(valid.bindings.length, 40);
   assert.deepEqual(
     valid.bindings.map((binding) => binding.surfaceId),
     catalog.selectionOrder
   );
   assert.equal(
     new Set(valid.bindings.flatMap((binding) => binding.materialSlotIds)).size,
-    38
+    40
   );
   assert.deepEqual(valid.unsupportedSurfaceIds, []);
 });
@@ -32,7 +32,7 @@ test("SC01 surface-binding 按 selectionOrder 显式覆盖 38 个 surface", () =
 test("正反 fixture 聚合验证通过", async () => {
   const result = await validateSurfaceBindingFixtures();
   assert.deepEqual(result.failures, []);
-  assert.ok(result.rejected.some((error) => error.includes("全部 38 个 surface")));
+  assert.ok(result.rejected.some((error) => error.includes("全部 40 个 surface")));
   assert.ok(result.rejected.some((error) => error.includes("unknown-surface")));
   assert.ok(result.rejected.some((error) => error.includes("material slot 重复")));
   assert.ok(result.rejected.some((error) => error.includes("重复分配")));

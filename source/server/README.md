@@ -29,9 +29,13 @@ npm start
 校验与原子发布：
 
 ```powershell
-npm run validate:bake -- <bake-manifest.json> <资产根目录>
+npm run validate:bake -- <bake-manifest.json> <资产根目录> [published-configurations.json]
 npm run publish:bake -- <包含 bake-manifest.json 的源目录> <发布根目录>
 ```
+
+发布流水线必须传入同次生成的 `published-configurations.json`，校验 manifest 的
+`renderKey/configurationKey + renderViewId` 集合与计划完全一致；独立诊断旧产物时该
+参数可省略。
 
 ## API
 

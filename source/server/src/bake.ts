@@ -147,6 +147,54 @@ function renderKey(configurationKey: string, renderViewId: string): string {
   return `${configurationKey}\0${renderViewId}`;
 }
 
+function loadExpectedPlanEntries(
+  planPath: string,
+  manifest: BakeManifest,
+): ReadonlySet<string> {
+  const parsed: unknown = JSON.parse(readFileSync(planPath, "utf8"));
+  assert(isRecord(parsed), "published plan 根节点必须是对象");
+  assert(parsed.schemaVersion === manifest.schemaVersion, "published plan schemaVersion 不匹配");
+  assert(parsed.catalogVersion === manifest.catalogVersion, "published plan catalogVersion 不匹配");
+  assert(
+    parsed.publicationVersion === manifest.publicationVersion,
+    "published plan publicationVersion 不匹配",
+  );
+  assert(parsed.vehicleId === manifest.vehicleId, "published plan vehicleId 不匹配");
+  assert(Array.isArray(parsed.renderViewIds) && parsed.renderViewIds.length > 0,
+    "published plan renderViewIds 非法");
+  assert(Array.isArray(parsed.configurations) && parsed.configurations.length > 0,
+    "published plan configurations 非法");
+
+  const expected = new Set<string>();
+  const identityField = manifest.schemaVersion === "2.0.0"
+    ? "renderKey"
+    : "configurationKey";
+  for (const [configurationIndex, configuration] of parsed.configurations.entries()) {
+    assert(isRecord(configuration),
+      `published plan configurations[${configurationIndex}] 必须是对象`);
+    const identity = configuration[identityField];
+    assert(
+      typeof identity === "string" && CONFIGURATION_KEY.test(identity),
+      `published plan configurations[${configurationIndex}] ${identityField} 非法`,
+    );
+    for (const [viewIndex, viewId] of parsed.renderViewIds.entries()) {
+      assert(
+        typeof viewId === "string" && ID.test(viewId),
+        `published plan renderViewIds[${viewIndex}] 非法`,
+      );
+      const key = renderKey(identity, viewId);
+      assert(!expected.has(key), `published plan 任务重复：${identity}/${viewId}`);
+      expected.add(key);
+    }
+  }
+  assert(
+    Number.isInteger(parsed.expectedRenderCount)
+      && parsed.expectedRenderCount === expected.size,
+    "published plan expectedRenderCount 与任务集合不一致",
+  );
+  return expected;
+}
+
 function safeAssetPath(assetRoot: string, manifestPath: string): string {
   assert(!isAbsolute(manifestPath), `图片路径不能是绝对路径：${manifestPath}`);
   const root = realpathSync(assetRoot);
@@ -249,6 +297,7 @@ function inspectPng(bytes: Buffer): {
 export function validateBakeManifest(
   manifestPath: string,
   assetRoot = dirname(manifestPath),
+  publishedPlanPath?: string,
 ): ValidatedBakeManifest {
   const parsed: unknown = JSON.parse(readFileSync(manifestPath, "utf8"));
   assert(isRecord(parsed), "根节点必须是对象");
@@ -350,6 +399,14 @@ export function validateBakeManifest(
       views.size === expectedViews.size
         && [...expectedViews].every((view) => views.has(view)),
       `${configurationKey} 未包含完整 RenderView 集合`,
+    );
+  }
+  if (publishedPlanPath) {
+    const expectedEntries = loadExpectedPlanEntries(publishedPlanPath, manifest);
+    assert(
+      entries.size === expectedEntries.size
+        && [...expectedEntries].every((key) => entries.has(key)),
+      "render 集合与 published plan 不一致",
     );
   }
   return {

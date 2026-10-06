@@ -154,6 +154,7 @@
           "required": [
             "renderRelevantOptionCount",
             "coveredRenderRelevantOptionCount",
+            "excludedColorPickerOptionCount",
             "availableMaterialVariantCount",
             "coveredMaterialVariantCount",
             "totalConfigurationCount"
@@ -161,6 +162,7 @@
           "properties": {
             "renderRelevantOptionCount": { "type": "integer", "minimum": 0 },
             "coveredRenderRelevantOptionCount": { "type": "integer", "minimum": 0 },
+            "excludedColorPickerOptionCount": { "type": "integer", "minimum": 0 },
             "availableMaterialVariantCount": { "type": "integer", "minimum": 0 },
             "coveredMaterialVariantCount": { "type": "integer", "minimum": 0 },
             "totalConfigurationCount": { "type": "integer", "minimum": 1 }

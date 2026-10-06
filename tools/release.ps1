@@ -814,7 +814,8 @@ function Build-BakeWeb {
         "validate:bake",
         "--",
         $manifestPath,
-        $outputRoot
+        $outputRoot,
+        $planPath
     ) $ServerRoot
     if (-not $DryRun) {
         [IO.File]::WriteAllText(

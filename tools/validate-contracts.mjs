@@ -449,16 +449,48 @@ try {
   const scale = estimateV2Scale(v2Catalog);
   const coverage = generateV2Coverage(v2Catalog);
   const plan = generateV2Plan(v2Catalog, "sc01-v2");
+  const bakeCoverageOptions = v2Catalog.options.filter(
+    (option) =>
+      option.renderRelevant
+      && option.availability?.status !== "disabled"
+      && option.ui?.control !== "color-picker"
+  );
+  const colorPickerOptions = v2Catalog.options.filter(
+    (option) =>
+      option.renderRelevant
+      && option.availability?.status !== "disabled"
+      && option.ui?.control === "color-picker"
+  );
+  const coveredOptionIds = new Set(
+    coverage.configurations.flatMap((configuration) =>
+      Object.values(configuration.selections)
+    )
+  );
   check(
     scale.configurationCount === "19591041024000000000000",
     "SC01 v2 完整组合规模估算必须稳定且不得直接展开"
   );
   check(
     coverage.coveredRenderRelevantOptionCount
-      === v2Catalog.options.filter(
-        (option) => option.renderRelevant && option.availability?.status !== "disabled"
-      ).length,
-    "SC01 v2 coverage 必须覆盖每个 renderRelevant 选项"
+      === bakeCoverageOptions.length,
+    "SC01 v2 coverage 必须覆盖每个可生成 Bake 的 renderRelevant 选项"
+  );
+  check(
+    coverage.renderRelevantOptionCount === 165
+      && coverage.excludedColorPickerOptionCount === 5
+      && coverage.configurations.length === 482
+      && plan.expectedRenderCount === 1928,
+    "SC01 v2 coverage 规模必须稳定为 165 个 Bake 选项、排除 5 个 color-picker、482 个配置和 1928 个任务"
+  );
+  check(
+    colorPickerOptions.every((option) => !coveredOptionIds.has(option.optionId)),
+    "SC01 v2 coverage 不得为 color-picker 自定义颜色选项生成 Bake 配置"
+  );
+  check(
+    ["body-cover-red", "body-cover-silver"].every((optionId) =>
+      coveredOptionIds.has(optionId)
+    ),
+    "SC01 v2 coverage 不得误排普通 paint 色卡"
   );
   check(
     coverage.availableMaterialVariantCount === coverage.coveredMaterialVariantCount,
@@ -488,5 +520,5 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log("契约验证通过：12 个 Schema JSON；v1 发布配置完整覆盖目录笛卡尔积与全部视角并校验动态任务规模；SC01 v2 草案通过有效/无效配置、禁止报价 price-result、稳定身份黄金向量与 coverage 生成校验；参考资产、content-pack、P0-3、车辆 sidecar 与 38 surface-binding 验证通过。");
+  console.log("契约验证通过：12 个 Schema JSON；v1 发布配置完整覆盖目录笛卡尔积与全部视角并校验动态任务规模；SC01 v2 草案通过有效/无效配置、禁止报价 price-result、稳定身份黄金向量与 coverage 生成校验；参考资产、content-pack、P0-3、车辆 sidecar 与 40 surface-binding 验证通过。");
 }

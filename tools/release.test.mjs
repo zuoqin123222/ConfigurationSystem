@@ -280,6 +280,10 @@ test("BakeWeb 透传 profile、mode、shard、publication、input 和 output", (
   assert.match(result.stdout, /ConfigurationBakeProfile=debug/);
   assert.match(result.stdout, /ConfigurationBakeInput=.*published-configurations\.json/);
   assert.match(result.stdout, /ConfigurationBakeStaging=.*custom-bake/);
+  assert.match(
+    result.stdout,
+    /validate:bake -- .*bake-manifest\.json \S+ \S*published-configurations\.json/,
+  );
 });
 
 test("BakeWeb estimate 只生成估算，不误跑 UE Bake 或校验", () => {

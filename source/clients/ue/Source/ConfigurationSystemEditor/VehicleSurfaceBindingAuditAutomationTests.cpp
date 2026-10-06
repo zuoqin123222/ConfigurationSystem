@@ -20,12 +20,12 @@ bool FVehicleSurfaceBindingAuditAutomationTest::RunTest(const FString& Parameter
 	FVehicleSurfaceBindingContract ParsedContract;
 	TArray<FString> ParseErrors;
 	TestTrue(
-		TEXT("读取 SC01 38 surface 正向 fixture"),
+		TEXT("读取 SC01 40 surface 正向 fixture"),
 		FVehicleSurfaceBindingAudit::LoadContractFile(
 			FixturePath,
 			ParsedContract,
 			ParseErrors));
-	TestEqual(TEXT("UE 契约解析得到 38 个 surface"), ParsedContract.SurfaceIds.Num(), 38);
+	TestEqual(TEXT("UE 契约解析得到 40 个 surface"), ParsedContract.SurfaceIds.Num(), 40);
 
 	FString InvalidJson;
 	TestTrue(TEXT("读取 fixture 文本"), FFileHelper::LoadFileToString(InvalidJson, *FixturePath));
@@ -44,9 +44,9 @@ bool FVehicleSurfaceBindingAuditAutomationTest::RunTest(const FString& Parameter
 
 	FVehicleSurfaceBindingContract Contract;
 	Contract.VehicleId = TEXT("sc01");
-	Contract.CatalogVersion = TEXT("sc01-draft-20260121");
+	Contract.CatalogVersion = TEXT("sc01-draft-20261007");
 	Contract.ModelVersion = TEXT("test-model");
-	for (int32 Index = 0; Index < 38; ++Index)
+	for (int32 Index = 0; Index < 40; ++Index)
 	{
 		Contract.SurfaceIds.Add(FString::Printf(TEXT("surface-%02d"), Index));
 		Contract.MaterialSlotIds.Add(FName(*FString::Printf(TEXT("sc01_surface_%02d"), Index)));
@@ -60,12 +60,12 @@ bool FVehicleSurfaceBindingAuditAutomationTest::RunTest(const FString& Parameter
 	Valid.LodMaterialSlotIds[1].Add(Contract.MaterialSlotIds[0]);
 	const FVehicleSurfaceBindingAuditResult ValidResult =
 		FVehicleSurfaceBindingAudit::AuditSnapshot(Contract, Valid);
-	TestTrue(TEXT("全部 38 个 slot 在每级 LOD 中存在时通过"), ValidResult.bPassed);
-	TestEqual(TEXT("记录 38 个 surface"), ValidResult.SurfaceCount, 38);
+	TestTrue(TEXT("全部 40 个 slot 在每级 LOD 中存在时通过"), ValidResult.bPassed);
+	TestEqual(TEXT("记录 40 个 surface"), ValidResult.SurfaceCount, 40);
 	TestEqual(TEXT("记录两级 LOD"), ValidResult.LodCount, 2);
 
 	FVehicleSurfaceBindingMeshSnapshot Missing = Valid;
-	Missing.LodMaterialSlotIds[1].Remove(Contract.MaterialSlotIds[37]);
+	Missing.LodMaterialSlotIds[1].Remove(Contract.MaterialSlotIds[39]);
 	const FVehicleSurfaceBindingAuditResult MissingResult =
 		FVehicleSurfaceBindingAudit::AuditSnapshot(Contract, Missing);
 	TestFalse(TEXT("任一 LOD 缺失 surface slot 时拒绝"), MissingResult.bPassed);
@@ -75,7 +75,7 @@ bool FVehicleSurfaceBindingAuditAutomationTest::RunTest(const FString& Parameter
 			[](const FString& Issue)
 			{
 				return Issue.Contains(TEXT("LOD1"))
-					&& Issue.Contains(TEXT("sc01_surface_37"));
+					&& Issue.Contains(TEXT("sc01_surface_39"));
 			}));
 
 	FVehicleSurfaceBindingMeshSnapshot Duplicate = Valid;

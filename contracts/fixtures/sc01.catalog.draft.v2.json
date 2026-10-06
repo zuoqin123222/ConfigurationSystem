@@ -148,6 +148,7 @@
     ],
     "unsupportedSurfaceIds": [
       "engine-bay-cover",
+      "rear-wing",
       "wheel-material",
       "wheel-style",
       "wheel-color",
@@ -179,9 +180,10 @@
       "interior-painted-parts",
       "door-sill",
       "embroidered-logo",
+      "headrest-embroidery",
+      "door-panel-embroidery",
       "center-panel-trim",
-      "shift-knob",
-      "brake-handle",
+      "nameplate",
       "pedal"
     ]
   },

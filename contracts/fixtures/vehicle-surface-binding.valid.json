@@ -2,8 +2,8 @@
   "schemaVersion": "1.0.0",
   "kind": "vehicle-surface-binding",
   "vehicleId": "sc01",
-  "catalogVersion": "sc01-draft-20260121",
-  "modelVersion": "sc01-surface-ready-2026-01",
+  "catalogVersion": "sc01-draft-20261007",
+  "modelVersion": "sc01-surface-ready-2026-10",
   "capability": "complete",
   "sourceFbx": {
     "path": "fixtures/sc01-surface-ready.fbx",
@@ -13,6 +13,7 @@
   "bindings": [
     {"surfaceId":"exterior-body-cover","materialSlotIds":["sc01_exterior_body_cover"],"selectors":[{"targetNode":"ExteriorMesh","sourceMaterialId":"SRC_EXTERIOR_BODY_COVER","faceRanges":["*"]}]},
     {"surfaceId":"engine-bay-cover","materialSlotIds":["sc01_engine_bay_cover"],"selectors":[{"targetNode":"EngineBayMesh","sourceMaterialId":"SRC_ENGINE_BAY_COVER","faceRanges":["*"]}]},
+    {"surfaceId":"rear-wing","materialSlotIds":["sc01_rear_wing"],"selectors":[{"targetNode":"RearWingMesh","sourceMaterialId":"SRC_REAR_WING","faceRanges":["*"]}]},
     {"surfaceId":"wheel-material","materialSlotIds":["sc01_wheel_material"],"selectors":[{"targetNode":"WheelMesh","sourceMaterialId":"SRC_WHEEL_MATERIAL","faceRanges":["*"]}]},
     {"surfaceId":"wheel-style","materialSlotIds":["sc01_wheel_style"],"selectors":[{"targetNode":"WheelStyleMesh","sourceMaterialId":"SRC_WHEEL_STYLE","faceRanges":["*"]}]},
     {"surfaceId":"wheel-color","materialSlotIds":["sc01_wheel_color"],"selectors":[{"targetNode":"WheelColorMesh","sourceMaterialId":"SRC_WHEEL_COLOR","faceRanges":["*"]}]},
@@ -45,10 +46,11 @@
     {"surfaceId":"interior-painted-parts","materialSlotIds":["sc01_interior_painted_parts"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_INTERIOR_PAINTED_PARTS","faceRanges":["230:239"]}]},
     {"surfaceId":"door-sill","materialSlotIds":["sc01_door_sill"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_DOOR_SILL","faceRanges":["240:249"]}]},
     {"surfaceId":"embroidered-logo","materialSlotIds":["sc01_embroidered_logo"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_EMBROIDERED_LOGO","faceRanges":["250:259"]}]},
-    {"surfaceId":"center-panel-trim","materialSlotIds":["sc01_center_panel_trim"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_CENTER_PANEL_TRIM","faceRanges":["260:269"]}]},
-    {"surfaceId":"shift-knob","materialSlotIds":["sc01_shift_knob"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_SHIFT_KNOB","faceRanges":["270:279"]}]},
-    {"surfaceId":"brake-handle","materialSlotIds":["sc01_brake_handle"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_BRAKE_HANDLE","faceRanges":["280:289"]}]},
-    {"surfaceId":"pedal","materialSlotIds":["sc01_pedal"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_PEDAL","faceRanges":["290:299"]}]}
+    {"surfaceId":"headrest-embroidery","materialSlotIds":["sc01_headrest_embroidery"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_HEADREST_EMBROIDERY","faceRanges":["260:269"]}]},
+    {"surfaceId":"door-panel-embroidery","materialSlotIds":["sc01_door_panel_embroidery"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_DOOR_PANEL_EMBROIDERY","faceRanges":["270:279"]}]},
+    {"surfaceId":"center-panel-trim","materialSlotIds":["sc01_center_panel_trim"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_CENTER_PANEL_TRIM","faceRanges":["280:289"]}]},
+    {"surfaceId":"nameplate","materialSlotIds":["sc01_nameplate"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_NAMEPLATE","faceRanges":["290:299"]}]},
+    {"surfaceId":"pedal","materialSlotIds":["sc01_pedal"],"selectors":[{"targetNode":"InteriorMesh","sourceMaterialId":"SRC_PEDAL","faceRanges":["300:309"]}]}
   ],
   "unsupportedSurfaceIds": []
 }

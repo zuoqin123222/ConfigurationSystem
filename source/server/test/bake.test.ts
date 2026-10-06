@@ -15,6 +15,10 @@ import {
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const validRoot = resolve(repositoryRoot, "contracts/fixtures/bake.valid");
 const invalidRoot = resolve(repositoryRoot, "contracts/fixtures/bake.invalid");
+const publishedPlanPath = resolve(
+  repositoryRoot,
+  "contracts/fixtures/published-configurations.mvp.json",
+);
 
 async function withChangedManifest(
   change: (manifest: any) => void,
@@ -61,6 +65,31 @@ test("render 数量与配置数量按 manifest 动态校验，不依赖历史 64
   } finally {
     await fixture.cleanup();
   }
+});
+
+test("manifest 与 published plan 的任务身份和视角集合必须完全一致", async (t) => {
+  const bake = validateBakeManifest(
+    resolve(validRoot, "bake-manifest.json"),
+    validRoot,
+    publishedPlanPath,
+  );
+  assert.equal(bake.renders.size, 64);
+
+  const directory = await mkdtemp(join(tmpdir(), "bake-plan-test-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const plan = JSON.parse(await readFile(publishedPlanPath, "utf8"));
+  plan.configurations[0].configurationKey =
+    "paint-purple__wheel-sport__interior-dark__frame-black";
+  const incompletePlanPath = resolve(directory, "published-configurations.json");
+  await writeFile(incompletePlanPath, JSON.stringify(plan));
+  assert.throws(
+    () => validateBakeManifest(
+      resolve(validRoot, "bake-manifest.json"),
+      validRoot,
+      incompletePlanPath,
+    ),
+    /render 集合与 published plan 不一致/,
+  );
 });
 
 test("v2 manifest 使用 renderKey 作为图片身份且拒绝混用 v1 字段", async () => {

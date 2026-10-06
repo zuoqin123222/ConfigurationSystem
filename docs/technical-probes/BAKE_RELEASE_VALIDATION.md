@@ -57,19 +57,23 @@ Screen Percentage；关闭后使用 Lit，并等待稳定帧再回读。PNG 回�
 - v1 使用 `--mode exhaustive`，完整枚举有限笛卡尔积。
 - v2 默认只执行 `estimate`。SC01 当前完整空间为
   `391820820480000000000`（约 3.9e20）个配置，生成器明确拒绝 `exhaustive`。
-- v2 `coverage` 从默认/首选基线生成去重集合，保证每个 `renderRelevant` 选项以及每个
-  可被已定价色卡选项消费的 `materialVariant` 至少出现一次。基线严格复用
+- v2 `coverage` 从默认/首选基线生成去重集合，保证每个可生成 Bake 的
+  `renderRelevant` 选项以及每个可被已定价色卡选项消费的 `materialVariant` 至少出现
+  一次。`ui.control=color-picker` 的自定义颜色选项继续参与配置、UI 和 UE 实时材质，
+  但不生成有限的预烘焙任务；该规则不排除 `swatch` 等普通 paint 色卡。基线严格复用
   `defaultSelections`，不会给无默认项的可选 surface 强行选择第一个选项，确保 Web
-  初始状态可以直接命中渲染。当前 SC01 覆盖 154 个相关选项和 352 个可用材料色卡，
-  去重后得到 477 个配置；按 4 个视角为 1908 个渲染任务。
+  初始状态可以直接命中渲染。当前 SC01 覆盖 151 个 Bake 选项、排除 3 个
+  `color-picker`，并覆盖 352 个可用材料色卡，去重后得到 474 个配置；按 4 个视角为
+  1896 个渲染任务。
 - v2 `shard` 对 coverage 集合做确定性取模分片，`--shard=0/4` 到 `3/4` 合并后不重不漏。
 - v2 coverage/shard 输出固定声明四个 `renderViewIds`，并对每项写出
   `configurationKey = renderKey`。`FConfigurationBakePlan::Load` 同时读取通用
   `selections/customizations`；执行时 v1 继续映射旧四分区，v2 则通过
   `UCarConfiguratorSubsystem` 取得 `UAutomotiveConfigurationState` 并调用
   `ApplyTransaction`，由状态广播驱动已绑定的材质 Binder。
-- 输出及控制台同时记录完整规模、选项/材料色卡覆盖数、渲染任务数和按
-  `--seconds-per-render` 计算的预计耗时。
+- 输出及控制台同时记录完整规模、Bake 选项/排除的 `color-picker`/材料色卡覆盖数、
+  渲染任务数和按 `--seconds-per-render` 计算的预计耗时。Server 校验 Bake manifest
+  时还必须与同次生成的 published plan 对照任务身份和视角集合。
 
 ```powershell
 node tools/generate-published-configurations.mjs `

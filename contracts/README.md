@@ -22,7 +22,7 @@
 - `fixtures/vehicle-*.valid.json`：可通过车辆 sidecar 契约的模型与动画样例。
 - `fixtures/vehicle-*.invalid.json`：验证器必须拒绝的负向样例。
 - `fixtures/rigged-vehicle.valid.json` / `rigged-vehicle.invalid.json`：单 FBX 骨骼车辆 v2 正反样例。
-- `fixtures/vehicle-surface-binding.valid.json` / `vehicle-surface-binding.invalid.json`：按 `selectionOrder` 覆盖 SC01 38 surface 的正反样例；只用于契约和工具测试，不代表正式车模映射。
+- `fixtures/vehicle-surface-binding.valid.json` / `vehicle-surface-binding.invalid.json`：按 `selectionOrder` 覆盖 SC01 40 surface 的正反样例；只用于契约和工具测试，不代表正式车模映射。
 - `fixtures/content-pack.valid.json` / `content-pack.invalid.json`：内容包 manifest 正反样例。
 - `fixtures/reference-asset-normalization.example.json`：参考资产 FBX 规范化作业清单示例，不对应仓库内真实资产。
 - `fixtures/sc01.catalog.draft.v2.json`：SC01 产品、UI 展示与页签镜头绑定的统一配置源。
@@ -125,11 +125,15 @@ SC01 不复用 v1 的固定四分区和固定价差模型。v2 使用
 
 v2 published plan 必须声明四个标准 `renderViewIds`，每项使用
 `configurationKey = renderKey` 作为图片目录键，并携带通用
-`selections/customizations`。coverage 除所有 `renderRelevant` 选项外，还覆盖所有
-可被已定价色卡选项消费的 `materialVariants`；shard 只对该完整覆盖集做确定性分片。
+`selections/customizations`。coverage 覆盖所有可生成 Bake 的 `renderRelevant` 选项，
+但显式排除 `ui.control=color-picker`：自定义颜色仍参与配置身份、UI 与 UE 实时材质，
+不产生有限的预烘焙任务。`swatch` 等普通 paint 色卡不受此排除规则影响。coverage 还
+覆盖所有可被已定价色卡选项消费的 `materialVariants`；shard 只对该完整覆盖集做
+确定性分片，并在 `coverage.excludedColorPickerOptionCount` 记录排除数量。
 UE 对 v2 计划生成 `schemaVersion: 2.0.0` 的独立 Bake manifest，render 条目以
 `renderKey + renderViewId` 唯一定位图片；Server 可从独立 v2 根加载，不改变 v1
-manifest、活动发布指针或静态 URL。
+manifest、活动发布指针或静态 URL。发布校验必须将 Bake manifest 与生成时的
+published plan 对照，确保身份、视角和任务数不多不少。
 
 当前 SC01 fixture 是 `draft`。基础价与现阶段已确认的选装价格用于参考总价，
 但正式报价仍关闭，`quoteAllowed=false`。来源映射与字段理由见

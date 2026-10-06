@@ -2,8 +2,8 @@
   "schemaVersion": "1.0.0",
   "kind": "vehicle-surface-binding",
   "vehicleId": "sc01",
-  "catalogVersion": "sc01-draft-20260121",
-  "modelVersion": "sc01-surface-ready-2026-01",
+  "catalogVersion": "sc01-draft-20261007",
+  "modelVersion": "sc01-surface-ready-2026-10",
   "capability": "proxy",
   "sourceFbx": {
     "path": "fixtures/sc01-surface-ready.fbx",

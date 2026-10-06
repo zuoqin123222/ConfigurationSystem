@@ -1,4 +1,4 @@
-"""Rebuild the 38 SC01 material slots from an explicit surface-binding contract."""
+"""Rebuild the SC01 material slots from an explicit surface-binding contract."""
 
 from __future__ import annotations
 
@@ -12,7 +12,8 @@ from typing import Any
 
 
 SC01_SURFACE_IDS = (
-    "exterior-body-cover", "engine-bay-cover", "wheel-material", "wheel-style",
+    "exterior-body-cover", "engine-bay-cover", "rear-wing",
+    "wheel-material", "wheel-style",
     "wheel-color", "front-caliper-color", "rear-caliper-color",
     "steering-wheel-skin", "steering-wheel-addon", "steering-center-mark",
     "ip-wings", "ip-middle", "ip-instrument-cover", "ip-upper-trim",
@@ -22,8 +23,8 @@ SC01_SURFACE_IDS = (
     "console-armrest-cover",
     "console-armrest-side", "handbrake", "roof-surface",
     "lower-skirt", "interior-painted-parts", "door-sill",
-    "embroidered-logo", "center-panel-trim", "shift-knob",
-    "brake-handle", "pedal",
+    "embroidered-logo", "headrest-embroidery", "door-panel-embroidery",
+    "center-panel-trim", "nameplate", "pedal",
 )
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 SLOT_PATTERN = re.compile(r"^sc01_[a-z0-9]+(?:_[a-z0-9]+)*$")
@@ -72,7 +73,7 @@ def load_contract(path: Path) -> dict[str, Any]:
     actual_ids = tuple(binding.get("surfaceId") for binding in bindings
                        if isinstance(binding, dict))
     require(actual_ids == SC01_SURFACE_IDS,
-            "bindings: 必须按固定顺序显式覆盖 SC01 38 surface")
+            f"bindings: 必须按固定顺序显式覆盖 SC01 {len(SC01_SURFACE_IDS)} surface")
     slots: set[str] = set()
     selectors: set[tuple[str, str, str]] = set()
     for index, binding in enumerate(bindings):
@@ -243,7 +244,7 @@ def run(binding_path: Path, output: Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="按显式契约在 Maya 2025 中重建 SC01 38 surface 材质槽。")
+        description="按显式契约在 Maya 2025 中重建 SC01 surface 材质槽。")
     parser.add_argument("--binding", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
