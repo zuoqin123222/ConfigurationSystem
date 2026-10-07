@@ -86,6 +86,10 @@
 
 - [UE5.8 DX12 GUI 槽映射截图](assets/sc01-materials-stage4/mapped-slots.png)
 - [GUI 探针事务与实际材质路径](assets/sc01-materials-stage4/gui-report.json)
+- [Shipping readiness、40 个 bound count 与事务报告](assets/sc01-materials-stage4/shipping-gui-report.json)
+- [Shipping Primary Asset/Cook 报告](assets/sc01-materials-stage4/shipping-primary-assets.json)
+
+Shipping 截图已在本机检查；按授权代理资产政策不新增提交包含授权几何的截图。
 
 GUI 报告在真实 Game viewport 中按 Catalog `selectionOrder` 遍历 40 surface；
 每项选择不同于当前值的 option，并在支持时附加 material variant 或自定义色，
@@ -109,3 +113,8 @@ GUI 报告在真实 Game viewport 中按 Catalog `selectionOrder` 遍历 40 surf
   40 个唯一可映射槽并确认 40 项材质变化；报告逐项记录 `colorPolicy`，
   其中 16 项无固定色结构/样式代理均为 `neutral-gray`，RGB 三通道相等，
   未发现随机彩色代理。
+- UE5.8.1 Shipping `AutomotiveMaterialGuiProbe`：40/40 通过；readiness 的
+  `viewport/world/subsystem/state/library/binder` 全部为 `true`，40 个 surface 的
+  bound count 均为 1，`binderLastError` 为空。修复前 Shipping 将状态初始化和
+  `Binder::Bind` 作为 `checkf` 参数，宏裁剪后副作用未执行；现已先显式执行再断言，
+  并为旧 Primary Asset 标签迁移保留 DA Catalog 固定 Cook 路径回退。

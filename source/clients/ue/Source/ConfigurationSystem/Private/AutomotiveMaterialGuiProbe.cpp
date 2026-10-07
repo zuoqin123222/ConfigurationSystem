@@ -132,9 +132,10 @@ bool UAutomotiveMaterialGuiProbe::Tick(const float DeltaTime)
 
 bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 {
-	if (GEngine == nullptr
-		|| GEngine->GameViewport == nullptr
-		|| GEngine->GameViewport->Viewport == nullptr)
+	bReadinessViewport = GEngine != nullptr
+		&& GEngine->GameViewport != nullptr
+		&& GEngine->GameViewport->Viewport != nullptr;
+	if (!bReadinessViewport)
 	{
 		return false;
 	}
@@ -149,12 +150,19 @@ bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 			break;
 		}
 	}
+	bReadinessWorld = IsValid(GameWorld);
+	ReadinessWorldPath =
+		bReadinessWorld ? GameWorld->GetPathName() : FString();
 	UGameInstance* GameInstance =
 		GameWorld != nullptr ? GameWorld->GetGameInstance() : nullptr;
 	UCarConfiguratorSubsystem* Configurator =
 		IsValid(GameInstance)
 			? GameInstance->GetSubsystem<UCarConfiguratorSubsystem>()
 			: nullptr;
+	bReadinessSubsystem = IsValid(Configurator);
+	ReadinessSubsystemPath = bReadinessSubsystem
+		? Configurator->GetPathName()
+		: FString();
 	UAutomotiveConfigurationState* CandidateState =
 		IsValid(Configurator)
 			? Configurator->GetAutomotiveConfigurationState()
@@ -167,9 +175,21 @@ bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 		IsValid(Configurator)
 			? Configurator->GetAutomotiveMaterialLibrary()
 			: nullptr;
-	if (!IsValid(CandidateState)
-		|| !IsValid(CandidateBinder)
-		|| !IsValid(CandidateLibrary))
+	bReadinessState =
+		IsValid(CandidateState) && CandidateState->IsInitialized();
+	bReadinessLibrary = IsValid(CandidateLibrary);
+	ReadinessStatePath =
+		IsValid(CandidateState) ? CandidateState->GetPathName() : FString();
+	ReadinessLibraryPath =
+		bReadinessLibrary ? CandidateLibrary->GetPathName() : FString();
+	ReadinessBinderPath =
+		IsValid(CandidateBinder) ? CandidateBinder->GetPathName() : FString();
+	ReadinessBinderLastError =
+		IsValid(CandidateBinder) ? CandidateBinder->GetLastError() : FString();
+	ReadinessBoundSlotCounts.Reset();
+	bReadinessBinder =
+		IsValid(CandidateBinder) && bReadinessState && bReadinessLibrary;
+	if (!bReadinessState || !IsValid(CandidateBinder) || !bReadinessLibrary)
 	{
 		return false;
 	}
@@ -179,14 +199,22 @@ bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 		|| !CandidateState->GetCatalogIndex().GetCatalog()
 			.VehicleSurfaceBinding.UnsupportedSurfaceIds.IsEmpty())
 	{
+		bReadinessBinder = false;
 		return false;
 	}
 	for (const FString& SurfaceId : CandidateSurfaceIds)
 	{
-		if (CandidateBinder->GetBoundSlotCount(SurfaceId) != 1)
+		const int32 BoundSlotCount =
+			CandidateBinder->GetBoundSlotCount(SurfaceId);
+		ReadinessBoundSlotCounts.Add(SurfaceId, BoundSlotCount);
+		if (BoundSlotCount != 1)
 		{
-			return false;
+			bReadinessBinder = false;
 		}
+	}
+	if (!bReadinessBinder)
+	{
+		return false;
 	}
 	State = CandidateState;
 	Binder = CandidateBinder;
@@ -445,6 +473,30 @@ void UAutomotiveMaterialGuiProbe::WriteReportAndExit(
 	Root->SetNumberField(TEXT("expectedSurfaceCount"),
 		AutomotiveCatalog::RequiredSelectionCount);
 	Root->SetNumberField(TEXT("validatedSurfaceCount"), SurfaceResults.Num());
+	TSharedRef<FJsonObject> Readiness = MakeShared<FJsonObject>();
+	Readiness->SetBoolField(TEXT("viewport"), bReadinessViewport);
+	Readiness->SetBoolField(TEXT("world"), bReadinessWorld);
+	Readiness->SetBoolField(TEXT("subsystem"), bReadinessSubsystem);
+	Readiness->SetBoolField(TEXT("state"), bReadinessState);
+	Readiness->SetBoolField(TEXT("library"), bReadinessLibrary);
+	Readiness->SetBoolField(TEXT("binder"), bReadinessBinder);
+	Readiness->SetStringField(TEXT("worldPath"), ReadinessWorldPath);
+	Readiness->SetStringField(TEXT("subsystemPath"), ReadinessSubsystemPath);
+	Readiness->SetStringField(TEXT("statePath"), ReadinessStatePath);
+	Readiness->SetStringField(TEXT("libraryPath"), ReadinessLibraryPath);
+	Readiness->SetStringField(TEXT("binderPath"), ReadinessBinderPath);
+	Readiness->SetStringField(
+		TEXT("binderLastError"),
+		ReadinessBinderLastError);
+	TSharedRef<FJsonObject> BoundSlotCounts = MakeShared<FJsonObject>();
+	for (const TPair<FString, int32>& Pair : ReadinessBoundSlotCounts)
+	{
+		BoundSlotCounts->SetNumberField(Pair.Key, Pair.Value);
+	}
+	Readiness->SetObjectField(
+		TEXT("surfaceBoundSlotCounts"),
+		BoundSlotCounts);
+	Root->SetObjectField(TEXT("readiness"), Readiness);
 	Root->SetStringField(
 		TEXT("screenshot"),
 		FPaths::GetCleanFilename(ScreenshotPath));

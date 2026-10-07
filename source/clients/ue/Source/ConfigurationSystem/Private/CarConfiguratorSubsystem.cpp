@@ -58,23 +58,35 @@ void UCarConfiguratorSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	State = NewObject<UCarConfigurationState>(this);
 	State->OnChanged.AddDynamic(this, &UCarConfiguratorSubsystem::HandleStateChanged);
+	const bool bMvpStateInitialized =
+		State->Initialize(BasePriceMinor, Options, Templates, Defaults);
 	ensureAlwaysMsgf(
-		State->Initialize(BasePriceMinor, Options, Templates, Defaults),
+		bMvpStateInitialized,
 		TEXT("内置 MVP catalog 必须能够初始化 UCarConfigurationState。"));
 
-const FPrimaryAssetId CatalogAssetId(
+	const FPrimaryAssetId CatalogAssetId(
 		UAutomotiveCatalogData::PrimaryAssetType,
 		UAutomotiveCatalogData::DefaultAssetName);
 	const FSoftObjectPath CatalogAssetPath =
 		UAssetManager::Get().GetPrimaryAssetPath(CatalogAssetId);
 	AutomotiveCatalogData =
 		Cast<UAutomotiveCatalogData>(CatalogAssetPath.TryLoad());
+	if (!IsValid(AutomotiveCatalogData))
+	{
+		// 兼容由旧 Sc01V2Catalog 类型迁移而来的资产注册表标签。
+		// 固定路径也确保 Shipping 不依赖 Primary Asset 标签迁移时序。
+		AutomotiveCatalogData = LoadObject<UAutomotiveCatalogData>(
+			nullptr,
+			TEXT("/Game/SC01/DA_SC01Catalog.DA_SC01Catalog"));
+	}
 	if (IsValid(AutomotiveCatalogData))
 	{
 		AutomotiveConfigurationState =
 			NewObject<UAutomotiveConfigurationState>(this);
+		const bool bAutomotiveStateInitialized =
+			AutomotiveConfigurationState->Initialize(AutomotiveCatalogData);
 		checkf(
-			AutomotiveConfigurationState->Initialize(AutomotiveCatalogData),
+			bAutomotiveStateInitialized,
 			TEXT("DA_SC01Catalog 必须能够初始化独立车型目录状态。"));
 	}
 	const FPrimaryAssetId MaterialLibraryId(
@@ -201,11 +213,13 @@ void UCarConfiguratorSubsystem::RegisterVehicle(
 	if (IsValid(RegisteredVehicle) && IsValid(AutomotiveMaterialBinder)
 		&& IsValid(AutomotiveConfigurationState) && IsValid(AutomotiveMaterialLibrary))
 	{
-		checkf(
+		const bool bMaterialBound =
 			AutomotiveMaterialBinder->Bind(
 				AutomotiveConfigurationState,
 				AutomotiveMaterialLibrary,
-				RegisteredVehicle),
+				RegisteredVehicle);
+		checkf(
+			bMaterialBound,
 			TEXT("车型目录材质 Binder 必须能够绑定占位车的明确代理槽。"));
 	}
 }

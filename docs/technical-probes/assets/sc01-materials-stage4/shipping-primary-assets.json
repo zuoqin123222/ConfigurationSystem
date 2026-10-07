@@ -1,0 +1,21 @@
+{
+	"schemaVersion": 1,
+	"engineVersion": "5.8.1-56057345+++UE5+Release-5.8",
+	"buildConfiguration": "Shipping",
+	"withEditor": false,
+	"requiresCookedData": true,
+	"primaryAssetType": "PrimaryAssetProbe",
+	"requestedCount": 1,
+	"loadRequestCompleted": true,
+	"allLoaded": true,
+	"assets": [
+		{
+			"id": "PrimaryAssetProbe:DA_ProbeUnreferenced",
+			"path": "/Game/PrimaryAssetProbe/DA_ProbeUnreferenced.DA_ProbeUnreferenced",
+			"loaded": true,
+			"objectClass": "/Script/ConfigurationSystem.PrimaryAssetProbeData",
+			"probeTexture": "/Game/PrimaryAssetProbe/T_ProbeUnreferenced.T_ProbeUnreferenced",
+			"probeTextureLoaded": true
+		}
+	]
+}
