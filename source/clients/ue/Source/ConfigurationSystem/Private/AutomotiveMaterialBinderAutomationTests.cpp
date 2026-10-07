@@ -75,6 +75,29 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 				UniqueTargets.Add(Target);
 			}
 		}
+		UMeshComponent* BoundComponent = nullptr;
+		FName BoundSlot;
+		int32 BoundMaterialIndex = INDEX_NONE;
+		TestTrue(
+			*FString::Printf(TEXT("%s Binder 唯一槽可查询"), *Binding.SurfaceId),
+			Binder->GetSingleBoundSlot(
+				Binding.SurfaceId,
+				BoundComponent,
+				BoundSlot,
+				BoundMaterialIndex));
+		TestEqual(
+			*FString::Printf(TEXT("%s Binder 只命中一个槽"), *Binding.SurfaceId),
+			Binder->GetBoundSlotCount(Binding.SurfaceId),
+			1);
+		TestTrue(
+			*FString::Printf(TEXT("%s Binder 命中可见组件"), *Binding.SurfaceId),
+			IsValid(BoundComponent)
+				&& BoundComponent->IsVisible()
+				&& !BoundComponent->bHiddenInGame);
+		TestEqual(
+			*FString::Printf(TEXT("%s Binder 命中 catalog 槽名"), *Binding.SurfaceId),
+			BoundSlot,
+			Binding.MaterialSlotIds[0]);
 	}
 	TestEqual(TEXT("40 个 surface 对应 40 个唯一组件"), UniqueTargets.Num(), 40);
 
@@ -334,7 +357,7 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	{
 		const TArray<FString>* Options =
 			State->GetCatalogIndex().FindOptionIdsForSurface(SurfaceId);
-		if (Options == nullptr || Options->Num() < 2)
+		if (Options == nullptr || Options->IsEmpty())
 		{
 			continue;
 		}
@@ -368,6 +391,16 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		TestTrue(
 			*FString::Printf(TEXT("%s 回执包含唯一 surface"), *SurfaceId),
 			Result.AppliedSurfaceIds == TArray<FString>({SurfaceId}));
+		const TArray<FName>* ExpectedSlots =
+			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(SurfaceId);
+		TestTrue(
+			*FString::Printf(TEXT("%s 回执包含唯一 catalog 槽"), *SurfaceId),
+			ExpectedSlots != nullptr
+				&& ExpectedSlots->Num() == 1
+				&& Result.AppliedSlotIds == *ExpectedSlots);
+		TestTrue(
+			*FString::Printf(TEXT("%s unsupported 为空"), *SurfaceId),
+			Result.UnsupportedSurfaceIds.IsEmpty());
 		UMaterialInterface* After =
 			Binder->GetAppliedMaterialForSurface(SurfaceId);
 		UMaterialInstanceDynamic* AfterDynamic =

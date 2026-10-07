@@ -98,6 +98,11 @@ public:
 	UMaterialInstanceDynamic* GetPaintMaterialInstance() const { return PaintMaterialInstance; }
 	UMaterialInstanceDynamic* GetInteriorMaterialInstance() const { return InteriorMaterialInstance; }
 	int32 GetBoundSlotCount(const FString& SurfaceId) const;
+	bool GetSingleBoundSlot(
+		const FString& SurfaceId,
+		UMeshComponent*& OutComponent,
+		FName& OutSlotId,
+		int32& OutMaterialIndex) const;
 	UMaterialInterface* GetAppliedMaterialForSurface(const FString& SurfaceId) const;
 
 protected:

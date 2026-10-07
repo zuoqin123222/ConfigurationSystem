@@ -368,6 +368,37 @@ int32 UAutomotiveMaterialBinder::GetBoundSlotCount(
 	return Count;
 }
 
+bool UAutomotiveMaterialBinder::GetSingleBoundSlot(
+	const FString& SurfaceId,
+	UMeshComponent*& OutComponent,
+	FName& OutSlotId,
+	int32& OutMaterialIndex) const
+{
+	OutComponent = nullptr;
+	OutSlotId = NAME_None;
+	OutMaterialIndex = INDEX_NONE;
+	for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+	{
+		if (Bound.SurfaceId != SurfaceId)
+		{
+			continue;
+		}
+		if (OutComponent != nullptr)
+		{
+			OutComponent = nullptr;
+			OutSlotId = NAME_None;
+			OutMaterialIndex = INDEX_NONE;
+			return false;
+		}
+		OutComponent = Bound.Component;
+		OutSlotId = Bound.SlotId;
+		OutMaterialIndex = Bound.MaterialIndex;
+	}
+	return IsValid(OutComponent)
+		&& !OutSlotId.IsNone()
+		&& OutMaterialIndex != INDEX_NONE;
+}
+
 UMaterialInterface* UAutomotiveMaterialBinder::GetAppliedMaterialForSurface(
 	const FString& SurfaceId) const
 {

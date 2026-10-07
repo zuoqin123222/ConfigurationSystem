@@ -8,9 +8,11 @@
 #include "Dom/JsonObject.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "HAL/PlatformMisc.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "Misc/CommandLine.h"
 #include "Misc/CoreDelegates.h"
 #include "Misc/EngineVersion.h"
@@ -84,13 +86,27 @@ void UAutomotiveMaterialGuiProbe::OnEngineLoopInitComplete()
 bool UAutomotiveMaterialGuiProbe::Tick(const float DeltaTime)
 {
 	ElapsedSeconds += DeltaTime;
-	if (!bTransactionApplied && ElapsedSeconds >= 2.0)
+	if (!bTraversalInitialized && ElapsedSeconds >= 2.0)
 	{
-		bTransactionApplied = TryApplyTransaction();
+		bTraversalInitialized = TryInitializeTraversal();
 	}
-	if (bTransactionApplied
+	if (bTraversalInitialized && !bTraversalComplete)
+	{
+		FString FailureReason;
+		if (!ProcessNextSurface(FailureReason))
+		{
+			WriteReportAndExit(false, FailureReason);
+			return false;
+		}
+		if (SurfaceIndex == SurfaceIds.Num())
+		{
+			bTraversalComplete = true;
+			TraversalCompletedSeconds = ElapsedSeconds;
+		}
+	}
+	if (bTraversalComplete
 		&& !bScreenshotRequested
-		&& ElapsedSeconds >= 20.0
+		&& ElapsedSeconds - TraversalCompletedSeconds >= 2.0
 		&& (GShaderCompilingManager == nullptr
 			|| !GShaderCompilingManager->IsCompiling()))
 	{
@@ -102,21 +118,23 @@ bool UAutomotiveMaterialGuiProbe::Tick(const float DeltaTime)
 		WriteReportAndExit(true, FString());
 		return false;
 	}
-	if (ElapsedSeconds >= 60.0)
+	if (ElapsedSeconds >= 120.0)
 	{
 		WriteReportAndExit(
 			false,
-			bTransactionApplied
+			bTraversalComplete
 				? TEXT("真实 viewport 截图超时。")
-				: TEXT("展厅车辆或材质 Binder 在超时前未就绪。"));
+				: TEXT("真实 Game viewport、展厅车辆或材质 Binder 在超时前未就绪。"));
 		return false;
 	}
 	return true;
 }
 
-bool UAutomotiveMaterialGuiProbe::TryApplyTransaction()
+bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 {
-	if (GEngine == nullptr)
+	if (GEngine == nullptr
+		|| GEngine->GameViewport == nullptr
+		|| GEngine->GameViewport->Viewport == nullptr)
 	{
 		return false;
 	}
@@ -137,86 +155,210 @@ bool UAutomotiveMaterialGuiProbe::TryApplyTransaction()
 		IsValid(GameInstance)
 			? GameInstance->GetSubsystem<UCarConfiguratorSubsystem>()
 			: nullptr;
-	UAutomotiveConfigurationState* State =
+	UAutomotiveConfigurationState* CandidateState =
 		IsValid(Configurator)
 			? Configurator->GetAutomotiveConfigurationState()
 			: nullptr;
-	UAutomotiveMaterialBinder* Binder =
+	UAutomotiveMaterialBinder* CandidateBinder =
 		IsValid(Configurator)
 			? Configurator->GetAutomotiveMaterialBinder()
 			: nullptr;
-	UAutomotiveMaterialLibrary* Library =
+	UAutomotiveMaterialLibrary* CandidateLibrary =
 		IsValid(Configurator)
 			? Configurator->GetAutomotiveMaterialLibrary()
 			: nullptr;
-	if (!IsValid(State) || !IsValid(Binder) || !IsValid(Library)
-		|| !IsValid(Binder->GetPaintComponent())
-		|| !IsValid(Binder->GetInteriorComponent()))
+	if (!IsValid(CandidateState)
+		|| !IsValid(CandidateBinder)
+		|| !IsValid(CandidateLibrary))
 	{
 		return false;
 	}
+	const TArray<FString>& CandidateSurfaceIds =
+		CandidateState->GetCatalogIndex().GetCatalog().SelectionOrder;
+	if (CandidateSurfaceIds.Num() != AutomotiveCatalog::RequiredSelectionCount
+		|| !CandidateState->GetCatalogIndex().GetCatalog()
+			.VehicleSurfaceBinding.UnsupportedSurfaceIds.IsEmpty())
+	{
+		return false;
+	}
+	for (const FString& SurfaceId : CandidateSurfaceIds)
+	{
+		if (CandidateBinder->GetBoundSlotCount(SurfaceId) != 1)
+		{
+			return false;
+		}
+	}
+	State = CandidateState;
+	Binder = CandidateBinder;
+	Library = CandidateLibrary;
+	SurfaceIds = CandidateSurfaceIds;
+	SurfaceResults.Reset(SurfaceIds.Num());
+	UnsupportedSurfaceIds.Reset();
+	SurfaceIndex = 0;
+	return true;
+}
 
+FString UAutomotiveMaterialGuiProbe::DescribeMaterial(
+	UMaterialInterface* Material)
+{
+	if (!IsValid(Material))
+	{
+		return TEXT("<null>");
+	}
+	FString Description = Material->GetPathName();
+	if (UMaterialInstanceDynamic* Dynamic =
+		Cast<UMaterialInstanceDynamic>(Material))
+	{
+		const FLinearColor Color =
+			Dynamic->K2_GetVectorParameterValue(TEXT("BaseColor"));
+		Description += FString::Printf(
+			TEXT("|BaseColor=%s"),
+			*Color.ToString());
+	}
+	return Description;
+}
+
+bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
+	FString& OutFailureReason)
+{
+	OutFailureReason.Reset();
+	if (!IsValid(State) || !IsValid(Binder) || !IsValid(Library)
+		|| !SurfaceIds.IsValidIndex(SurfaceIndex))
+	{
+		OutFailureReason = TEXT("遍历状态无效。");
+		return false;
+	}
+
+	const FString SurfaceId = SurfaceIds[SurfaceIndex];
+	const AutomotiveCatalog::FCatalogIndex& CatalogIndex =
+		State->GetCatalogIndex();
+	const TArray<FString>* Options =
+		CatalogIndex.FindOptionIdsForSurface(SurfaceId);
 	TMap<FString, FString> Selections = State->GetSelections();
-	Selections.Add(
-		UAutomotiveMaterialBinder::PaintSurfaceId,
-		TEXT("body-cover-custom"));
-	Selections.Add(
-		UAutomotiveMaterialBinder::InteriorProxySurfaceId,
-		TEXT("door-middle-leather"));
+	const FString CurrentOption = Selections.FindRef(SurfaceId);
+	const FString* NextOptionId = Options != nullptr
+		? Options->FindByPredicate(
+			[&CurrentOption](const FString& Value)
+			{
+				return Value != CurrentOption;
+			})
+		: nullptr;
+	if (NextOptionId == nullptr)
+	{
+		OutFailureReason = FString::Printf(
+			TEXT("surfaceId=%s 没有可选择的非默认 option。"),
+			*SurfaceId);
+		return false;
+	}
+	const AutomotiveCatalog::FOption* NextOption =
+		CatalogIndex.FindOption(*NextOptionId);
+	if (NextOption == nullptr)
+	{
+		OutFailureReason = FString::Printf(
+			TEXT("surfaceId=%s 的候选 option 无效。"),
+			*SurfaceId);
+		return false;
+	}
+
+	UMeshComponent* Component = nullptr;
+	FName SlotId;
+	int32 MaterialIndex = INDEX_NONE;
+	const bool bUniqueSlot = Binder->GetBoundSlotCount(SurfaceId) == 1
+		&& Binder->GetSingleBoundSlot(
+			SurfaceId,
+			Component,
+			SlotId,
+			MaterialIndex);
+	if (!bUniqueSlot || !IsValid(Component)
+		|| !Component->IsVisible() || Component->bHiddenInGame)
+	{
+		OutFailureReason = FString::Printf(
+			TEXT("surfaceId=%s 未命中唯一可见运行时目标。"),
+			*SurfaceId);
+		return false;
+	}
+
+	UMaterialInterface* BeforeMaterial = Component->GetMaterial(MaterialIndex);
+	const FString Before = DescribeMaterial(BeforeMaterial);
+	Selections.Add(SurfaceId, *NextOptionId);
 	TMap<FString, FAutomotiveCustomization> Customizations =
 		State->GetCustomizations();
-	FAutomotiveCustomization PaintCustomization;
-	PaintCustomization.Kind = EAutomotiveCustomizationKind::Paint;
-	PaintCustomization.Paint.ColorHex = TEXT("#245E9A");
-	PaintCustomization.Paint.Metallic = 0.62;
-	PaintCustomization.Paint.Roughness = 0.2;
-	PaintCustomization.Paint.ClearCoat = 0.9;
-	PaintCustomization.Paint.OrangePeel = 0.1;
-	PaintCustomization.Paint.FlakeIntensity = 0.4;
-	Customizations.Add(
-		UAutomotiveMaterialBinder::PaintSurfaceId,
-		PaintCustomization);
-	FAutomotiveCustomization VariantCustomization;
-	VariantCustomization.Kind = EAutomotiveCustomizationKind::MaterialVariant;
-	VariantCustomization.MaterialVariantId = TEXT("leather-p10-1217");
-	Customizations.Add(
-		UAutomotiveMaterialBinder::InteriorProxySurfaceId,
-		VariantCustomization);
+	Customizations.Remove(SurfaceId);
+	FString VariantId;
+	if (NextOption->SupportsMaterialVariants())
+	{
+		const TArray<FString>* Variants =
+			CatalogIndex.FindVariantIdsForMaterialFamily(
+				NextOption->MaterialFamilyId.GetValue());
+		if (Variants == nullptr || Variants->IsEmpty())
+		{
+			OutFailureReason = FString::Printf(
+				TEXT("surfaceId=%s 的非默认 option 没有可用 variant。"),
+				*SurfaceId);
+			return false;
+		}
+		VariantId = (*Variants)[0];
+		FAutomotiveCustomization VariantCustomization;
+		VariantCustomization.Kind =
+			EAutomotiveCustomizationKind::MaterialVariant;
+		VariantCustomization.MaterialVariantId = VariantId;
+		Customizations.Add(SurfaceId, VariantCustomization);
+	}
+	else if (NextOption->SupportsCustomColor())
+	{
+		FAutomotiveCustomization PaintCustomization;
+		PaintCustomization.Kind = EAutomotiveCustomizationKind::Paint;
+		PaintCustomization.Paint.ColorHex = TEXT("#245E9A");
+		PaintCustomization.Paint.Metallic = 0.62;
+		PaintCustomization.Paint.Roughness = 0.2;
+		PaintCustomization.Paint.ClearCoat = 0.9;
+		PaintCustomization.Paint.OrangePeel = 0.1;
+		PaintCustomization.Paint.FlakeIntensity = 0.4;
+		Customizations.Add(SurfaceId, PaintCustomization);
+	}
 
 	const FAutomotiveMaterialTransactionResult Result =
 		Binder->ApplyTransaction(Selections, Customizations);
-	ReceiptJson = Result.ToJson();
-	if (!Result.bSuccess
-		|| !Result.AppliedSurfaceIds.Contains(
-			UAutomotiveMaterialBinder::PaintSurfaceId)
-		|| !Result.AppliedSurfaceIds.Contains(
-			UAutomotiveMaterialBinder::InteriorProxySurfaceId)
-		|| !Result.AppliedSlotIds.Contains(TEXT("CS_Validation_Paint"))
-		|| !Result.AppliedSlotIds.Contains(TEXT("CS_Validation_Interior")))
+	for (const FString& Unsupported : Result.UnsupportedSurfaceIds)
 	{
+		UnsupportedSurfaceIds.AddUnique(Unsupported);
+	}
+	UMaterialInterface* AfterMaterial = Component->GetMaterial(MaterialIndex);
+	const FString After = DescribeMaterial(AfterMaterial);
+	const bool bVisible = Component->IsVisible() && !Component->bHiddenInGame;
+	const bool bReceiptValid =
+		Result.bSuccess
+		&& Result.Code == TEXT("APPLIED")
+		&& Result.AppliedSurfaceIds == TArray<FString>({SurfaceId})
+		&& Result.AppliedSlotIds == TArray<FName>({SlotId})
+		&& Result.UnsupportedSurfaceIds.IsEmpty();
+	const bool bChanged = IsValid(AfterMaterial) && Before != After;
+	if (!bReceiptValid || !bVisible || !bChanged)
+	{
+		OutFailureReason = FString::Printf(
+			TEXT("surfaceId=%s 验证失败：receipt=%s visible=%s before=%s after=%s"),
+			*SurfaceId,
+			*Result.ToJson(),
+			bVisible ? TEXT("true") : TEXT("false"),
+			*Before,
+			*After);
 		return false;
 	}
-	UMaterialInstanceDynamic* PaintMid = Binder->GetPaintMaterialInstance();
-	UMaterialInterface* Interior =
-		Binder->GetAppliedMaterialForSurface(
-			UAutomotiveMaterialBinder::InteriorProxySurfaceId);
-	if (!IsValid(PaintMid)
-		|| Interior != Library->LoadVariantMaterial(TEXT("leather-p10-1217")))
-	{
-		return false;
-	}
-	const FLinearColor Expected =
-		FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#245E9A")));
-	if (!PaintMid->K2_GetVectorParameterValue(TEXT("BaseColor")).Equals(
-		Expected,
-		0.001f))
-	{
-		return false;
-	}
-	PaintComponentName = Binder->GetPaintComponent()->GetName();
-	InteriorComponentName = Binder->GetInteriorComponent()->GetName();
-	PaintMaterialName = PaintMid->GetPathName();
-	InteriorMaterialName = Interior->GetPathName();
+
+	FAutomotiveMaterialGuiProbeSurfaceResult& Report =
+		SurfaceResults.AddDefaulted_GetRef();
+	Report.SurfaceId = SurfaceId;
+	Report.OptionId = *NextOptionId;
+	Report.MaterialVariantId = VariantId;
+	Report.Component = Component->GetPathName();
+	Report.Slot = SlotId.ToString();
+	Report.Before = Before;
+	Report.After = After;
+	Report.ReceiptCode = Result.Code;
+	Report.bVisible = bVisible;
+	Report.bUniqueSlotHit = bUniqueSlot;
+	Report.bChanged = bChanged;
+	++SurfaceIndex;
 	return true;
 }
 
@@ -237,14 +379,41 @@ void UAutomotiveMaterialGuiProbe::WriteReportAndExit(
 	Root->SetStringField(TEXT("engineVersion"), FEngineVersion::Current().ToString());
 	Root->SetBoolField(TEXT("success"), bSuccess);
 	Root->SetStringField(TEXT("failureReason"), FailureReason);
+	Root->SetNumberField(TEXT("expectedSurfaceCount"),
+		AutomotiveCatalog::RequiredSelectionCount);
+	Root->SetNumberField(TEXT("validatedSurfaceCount"), SurfaceResults.Num());
 	Root->SetStringField(
 		TEXT("screenshot"),
 		FPaths::GetCleanFilename(ScreenshotPath));
-	Root->SetStringField(TEXT("paintComponent"), PaintComponentName);
-	Root->SetStringField(TEXT("interiorComponent"), InteriorComponentName);
-	Root->SetStringField(TEXT("paintMaterial"), PaintMaterialName);
-	Root->SetStringField(TEXT("interiorMaterial"), InteriorMaterialName);
-	Root->SetStringField(TEXT("transactionReceiptJson"), ReceiptJson);
+	TArray<TSharedPtr<FJsonValue>> UnsupportedValues;
+	for (const FString& SurfaceId : UnsupportedSurfaceIds)
+	{
+		UnsupportedValues.Add(MakeShared<FJsonValueString>(SurfaceId));
+	}
+	Root->SetArrayField(
+		TEXT("unsupportedSurfaceIds"),
+		MoveTemp(UnsupportedValues));
+	TArray<TSharedPtr<FJsonValue>> SurfaceValues;
+	for (const FAutomotiveMaterialGuiProbeSurfaceResult& Result :
+		SurfaceResults)
+	{
+		TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+		Item->SetStringField(TEXT("surfaceId"), Result.SurfaceId);
+		Item->SetStringField(TEXT("optionId"), Result.OptionId);
+		Item->SetStringField(
+			TEXT("materialVariantId"),
+			Result.MaterialVariantId);
+		Item->SetStringField(TEXT("component"), Result.Component);
+		Item->SetStringField(TEXT("slot"), Result.Slot);
+		Item->SetStringField(TEXT("before"), Result.Before);
+		Item->SetStringField(TEXT("after"), Result.After);
+		Item->SetBoolField(TEXT("change"), Result.bChanged);
+		Item->SetBoolField(TEXT("visible"), Result.bVisible);
+		Item->SetBoolField(TEXT("uniqueSlotHit"), Result.bUniqueSlotHit);
+		Item->SetStringField(TEXT("receiptCode"), Result.ReceiptCode);
+		SurfaceValues.Add(MakeShared<FJsonValueObject>(Item));
+	}
+	Root->SetArrayField(TEXT("surfaces"), MoveTemp(SurfaceValues));
 	FString JsonText;
 	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonText);
 	const bool bWritten =
@@ -259,7 +428,7 @@ void UAutomotiveMaterialGuiProbe::WriteReportAndExit(
 		UE_LOG(
 			LogAutomotiveMaterialGuiProbe,
 			Display,
-			TEXT("阶段4 GUI 材质槽探针通过，报告=%s，截图=%s"),
+			TEXT("GUI 材质槽探针通过：40 surface，报告=%s，截图=%s"),
 			*OutputPath,
 			*ScreenshotPath);
 	}
