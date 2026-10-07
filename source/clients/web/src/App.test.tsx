@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App, { STANDALONE_LAYOUT, versionStaticAssetUrl } from './App'
@@ -507,24 +507,32 @@ describe('App v2', () => {
     expect(panel.querySelector('.canonical')).toBeNull()
   })
 
-  it('embedded bridge 仅把 Web 选配 JSON 同步给 UE v2 状态', async () => {
+  it('embedded bridge 仅通过带回执的原子事务同步 UE v2 状态', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
-    const applyconfigurationjson = vi.fn()
+    const applyconfigurationtransactionjson = vi.fn().mockResolvedValue(JSON.stringify({
+      ok: true,
+      code: 'APPLIED',
+      message: '配置与代理材质目标已原子应用。',
+      configurationId: 'cfg-test',
+      appliedSurfaceIds: [],
+      unsupportedSurfaceIds: [],
+      appliedSlotIds: [],
+    }))
     window.ue = {
-      uebridge: { applyconfigurationjson },
+      uebridge: { applyconfigurationtransactionjson },
     }
     const user = userEvent.setup()
     mockApi()
     render(<App />)
 
     await screen.findByRole('heading', { name: 'SC01 定制' })
-    await waitFor(() => expect(applyconfigurationjson).toHaveBeenCalled())
+    await waitFor(() => expect(applyconfigurationtransactionjson).toHaveBeenCalled())
     expect(screen.queryByRole('navigation', { name: '体验控制' })).not.toBeInTheDocument()
 
     await enterOptions()
     await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
     await waitFor(() => {
-      const payload = JSON.parse(String(applyconfigurationjson.mock.lastCall?.[0]))
+      const payload = JSON.parse(String(applyconfigurationtransactionjson.mock.lastCall?.[0]))
       expect(payload).toEqual({
         schemaVersion: '2.0.0',
         selections: {
@@ -537,13 +545,51 @@ describe('App v2', () => {
 
     fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'reset' }))
     await waitFor(() => {
-      const payload = JSON.parse(String(applyconfigurationjson.mock.lastCall?.[0]))
+      const payload = JSON.parse(String(applyconfigurationtransactionjson.mock.lastCall?.[0]))
       expect(payload).toEqual({
         schemaVersion: '2.0.0',
         selections: initialSelections,
         customizations: {},
       })
     })
+  })
+
+  it('embedded bridge 串行提交逐项选择，旧事务未完成时不会乱序覆盖新状态', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    let resolveFirst: ((value: string) => void) | undefined
+    const receipt = (configurationId: string) => JSON.stringify({
+      ok: true,
+      code: 'APPLIED',
+      message: '配置与 40 个代理材质目标已原子应用。',
+      configurationId,
+      appliedSurfaceIds: [],
+      unsupportedSurfaceIds: [],
+      appliedSlotIds: [],
+    })
+    const applyconfigurationtransactionjson = vi.fn()
+      .mockImplementationOnce(() => new Promise<string>((resolve) => {
+        resolveFirst = resolve
+      }))
+      .mockResolvedValue(receipt('cfg-silver'))
+    window.ue = { uebridge: { applyconfigurationtransactionjson } }
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+    await waitFor(() => expect(applyconfigurationtransactionjson).toHaveBeenCalledTimes(1))
+    await enterOptions()
+    await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
+    expect(applyconfigurationtransactionjson).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      resolveFirst?.(receipt('cfg-default'))
+    })
+    await waitFor(() => expect(applyconfigurationtransactionjson).toHaveBeenCalledTimes(2))
+    const latestPayload = JSON.parse(
+      String(applyconfigurationtransactionjson.mock.calls[1][0]),
+    )
+    expect(latestPayload.selections['exterior-body-cover']).toBe('body-cover-silver')
   })
 
   it('embedded 节点焦点按 catalog ui 联动 chassis 的 hood 动画', async () => {

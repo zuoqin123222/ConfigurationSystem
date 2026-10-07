@@ -1,6 +1,10 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "ConfigurationBatchBake.h"
+#include "AutomotiveCatalogData.h"
+#include "AutomotiveMaterialBinder.h"
+#include "AutomotiveMaterialLibrary.h"
+#include "ConfiguratorVehicleActor.h"
 #include "HAL/FileManager.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
@@ -40,6 +44,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FConfigurationBatchBakeShaderWaitTrackerTest,
 	"ConfigurationSystem.Runtime.BatchBake.ShaderWaitUsesIndependentTimeout",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FConfigurationBatchBakeBinderTransactionTest,
+	"ConfigurationSystem.Runtime.BatchBake.V2UsesMaterialBinder",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 namespace ConfigurationBatchBakeAutomation
 {
@@ -282,6 +291,52 @@ bool FConfigurationBatchBakeV2PlanTest::RunTest(const FString& Parameters)
 			FString(TEXT("#112233")));
 	}
 	IFileManager::Get().DeleteDirectory(*TestDirectory, false, true);
+	return true;
+}
+
+bool FConfigurationBatchBakeBinderTransactionTest::RunTest(
+	const FString& Parameters)
+{
+	(void)Parameters;
+	UAutomotiveCatalogData* Catalog = LoadObject<UAutomotiveCatalogData>(
+		nullptr,
+		TEXT("/Game/SC01/DA_SC01Catalog.DA_SC01Catalog"));
+	UAutomotiveMaterialLibrary* Library = LoadObject<UAutomotiveMaterialLibrary>(
+		nullptr,
+		TEXT("/Game/SC01/Materials/DA_SC01MaterialLibrary.DA_SC01MaterialLibrary"));
+	TestNotNull(TEXT("Batch 测试加载 v2 catalog"), Catalog);
+	TestNotNull(TEXT("Batch 测试加载材质库"), Library);
+	if (Catalog == nullptr || Library == nullptr)
+	{
+		return false;
+	}
+	UAutomotiveConfigurationState* State =
+		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
+	AConfiguratorVehicleActor* Vehicle =
+		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+	UAutomotiveMaterialBinder* Binder =
+		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
+	TestTrue(TEXT("Batch 测试初始化状态"), State->Initialize(Catalog));
+	TestTrue(TEXT("Batch 测试绑定 40 surface 代理"), Binder->Bind(State, Library, Vehicle));
+
+	FConfigurationBakeTask Task;
+	Task.Selections = State->GetSelections();
+	Task.Customizations = State->GetCustomizations();
+	Task.Selections.Add(TEXT("wheel-style"), TEXT("wheel-style-magnesium-1"));
+	FString Error;
+	TestTrue(
+		*FString::Printf(TEXT("v2 Batch 通过 Binder 应用事务：%s"), *Error),
+		FConfigurationBatchBake::ApplyV2MaterialTransaction(
+			Binder,
+			Task,
+			Error));
+	TestEqual(
+		TEXT("Batch Binder 同时提交配置状态"),
+		State->GetSelections().FindRef(TEXT("wheel-style")),
+		FString(TEXT("wheel-style-magnesium-1")));
+	TestNotNull(
+		TEXT("Batch Binder 更新独立可见代理目标材质"),
+		Binder->GetAppliedMaterialForSurface(TEXT("wheel-style")));
 	return true;
 }
 

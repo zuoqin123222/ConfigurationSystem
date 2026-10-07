@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Misc/Crc.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "AutomotiveMaterialLibrary.h"
@@ -17,6 +18,13 @@ const FName UAutomotiveMaterialBinder::InteriorProxySlotTag(
 	TEXT("Configurator.Slot.automotive_interior_material_proxy"));
 const FString UAutomotiveMaterialBinder::PaintSurfaceId(TEXT("exterior-body-cover"));
 const FString UAutomotiveMaterialBinder::InteriorProxySurfaceId(TEXT("door-middle"));
+
+FName UAutomotiveMaterialBinder::MakeProxyTargetTag(const FName SlotId)
+{
+	return FName(*FString::Printf(
+		TEXT("Configurator.ProxySurfaceTarget.%s"),
+		*SlotId.ToString()));
+}
 
 namespace
 {
@@ -50,6 +58,17 @@ namespace
 			return FLinearColor::FromSRGBColor(FColor::FromHex(ColorCode));
 		}
 		return TOptional<FLinearColor>();
+	}
+
+	FLinearColor ResolveProxyOptionColor(const FString& OptionId)
+	{
+		const uint32 Hash = FCrc::StrCrc32(*OptionId);
+		const auto Channel = [Hash](const int32 Shift)
+		{
+			return 0.25f + 0.65f
+				* static_cast<float>((Hash >> Shift) & 0xffu) / 255.0f;
+		};
+		return FLinearColor(Channel(0), Channel(8), Channel(16), 1.0f);
 	}
 
 	UTexture2D* UpdateDynamicColorTexture(
@@ -158,25 +177,14 @@ bool UAutomotiveMaterialBinder::BuildBoundSlots(AActor* Vehicle)
 			UMeshComponent* Match = nullptr;
 			int32 MatchIndex = INDEX_NONE;
 			FString ProxyError;
-			if (Binding.SurfaceId == PaintSurfaceId)
+			UMeshComponent* Proxy = FindUniqueTaggedMesh(
+				Vehicle,
+				MakeProxyTargetTag(SlotId),
+				ProxyError);
+			if (IsValid(Proxy) && Proxy->IsVisible() && !Proxy->bHiddenInGame)
 			{
-				UMeshComponent* Proxy =
-					FindUniqueTaggedMesh(Vehicle, PaintProxySlotTag, ProxyError);
-				if (IsValid(Proxy) && Proxy->IsVisible() && !Proxy->bHiddenInGame)
-				{
-					Match = Proxy;
-					MatchIndex = 0;
-				}
-			}
-			else if (Binding.SurfaceId == InteriorProxySurfaceId)
-			{
-				UMeshComponent* Proxy =
-					FindUniqueTaggedMesh(Vehicle, InteriorProxySlotTag, ProxyError);
-				if (IsValid(Proxy) && Proxy->IsVisible() && !Proxy->bHiddenInGame)
-				{
-					Match = Proxy;
-					MatchIndex = 0;
-				}
+				Match = Proxy;
+				MatchIndex = 0;
 			}
 			for (UMeshComponent* Mesh : Meshes)
 			{
@@ -205,8 +213,8 @@ bool UAutomotiveMaterialBinder::BuildBoundSlots(AActor* Vehicle)
 				}
 			}
 
-			// 程序化占位车没有命名 section；仅对两项已声明 proxy binding
-			// 回退到明确 ComponentTag，正式骨骼车始终走命名槽。
+			// A5 独立静态分件通过唯一 ComponentTag 暴露代理目标；正式车辆仍可
+			// 直接使用真实命名材质槽。两种路径都禁止一个目标被多个 surface 复用。
 			if (Match == nullptr || MatchIndex == INDEX_NONE)
 			{
 				SetFailure(
@@ -409,16 +417,19 @@ bool UAutomotiveMaterialBinder::ResolveSurfaceMaterial(
 	}
 	const AutomotiveCatalog::FOption* Option =
 		State->GetCatalogIndex().FindOption(*OptionId);
-	if (Option == nullptr || !Option->MaterialFamilyId.IsSet())
+	if (Option == nullptr)
 	{
 		OutErrorCode = TEXT("MATERIAL_FAMILY_UNRESOLVED");
 		OutErrorMessage = FString::Printf(
-			TEXT("surfaceId=%s 的 optionId=%s 没有可解析的 materialFamilyId。"),
+			TEXT("surfaceId=%s 的 optionId=%s 不存在。"),
 			*SurfaceId,
 			**OptionId);
 		return false;
 	}
-	OutFamilyId = Option->MaterialFamilyId.GetValue();
+	// 代理车仍需让 wheel style、铭牌等非材质语义项目可见切换。它们使用
+	// 项目自建 paint parent 和稳定 optionId 色值，只表达“发生了变化”，
+	// 不把 A5 代理分件或颜色伪称为正式 SC01 效果。
+	OutFamilyId = Option->MaterialFamilyId.Get(TEXT("paint"));
 
 	const FAutomotiveCustomization* Customization =
 		Customizations.Find(SurfaceId);
@@ -470,15 +481,13 @@ bool UAutomotiveMaterialBinder::ResolveSurfaceMaterial(
 			ResolveCatalogColor(Option->ColorCode.GetValue());
 		if (!FixedColor.IsSet())
 		{
-			OutErrorCode = TEXT("MATERIAL_COLOR_UNRESOLVED");
-			OutErrorMessage = FString::Printf(
-				TEXT("surfaceId=%s 的颜色 %s 无法解析。"),
-				*SurfaceId,
-				*Option->ColorCode.GetValue());
-			return false;
+			OutColor = ResolveProxyOptionColor(Option->OptionId);
+		}
+		else
+		{
+			OutColor = FixedColor.GetValue();
 		}
 		bOutUseDynamic = true;
-		OutColor = FixedColor.GetValue();
 		if (OutFamilyId == TEXT("paint"))
 		{
 			bOutHasPaintParameters = true;
@@ -490,6 +499,11 @@ bool UAutomotiveMaterialBinder::ResolveSurfaceMaterial(
 			OutPaint.OrangePeel = 0.12;
 			OutPaint.FlakeIntensity = 0.25;
 		}
+	}
+	else
+	{
+		bOutUseDynamic = true;
+		OutColor = ResolveProxyOptionColor(Option->OptionId);
 	}
 	return true;
 }
@@ -683,6 +697,16 @@ FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction
 		return LastTransactionResult;
 	}
 
+	TArray<TObjectPtr<UMaterialInterface>> PreviousAppliedMaterials;
+	PreviousAppliedMaterials.Reserve(BoundSlots.Num());
+	for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+	{
+		PreviousAppliedMaterials.Add(
+			IsValid(Bound.Component) && Bound.MaterialIndex != INDEX_NONE
+				? Bound.Component->GetMaterial(Bound.MaterialIndex)
+				: nullptr);
+	}
+
 	// 在提交状态前加载并验证本事务所需的所有材质，保证缺资产时零修改。
 	for (const FString& SurfaceId : ChangedSurfaceIds)
 	{
@@ -784,10 +808,29 @@ FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction
 				InCustomizations,
 				&LastTransactionResult.AppliedSlotIds))
 			{
-				// 此处所需资产和槽均已在提交前验证，正常运行不应到达。
-				LastTransactionResult.bSuccess = false;
-				LastTransactionResult.Code = TEXT("MATERIAL_APPLY_INVARIANT_FAILED");
-				LastTransactionResult.Message = LastError;
+				const FString ApplyError = LastError;
+				bApplyingTransaction = true;
+				const bool bRolledBack = State->ApplyTransaction(
+					PreviousSelections,
+					PreviousCustomizations);
+				bApplyingTransaction = false;
+				for (int32 Index = 0;
+					Index < BoundSlots.Num() && Index < PreviousAppliedMaterials.Num();
+					++Index)
+				{
+					FAutomotiveBoundMaterialSlot& Bound = BoundSlots[Index];
+					if (IsValid(Bound.Component) && Bound.MaterialIndex != INDEX_NONE)
+					{
+						Bound.Component->SetMaterial(
+							Bound.MaterialIndex,
+							PreviousAppliedMaterials[Index]);
+					}
+				}
+				SetFailure(
+					bRolledBack
+						? TEXT("MATERIAL_APPLY_ROLLED_BACK")
+						: TEXT("MATERIAL_APPLY_ROLLBACK_FAILED"),
+					ApplyError);
 				return LastTransactionResult;
 			}
 			LastTransactionResult.AppliedSurfaceIds.Add(SurfaceId);

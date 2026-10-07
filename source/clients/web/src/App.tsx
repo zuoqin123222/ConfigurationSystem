@@ -659,6 +659,7 @@ function Configurator({
   const [renderMessage, setRenderMessage] = useState('')
   const [ueMaterialMessage, setUeMaterialMessage] = useState('')
   const ueMaterialTransactionRef = useRef(0)
+  const ueMaterialQueueRef = useRef<Promise<void>>(Promise.resolve())
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     savedPortableValue ? 'saved' : 'idle',
   )
@@ -938,18 +939,20 @@ function Configurator({
     const bridge = getUeBridge(embedded)
     if (!bridge) return
     const transaction = ++ueMaterialTransactionRef.current
-    void applyUeConfiguration(bridge, selections, customizations).then((receipt) => {
-      if (transaction !== ueMaterialTransactionRef.current) return
-      if (!receipt.ok) {
-        setUeMaterialMessage(`实时材质未应用：${receipt.message}`)
-      } else if (receipt.unsupportedSurfaceIds.length > 0) {
-        setUeMaterialMessage(
-          `当前代理车未映射：${receipt.unsupportedSurfaceIds.join('、')}`,
-        )
-      } else {
-        setUeMaterialMessage('')
-      }
-    })
+    ueMaterialQueueRef.current = ueMaterialQueueRef.current
+      .then(() => applyUeConfiguration(bridge, selections, customizations))
+      .then((receipt) => {
+        if (transaction !== ueMaterialTransactionRef.current) return
+        if (!receipt.ok) {
+          setUeMaterialMessage(`实时材质未应用：${receipt.message}`)
+        } else if (receipt.unsupportedSurfaceIds.length > 0) {
+          setUeMaterialMessage(
+            `当前代理车未映射：${receipt.unsupportedSurfaceIds.join('、')}`,
+          )
+        } else {
+          setUeMaterialMessage('')
+        }
+      })
   }, [customizations, embedded, selections])
 
   const selectOption = (surfaceId: string, optionId?: string) => {

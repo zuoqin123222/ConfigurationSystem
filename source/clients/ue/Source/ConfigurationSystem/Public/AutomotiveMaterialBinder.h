@@ -66,6 +66,7 @@ public:
 	static const FName InteriorProxySlotTag;
 	static const FString PaintSurfaceId;
 	static const FString InteriorProxySurfaceId;
+	static FName MakeProxyTargetTag(FName SlotId);
 
 	UFUNCTION(BlueprintCallable, Category = "Automotive|Materials")
 	bool Bind(

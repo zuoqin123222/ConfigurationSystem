@@ -7,6 +7,7 @@
 #include "ConfiguratorVehicleActor.generated.h"
 
 class UMaterialInstanceDynamic;
+class UMeshComponent;
 class UReversiblePartActuatorComponent;
 class USceneComponent;
 class USkeletalMeshComponent;
@@ -95,6 +96,8 @@ public:
 
 	/** 自动化探针使用：验证真实几何或代理回退、分区标签及可逆执行器绑定。 */
 	bool HasStablePlaceholderBindings(TArray<FString>& OutErrors) const;
+	int32 GetCatalogSurfaceTargetCount() const;
+	UMeshComponent* FindCatalogSurfaceTarget(FName SlotId) const;
 
 	static const FName PaintPartTag;
 	static const FName WheelPartTag;
@@ -162,6 +165,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TArray<TObjectPtr<UStaticMeshComponent>> DoorMirrorParts;
+
+	/** A5 独立静态分件；语义缺失项仍是明确标识的代理，不代表正式 SC01 几何。 */
+	UPROPERTY(VisibleAnywhere, Category = "占位车辆|Catalog代理")
+	TArray<TObjectPtr<UStaticMeshComponent>> CatalogSurfaceProxyParts;
 
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TArray<TObjectPtr<USceneComponent>> WheelSteeringPivots;

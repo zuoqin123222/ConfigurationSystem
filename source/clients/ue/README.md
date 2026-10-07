@@ -18,7 +18,7 @@ thumbnail 放入 Windows 包，不需要启动 Server。
 - 非法分区、跨分区选项和未知模板拒绝。
 - Blueprint 可订阅的 `OnChanged` 事件。
 
-当前目录数据仍由程序化探针构造；正式材质 Data Asset 接入后，应从 Asset Manager 生成初始化数据，不得在 UMG 中复制价格或配置键规则。
+SC01 v2 目录由可 Cook 的 `DA_SC01Catalog` 从共享 JSON 生成；UI 不复制价格、配置键或 surface binding 规则。
 
 `SourceAssets/` 仅用于有授权和来源记录的源侧参考文件，不是 Unreal `Content/`。提交前必须运行
 `node tools/validate-source-assets.mjs`，确保其中没有 `.uasset`、`.umap` 或 `.tps`；完整规则见
@@ -129,7 +129,10 @@ Editor 的 `Tools > Configuration System 管理员导入` 同时提供材质包 
 
 批量入口读取仓库 `contracts/fixtures/published-configurations.mvp.json`，按配置顺序和
 `front`、`front-left`、`side`、`rear-right` 顺序生成 16 × 4 个任务。当前渲染对象是
-`AConfiguratorVehicleActor` 占位车辆；每项任务先应用四分区配置，再切换到带独立
+明确标识为 Authorized Audi A5 proxy 的独立静态分件，不代表正式 SC01。Catalog 的
+40 个 surface 各自绑定唯一可见运行时目标；缺少同名语义的项目使用未占用 A5 分件作
+代理。每项 v2 任务必须经 `UAutomotiveMaterialBinder::ApplyTransaction` 原子应用，
+不得直接绕过 Binder 修改状态；随后切换到带独立
 `RenderView.<id>` 标签的相机，确认 Path Tracing 累积已重置并达到目标样本数后回读。
 输出会自动检测 coverage 方向、清空全透明像素 RGB，并对无几何 coverage 的发光像素
 构造 Alpha，最终写出规范 straight-alpha sRGB PNG。

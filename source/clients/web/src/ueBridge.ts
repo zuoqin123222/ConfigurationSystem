@@ -129,18 +129,6 @@ export async function applyUeConfiguration(
       )
     }
   }
-  if (typeof bridge.applyconfigurationjson === 'function') {
-    bridge.applyconfigurationjson(configurationJson)
-    return {
-      ok: true,
-      code: 'LEGACY_NO_RECEIPT',
-      message: '旧版 UE bridge 已接收配置，但不提供材质事务回执。',
-      configurationId: '',
-      appliedSurfaceIds: [],
-      unsupportedSurfaceIds: [],
-      appliedSlotIds: [],
-    }
-  }
   return failedConfigurationReceipt('BRIDGE_METHOD_UNAVAILABLE', 'UE 材质事务入口不可用。')
 }
 

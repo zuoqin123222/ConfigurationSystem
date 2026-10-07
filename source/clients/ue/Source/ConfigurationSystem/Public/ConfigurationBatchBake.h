@@ -10,6 +10,7 @@ class ACameraActor;
 class AConfiguratorVehicleActor;
 class FConfigurationBatchBakeViewExtension;
 class FViewport;
+class UAutomotiveMaterialBinder;
 
 struct CONFIGURATIONSYSTEM_API FConfigurationBakeCamera
 {
@@ -93,6 +94,10 @@ public:
 	static bool ComputeFileSha256(
 		const FString& Filename,
 		FString& OutSha256,
+		FString& OutError);
+	static bool ApplyV2MaterialTransaction(
+		UAutomotiveMaterialBinder* Binder,
+		const FConfigurationBakeTask& Task,
 		FString& OutError);
 
 	void Start(bool bInExitOnComplete);

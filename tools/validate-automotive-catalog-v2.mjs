@@ -305,9 +305,6 @@ export function validateCatalog(catalog) {
   check(surfaceBinding.capability !== "complete"
     || surfaceBinding.unsupportedSurfaceIds.length === 0,
   "complete vehicleSurfaceBinding 不得包含显式缺口");
-  check(surfaceBinding.capability !== "proxy"
-    || surfaceBinding.unsupportedSurfaceIds.length > 0,
-  "proxy vehicleSurfaceBinding 必须包含显式缺口");
   const cameras = new Map();
   for (const camera of catalog.interactionCameras ?? []) {
     check(isRecord(camera), "interactionCamera 必须是 object");

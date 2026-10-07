@@ -954,8 +954,6 @@ namespace AutomotiveCatalog
 		}
 		if ((SurfaceBinding.Capability == TEXT("complete")
 				&& !CandidateUnsupportedSurfaceBindings.IsEmpty())
-			|| (SurfaceBinding.Capability == TEXT("proxy")
-				&& CandidateUnsupportedSurfaceBindings.IsEmpty())
 			|| CandidateMaterialSlotsBySurface.Num()
 				+ CandidateUnsupportedSurfaceBindings.Num() != RequiredSelectionCount)
 		{

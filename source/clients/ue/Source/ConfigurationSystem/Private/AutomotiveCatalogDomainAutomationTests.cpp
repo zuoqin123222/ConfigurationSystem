@@ -146,12 +146,12 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 		Catalog.FindMaterialSlotIdsForSurface(TEXT("exterior-body-cover"));
 	TestTrue(TEXT("代理车漆 surface 命中自己的 SkeletalMesh slot"),
 		PaintSlots != nullptr
-			&& *PaintSlots == TArray<FName>({TEXT("CS_Validation_Paint")}));
-	TestNull(TEXT("代理缺口不回退到共享内饰槽"),
+			&& *PaintSlots == TArray<FName>({TEXT("A5Proxy_ExteriorBodyCover")}));
+	TestNotNull(TEXT("原语义缺失项也有独占代理目标"),
 		Catalog.FindMaterialSlotIdsForSurface(TEXT("seat-backrest")));
-	TestTrue(TEXT("代理 capability 显式声明未支持 surface"),
+	TestFalse(TEXT("完整代理映射不再保留 unsupported surface"),
 		Catalog.IsSurfaceBindingExplicitlyUnsupported(TEXT("seat-backrest")));
-	TestTrue(TEXT("40 个 surface 均命中 binding 或显式 capability 缺口"),
+	TestTrue(TEXT("40 个 surface 均命中唯一代理 binding"),
 		Algo::AllOf(
 			Catalog.GetCatalog().SelectionOrder,
 			[&Catalog](const FString& SurfaceId)
@@ -160,7 +160,7 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 			}));
 	TMap<FString, TArray<FName>> TransactionTargets;
 	TSet<FString> TransactionGaps;
-	TestTrue(TEXT("选配 transaction 解析到对应 binding 与显式代理缺口"),
+	TestTrue(TEXT("选配 transaction 解析到各自代理 binding"),
 		Catalog.ResolveSurfaceBindingTransaction(
 			TSet<FString>({TEXT("exterior-body-cover"), TEXT("seat-backrest")}),
 			TransactionTargets,
@@ -168,11 +168,12 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 			Error));
 	TestTrue(TEXT("transaction 车漆只命中车漆 slot"),
 		TransactionTargets.FindRef(TEXT("exterior-body-cover"))
-			== TArray<FName>({TEXT("CS_Validation_Paint")}));
-	TestFalse(TEXT("代理缺口不会串到其他 surface 的 slot"),
-		TransactionTargets.Contains(TEXT("seat-backrest")));
-	TestTrue(TEXT("代理缺口由 transaction 显式返回"),
-		TransactionGaps.Contains(TEXT("seat-backrest")));
+			== TArray<FName>({TEXT("A5Proxy_ExteriorBodyCover")}));
+	TestTrue(TEXT("语义缺失项命中自己的代理 slot"),
+		TransactionTargets.FindRef(TEXT("seat-backrest"))
+			== TArray<FName>({TEXT("A5Proxy_SeatBackrest")}));
+	TestTrue(TEXT("代理完整映射没有 capability 缺口"),
+		TransactionGaps.IsEmpty());
 	TestFalse(TEXT("transaction 拒绝未知 surface"),
 		Catalog.ResolveSurfaceBindingTransaction(
 			TSet<FString>({TEXT("unknown-surface")}),
@@ -191,16 +192,15 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 		MultiSlotIndex.FindMaterialSlotIdsForSurface(TEXT("exterior-body-cover"))->Num(), 2);
 	AutomotiveCatalog::FCatalog CollidingSlotCatalog = MultiSlotCatalog;
 	CollidingSlotCatalog.VehicleSurfaceBinding.Bindings[1].MaterialSlotIds[0] =
-		TEXT("CS_Validation_Paint");
+		CollidingSlotCatalog.VehicleSurfaceBinding.Bindings[0].MaterialSlotIds[0];
 	AutomotiveCatalog::FCatalogIndex CollidingSlotIndex;
 	TestFalse(TEXT("拒绝跨 surface 复用 slot，避免串色"),
 		CollidingSlotIndex.Initialize(CollidingSlotCatalog, Error));
 	TestEqual(TEXT("串色拒绝错误码"), Error.Code, FString(TEXT("SURFACE_SLOT_COLLISION")));
 	AutomotiveCatalog::FCatalog MissingCapabilityCatalog = Catalog.GetCatalog();
-	MissingCapabilityCatalog.VehicleSurfaceBinding.UnsupportedSurfaceIds.Remove(
-		TEXT("seat-backrest"));
+	MissingCapabilityCatalog.VehicleSurfaceBinding.Bindings.Pop();
 	AutomotiveCatalog::FCatalogIndex MissingCapabilityIndex;
-	TestFalse(TEXT("拒绝未绑定且未显式声明的 capability 缺口"),
+	TestFalse(TEXT("拒绝未绑定且未显式声明的 surface 缺口"),
 		MissingCapabilityIndex.Initialize(MissingCapabilityCatalog, Error));
 	TestEqual(TEXT("缺口错误码"), Error.Code, FString(TEXT("INCOMPLETE_SURFACE_BINDING")));
 	TestEqual(

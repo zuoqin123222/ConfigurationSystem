@@ -436,6 +436,86 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	TrunkPivot = TrunkParts.Key;
 	Trunk = TrunkParts.Value;
 
+	const auto MarkCatalogProxyTarget = [](UMeshComponent* Component, const FName SlotId)
+	{
+		check(Component != nullptr);
+		Component->ComponentTags.AddUnique(
+			UAutomotiveMaterialBinder::MakeProxyTargetTag(SlotId));
+	};
+	MarkCatalogProxyTarget(PaintBody, TEXT("A5Proxy_ExteriorBodyCover"));
+	MarkCatalogProxyTarget(Hood, TEXT("A5Proxy_EngineBayCover"));
+	MarkCatalogProxyTarget(Trunk, TEXT("A5Proxy_RearWing"));
+	MarkCatalogProxyTarget(Wheels[0], TEXT("A5Proxy_WheelMaterial"));
+	MarkCatalogProxyTarget(Wheels[1], TEXT("A5Proxy_WheelStyle"));
+	MarkCatalogProxyTarget(Wheels[2], TEXT("A5Proxy_WheelColor"));
+	MarkCatalogProxyTarget(BrakeCalipers[0], TEXT("A5Proxy_FrontCaliperColor"));
+	MarkCatalogProxyTarget(BrakeCalipers[2], TEXT("A5Proxy_RearCaliperColor"));
+	MarkCatalogProxyTarget(LeftDoor, TEXT("A5Proxy_DoorUpper"));
+	MarkCatalogProxyTarget(InteriorCabin, TEXT("A5Proxy_DoorMiddle"));
+	MarkCatalogProxyTarget(Frame, TEXT("A5Proxy_LowerSkirt"));
+
+	struct FCatalogProxyDefinition
+	{
+		const TCHAR* SurfaceId;
+		const TCHAR* SlotId;
+		const TCHAR* AssetName;
+	};
+	// 这些都是 Authorized Audi A5 代理分件。名称只描述当前 UI 语义映射；
+	// 对 A5 没有同名语义的项目使用尚未占用的可见分件，绝不表示正式 SC01 几何。
+	const FCatalogProxyDefinition CatalogProxyDefinitions[] = {
+		{TEXT("steering-wheel-skin"), TEXT("A5Proxy_SteeringWheelSkin"), TEXT("SM_steeringwheel")},
+		{TEXT("steering-wheel-addon"), TEXT("A5Proxy_SteeringWheelAddon"), TEXT("SM_swColumn")},
+		{TEXT("steering-center-mark"), TEXT("A5Proxy_SteeringCenterMark"), TEXT("SM_gaugeBezel")},
+		{TEXT("ip-wings"), TEXT("A5Proxy_IpWings"), TEXT("SM_leftPanelInt")},
+		{TEXT("ip-middle"), TEXT("A5Proxy_IpMiddle"), TEXT("SM_dashMain")},
+		{TEXT("ip-instrument-cover"), TEXT("A5Proxy_IpInstrumentCover"), TEXT("SM_gaugeGlass")},
+		{TEXT("ip-upper-trim"), TEXT("A5Proxy_IpUpperTrim"), TEXT("SM_dashCenter")},
+		{TEXT("ip-lower-trim"), TEXT("A5Proxy_IpLowerTrim"), TEXT("SM_centerconsoleControl")},
+		{TEXT("ip-center-mark"), TEXT("A5Proxy_IpCenterMark"), TEXT("SM_speedNeedle")},
+		{TEXT("a-pillar-surface"), TEXT("A5Proxy_APillarSurface"), TEXT("SM_windshieldTrim")},
+		{TEXT("seat-backrest"), TEXT("A5Proxy_SeatBackrest"), TEXT("SM_seatFrontLeftBackA")},
+		{TEXT("seat-bolster"), TEXT("A5Proxy_SeatBolster"), TEXT("SM_seatFrontRightBotA")},
+		{TEXT("seat-shell-back"), TEXT("A5Proxy_SeatShellBack"), TEXT("SM_seatFrontRightBackA")},
+		{TEXT("seat-headrest-mark"), TEXT("A5Proxy_SeatHeadrestMark"), TEXT("SM_seatfrontLeftHeadA")},
+		{TEXT("door-armrest"), TEXT("A5Proxy_DoorArmrest"), TEXT("SM_armrestCover")},
+		{TEXT("door-armrest-skin"), TEXT("A5Proxy_DoorArmrestSkin"), TEXT("SM_doorPanelIntLeft")},
+		{TEXT("storage-soft-bag"), TEXT("A5Proxy_StorageSoftBag"), TEXT("SM_glovebox")},
+		{TEXT("console-armrest-cover"), TEXT("A5Proxy_ConsoleArmrestCover"), TEXT("SM_centerconsoleInt")},
+		{TEXT("console-armrest-side"), TEXT("A5Proxy_ConsoleArmrestSide"), TEXT("SM_centerconsoleSide")},
+		{TEXT("handbrake"), TEXT("A5Proxy_Handbrake"), TEXT("SM_shifter")},
+		{TEXT("roof-surface"), TEXT("A5Proxy_RoofSurface"), TEXT("SM_sunvisorLeft")},
+		{TEXT("interior-painted-parts"), TEXT("A5Proxy_InteriorPaintedParts"), TEXT("SM_heatingControl")},
+		{TEXT("door-sill"), TEXT("A5Proxy_DoorSill"), TEXT("SM_doorTrimLeft")},
+		{TEXT("embroidered-logo"), TEXT("A5Proxy_EmbroideredLogo"), TEXT("SM_infoBezel")},
+		{TEXT("headrest-embroidery"), TEXT("A5Proxy_HeadrestEmbroidery"), TEXT("SM_seatfrontRightHeadA")},
+		{TEXT("door-panel-embroidery"), TEXT("A5Proxy_DoorPanelEmbroidery"), TEXT("SM_doorInteriorAright")},
+		{TEXT("center-panel-trim"), TEXT("A5Proxy_CenterPanelTrim"), TEXT("SM_HMI")},
+		{TEXT("nameplate"), TEXT("A5Proxy_Nameplate"), TEXT("SM_Screen")},
+		{TEXT("pedal"), TEXT("A5Proxy_Pedal"), TEXT("SM_pedals")}
+	};
+	for (const FCatalogProxyDefinition& Definition : CatalogProxyDefinitions)
+	{
+		UStaticMeshComponent* Proxy = CreateDefaultSubobject<UStaticMeshComponent>(
+			*FString::Printf(TEXT("CatalogProxy_%s"), Definition.SlotId));
+		Proxy->SetupAttachment(ContentRoot);
+		UStaticMesh* ProxyMesh =
+			ConfiguratorVehicle::LoadIndependentStaticMesh(Definition.AssetName);
+		Proxy->SetStaticMesh(ProxyMesh != nullptr ? ProxyMesh : CubeMesh.Object.Get());
+		if (ProxyMesh == nullptr)
+		{
+			Proxy->SetMaterial(0, BasicMaterial.Object);
+			Proxy->SetRelativeScale3D(FVector(0.08));
+		}
+		Proxy->ComponentTags.Add(
+			ProxyMesh != nullptr ? AuthorizedResourceTag : TemporaryResourceTag);
+		Proxy->ComponentTags.Add(TEXT("Configurator.Resource.AuthorizedAudiA5.ProxySurface"));
+		Proxy->ComponentTags.Add(FName(*FString::Printf(
+			TEXT("Configurator.Surface.%s"),
+			Definition.SurfaceId)));
+		MarkCatalogProxyTarget(Proxy, Definition.SlotId);
+		CatalogSurfaceProxyParts.Add(Proxy);
+	}
+
 	const auto CreateDoorMirrorPart = [this](
 		const TCHAR* ComponentName,
 		const TCHAR* AssetName,
@@ -548,6 +628,18 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 	}
 	bAnimationCatalogConfigured = true;
 
+	// 当前发布目标是明确标识的 A5 独立静态代理分件。完整 40 surface
+	// 目标存在时，它们必须保持唯一可见材质目标；骨骼整车不能叠在其上遮挡切换。
+	if (GetCatalogSurfaceTargetCount() == AutomotiveCatalog::RequiredSelectionCount)
+	{
+		bStaticAnimationFallbackEnabled = true;
+		SkeletalVehicle->SetSkeletalMeshAsset(nullptr);
+		SkeletalVehicle->SetVisibility(false);
+		SkeletalVehicle->SetHiddenInGame(true);
+		SetStaticProxyVisible(true);
+		return false;
+	}
+
 	USkeletalMesh* WholeVehicleMesh =
 		ConfiguratorVehicle::LoadOptionalAsset<USkeletalMesh>(*Catalog.SkeletalMeshPath);
 	UAnimSequence* FullVehicleSequence =
@@ -593,6 +685,43 @@ void AConfiguratorVehicleActor::SetStaticProxyVisible(const bool bVisible)
 		StaticPart->SetVisibility(bVisible);
 		StaticPart->SetHiddenInGame(!bVisible);
 	}
+}
+
+int32 AConfiguratorVehicleActor::GetCatalogSurfaceTargetCount() const
+{
+	int32 Count = 0;
+	TInlineComponentArray<UMeshComponent*> Meshes(this);
+	for (const UMeshComponent* Mesh : Meshes)
+	{
+		Count += IsValid(Mesh) && Mesh->ComponentTags.ContainsByPredicate(
+			[](const FName Tag)
+			{
+				return Tag.ToString().StartsWith(
+					TEXT("Configurator.ProxySurfaceTarget."));
+			}) ? 1 : 0;
+	}
+	return Count;
+}
+
+UMeshComponent* AConfiguratorVehicleActor::FindCatalogSurfaceTarget(
+	const FName SlotId) const
+{
+	const FName TargetTag = UAutomotiveMaterialBinder::MakeProxyTargetTag(SlotId);
+	TInlineComponentArray<UMeshComponent*> Meshes(this);
+	UMeshComponent* Match = nullptr;
+	for (UMeshComponent* Mesh : Meshes)
+	{
+		if (!IsValid(Mesh) || !Mesh->ComponentHasTag(TargetTag))
+		{
+			continue;
+		}
+		if (Match != nullptr)
+		{
+			return nullptr;
+		}
+		Match = Mesh;
+	}
+	return Match;
 }
 
 void AConfiguratorVehicleActor::BeginPlay()

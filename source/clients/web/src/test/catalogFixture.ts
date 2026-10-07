@@ -81,6 +81,21 @@ const optionalSurfaceIds = new Set([
   'pedal',
 ])
 
+const catalogSelectionOrder: string[] = [
+  'exterior-body-cover',
+  'wheel-material',
+  ...additionalDefaults.slice(0, 6).map(([surfaceId]) => surfaceId),
+  'steering-wheel-skin',
+  ...additionalDefaults.slice(6).map(([surfaceId]) => surfaceId),
+]
+
+function proxySlotId(surfaceId: string): string {
+  return `A5Proxy_${surfaceId
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')}`
+}
+
 function componentForSurface(surfaceId: string): string {
   if (surfaceId === 'door-sill') return 'personalization'
   if (surfaceId === 'door-panel-embroidery') return 'personalization'
@@ -112,13 +127,7 @@ export const catalogFixture: CatalogV2 = {
     priceStatus: 'confirmed',
     quotable: false,
   },
-  selectionOrder: [
-    'exterior-body-cover',
-    'wheel-material',
-    ...additionalDefaults.slice(0, 6).map(([surfaceId]) => surfaceId),
-    'steering-wheel-skin',
-    ...additionalDefaults.slice(6).map(([surfaceId]) => surfaceId),
-  ],
+  selectionOrder: catalogSelectionOrder,
   defaultSelections: {
     'exterior-body-cover': 'body-cover-red',
     'wheel-material': 'wheel-aluminum-alloy',
@@ -174,22 +183,11 @@ export const catalogFixture: CatalogV2 = {
   vehicleSurfaceBinding: {
     schemaVersion: '1.0.0',
     capability: 'proxy',
-    bindings: [
-      { surfaceId: 'exterior-body-cover', materialSlotIds: ['CS_Validation_Paint'] },
-      { surfaceId: 'door-middle', materialSlotIds: ['CS_Validation_Interior'] },
-    ],
-    unsupportedSurfaceIds: [
-      'wheel-material', 'wheel-style', 'wheel-color', 'lower-skirt',
-      'front-caliper-color', 'rear-caliper-color', 'engine-bay-cover',
-      'steering-wheel-addon', 'steering-center-mark', 'seat-backrest',
-      'seat-bolster', 'seat-shell-back', 'seat-headrest-mark', 'door-upper',
-      'door-armrest', 'door-armrest-skin', 'ip-wings', 'ip-middle',
-      'ip-instrument-cover', 'ip-upper-trim', 'ip-lower-trim', 'ip-center-mark',
-      'storage-soft-bag', 'console-armrest-cover', 'console-armrest-side',
-      'handbrake', 'roof-surface', 'a-pillar-surface', 'interior-painted-parts',
-      'door-sill', 'embroidered-logo', 'center-panel-trim', 'shift-knob',
-      'brake-handle', 'pedal', 'steering-wheel-skin',
-    ],
+    bindings: catalogSelectionOrder.map((surfaceId) => ({
+      surfaceId,
+      materialSlotIds: [proxySlotId(surfaceId)],
+    })),
+    unsupportedSurfaceIds: [],
   },
   animations: [
     {

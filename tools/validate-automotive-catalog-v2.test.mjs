@@ -144,20 +144,21 @@ test("catalog 顶层声明完整骨骼网格与动画序列对象路径", async 
   assert.throws(() => validateCatalog(incompleteSequence), /sequencePath/);
 });
 
-test("catalog 代理 surface capability 完整覆盖 40 surface 且不复用 slot", async () => {
+test("catalog 代理车为 40 surface 提供唯一运行时目标且不伪装为正式资产", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const capability = catalog.vehicleSurfaceBinding;
   assert.equal(capability.capability, "proxy");
-  assert.equal(
-    capability.bindings.length + capability.unsupportedSurfaceIds.length,
-    40
-  );
+  assert.equal(capability.bindings.length, 40);
+  assert.deepEqual(capability.unsupportedSurfaceIds, []);
   assert.deepEqual(
     capability.bindings.find((binding) => binding.surfaceId === "door-middle")
       ?.materialSlotIds,
-    ["CS_Validation_Interior"]
+    ["A5Proxy_DoorMiddle"]
   );
-  assert.ok(capability.unsupportedSurfaceIds.includes("seat-backrest"));
+  assert.equal(
+    new Set(capability.bindings.flatMap((binding) => binding.materialSlotIds)).size,
+    40
+  );
   assert.doesNotThrow(() => validateCatalog(catalog));
 
   const collision = structuredClone(catalog);
@@ -166,7 +167,7 @@ test("catalog 代理 surface capability 完整覆盖 40 surface 且不复用 slo
   assert.throws(() => validateCatalog(collision), /material slot 重复/);
 
   const implicitGap = structuredClone(catalog);
-  implicitGap.vehicleSurfaceBinding.unsupportedSurfaceIds.pop();
+  implicitGap.vehicleSurfaceBinding.bindings.pop();
   assert.throws(() => validateCatalog(implicitGap), /覆盖全部 40 surface/);
 });
 

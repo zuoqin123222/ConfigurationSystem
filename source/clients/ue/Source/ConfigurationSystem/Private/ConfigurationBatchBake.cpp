@@ -5,6 +5,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "CarConfiguratorSubsystem.h"
+#include "AutomotiveMaterialBinder.h"
 #include "Components/PointLightComponent.h"
 #include "ContentPackMountService.h"
 #include "ConfiguratorVehicleActor.h"
@@ -407,6 +408,30 @@ bool FConfigurationBatchBake::ComputeFileSha256(
 	return FContentPackMountService::ComputeFileSha256(Filename, OutSha256, OutError);
 }
 
+bool FConfigurationBatchBake::ApplyV2MaterialTransaction(
+	UAutomotiveMaterialBinder* Binder,
+	const FConfigurationBakeTask& Task,
+	FString& OutError)
+{
+	OutError.Reset();
+	if (!IsValid(Binder))
+	{
+		OutError = TEXT("v2 Batch Bake 要求已绑定的材质 Binder。");
+		return false;
+	}
+	const FAutomotiveMaterialTransactionResult Result =
+		Binder->ApplyTransaction(Task.Selections, Task.Customizations);
+	if (!Result.bSuccess)
+	{
+		OutError = FString::Printf(
+			TEXT("v2 Binder transaction 失败：%s %s"),
+			*Result.Code,
+			*Result.Message);
+		return false;
+	}
+	return true;
+}
+
 void FConfigurationBatchBake::Start(bool bInExitOnComplete)
 {
 	if (IsRunning()) { return; }
@@ -717,15 +742,19 @@ void FConfigurationBatchBake::PrepareCurrentTask()
 	{
 		UAutomotiveConfigurationState* AutomotiveState =
 			Configurator->GetAutomotiveConfigurationState();
-		if (!IsValid(AutomotiveState)
-			|| !AutomotiveState->ApplyTransaction(Task.Selections, Task.Customizations))
+		UAutomotiveMaterialBinder* MaterialBinder =
+			Configurator->GetAutomotiveMaterialBinder();
+		if (!IsValid(AutomotiveState))
 		{
-			const FString ErrorCode = IsValid(AutomotiveState)
-				? AutomotiveState->GetLastErrorCode()
-				: TEXT("STATE_UNAVAILABLE");
 			CompleteCurrentTask(
 				false,
-				FString::Printf(TEXT("v2 ApplyTransaction 失败：%s"), *ErrorCode));
+				TEXT("v2 Batch Bake 配置状态不可用。"));
+			return;
+		}
+		FString MaterialError;
+		if (!ApplyV2MaterialTransaction(MaterialBinder, Task, MaterialError))
+		{
+			CompleteCurrentTask(false, MaterialError);
 			return;
 		}
 		if (AutomotiveState->GetRenderKey() != Task.ConfigurationKey)
