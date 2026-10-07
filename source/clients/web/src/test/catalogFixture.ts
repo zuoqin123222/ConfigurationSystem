@@ -68,7 +68,7 @@ const additionalDefaults = [
   ['headrest-embroidery', 'headrest-embroidery-none', '头枕刺绣'],
   ['door-panel-embroidery', 'door-panel-embroidery-none', '中板刺绣'],
   ['center-panel-trim', 'center-panel-trim-black', '中板缝线'],
-  ['nameplate', 'nameplate-stainless', '铭牌'],
+  ['nameplate', 'nameplate-none', '铭牌'],
   ['pedal', 'pedal-racing', '脚垫'],
   ['rear-wing', 'rear-wing-none', '尾翼'],
 ] as const
@@ -77,7 +77,6 @@ const optionalSurfaceIds = new Set([
   'lower-skirt',
   'steering-wheel-addon',
   'interior-painted-parts',
-  'nameplate',
   'pedal',
 ])
 
@@ -163,6 +162,7 @@ export const catalogFixture: CatalogV2 = {
     'headrest-embroidery': 'headrest-embroidery-none',
     'door-panel-embroidery': 'door-panel-embroidery-none',
     'center-panel-trim': 'center-panel-trim-black',
+    nameplate: 'nameplate-none',
     'rear-wing': 'rear-wing-none',
   },
   optionIdAliases: {
@@ -680,6 +680,23 @@ export const catalogFixture: CatalogV2 = {
           ui: { order: 0, control: 'swatch' as const },
         }
       }
+      if (surfaceId === 'nameplate') {
+        return {
+          ...result,
+          displayName: '无',
+          materialFamilyId: null,
+          renderRelevant: false,
+          parameters: { color: null, material: null },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+          ui: { order: 0, control: 'swatch' as const },
+        }
+      }
       if (surfaceId === 'interior-painted-parts') {
         return {
           ...result,
@@ -861,6 +878,23 @@ export const catalogFixture: CatalogV2 = {
       }
       return result
     }),
+    ...([
+      ['nameplate-copper', 'metal', '铜', 88000, '/sc01/interior-parts/nameplate-copper-preview.webp'],
+      ['nameplate-stainless', 'metal', '不锈钢', 86000, '/sc01/interior-parts/nameplate-stainless-preview.webp'],
+      ['nameplate-carbon', 'carbon-fiber', '碳纤维', 98000, '/sc01/interior-parts/nameplate-carbon-preview.webp'],
+    ] as const).map(([optionId, materialFamilyId, displayName, unitPriceMinor, thumbnailUrl]) => ({
+      ...option(optionId, 'nameplate', materialFamilyId, displayName, false),
+      thumbnailUrl,
+      pricing: {
+        ...pricing,
+        unitPriceMinor,
+        quantity: 1,
+        pricingUnit: 'per-piece' as const,
+        isStandard: false,
+        status: 'confirmed' as const,
+      },
+      ui: { control: 'swatch' as const },
+    })),
   ],
 }
 

@@ -190,7 +190,9 @@ describe('App v2', () => {
     expect(within(screen.getByRole('group', { name: '车辆视角' }))
       .getAllByRole('button')).toHaveLength(4)
     expect(catalogFixture.selectionOrder).toHaveLength(40)
-    expect(catalogFixture.surfaces.filter((surface) => !surface.required)).toHaveLength(5)
+    expect(catalogFixture.surfaces.filter((surface) => !surface.required)).toHaveLength(4)
+    expect(catalogFixture.surfaces.find((surface) => surface.surfaceId === 'nameplate'))
+      .toMatchObject({ required: true })
     expect(Object.keys(initialSelections)).toEqual(
       catalogFixture.selectionOrder.filter((surfaceId) =>
         catalogFixture.options.some(
@@ -328,6 +330,7 @@ describe('App v2', () => {
     expect(summary).toHaveTextContent('自定义车漆')
     expect(summary).toHaveTextContent('¥9,600')
     expect(summary).not.toHaveTextContent('免费')
+    expect(summary).not.toHaveTextContent('铭牌')
     const actions = document.querySelector('.page-actions')
     expect(actions).not.toBeNull()
     expect(within(actions as HTMLElement).getAllByRole('button').map((button) => button.textContent))
@@ -761,6 +764,14 @@ describe('App v2', () => {
     await user.click(within(parts).getByRole('button', { name: '铭牌' }))
     expect(screen.getByRole('button', { name: '无，免费' }))
       .toHaveAttribute('aria-pressed', 'true')
+    for (const [name, price, preview] of [
+      ['铜', '¥880', '/sc01/interior-parts/nameplate-copper-preview.webp'],
+      ['不锈钢', '¥860', '/sc01/interior-parts/nameplate-stainless-preview.webp'],
+      ['碳纤维', '¥980', '/sc01/interior-parts/nameplate-carbon-preview.webp'],
+    ]) {
+      const choice = screen.getByRole('button', { name: `${name}，${price}` })
+      expect(choice.querySelector('img')).toHaveAttribute('src', preview)
+    }
 
     await user.click(within(parts).getByRole('button', { name: '脚垫' }))
     expect(screen.getByRole('button', { name: '豪车毯，¥560' })).toBeEnabled()

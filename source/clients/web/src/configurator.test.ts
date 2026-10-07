@@ -54,6 +54,7 @@ describe('v2 动态选配逻辑', () => {
 
     expect(createInitialSelections(reorderedCatalog)).toEqual(catalogFixture.defaultSelections)
     expect(createInitialSelections(reorderedCatalog)['exterior-body-cover']).toBe('body-cover-red')
+    expect(createInitialSelections(reorderedCatalog).nameplate).toBe('nameplate-none')
   })
 
   it('分享配置存在无效选项时仅回退到显式标配，无标配表面保持不选装', () => {
@@ -66,6 +67,14 @@ describe('v2 动态选配逻辑', () => {
       'wheel-material': 'wheel-magnesium-alloy',
       'wheel-style': 'wheel-style-magnesium-1',
     })
+  })
+
+  it('旧配置缺少铭牌选择时归一化为稳定的免费无选项', () => {
+    const legacySelections = { ...initialSelections }
+    delete legacySelections.nameplate
+
+    expect(normalizeSelections(catalogFixture, legacySelections).nameplate)
+      .toBe('nameplate-none')
   })
 
   it('按四阶段 category、component、surface 联动并输出同级材质组', () => {

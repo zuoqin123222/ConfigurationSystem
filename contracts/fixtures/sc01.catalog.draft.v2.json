@@ -86,6 +86,7 @@
     "headrest-embroidery": "headrest-embroidery-none",
     "door-panel-embroidery": "door-panel-embroidery-none",
     "center-panel-trim": "center-panel-trim-black",
+    "nameplate": "nameplate-none",
     "door-sill": "door-sill-none",
     "engine-bay-cover": "engine-cover-silver"
   },
@@ -1197,7 +1198,7 @@
       "surfaceId": "nameplate",
       "componentId": "personalization-stitching",
       "displayName": "铭牌",
-      "required": false,
+      "required": true,
       "reviewRequired": false,
       "sourceRefs": [
         {
@@ -14327,6 +14328,40 @@
           "orangePeel": 0,
           "flakeIntensity": 0
         }
+      }
+    },
+    {
+      "optionId": "nameplate-none",
+      "surfaceId": "nameplate",
+      "materialFamilyId": null,
+      "displayName": "无",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": false,
+      "parameters": {
+        "color": null,
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": true,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "铭牌 / 无 / 免费（反馈 19）"
+        }
+      ],
+      "ui": {
+        "order": 0,
+        "control": "swatch"
       }
     },
     {

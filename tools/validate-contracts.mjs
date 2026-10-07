@@ -467,7 +467,7 @@ try {
     )
   );
   check(
-    scale.configurationCount === "29386561536000000000000",
+    scale.configurationCount === "39182082048000000000000",
     "SC01 v2 完整组合规模估算必须稳定且不得直接展开"
   );
   check(

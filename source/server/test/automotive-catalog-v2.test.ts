@@ -141,7 +141,7 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().vehicle.vehicleId, "sc01");
   assert.equal(response.json().vehicle.quotable, false);
-  assert.equal(response.json().options.length, 174);
+  assert.equal(response.json().options.length, 175);
   assert.equal(response.json().surfaces.length, 40);
   assert.equal(response.json().selectionOrder.length, 40);
   assert.equal(response.json().categories.map(
@@ -149,7 +149,8 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   ).join(" > "), "外饰 > 内饰 > 性能 > 个性化");
   assert.equal(response.json().surfaces.filter(
     (surface: { required: boolean }) => !surface.required,
-  ).length, 5);
+  ).length, 4);
+  assert.equal(response.json().defaultSelections.nameplate, "nameplate-none");
   assert.equal(response.json().materialVariants.length, 352);
   assert.deepEqual(
     response.json().interactionCameras.map(
@@ -734,6 +735,16 @@ test("同 surface 的旧 optionId 可迁移，且自定义色按 option 能力�
     "engine-bay-cover": paint,
   });
   assert.deepEqual(chassis.customizations["engine-bay-cover"], paint);
+});
+
+test("旧配置缺少铭牌选择时归一化为稳定的免费无选项", () => {
+  const data = loadAutomotiveCatalog();
+  const legacySelections = { ...selections };
+  delete legacySelections.nameplate;
+
+  const migrated = deriveVehicleConfiguration(legacySelections, data);
+
+  assert.equal(migrated.selections.nameplate, "nameplate-none");
 });
 
 test("Server 拒绝 requiresSelections 不满足及跨旧 surface 的 optionId", () => {

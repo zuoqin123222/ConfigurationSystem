@@ -19,13 +19,18 @@ const fixture = (name) =>
 
 test("SC01 v2 草案 catalog、正反配置、价格结果与黄金向量聚合通过", async () => {
   const result = await validateAutomotiveCatalogFixtures(root);
-  assert.deepEqual(result, { optionCount: 174, vectorCount: 2 });
+  assert.deepEqual(result, { optionCount: 175, vectorCount: 2 });
 });
 
 test("catalog 使用显式 defaultSelections 消除多标配项的顺序歧义", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   assert.equal(catalog.defaultSelections["exterior-body-cover"], "body-cover-red");
   assert.equal(catalog.defaultSelections["door-middle"], "door-middle-ultrasuede-black");
+  assert.equal(catalog.defaultSelections.nameplate, "nameplate-none");
+  assert.equal(
+    catalog.options.find((option) => option.optionId === "nameplate-none").renderRelevant,
+    false
+  );
   assert.equal(Object.hasOwn(catalog.defaultSelections, "lower-skirt"), false);
 
   const missingDefault = structuredClone(catalog);
@@ -337,7 +342,11 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
   );
   assert.equal(catalog.surfaces.length, 40);
   assert.equal(catalog.selectionOrder.length, 40);
-  assert.equal(catalog.surfaces.filter((surface) => !surface.required).length, 5);
+  assert.equal(catalog.surfaces.filter((surface) => !surface.required).length, 4);
+  assert.equal(
+    catalog.surfaces.find((surface) => surface.surfaceId === "nameplate").required,
+    true
+  );
   assert.ok(catalog.surfaces.every((surface) =>
     surface.required === catalog.options.some(
       (option) => option.surfaceId === surface.surfaceId && option.pricing.isStandard
@@ -522,7 +531,17 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
   assert.deepEqual(
     catalog.options.filter((option) => option.surfaceId === "nameplate")
       .map((option) => option.displayName),
-    ["铜", "不锈钢", "碳纤维"]
+    ["无", "铜", "不锈钢", "碳纤维"]
+  );
+  assert.deepEqual(
+    catalog.options.filter((option) => option.surfaceId === "nameplate")
+      .map((option) => option.thumbnailUrl),
+    [
+      null,
+      "/sc01/interior-parts/nameplate-copper-preview.webp",
+      "/sc01/interior-parts/nameplate-stainless-preview.webp",
+      "/sc01/interior-parts/nameplate-carbon-preview.webp"
+    ]
   );
   assert.equal(catalog.surfaces.some((surface) => surface.surfaceId === "brake-handle"), false);
   assert.deepEqual(
@@ -541,15 +560,6 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
   assert.equal(
     byId.get("door-panel-embroidery-custom").thumbnailUrl,
     "/sc01/interior-parts/door-panel-embroidery.webp"
-  );
-  assert.deepEqual(
-    catalog.options.filter((option) => option.surfaceId === "nameplate")
-      .map((option) => option.thumbnailUrl),
-    [
-      "/sc01/interior-parts/nameplate-copper-preview.webp",
-      "/sc01/interior-parts/nameplate-stainless-preview.webp",
-      "/sc01/interior-parts/nameplate-carbon-preview.webp"
-    ]
   );
   assert.equal(
     catalog.optionIdAliases["brake-handle-flamed-blue"],

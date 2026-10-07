@@ -222,7 +222,7 @@ if (catalog) {
   expectEqual(catalog.components?.length, 17, "SC01 部件数量");
   expectEqual(catalog.surfaces?.length, 40, "SC01 surface 数量");
   expectEqual(catalog.materialFamilies?.length, 17, "SC01 材料族数量");
-  expectEqual(catalog.options?.length, 174, "SC01 option 数量");
+  expectEqual(catalog.options?.length, 175, "SC01 option 数量");
   expectEqual(catalog.selectionOrder?.length, 40, "SC01 selectionOrder 数量");
 
   const aPillar = optionById(catalog, "a-pillar-woven");

@@ -463,7 +463,11 @@ export function validateCatalogSelections(
 
   const selections: CatalogSelections = {};
   for (const surfaceId of expected) {
-    const submittedOptionId = value[surfaceId];
+    const submittedOptionId = value[surfaceId] ?? (
+      surfaceId === "nameplate"
+        ? data.catalog.defaultSelections.nameplate
+        : undefined
+    );
     const surface = data.catalog.surfaces.find((item) => item.surfaceId === surfaceId);
     if (submittedOptionId === undefined && surface?.required === false) continue;
     const optionId = typeof submittedOptionId === "string"
