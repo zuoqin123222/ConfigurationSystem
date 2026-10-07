@@ -120,6 +120,7 @@ export interface CatalogOption extends CatalogNode {
     order?: number
     iconUrl?: string | null
     control?: 'swatch' | 'thumbnail' | 'color-picker' | 'material-variant' | 'material-strip'
+    sortColorHex?: string
     defaultParameters?: Partial<PaintCustomization>
   }
 }

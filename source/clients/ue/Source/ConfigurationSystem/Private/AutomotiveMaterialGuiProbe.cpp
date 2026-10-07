@@ -243,6 +243,30 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 				return Value != CurrentOption;
 			})
 		: nullptr;
+	if (NextOptionId == nullptr
+		&& Options != nullptr
+		&& Options->Num() == 1
+		&& CurrentOption == (*Options)[0])
+	{
+		TMap<FString, FString> BaselineSelections = Selections;
+		BaselineSelections.Remove(SurfaceId);
+		TMap<FString, FAutomotiveCustomization> BaselineCustomizations =
+			State->GetCustomizations();
+		BaselineCustomizations.Remove(SurfaceId);
+		const FAutomotiveMaterialTransactionResult BaselineResult =
+			Binder->ApplyTransaction(
+				BaselineSelections,
+				BaselineCustomizations);
+		if (!BaselineResult.bSuccess)
+		{
+			OutFailureReason = FString::Printf(
+				TEXT("surfaceId=%s 无法建立未选择基线：%s"),
+				*SurfaceId,
+				*BaselineResult.ToJson());
+			return false;
+		}
+		NextOptionId = &CurrentOption;
+	}
 	if (NextOptionId == nullptr)
 	{
 		OutFailureReason = FString::Printf(
@@ -326,6 +350,42 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 	UMaterialInterface* AfterMaterial = Component->GetMaterial(MaterialIndex);
 	const FString After = DescribeMaterial(AfterMaterial);
 	const bool bVisible = Component->IsVisible() && !Component->bHiddenInGame;
+	FString ColorPolicy = TEXT("neutral-gray");
+	if (!VariantId.IsEmpty())
+	{
+		ColorPolicy = TEXT("material-variant");
+	}
+	else if (NextOption->SupportsCustomColor())
+	{
+		ColorPolicy = TEXT("custom-color");
+	}
+	else if (NextOption->ColorCode.IsSet())
+	{
+		ColorPolicy = TEXT("color-code");
+	}
+	else if (NextOption->DisplayColorHex.IsSet())
+	{
+		ColorPolicy = TEXT("display-color-hex");
+	}
+	const bool bNeutralProxy = ColorPolicy == TEXT("neutral-gray");
+	bool bNeutralProxyColorValid = true;
+	if (bNeutralProxy)
+	{
+		UMaterialInstanceDynamic* Dynamic =
+			Cast<UMaterialInstanceDynamic>(AfterMaterial);
+		if (!IsValid(Dynamic))
+		{
+			bNeutralProxyColorValid = false;
+		}
+		else
+		{
+			const FLinearColor Color =
+				Dynamic->K2_GetVectorParameterValue(TEXT("BaseColor"));
+			bNeutralProxyColorValid =
+				FMath::IsNearlyEqual(Color.R, Color.G, 0.0001f)
+				&& FMath::IsNearlyEqual(Color.G, Color.B, 0.0001f);
+		}
+	}
 	const bool bReceiptValid =
 		Result.bSuccess
 		&& Result.Code == TEXT("APPLIED")
@@ -333,13 +393,14 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 		&& Result.AppliedSlotIds == TArray<FName>({SlotId})
 		&& Result.UnsupportedSurfaceIds.IsEmpty();
 	const bool bChanged = IsValid(AfterMaterial) && Before != After;
-	if (!bReceiptValid || !bVisible || !bChanged)
+	if (!bReceiptValid || !bVisible || !bChanged || !bNeutralProxyColorValid)
 	{
 		OutFailureReason = FString::Printf(
-			TEXT("surfaceId=%s 验证失败：receipt=%s visible=%s before=%s after=%s"),
+			TEXT("surfaceId=%s 验证失败：receipt=%s visible=%s neutralProxyColor=%s before=%s after=%s"),
 			*SurfaceId,
 			*Result.ToJson(),
 			bVisible ? TEXT("true") : TEXT("false"),
+			bNeutralProxyColorValid ? TEXT("true") : TEXT("false"),
 			*Before,
 			*After);
 		return false;
@@ -355,9 +416,11 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 	Report.Before = Before;
 	Report.After = After;
 	Report.ReceiptCode = Result.Code;
+	Report.ColorPolicy = ColorPolicy;
 	Report.bVisible = bVisible;
 	Report.bUniqueSlotHit = bUniqueSlot;
 	Report.bChanged = bChanged;
+	Report.bNeutralProxy = bNeutralProxy;
 	++SurfaceIndex;
 	return true;
 }
@@ -407,6 +470,8 @@ void UAutomotiveMaterialGuiProbe::WriteReportAndExit(
 		Item->SetStringField(TEXT("slot"), Result.Slot);
 		Item->SetStringField(TEXT("before"), Result.Before);
 		Item->SetStringField(TEXT("after"), Result.After);
+		Item->SetStringField(TEXT("colorPolicy"), Result.ColorPolicy);
+		Item->SetBoolField(TEXT("neutralProxy"), Result.bNeutralProxy);
 		Item->SetBoolField(TEXT("change"), Result.bChanged);
 		Item->SetBoolField(TEXT("visible"), Result.bVisible);
 		Item->SetBoolField(TEXT("uniqueSlotHit"), Result.bUniqueSlotHit);

@@ -19,9 +19,11 @@ struct FAutomotiveMaterialGuiProbeSurfaceResult
 	FString Before;
 	FString After;
 	FString ReceiptCode;
+	FString ColorPolicy;
 	bool bVisible = false;
 	bool bUniqueSlotHit = false;
 	bool bChanged = false;
+	bool bNeutralProxy = false;
 };
 
 /**

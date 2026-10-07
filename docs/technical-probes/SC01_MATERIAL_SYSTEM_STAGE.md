@@ -106,4 +106,6 @@ GUI 报告在真实 Game viewport 中按 Catalog `selectionOrder` 遍历 40 surf
   清除恢复、缺 MI 原子拒绝、40 个唯一可见槽、空 unsupported、自定义车漆 MID 复用。
 - Web：88 项 Vitest 通过，生产 build 通过。
 - UE5.8.1 DX12 `AutomotiveMaterialGuiProbe`：通过，真实 Game viewport 逐项命中
-  40 个唯一可映射槽并确认 40 项材质变化。
+  40 个唯一可映射槽并确认 40 项材质变化；报告逐项记录 `colorPolicy`，
+  其中 16 项无固定色结构/样式代理均为 `neutral-gray`，RGB 三通道相等，
+  未发现随机彩色代理。

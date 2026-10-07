@@ -262,6 +262,52 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 			TEXT("variant 保留真实 thumbnailUrl"),
 			Variant->ThumbnailUrl == TEXT("/sc01/thumbnails/ultrasuede-p6-uf7.webp"));
 	}
+	TSharedPtr<FJsonObject> CatalogObject;
+	TestTrue(
+		TEXT("读取目录以验证 option ui.sortColorHex"),
+		AutomotiveCatalogAutomation::ReadJsonObject(
+			AutomotiveCatalogAutomation::ContractFile(
+				TEXT("fixtures/sc01.catalog.draft.v2.json")),
+			CatalogObject));
+	const TArray<TSharedPtr<FJsonValue>>* OptionValues = nullptr;
+	if (CatalogObject.IsValid()
+		&& CatalogObject->TryGetArrayField(TEXT("options"), OptionValues))
+	{
+		for (const TSharedPtr<FJsonValue>& Value : *OptionValues)
+		{
+			const TSharedPtr<FJsonObject> OptionObject = Value->AsObject();
+			if (OptionObject.IsValid()
+				&& OptionObject->GetStringField(TEXT("optionId"))
+					== TEXT("body-cover-silver"))
+			{
+				const TSharedPtr<FJsonObject>* Ui = nullptr;
+				if (!OptionObject->TryGetObjectField(TEXT("ui"), Ui))
+				{
+					OptionObject->SetObjectField(
+						TEXT("ui"),
+						MakeShared<FJsonObject>());
+					OptionObject->TryGetObjectField(TEXT("ui"), Ui);
+				}
+				(*Ui)->SetStringField(TEXT("sortColorHex"), TEXT("#A1B2C3"));
+				break;
+			}
+		}
+		FString CatalogJson;
+		FJsonSerializer::Serialize(
+			CatalogObject.ToSharedRef(),
+			TJsonWriterFactory<>::Create(&CatalogJson));
+		AutomotiveCatalog::FCatalogIndex OptionUiCatalog;
+		TestTrue(
+			TEXT("解析带 option ui.sortColorHex 的目录"),
+			OptionUiCatalog.LoadJson(CatalogJson, Error));
+		const AutomotiveCatalog::FOption* Silver =
+			OptionUiCatalog.FindOption(TEXT("body-cover-silver"));
+		TestTrue(
+			TEXT("FOption 保留 ui.sortColorHex"),
+			Silver != nullptr
+				&& Silver->DisplayColorHex.IsSet()
+				&& Silver->DisplayColorHex.GetValue() == TEXT("#A1B2C3"));
+	}
 
 	TSharedPtr<FJsonObject> Golden;
 	TestTrue(

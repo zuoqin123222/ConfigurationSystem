@@ -29,14 +29,8 @@ FName UAutomotiveMaterialBinder::MakeProxyTargetTag(const FName SlotId)
 namespace
 {
 	TOptional<FLinearColor> ResolveCatalogColor(
-		const FString& ColorCode,
-		const TOptional<FString>& DisplayColorHex = TOptional<FString>())
+		const FString& ColorCode)
 	{
-		if (DisplayColorHex.IsSet())
-		{
-			return FLinearColor::FromSRGBColor(
-				FColor::FromHex(DisplayColorHex.GetValue()));
-		}
 		if (ColorCode.Equals(TEXT("red"), ESearchCase::IgnoreCase))
 		{
 			return FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#A61D24")));
@@ -60,15 +54,32 @@ namespace
 		return TOptional<FLinearColor>();
 	}
 
-	FLinearColor ResolveProxyOptionColor(const FString& OptionId)
+	TOptional<FLinearColor> ResolveFixedOptionColor(
+		const AutomotiveCatalog::FOption& Option)
 	{
-		const uint32 Hash = FCrc::StrCrc32(*OptionId);
-		const auto Channel = [Hash](const int32 Shift)
+		if (Option.ColorCode.IsSet())
 		{
-			return 0.25f + 0.65f
-				* static_cast<float>((Hash >> Shift) & 0xffu) / 255.0f;
-		};
-		return FLinearColor(Channel(0), Channel(8), Channel(16), 1.0f);
+			const TOptional<FLinearColor> Color =
+				ResolveCatalogColor(Option.ColorCode.GetValue());
+			if (Color.IsSet())
+			{
+				return Color;
+			}
+		}
+		if (Option.DisplayColorHex.IsSet())
+		{
+			return ResolveCatalogColor(Option.DisplayColorHex.GetValue());
+		}
+		return TOptional<FLinearColor>();
+	}
+
+	FLinearColor ResolveNeutralProxyColor(const FString& OptionId)
+	{
+		// 无固定色的结构/样式代理只在中性灰阶内产生稳定区分，避免把占位效果
+		// 误呈现为彩色设计；实际质感仍来自所选材料族母材质。
+		const uint32 Hash = FCrc::StrCrc32(*OptionId);
+		const uint8 Shade = static_cast<uint8>(88u + Hash % 81u);
+		return FLinearColor::FromSRGBColor(FColor(Shade, Shade, Shade));
 	}
 
 	UTexture2D* UpdateDynamicColorTexture(
@@ -506,24 +517,17 @@ bool UAutomotiveMaterialBinder::ResolveSurfaceMaterial(
 			FColor::FromHex(Customization->Paint.ColorHex));
 		return true;
 	}
-	if (Option->ColorCode.IsSet())
+	const TOptional<FLinearColor> FixedColor = ResolveFixedOptionColor(*Option);
+	if (FixedColor.IsSet())
 	{
-		const TOptional<FLinearColor> FixedColor =
-			ResolveCatalogColor(Option->ColorCode.GetValue());
-		if (!FixedColor.IsSet())
-		{
-			OutColor = ResolveProxyOptionColor(Option->OptionId);
-		}
-		else
-		{
-			OutColor = FixedColor.GetValue();
-		}
+		OutColor = FixedColor.GetValue();
 		bOutUseDynamic = true;
 		if (OutFamilyId == TEXT("paint"))
 		{
 			bOutHasPaintParameters = true;
-			OutPaint.ColorHex = Option->ColorCode.GetValue();
-			OutPaint.Metallic = Option->ColorCode.GetValue().Equals(
+			OutPaint.ColorHex = Option->ColorCode.Get(
+				Option->DisplayColorHex.Get(TEXT("#808080")));
+			OutPaint.Metallic = Option->ColorCode.Get(FString()).Equals(
 				TEXT("silver"), ESearchCase::IgnoreCase) ? 0.8 : 0.35;
 			OutPaint.Roughness = 0.22;
 			OutPaint.ClearCoat = 0.85;
@@ -534,7 +538,7 @@ bool UAutomotiveMaterialBinder::ResolveSurfaceMaterial(
 	else
 	{
 		bOutUseDynamic = true;
-		OutColor = ResolveProxyOptionColor(Option->OptionId);
+		OutColor = ResolveNeutralProxyColor(Option->OptionId);
 	}
 	return true;
 }

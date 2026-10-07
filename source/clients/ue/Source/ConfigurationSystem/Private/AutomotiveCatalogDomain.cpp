@@ -491,6 +491,18 @@ namespace AutomotiveCatalog
 				{
 					return false;
 				}
+				const TSharedPtr<FJsonObject>* Ui = nullptr;
+				if ((*Object)->TryGetObjectField(TEXT("ui"), Ui)
+					&& Ui != nullptr
+					&& (*Ui)->HasField(TEXT("sortColorHex"))
+					&& !ReadNullableString(
+						*Ui,
+						TEXT("sortColorHex"),
+						Option.DisplayColorHex,
+						OutError))
+				{
+					return false;
+				}
 				if (!IsNullField(*Object, TEXT("materialFamilyId")))
 				{
 					FString FamilyId;

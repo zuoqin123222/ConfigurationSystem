@@ -263,6 +263,7 @@
         "control": {
           "enum": ["swatch", "thumbnail", "color-picker", "material-variant", "material-strip"]
         },
+        "sortColorHex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
         "defaultParameters": {
           "type": "object",
           "additionalProperties": false,

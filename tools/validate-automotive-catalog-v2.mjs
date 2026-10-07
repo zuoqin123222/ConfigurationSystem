@@ -526,6 +526,12 @@ export function validateCatalog(catalog) {
             .includes(option.ui.control),
         `${option.optionId}.ui.control 非法`
       );
+      check(
+        option.ui.sortColorHex === undefined
+          || (typeof option.ui.sortColorHex === "string"
+            && /^#[0-9A-Fa-f]{6}$/.test(option.ui.sortColorHex)),
+        `${option.optionId}.ui.sortColorHex 非法`
+      );
       if (option.ui.defaultParameters !== undefined) {
         check(isRecord(option.ui.defaultParameters), `${option.optionId}.ui.defaultParameters 非法`);
         for (const [key, value] of Object.entries(option.ui.defaultParameters)) {

@@ -85,6 +85,7 @@ namespace AutomotiveCatalog
 		FString SurfaceId;
 		FString DisplayName;
 		TOptional<FString> ColorCode;
+		TOptional<FString> DisplayColorHex;
 		TOptional<FString> Finish;
 		TOptional<FString> MaterialFamilyId;
 		TOptional<FString> ColorMode;

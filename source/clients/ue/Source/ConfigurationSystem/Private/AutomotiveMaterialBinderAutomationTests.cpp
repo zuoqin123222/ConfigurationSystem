@@ -5,8 +5,12 @@
 #include "ConfiguratorVehicleActor.h"
 #include "Components/MeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Dom/JsonObject.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/AutomationTest.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 #include "AutomotiveMaterialLibrary.h"
 #include "AutomotiveCatalogData.h"
 #include "AutomotiveConfigurationState.h"
@@ -31,6 +35,44 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
+	UAutomotiveCatalogData* TestCatalog =
+		DuplicateObject<UAutomotiveCatalogData>(Catalog, GetTransientPackage());
+	TSharedPtr<FJsonObject> CatalogObject;
+	TestTrue(
+		TEXT("解析测试目录 JSON"),
+		FJsonSerializer::Deserialize(
+			TJsonReaderFactory<>::Create(TestCatalog->CatalogJson),
+			CatalogObject));
+	const TArray<TSharedPtr<FJsonValue>>* OptionValues = nullptr;
+	if (CatalogObject.IsValid()
+		&& CatalogObject->TryGetArrayField(TEXT("options"), OptionValues))
+	{
+		for (const TSharedPtr<FJsonValue>& Value : *OptionValues)
+		{
+			const TSharedPtr<FJsonObject> OptionObject = Value->AsObject();
+			if (!OptionObject.IsValid())
+			{
+				continue;
+			}
+			const FString OptionId = OptionObject->GetStringField(TEXT("optionId"));
+			if (OptionId != TEXT("body-cover-red")
+				&& OptionId != TEXT("wheel-magnesium-alloy"))
+			{
+				continue;
+			}
+			const TSharedPtr<FJsonObject>* Ui = nullptr;
+			OptionObject->TryGetObjectField(TEXT("ui"), Ui);
+			(*Ui)->SetStringField(
+				TEXT("sortColorHex"),
+				OptionId == TEXT("body-cover-red")
+					? TEXT("#00FF00")
+					: TEXT("#336699"));
+		}
+		const TSharedRef<TJsonWriter<>> Writer =
+			TJsonWriterFactory<>::Create(&TestCatalog->CatalogJson);
+		FJsonSerializer::Serialize(CatalogObject.ToSharedRef(), Writer);
+	}
+	Catalog = TestCatalog;
 
 	UAutomotiveConfigurationState* State =
 		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
@@ -100,6 +142,13 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			Binding.MaterialSlotIds[0]);
 	}
 	TestEqual(TEXT("40 个 surface 对应 40 个唯一组件"), UniqueTargets.Num(), 40);
+	const AutomotiveCatalog::FOption* RedOption =
+		State->GetCatalogIndex().FindOption(TEXT("body-cover-red"));
+	TestTrue(
+		TEXT("Binder 测试目录包含冲突的 ColorCode 与 DisplayColorHex"),
+		RedOption != nullptr
+			&& RedOption->ColorCode.IsSet()
+			&& RedOption->DisplayColorHex.IsSet());
 
 	struct FInteriorCase
 	{
@@ -233,7 +282,7 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		const FLinearColor Red =
 			FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#A61D24")));
 		TestTrue(
-			TEXT("标准红色写入车漆 BaseColor"),
+			TEXT("固定色优先 ColorCode 而非 ui.sortColorHex"),
 			PaintInstance->K2_GetVectorParameterValue(TEXT("BaseColor")).Equals(
 				Red,
 				0.001f));
@@ -253,6 +302,55 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 				Silver,
 				0.001f));
 	}
+
+	TMap<FString, FString> DisplayColorSelections = State->GetSelections();
+	DisplayColorSelections.Add(
+		TEXT("wheel-material"),
+		TEXT("wheel-magnesium-alloy"));
+	TestTrue(
+		TEXT("无 ColorCode 的固定色事务成功"),
+		Binder->ApplyTransaction(
+			DisplayColorSelections,
+			State->GetCustomizations()).bSuccess);
+	UMaterialInstanceDynamic* DisplayColorMaterial =
+		Cast<UMaterialInstanceDynamic>(
+			Binder->GetAppliedMaterialForSurface(TEXT("wheel-material")));
+	TestTrue(
+		TEXT("固定色在 ColorCode 缺失时使用 ui.sortColorHex"),
+		IsValid(DisplayColorMaterial)
+			&& DisplayColorMaterial->K2_GetVectorParameterValue(TEXT("BaseColor"))
+				.Equals(
+					FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#336699"))),
+					0.001f));
+	TestTrue(
+		TEXT("DisplayColorHex 调色仍保留镁合金母材质"),
+		IsValid(DisplayColorMaterial)
+			&& DisplayColorMaterial->IsChildOf(
+				Library->LoadInteriorMaterial(TEXT("magnesium-alloy"))));
+
+	TMap<FString, FString> NeutralSelections = State->GetSelections();
+	NeutralSelections.Add(TEXT("wheel-style"), TEXT("wheel-style-magnesium-1"));
+	TestTrue(
+		TEXT("无色值结构/样式代理事务成功"),
+		Binder->ApplyTransaction(
+			NeutralSelections,
+			State->GetCustomizations()).bSuccess);
+	UMaterialInstanceDynamic* NeutralMaterial =
+		Cast<UMaterialInstanceDynamic>(
+			Binder->GetAppliedMaterialForSurface(TEXT("wheel-style")));
+	const FLinearColor NeutralColor = IsValid(NeutralMaterial)
+		? NeutralMaterial->K2_GetVectorParameterValue(TEXT("BaseColor"))
+		: FLinearColor::Transparent;
+	TestTrue(
+		TEXT("无色值结构/样式代理使用中性灰阶"),
+		IsValid(NeutralMaterial)
+			&& FMath::IsNearlyEqual(NeutralColor.R, NeutralColor.G)
+			&& FMath::IsNearlyEqual(NeutralColor.G, NeutralColor.B));
+	TestTrue(
+		TEXT("中性灰代理仍保留材料族母材质质感"),
+		IsValid(NeutralMaterial)
+			&& NeutralMaterial->IsChildOf(
+				Library->LoadInteriorMaterial(TEXT("magnesium-alloy"))));
 
 	const AutomotiveCatalog::FMaterialVariant* DisplayColorVariant =
 		State->GetCatalogIndex().FindMaterialVariant(TEXT("alcantara-p2-2911"));

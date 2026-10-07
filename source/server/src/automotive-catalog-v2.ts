@@ -415,7 +415,10 @@ function validateCatalogUi(catalog: AutomotiveCatalog): void {
         && (typeof ui.iconUrl !== "string" || !ui.iconUrl.startsWith("/")))
       || (ui.control !== undefined
         && !["swatch", "thumbnail", "color-picker", "material-variant", "material-strip"]
-          .includes(String(ui.control)))) {
+          .includes(String(ui.control)))
+      || (ui.sortColorHex !== undefined
+        && (typeof ui.sortColorHex !== "string"
+          || !/^#[0-9a-fA-F]{6}$/.test(ui.sortColorHex)))) {
       throw new Error(`车型目录 v2 选项 ${option.optionId} ui 非法`);
     }
     if (ui.defaultParameters !== undefined) {
