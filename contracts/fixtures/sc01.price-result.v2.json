@@ -1,8 +1,8 @@
 {
   "schemaVersion": "2.0.0",
-  "catalogVersion": "sc01-draft-20260121",
+  "catalogVersion": "sc01-draft-20261007",
   "vehicleId": "sc01",
-  "configurationId": "cfg-3f068ece7b6dff2b6f228976",
+  "configurationId": "cfg-4287ebefd7eca0771b077a61",
   "currency": "CNY",
   "basePriceMinor": 22980000,
   "lineItems": [
@@ -68,6 +68,14 @@
       "unitPriceMinor": 480000,
       "quantity": 1,
       "subtotalMinor": 480000,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "rear-wing",
+      "optionId": "rear-wing-none",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
       "priceStatus": "confirmed"
     },
     {
@@ -272,7 +280,23 @@
     },
     {
       "surfaceId": "embroidered-logo",
-      "optionId": "embroidered-logo-standard",
+      "optionId": "embroidered-logo-black",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "headrest-embroidery",
+      "optionId": "headrest-embroidery-none",
+      "unitPriceMinor": 0,
+      "quantity": 1,
+      "subtotalMinor": 0,
+      "priceStatus": "confirmed"
+    },
+    {
+      "surfaceId": "door-panel-embroidery",
+      "optionId": "door-panel-embroidery-none",
       "unitPriceMinor": 0,
       "quantity": 1,
       "subtotalMinor": 0,
@@ -287,19 +311,11 @@
       "priceStatus": "confirmed"
     },
     {
-      "surfaceId": "shift-knob",
-      "optionId": "shift-knob-stainless",
+      "surfaceId": "nameplate",
+      "optionId": "nameplate-stainless",
       "unitPriceMinor": 86000,
       "quantity": 1,
       "subtotalMinor": 86000,
-      "priceStatus": "confirmed"
-    },
-    {
-      "surfaceId": "brake-handle",
-      "optionId": "brake-handle-flamed-blue",
-      "unitPriceMinor": 128800,
-      "quantity": 1,
-      "subtotalMinor": 128800,
       "priceStatus": "confirmed"
     },
     {
@@ -311,7 +327,7 @@
       "priceStatus": "confirmed"
     }
   ],
-  "totalPriceMinor": 24552800,
+  "totalPriceMinor": 24424000,
   "quoteAllowed": false,
   "blockingReasons": [
     "PRICE_UNCONFIRMED"

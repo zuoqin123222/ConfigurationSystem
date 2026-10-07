@@ -120,11 +120,11 @@ bool FAdminImportProviderManagementAutomationTest::RunTest(const FString& Parame
 	FString LegacyPak;
 	TestTrue(TEXT("创建 SC01 Provider v1"), AdminImportProviderTests::CreatePack(
 		Directory, TEXT("sc01-materials"), TEXT("draft-1"),
-		TEXT("sc01-draft-20260121"), TEXT("material"),
+		TEXT("sc01-draft-20261007"), TEXT("material"),
 		CatalogV1Manifest, CatalogV1Pak));
 	TestTrue(TEXT("创建 SC01 Provider v2"), AdminImportProviderTests::CreatePack(
 		Directory, TEXT("sc01-materials"), TEXT("draft-2"),
-		TEXT("sc01-draft-20260121"), TEXT("material"),
+		TEXT("sc01-draft-20261007"), TEXT("material"),
 		CatalogV2Manifest, CatalogV2Pak));
 	TestTrue(TEXT("创建旧 mvp-v1 包"), AdminImportProviderTests::CreatePack(
 		Directory, TEXT("legacy-materials"), TEXT("legacy-1"),

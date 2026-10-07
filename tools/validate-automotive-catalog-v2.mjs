@@ -398,6 +398,38 @@ export function validateCatalog(catalog) {
   );
   for (const option of options.values()) {
     check(surfaces.has(option.surfaceId), `${option.optionId} 引用了未知 surfaceId`);
+    if (option.availability !== undefined) {
+      assertExactKeys(
+        option.availability,
+        ["status", "reason"],
+        `${option.optionId}.availability`
+      );
+      check(
+        option.availability.status === "disabled"
+          && typeof option.availability.reason === "string"
+          && option.availability.reason.trim().length > 0,
+        `${option.optionId}.availability 非法`
+      );
+    }
+    if (option.requiresSelections !== undefined) {
+      check(
+        isRecord(option.requiresSelections)
+          && Object.keys(option.requiresSelections).length > 0,
+        `${option.optionId}.requiresSelections 必须是非空 object`
+      );
+      for (const [surfaceId, optionId] of Object.entries(option.requiresSelections)) {
+        const requiredOption = options.get(optionId);
+        check(
+          surfaces.has(surfaceId) && requiredOption?.surfaceId === surfaceId,
+          `${option.optionId}.requiresSelections 引用了未知或跨面的 option`
+        );
+        check(
+          catalog.selectionOrder.indexOf(surfaceId)
+            < catalog.selectionOrder.indexOf(option.surfaceId),
+          `${option.optionId}.requiresSelections 只能依赖更早的 surface`
+        );
+      }
+    }
     check(
       option.materialFamilyId === null || materialFamilies.has(option.materialFamilyId),
       `${option.optionId} 引用了未知 materialFamilyId`
@@ -547,6 +579,18 @@ export function validateConfiguration(configuration, catalog) {
     check(
       indexes.optionIdsBySurface.get(surfaceId)?.has(optionId),
       `${surfaceId} 引用了未知或跨面的 optionId：${optionId}`
+    );
+    const option = indexes.options.get(optionId);
+    check(
+      option.availability?.status !== "disabled",
+      `${surfaceId} 所选 option 暂不可选`
+    );
+    check(
+      Object.entries(option.requiresSelections ?? {}).every(
+        ([requiredSurfaceId, requiredOptionId]) =>
+          configuration.selections[requiredSurfaceId] === requiredOptionId
+      ),
+      `${surfaceId} 所选 option 的 requiresSelections 不满足`
     );
   }
 

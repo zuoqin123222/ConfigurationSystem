@@ -12,7 +12,7 @@ const pricing = {
 const option = (
   optionId: string,
   surfaceId: string,
-  materialFamilyId: string,
+  materialFamilyId: string | null,
   displayName: string,
   isStandard = true,
   renderRelevant = true,
@@ -28,7 +28,7 @@ const option = (
   thumbnailUrl: null,
   parameters: {
     color: null,
-    material: { materialFamilyId, variantId: null },
+    material: materialFamilyId ? { materialFamilyId, variantId: null } : null,
   },
   pricing: { ...pricing, isStandard },
 })
@@ -40,54 +40,55 @@ const additionalDefaults = [
   ['front-caliper-color', 'front-caliper-black', '前卡钳'],
   ['rear-caliper-color', 'rear-caliper-black', '后卡钳'],
   ['engine-bay-cover', 'engine-cover-silver', '车架'],
-  ['steering-wheel-addon', 'steering-addon-eva', '加粗'],
+  ['steering-wheel-addon', 'steering-addon-eva', '加粗(EVA海绵)'],
   ['steering-center-mark', 'steering-center-standard', '回中标'],
-  ['seat-backrest', 'seat-back-ultrasuede-black', '座椅接触面'],
-  ['seat-bolster', 'seat-bolster-microfiber-black', '座椅边皮'],
+  ['seat-backrest', 'seat-back-ultrasuede-black', '接触面'],
+  ['seat-bolster', 'seat-bolster-microfiber-black', '边皮'],
   ['seat-shell-back', 'seat-shell-carbon-original', '背板'],
   ['seat-headrest-mark', 'seat-headrest-mark-ultrasuede', '回中标'],
-  ['door-upper', 'door-upper-microfiber-black', '门板上段'],
-  ['door-middle', 'door-middle-ultrasuede-black', '门板中面板'],
-  ['door-armrest', 'door-armrest-microfiber-black', '门板扶手'],
+  ['door-upper', 'door-upper-microfiber-black', '上段'],
+  ['door-middle', 'door-middle-ultrasuede-black', '中面板'],
+  ['door-armrest', 'door-armrest-microfiber-black', '扶手'],
   ['door-armrest-skin', 'door-armrest-skin-microfiber-black', '扶手表皮'],
   ['ip-wings', 'ip-wings-microfiber-black', '两侧翼'],
   ['ip-middle', 'ip-middle-microfiber-black', '中翼'],
   ['ip-instrument-cover', 'ip-instrument-cover-microfiber-black', '仪表盖'],
   ['ip-upper-trim', 'ip-upper-trim-microfiber-black', '上层软包'],
   ['ip-lower-trim', 'ip-lower-trim-microfiber-black', '下层软包'],
-  ['ip-center-mark', 'ip-center-mark-uncovered-black', '仪表台回中标'],
-  ['storage-soft-bag', 'storage-soft-bag-microfiber-black', '储物盒软包'],
+  ['ip-center-mark', 'ip-center-mark-uncovered-black', '回中标'],
+  ['storage-soft-bag', 'storage-soft-bag-microfiber-black', '软包'],
   ['console-armrest-cover', 'console-armrest-cover-microfiber-black', '扶手盖子'],
   ['console-armrest-side', 'console-armrest-side-microfiber-black', '扶手侧边'],
   ['handbrake', 'handbrake-microfiber-black', '手刹把'],
   ['roof-surface', 'roof-woven-standard', '棚面'],
   ['a-pillar-surface', 'a-pillar-woven', 'A柱'],
   ['interior-painted-parts', 'interior-painted-spray', '内饰全车黑色喷漆件'],
-  ['door-sill', 'door-sill-leather', '门板口袋'],
-  ['embroidered-logo', 'embroidered-logo-standard', '缝线徽标'],
-  ['center-panel-trim', 'center-panel-trim-custom', '中面板横饰板'],
-  ['shift-knob', 'shift-knob-stainless', '换挡'],
-  ['brake-handle', 'brake-handle-flamed-blue', '刹车'],
+  ['door-sill', 'door-sill-none', '门板口袋'],
+  ['embroidered-logo', 'embroidered-logo-black', '缝线'],
+  ['headrest-embroidery', 'headrest-embroidery-none', '头枕刺绣'],
+  ['door-panel-embroidery', 'door-panel-embroidery-none', '门中板刺绣'],
+  ['center-panel-trim', 'center-panel-trim-black', '中面板缝线'],
+  ['nameplate', 'nameplate-stainless', '铭牌'],
   ['pedal', 'pedal-racing', '脚垫'],
+  ['rear-wing', 'rear-wing-none', '尾翼'],
 ] as const
 
 const optionalSurfaceIds = new Set([
   'lower-skirt',
   'steering-wheel-addon',
   'interior-painted-parts',
-  'door-sill',
-  'center-panel-trim',
-  'shift-knob',
-  'brake-handle',
+  'nameplate',
   'pedal',
 ])
 
 function componentForSurface(surfaceId: string): string {
   if (surfaceId === 'door-sill') return 'personalization'
+  if (surfaceId === 'door-panel-embroidery') return 'personalization'
   if (surfaceId.startsWith('wheel-')) return 'wheel'
   if (surfaceId === 'lower-skirt') return 'underbody'
   if (surfaceId.includes('caliper')) return 'caliper'
   if (surfaceId === 'engine-bay-cover') return 'chassis'
+  if (surfaceId === 'rear-wing') return 'rear-wing'
   if (surfaceId.startsWith('steering-')) return 'steering-wheel'
   if (surfaceId.startsWith('seat-')) return 'seat'
   if (surfaceId.startsWith('door-')) return 'door-trim'
@@ -101,7 +102,7 @@ function componentForSurface(surfaceId: string): string {
 
 export const catalogFixture: CatalogV2 = {
   schemaVersion: '2.0.0',
-  catalogVersion: 'sc01-draft-20260121',
+  catalogVersion: 'sc01-draft-20261007',
   lifecycle: 'draft',
   currency: 'CNY',
   vehicle: {
@@ -148,7 +149,18 @@ export const catalogFixture: CatalogV2 = {
     'handbrake': 'handbrake-microfiber-black',
     'roof-surface': 'roof-woven-standard',
     'a-pillar-surface': 'a-pillar-woven',
-    'embroidered-logo': 'embroidered-logo-standard',
+    'door-sill': 'door-sill-none',
+    'embroidered-logo': 'embroidered-logo-black',
+    'headrest-embroidery': 'headrest-embroidery-none',
+    'door-panel-embroidery': 'door-panel-embroidery-none',
+    'center-panel-trim': 'center-panel-trim-black',
+    'rear-wing': 'rear-wing-none',
+  },
+  optionIdAliases: {
+    'embroidered-logo-standard': 'embroidered-logo-black',
+    'embroidered-logo-custom': 'embroidered-logo-black',
+    'brake-handle-flamed-blue': 'headrest-embroidery-custom',
+    'brake-handle-door-panel': 'door-panel-embroidery-custom',
   },
   interactionCameras: [
     { cameraId: 'exterior', legacyIndex: 0, zone: 'exterior', order: 0, displayName: '外观', iconUrl: '/camera-exterior.svg' },
@@ -214,6 +226,7 @@ export const catalogFixture: CatalogV2 = {
     { componentId: 'center-console', categoryId: 'interior', displayName: '副仪表台' },
     { componentId: 'roof', categoryId: 'interior', displayName: '车顶' },
     { componentId: 'underbody', categoryId: 'performance', displayName: '下护板' },
+    { componentId: 'rear-wing', categoryId: 'performance', displayName: '尾翼' },
     { componentId: 'personalization', categoryId: 'personalization', displayName: '个性化' },
   ],
   surfaces: [
@@ -317,6 +330,23 @@ export const catalogFixture: CatalogV2 = {
     },
     option('wheel-aluminum-alloy', 'wheel-material', 'aluminum-alloy', '铝合金'),
     option('wheel-magnesium-alloy', 'wheel-material', 'magnesium-alloy', '镁合金', false),
+    ...Array.from({ length: 9 }, (_, index) => ({
+      ...option(
+        index === 0 ? 'wheel-style-magnesium-default' : `wheel-style-magnesium-${index}`,
+        'wheel-style',
+        'magnesium-alloy',
+        index === 0 ? '默认同款' : `款式${index}`,
+        index === 0,
+      ),
+      requiresSelections: { 'wheel-material': 'wheel-magnesium-alloy' },
+      pricing: {
+        ...pricing,
+        unitPriceMinor: index === 0 ? 0 : null,
+        quantity: 1,
+        isStandard: index === 0,
+        status: index === 0 ? 'confirmed' as const : 'unconfirmed' as const,
+      },
+    })),
     option('steering-skin-ultrasuede-black', 'steering-wheel-skin', 'ultrasuede', '奥司维（黑）'),
     {
       ...option(
@@ -453,6 +483,101 @@ export const catalogFixture: CatalogV2 = {
         status: 'confirmed' as const,
       },
     })),
+    ...([
+      ['embroidered-logo-red', '红色', '#D71920'],
+      ['embroidered-logo-yellow', '黄色', '#FFD400'],
+      ['embroidered-logo-blue', '蓝色', '#1769E0'],
+      ['embroidered-logo-green', '绿色', '#159447'],
+    ] as const).map(([optionId, displayName, colorCode], index) => ({
+      ...option(optionId, 'embroidered-logo', null, displayName, false),
+      colorCode,
+      parameters: {
+        color: { mode: 'fixed' as const, value: colorCode, required: true },
+        material: null,
+      },
+      pricing: {
+        ...pricing,
+        unitPriceMinor: 0,
+        quantity: 1,
+        isStandard: false,
+        status: 'confirmed' as const,
+      },
+      ui: { order: index + 1, control: 'swatch' as const },
+    })),
+    {
+      ...option('headrest-embroidery-custom', 'headrest-embroidery', null, '刺绣', false),
+      pricing: {
+        ...pricing,
+        unitPriceMinor: 128800,
+        quantity: 1,
+        isStandard: false,
+        status: 'confirmed' as const,
+      },
+    },
+    {
+      ...option('door-panel-embroidery-custom', 'door-panel-embroidery', null, '刺绣', false),
+      pricing: {
+        ...pricing,
+        unitPriceMinor: 168800,
+        quantity: 1,
+        isStandard: false,
+        status: 'confirmed' as const,
+      },
+    },
+    {
+      ...option('center-panel-trim-custom', 'center-panel-trim', null, '自定义颜色', false),
+      parameters: {
+        color: { mode: 'custom' as const, value: null, required: true },
+        material: null,
+      },
+      pricing: {
+        ...pricing,
+        unitPriceMinor: 30000,
+        quantity: 2,
+        isStandard: false,
+        status: 'confirmed' as const,
+      },
+      ui: {
+        order: 1,
+        iconUrl: '/sc01/option-icons/rainbow.svg',
+        control: 'color-picker' as const,
+        defaultParameters: {
+          colorHex: '#D71920',
+          metallic: 0,
+          roughness: 0.65,
+          clearCoat: 0,
+          orangePeel: 0,
+          flakeIntensity: 0,
+        },
+      },
+    },
+    {
+      ...option('pedal-luxury-carpet', 'pedal', null, '金属板+豪华地毯', false),
+      pricing: {
+        ...pricing,
+        unitPriceMinor: 168000,
+        quantity: 1,
+        isStandard: false,
+        status: 'confirmed' as const,
+      },
+    },
+    {
+      ...option('rear-wing-gray', 'rear-wing', 'paint', '灰色', false),
+      availability: { status: 'disabled' as const, reason: '暂不可选' },
+      colorCode: '#808080',
+      parameters: {
+        color: { mode: 'fixed' as const, value: '#808080', required: true },
+        material: { materialFamilyId: 'paint', variantId: null },
+      },
+      pricing: {
+        ...pricing,
+        unitPriceMinor: null,
+        quantity: 1,
+        isStandard: false,
+        status: 'unconfirmed' as const,
+      },
+      ui: { order: 1, control: 'swatch' as const },
+    },
     ...additionalDefaults.map(([surfaceId, optionId, displayName]) => {
       const result = option(
         optionId,
@@ -472,6 +597,37 @@ export const catalogFixture: CatalogV2 = {
           },
         }
       }
+      if (surfaceId === 'wheel-style') {
+        return {
+          ...result,
+          displayName: '多条幅轮毂',
+          requiresSelections: { 'wheel-material': 'wheel-aluminum-alloy' },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+          ui: { order: 0, control: 'swatch' as const },
+        }
+      }
+      if (surfaceId === 'door-sill') {
+        return {
+          ...result,
+          displayName: '无口袋',
+          materialFamilyId: null,
+          parameters: { color: null, material: null },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+          ui: { order: 0, control: 'swatch' as const },
+        }
+      }
       if (surfaceId === 'seat-headrest-mark') {
         return {
           ...result,
@@ -488,6 +644,7 @@ export const catalogFixture: CatalogV2 = {
             isStandard: true,
             status: 'confirmed' as const,
           },
+          ui: { order: 0, control: 'swatch' as const },
         }
       }
       if (surfaceId === 'seat-shell-back') {
@@ -503,6 +660,85 @@ export const catalogFixture: CatalogV2 = {
             isStandard: true,
             status: 'confirmed' as const,
           },
+          ui: { order: 0, control: 'swatch' as const },
+        }
+      }
+      if (surfaceId === 'steering-wheel-addon') {
+        return {
+          ...result,
+          displayName: '加粗(EVA海绵)',
+        }
+      }
+      if (surfaceId === 'embroidered-logo') {
+        return {
+          ...result,
+          displayName: '黑色',
+          materialFamilyId: null,
+          colorCode: '#111111',
+          parameters: {
+            color: { mode: 'fixed' as const, value: '#111111', required: true },
+            material: null,
+          },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+          ui: { order: 0, control: 'swatch' as const },
+        }
+      }
+      if (surfaceId === 'headrest-embroidery' || surfaceId === 'door-panel-embroidery') {
+        return {
+          ...result,
+          displayName: '无刺绣',
+          materialFamilyId: null,
+          parameters: { color: null, material: null },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+          ui: { order: 0, control: 'swatch' as const },
+        }
+      }
+      if (surfaceId === 'center-panel-trim') {
+        return {
+          ...result,
+          displayName: '黑色',
+          materialFamilyId: null,
+          colorCode: '#111111',
+          parameters: {
+            color: { mode: 'fixed' as const, value: '#111111', required: true },
+            material: null,
+          },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+          ui: { order: 0, control: 'swatch' as const },
+        }
+      }
+      if (surfaceId === 'rear-wing') {
+        return {
+          ...result,
+          displayName: '无尾翼',
+          materialFamilyId: null,
+          parameters: { color: null, material: null },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+          ui: { order: 0, control: 'swatch' as const },
         }
       }
       if (surfaceId === 'ip-center-mark') {

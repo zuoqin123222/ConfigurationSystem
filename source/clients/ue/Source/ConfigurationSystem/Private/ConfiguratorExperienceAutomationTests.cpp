@@ -460,8 +460,8 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 			35.0f));
 	TestTrue(TEXT("车内 FOV 不高于安全上限"),
 		FMath::IsNearlyEqual(
-			AConfigShowroomPlayerController::CalculateInteriorZoomFov(108.0f, -2.0f),
-			110.0f));
+			AConfigShowroomPlayerController::CalculateInteriorZoomFov(123.0f, -2.0f),
+			125.0f));
 
 	FMinimalViewInfo StartPOV;
 	StartPOV.Location = Start;
@@ -674,12 +674,18 @@ bool FVehicleAnimSequenceFramePlayerAutomationTest::RunTest(
 			Vehicle->FocusVehicleAnimation(TEXT("trunk")));
 		TestEqual(TEXT("reverse 完成前仍保持旧动画焦点"),
 			Vehicle->GetActiveVehicleAnimationId(), FName(TEXT("hood")));
+		TestEqual(TEXT("状态立即暴露 pending 动画目标"),
+			Vehicle->GetFocusedVehicleAnimationId(), FName(TEXT("trunk")));
 		TestTrue(TEXT("快速请求用 wheel-spin 替换旧 pending"),
 			Vehicle->FocusVehicleAnimation(TEXT("wheel-spin")));
+		TestEqual(TEXT("状态立即暴露最新 pending 动画目标"),
+			Vehicle->GetFocusedVehicleAnimationId(), FName(TEXT("wheel-spin")));
 		HoodActuator->AdvanceActuation(1.0f);
 		Vehicle->Tick(0.0f);
 		TestEqual(TEXT("reverse 完成后只播放最新 pending"),
 			Vehicle->GetActiveVehicleAnimationId(), FName(TEXT("wheel-spin")));
+		TestEqual(TEXT("pending 播放后焦点状态保持目标"),
+			Vehicle->GetFocusedVehicleAnimationId(), FName(TEXT("wheel-spin")));
 		Vehicle->FreezeAllVehicleMotion();
 		TestTrue(TEXT("冻结后清空活动动画"),
 			Vehicle->GetActiveVehicleAnimationId().IsNone());

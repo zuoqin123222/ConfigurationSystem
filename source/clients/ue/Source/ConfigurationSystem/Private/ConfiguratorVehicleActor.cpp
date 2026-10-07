@@ -843,6 +843,17 @@ FName AConfiguratorVehicleActor::GetActiveVehicleAnimationId() const
 		: SequenceAnimationId;
 }
 
+FName AConfiguratorVehicleActor::GetFocusedVehicleAnimationId() const
+{
+	if (!bStaticAnimationFallbackEnabled && IsValid(AnimationPlayer))
+	{
+		return AnimationPlayer->GetFocusedAnimationId();
+	}
+	return bHasPendingFallbackFocus
+		? PendingFallbackAnimationId
+		: ActiveFallbackAnimationId;
+}
+
 bool AConfiguratorVehicleActor::IsVehicleAnimationPlaying() const
 {
 	return !GetActiveVehicleAnimationId().IsNone();

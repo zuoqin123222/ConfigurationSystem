@@ -29,7 +29,7 @@ namespace
 	constexpr float StageProjectionInterpolationSpeed = 8.0f;
 	constexpr float CameraFovInterpolationSpeed = 10.0f;
 	constexpr float InteriorMinFov = 35.0f;
-	constexpr float InteriorMaxFov = 110.0f;
+	constexpr float InteriorMaxFov = 125.0f;
 	constexpr float InteriorFovStep = 3.0f;
 	const TCHAR* CameraTagPrefix = TEXT("Configurator.Camera.");
 	const FName InteriorCameraTag(TEXT("Configurator.Camera.Interior"));
@@ -71,6 +71,14 @@ namespace
 			UserSettings->ApplyResolutionSettings(false);
 			UserSettings->ConfirmVideoMode();
 			UserSettings->SaveSettings();
+		}
+
+		if (const TSharedPtr<SWindow> MainWindow = GEngine->GameViewport->GetWindow();
+			MainWindow.IsValid())
+		{
+			// 产品要求占满桌面可用区但保留系统标题栏。UE 的
+			// WindowedFullscreen 是无边框窗口，因此使用普通窗口最大化。
+			MainWindow->Maximize();
 		}
 	}
 }
@@ -1060,12 +1068,12 @@ void AConfigShowroomPlayerController::HandleCameraHorizontal(const float Value)
 	}
 	if (IsInputKeyDown(EKeys::LeftMouseButton))
 	{
-		RotateInteractiveCamera(FMath::Clamp(Value, -12.0f, 12.0f) * 0.35f, 0.0f);
+		RotateInteractiveCamera(FMath::Clamp(Value, -12.0f, 12.0f) * 0.7f, 0.0f);
 	}
 	else if (IsInputKeyDown(EKeys::RightMouseButton)
 		|| IsInputKeyDown(EKeys::MiddleMouseButton))
 	{
-		PanInteractiveCamera(Value * 2.0f, 0.0f);
+		PanInteractiveCamera(Value * 4.0f, 0.0f);
 	}
 }
 
@@ -1082,12 +1090,12 @@ void AConfigShowroomPlayerController::HandleCameraVertical(const float Value)
 	if (IsInputKeyDown(EKeys::LeftMouseButton))
 	{
 		RotateInteractiveCamera(
-			0.0f, -FMath::Clamp(Value, -12.0f, 12.0f) * 0.35f);
+			0.0f, -FMath::Clamp(Value, -12.0f, 12.0f) * 0.7f);
 	}
 	else if (IsInputKeyDown(EKeys::RightMouseButton)
 		|| IsInputKeyDown(EKeys::MiddleMouseButton))
 	{
-		PanInteractiveCamera(0.0f, -Value * 2.0f);
+		PanInteractiveCamera(0.0f, -Value * 4.0f);
 	}
 }
 
@@ -1105,7 +1113,7 @@ void AConfigShowroomPlayerController::HandleCameraZoom(const float Value)
 		}
 		else
 		{
-			DollyInteractiveCamera(Value * 35.0f);
+			DollyInteractiveCamera(Value * 60.0f);
 		}
 	}
 }
@@ -1180,6 +1188,11 @@ bool AConfigShowroomPlayerController::CanPlayAnimation(
 FName AConfigShowroomPlayerController::GetActiveAnimationId() const
 {
 	return IsValid(Vehicle) ? Vehicle->GetActiveVehicleAnimationId() : NAME_None;
+}
+
+FName AConfigShowroomPlayerController::GetFocusedAnimationId() const
+{
+	return IsValid(Vehicle) ? Vehicle->GetFocusedVehicleAnimationId() : NAME_None;
 }
 
 bool AConfigShowroomPlayerController::SetLightPreset(const FString& Preset)

@@ -45,7 +45,7 @@ namespace ContentPackProviderTests
   "schemaVersion":"2.0.0",
   "packId":"%s",
   "version":"%s",
-  "catalogVersion":"sc01-draft-20260121",
+  "catalogVersion":"sc01-draft-20261007",
   "providerType":"%s",
   "engineVersion":"5.8",
   "platform":"Win64",

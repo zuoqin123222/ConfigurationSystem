@@ -13,38 +13,68 @@ import type {
   Selections,
 } from './types'
 
-function defaultOption(catalog: CatalogV2, surfaceId: string): CatalogOption | undefined {
+export function optionIsAvailable(
+  option: CatalogOption,
+  selections: Selections,
+): boolean {
+  return option.availability?.status !== 'disabled'
+    && Object.entries(option.requiresSelections ?? {}).every(
+    ([surfaceId, optionId]) => selections[surfaceId] === optionId,
+  )
+}
+
+function optionRequirementsAreMet(
+  option: CatalogOption,
+  selections: Selections,
+): boolean {
+  return Object.entries(option.requiresSelections ?? {}).every(
+    ([surfaceId, optionId]) => selections[surfaceId] === optionId,
+  )
+}
+
+function defaultOption(
+  catalog: CatalogV2,
+  surfaceId: string,
+  selections: Selections,
+): CatalogOption | undefined {
   const optionId = catalog.defaultSelections[surfaceId]
-  return optionId
+  const configured = optionId
     ? catalog.options.find(
         (item) => item.surfaceId === surfaceId && item.optionId === optionId,
       )
     : undefined
+  if (configured && optionIsAvailable(configured, selections)) return configured
+  return catalog.options.find(
+    (item) => item.surfaceId === surfaceId
+      && item.pricing.isStandard
+      && optionIsAvailable(item, selections),
+  )
 }
 
 export function createInitialSelections(catalog: CatalogV2): Selections {
-  return Object.fromEntries(
-    catalog.selectionOrder.flatMap((surfaceId) => {
-      const option = defaultOption(catalog, surfaceId)
-      return option ? [[surfaceId, option.optionId]] : []
-    }),
-  )
+  const normalized: Selections = {}
+  for (const surfaceId of catalog.selectionOrder) {
+    const option = defaultOption(catalog, surfaceId, normalized)
+    if (option) normalized[surfaceId] = option.optionId
+  }
+  return normalized
 }
 
 export function normalizeSelections(
   catalog: CatalogV2,
   selections: Selections,
 ): Selections {
-  return Object.fromEntries(
-    catalog.selectionOrder.flatMap((surfaceId) => {
-      const selected = catalog.options.find(
-        (option) => option.surfaceId === surfaceId && option.optionId === selections[surfaceId],
-      )
-      const fallback = defaultOption(catalog, surfaceId)
-      const option = selected ?? fallback
-      return option ? [[surfaceId, option.optionId]] : []
-    }),
-  )
+  const normalized: Selections = {}
+  for (const surfaceId of catalog.selectionOrder) {
+    const selected = catalog.options.find(
+      (option) => option.surfaceId === surfaceId
+        && option.optionId === selections[surfaceId]
+        && optionIsAvailable(option, normalized),
+    )
+    const option = selected ?? defaultOption(catalog, surfaceId, normalized)
+    if (option) normalized[surfaceId] = option.optionId
+  }
+  return normalized
 }
 
 const PAINT_KEYS: Array<keyof PaintCustomization> = [
@@ -176,9 +206,14 @@ export function surfacesForComponent(
     .map(({ surface }) => surface)
 }
 
-export function optionsForSurface(catalog: CatalogV2, surfaceId: string): CatalogOption[] {
+export function optionsForSurface(
+  catalog: CatalogV2,
+  surfaceId: string,
+  selections?: Selections,
+): CatalogOption[] {
   return catalog.options
-    .filter((option) => option.surfaceId === surfaceId)
+    .filter((option) => option.surfaceId === surfaceId
+      && (!selections || optionRequirementsAreMet(option, selections)))
     .map((option, index) => ({ option, index }))
     .sort((left, right) =>
       (left.option.ui?.order ?? left.index) - (right.option.ui?.order ?? right.index),

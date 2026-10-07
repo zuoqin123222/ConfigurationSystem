@@ -93,6 +93,11 @@ export interface CatalogPricing {
 export interface CatalogOption extends CatalogNode {
   optionId: string
   surfaceId: string
+  requiresSelections?: Selections
+  availability?: {
+    status: 'disabled'
+    reason: string
+  }
   materialFamilyId: string | null
   renderRelevant: boolean
   colorCode: string | null
@@ -144,6 +149,7 @@ export interface CatalogV2 {
   }
   selectionOrder: string[]
   defaultSelections: Selections
+  optionIdAliases: Selections
   interactionCameras?: CatalogInteractionCamera[]
   skeletalMeshPath: string
   sequencePath: string

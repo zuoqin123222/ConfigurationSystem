@@ -73,14 +73,14 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 		AddError(Error.Code + TEXT(": ") + Error.Message);
 		return false;
 	}
-	TestEqual(TEXT("必选表面数"), Catalog.GetCatalog().SelectionOrder.Num(), 38);
-	TestEqual(TEXT("选项索引覆盖 catalog"), Catalog.GetCatalog().Options.Num(), 154);
+	TestEqual(TEXT("必选表面数"), Catalog.GetCatalog().SelectionOrder.Num(), 40);
+	TestEqual(TEXT("选项索引覆盖 catalog"), Catalog.GetCatalog().Options.Num(), 171);
 	TestEqual(TEXT("色卡索引覆盖 catalog"), Catalog.GetCatalog().MaterialVariants.Num(), 352);
 	TestEqual(TEXT("车辆 displayName"), Catalog.GetCatalog().VehicleDisplayName, FString(TEXT("SC01")));
 	TestEqual(TEXT("基础价读取为 22980000 分"), Catalog.GetCatalog().BasePriceMinor, int64(22980000));
 	TestEqual(TEXT("region 数"), Catalog.GetCatalog().Regions.Num(), 4);
 	TestEqual(TEXT("四阶段 category 数"), Catalog.GetCatalog().Categories.Num(), 4);
-	TestEqual(TEXT("component 数"), Catalog.GetCatalog().Components.Num(), 16);
+	TestEqual(TEXT("component 数"), Catalog.GetCatalog().Components.Num(), 17);
 	TestEqual(TEXT("顶层动画定义数"), Catalog.GetCatalog().Animations.Num(), 5);
 	TestEqual(TEXT("骨骼网格由顶层 Catalog 提供"),
 		Catalog.GetCatalog().SkeletalMeshPath,
@@ -297,11 +297,11 @@ bool FAutomotiveCatalogCustomizationAutomationTest::RunTest(const FString& Param
 	TestEqual(
 		TEXT("定制 configurationId 与 server automotive-catalog-v2.ts 一致"),
 		Configuration.ConfigurationId,
-		FString(TEXT("cfg-cea5b986ba7f948e91d44ea7")));
+		FString(TEXT("cfg-3d3bfa5b72851e7025742c48")));
 	TestEqual(
 		TEXT("定制 renderKey 与 server automotive-catalog-v2.ts 一致"),
 		Configuration.RenderKey,
-		FString(TEXT("sc01__sc01-draft-20260121__render-cea5b986ba7f948e91d44ea7")));
+		FString(TEXT("sc01__sc01-draft-20261007__render-3d3bfa5b72851e7025742c48")));
 
 	AutomotiveCatalog::FCustomizations Mismatch = Customizations;
 	Mismatch[TEXT("steering-wheel-skin")] =
@@ -316,9 +316,9 @@ bool FAutomotiveCatalogCustomizationAutomationTest::RunTest(const FString& Param
 
 	AutomotiveCatalog::FCustomizations Unsupported;
 	AutomotiveCatalog::FSelections UnsupportedSelections = Selections;
-	UnsupportedSelections.Add(TEXT("embroidered-logo"), TEXT("embroidered-logo-custom"));
+	UnsupportedSelections.Add(TEXT("door-upper"), TEXT("door-upper-microfiber-black"));
 	Unsupported.Add(
-		TEXT("embroidered-logo"),
+		TEXT("door-upper"),
 		AutomotiveCatalog::FCustomization::ForMaterialVariant(TEXT("microfiber-p16-np-3048")));
 	TestFalse(
 		TEXT("不支持 variant 色彩能力的同材料族 option 拒绝色卡"),

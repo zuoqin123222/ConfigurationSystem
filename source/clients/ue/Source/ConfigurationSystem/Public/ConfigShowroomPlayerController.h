@@ -154,6 +154,9 @@ public:
 	UFUNCTION(BlueprintPure, Category="Configurator|Experience")
 	FName GetActiveAnimationId() const;
 
+	UFUNCTION(BlueprintPure, Category="Configurator|Experience")
+	FName GetFocusedAnimationId() const;
+
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	bool SetLightPreset(const FString& Preset);
 

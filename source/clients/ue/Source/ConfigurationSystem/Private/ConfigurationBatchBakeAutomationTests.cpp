@@ -189,11 +189,11 @@ bool FConfigurationBatchBakeV2PlanTest::RunTest(const FString& Parameters)
 	IFileManager::Get().MakeDirectory(*TestDirectory, true);
 	const FString PlanPath = FPaths::Combine(TestDirectory, TEXT("v2-plan.json"));
 	const FString RenderKey =
-		TEXT("sc01__sc01-draft-20260121__render-0123456789abcdef01234567");
+		TEXT("sc01__sc01-draft-20261007__render-0123456789abcdef01234567");
 	const FString Json = FString::Printf(TEXT(R"JSON({
 		"schemaVersion":"2.0.0",
 		"publicationVersion":"sc01-v2",
-		"catalogVersion":"sc01-draft-20260121",
+		"catalogVersion":"sc01-draft-20261007",
 		"vehicleId":"sc01",
 		"renderViewIds":["front","front-left","side","rear-right"],
 		"expectedRenderCount":4,

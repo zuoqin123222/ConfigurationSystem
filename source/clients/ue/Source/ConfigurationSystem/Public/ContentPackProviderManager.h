@@ -29,7 +29,7 @@ struct FContentPackProviderSlot
 
 struct FContentPackProviderManagerPolicy
 {
-	FString CatalogVersion = TEXT("sc01-draft-20260121");
+	FString CatalogVersion = TEXT("sc01-draft-20261007");
 	FString EngineVersion;
 	FString Platform = TEXT("Win64");
 	FString RegistryPath;

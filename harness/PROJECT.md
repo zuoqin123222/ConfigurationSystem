@@ -13,17 +13,17 @@
 | 项目 | 当前值 |
 |---|---|
 | `schemaVersion` | `2.0.0` |
-| `catalogVersion` | `sc01-draft-20260121` |
+| `catalogVersion` | `sc01-draft-20261007` |
 | `vehicleId` | `sc01` |
 | 展示名称 | `SC01` |
 | 基础价 | `22980000` 分 |
 | 生命周期 | `draft` |
 | 正式报价 | `quotable=false` |
 | 阶段 | 4 |
-| 部件 | 16 |
-| surface | 38 |
+| 部件 | 17 |
+| surface | 40 |
 | 材料族 | 17 |
-| option | 154 |
+| option | 171 |
 
 确定规则：
 
@@ -36,7 +36,7 @@
 - 仪表台回中标默认 `ip-center-mark-uncovered-black`；四类材料及色卡均为 100 元。
 - 座椅回中标四类材料及色卡均免费。
 - 座椅背板默认 `seat-shell-carbon-original` /“高光原色碳纤维”。
-- `seat-shell-custom` 为“自定义颜色”，支持亮面与雾面。
+- `seat-shell-custom` 为“自定义颜色”，支持亮面与哑光。
 - 自定义颜色入口使用满幅彩虹方块。
 
 ## 工程边界

@@ -441,12 +441,14 @@ try {
   const coverage = generateV2Coverage(v2Catalog);
   const plan = generateV2Plan(v2Catalog, "sc01-v2");
   check(
-    scale.configurationCount === "391820820480000000000",
+    scale.configurationCount === "19591041024000000000000",
     "SC01 v2 完整组合规模估算必须稳定且不得直接展开"
   );
   check(
     coverage.coveredRenderRelevantOptionCount
-      === v2Catalog.options.filter((option) => option.renderRelevant).length,
+      === v2Catalog.options.filter(
+        (option) => option.renderRelevant && option.availability?.status !== "disabled"
+      ).length,
     "SC01 v2 coverage 必须覆盖每个 renderRelevant 选项"
   );
   check(

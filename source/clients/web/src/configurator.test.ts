@@ -11,6 +11,7 @@ import {
   materialGroupsForSurface,
   normalizeCustomizations,
   normalizeSelections,
+  optionIsAvailable,
   optionsForSurface,
   renderRelevantSelections,
   sortMaterialVariants,
@@ -63,6 +64,7 @@ describe('v2 动态选配逻辑', () => {
     })).toEqual({
       ...initialSelections,
       'wheel-material': 'wheel-magnesium-alloy',
+      'wheel-style': 'wheel-style-magnesium-default',
     })
   })
 
@@ -126,7 +128,16 @@ describe('v2 动态选配逻辑', () => {
 
   it('由 category surfaces-as-components 配置把 surface 平铺为部件入口', () => {
     expect(componentsForCategory(catalogFixture, 'personalization').map((item) => item.displayName))
-      .toEqual(['内饰全车黑色喷漆件', '门板口袋', '缝线徽标', '中面板横饰板', '换挡', '刹车', '脚垫'])
+      .toEqual([
+        '内饰全车黑色喷漆件',
+        '门板口袋',
+        '缝线',
+        '头枕刺绣',
+        '门中板刺绣',
+        '中面板缝线',
+        '铭牌',
+        '脚垫',
+      ])
   })
 
   it('中性色先按亮度排序，其余颜色按红橙黄绿青蓝紫色相排序', () => {
@@ -211,6 +222,51 @@ describe('v2 动态选配逻辑', () => {
       colorHex: '#A61D24',
       roughness: 0.28,
     })
+  })
+
+  it('按 requiresSelections 过滤轮毂造型并保留轮毂颜色', () => {
+    const aluminumSelections = createInitialSelections(catalogFixture)
+    expect(optionsForSurface(catalogFixture, 'wheel-style', aluminumSelections)
+      .map((option) => option.optionId))
+      .toEqual(['wheel-style-multispoke'])
+
+    const magnesiumSelections = {
+      ...aluminumSelections,
+      'wheel-material': 'wheel-magnesium-alloy',
+    }
+    expect(optionsForSurface(catalogFixture, 'wheel-style', magnesiumSelections)
+      .map((option) => option.displayName))
+      .toEqual(['默认同款', '款式1', '款式2', '款式3', '款式4', '款式5', '款式6', '款式7', '款式8'])
+    expect(optionsForSurface(catalogFixture, 'wheel-color', magnesiumSelections))
+      .toHaveLength(optionsForSurface(catalogFixture, 'wheel-color', aluminumSelections).length)
+  })
+
+  it('轮毂材质变化时归一化不兼容造型为对应免费默认款', () => {
+    const magnesium = normalizeSelections(catalogFixture, {
+      ...initialSelections,
+      'wheel-material': 'wheel-magnesium-alloy',
+      'wheel-style': 'wheel-style-multispoke',
+    })
+    expect(magnesium['wheel-style']).toBe('wheel-style-magnesium-default')
+
+    const aluminum = normalizeSelections(catalogFixture, {
+      ...magnesium,
+      'wheel-material': 'wheel-aluminum-alloy',
+      'wheel-style': 'wheel-style-magnesium-1',
+    })
+    expect(aluminum['wheel-style']).toBe('wheel-style-multispoke')
+  })
+
+  it('保留禁用选项用于展示，但不会选中或归一化为禁用项', () => {
+    const options = optionsForSurface(catalogFixture, 'rear-wing', initialSelections)
+    const gray = options.find((option) => option.optionId === 'rear-wing-gray')!
+
+    expect(gray.availability).toEqual({ status: 'disabled', reason: '暂不可选' })
+    expect(optionIsAvailable(gray, initialSelections)).toBe(false)
+    expect(normalizeSelections(catalogFixture, {
+      ...initialSelections,
+      'rear-wing': 'rear-wing-gray',
+    })['rear-wing']).toBe('rear-wing-none')
   })
 
   it('只把 renderRelevant 选项纳入渲染选择', () => {

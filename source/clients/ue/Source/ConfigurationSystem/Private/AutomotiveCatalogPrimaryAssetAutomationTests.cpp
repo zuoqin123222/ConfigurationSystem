@@ -43,7 +43,7 @@ bool FAutomotiveCatalogPrimaryAssetLoadAutomationTest::RunTest(const FString& Pa
 	UAutomotiveConfigurationState* State =
 		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
 	TestTrue(TEXT("从 Primary Asset 初始化 v2 状态"), State->Initialize(CatalogAsset));
-	TestEqual(TEXT("默认状态包含 30 个显式标配项目"), State->GetSelections().Num(), 30);
+	TestEqual(TEXT("默认状态包含 35 个显式标配项目"), State->GetSelections().Num(), 35);
 	TestEqual(
 		TEXT("车漆读取首个显式标配项"),
 		State->GetSelections().FindRef(TEXT("exterior-body-cover")),

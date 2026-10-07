@@ -143,6 +143,8 @@ manifest、活动发布指针或静态 URL。
 - 各层 `ui.order`、`ui.iconUrl` 配置顺序和图标。
 - `components[].ui.navigationMode/layout` 配置子项导航与同屏布局。
 - `options[].ui.control/defaultParameters` 配置色块、图片、材料色卡或调色板及默认参数。
+- `options[].availability.status=disabled` 表示选项仍需展示但不可提交，UI 使用
+  `availability.reason` 显示禁用原因。
 - `options[].ui.control=material-strip` 使用紧凑色彩条；拖动期间只移动指示器，松开后
   才提交选择并更新材质实拍预览。不同价格自动拆为多条，免费标配色并入首条且排在首位。
 - `options[].ui.control=material-variant` 保留纹理图片卡布局，当前用于必须辨认纹理的

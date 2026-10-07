@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0.0",
-  "catalogVersion": "sc01-draft-20260121",
+  "catalogVersion": "sc01-draft-20261007",
   "lifecycle": "draft",
   "currency": "CNY",
   "vehicle": {
@@ -13,6 +13,7 @@
   "selectionOrder": [
     "exterior-body-cover",
     "engine-bay-cover",
+    "rear-wing",
     "wheel-material",
     "wheel-style",
     "wheel-color",
@@ -45,13 +46,15 @@
     "interior-painted-parts",
     "door-sill",
     "embroidered-logo",
+    "headrest-embroidery",
+    "door-panel-embroidery",
     "center-panel-trim",
-    "shift-knob",
-    "brake-handle",
+    "nameplate",
     "pedal"
   ],
   "defaultSelections": {
     "exterior-body-cover": "body-cover-red",
+    "rear-wing": "rear-wing-none",
     "wheel-material": "wheel-aluminum-alloy",
     "wheel-style": "wheel-style-multispoke",
     "wheel-color": "wheel-color-bright-silver",
@@ -79,7 +82,11 @@
     "console-armrest-side": "console-armrest-side-microfiber-black",
     "handbrake": "handbrake-microfiber-black",
     "roof-surface": "roof-woven-standard",
-    "embroidered-logo": "embroidered-logo-standard",
+    "embroidered-logo": "embroidered-logo-black",
+    "headrest-embroidery": "headrest-embroidery-none",
+    "door-panel-embroidery": "door-panel-embroidery-none",
+    "center-panel-trim": "center-panel-trim-black",
+    "door-sill": "door-sill-none",
     "engine-bay-cover": "engine-cover-silver"
   },
   "interactionCameras": [
@@ -302,7 +309,12 @@
       "componentId": "car-paint",
       "categoryId": "exterior",
       "displayName": "车漆",
-      "ui": { "order": 0, "cameraId": "exterior", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 0,
+        "cameraId": "exterior",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -315,7 +327,13 @@
       "componentId": "chassis",
       "categoryId": "exterior",
       "displayName": "车架",
-      "ui": { "order": 1, "cameraId": "exterior", "animationId": "hood", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 1,
+        "cameraId": "exterior",
+        "animationId": "hood",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -328,7 +346,12 @@
       "componentId": "wheel",
       "categoryId": "exterior",
       "displayName": "轮毂",
-      "ui": { "order": 2, "cameraId": "wheel", "navigationMode": "none", "layout": "stack" },
+      "ui": {
+        "order": 2,
+        "cameraId": "wheel",
+        "navigationMode": "none",
+        "layout": "stack"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -341,7 +364,12 @@
       "componentId": "caliper",
       "categoryId": "exterior",
       "displayName": "卡钳",
-      "ui": { "order": 3, "cameraId": "wheel", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 3,
+        "cameraId": "wheel",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -354,7 +382,12 @@
       "componentId": "steering-wheel",
       "categoryId": "interior",
       "displayName": "方向盘",
-      "ui": { "order": 0, "cameraId": "driver", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 0,
+        "cameraId": "driver",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -367,7 +400,12 @@
       "componentId": "seat",
       "categoryId": "interior",
       "displayName": "座椅",
-      "ui": { "order": 1, "cameraId": "seat", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 1,
+        "cameraId": "seat",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -380,7 +418,12 @@
       "componentId": "door-trim",
       "categoryId": "interior",
       "displayName": "门板",
-      "ui": { "order": 2, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 2,
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -393,7 +436,12 @@
       "componentId": "instrument-panel",
       "categoryId": "interior",
       "displayName": "仪表台",
-      "ui": { "order": 3, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 3,
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -406,7 +454,12 @@
       "componentId": "storage-box",
       "categoryId": "interior",
       "displayName": "储物盒盖",
-      "ui": { "order": 4, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 4,
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -419,7 +472,12 @@
       "componentId": "center-console",
       "categoryId": "interior",
       "displayName": "副仪表台",
-      "ui": { "order": 5, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 5,
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -432,7 +490,12 @@
       "componentId": "roof",
       "categoryId": "interior",
       "displayName": "车顶",
-      "ui": { "order": 6, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 6,
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -445,7 +508,12 @@
       "componentId": "a-pillar",
       "categoryId": "interior",
       "displayName": "A柱",
-      "ui": { "order": 7, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 7,
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -458,7 +526,12 @@
       "componentId": "underbody",
       "categoryId": "performance",
       "displayName": "下护板",
-      "ui": { "order": 0, "cameraId": "exterior", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 0,
+        "cameraId": "exterior",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -468,10 +541,33 @@
       ]
     },
     {
+      "componentId": "rear-wing",
+      "categoryId": "performance",
+      "displayName": "尾翼",
+      "ui": {
+        "order": 1,
+        "cameraId": "exterior",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "尾翼（用户确认，暂不可选）"
+        }
+      ]
+    },
+    {
       "componentId": "personalization-trim",
       "categoryId": "personalization",
       "displayName": "饰件",
-      "ui": { "order": 0, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 0,
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -484,7 +580,12 @@
       "componentId": "personalization-stitching",
       "categoryId": "personalization",
       "displayName": "缝线与徽标",
-      "ui": { "order": 1, "cameraId": "front-cabin", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 1,
+        "cameraId": "front-cabin",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -497,7 +598,12 @@
       "componentId": "personalization-controls",
       "categoryId": "personalization",
       "displayName": "操控与脚垫",
-      "ui": { "order": 2, "cameraId": "driver", "navigationMode": "tabs", "layout": "single" },
+      "ui": {
+        "order": 2,
+        "cameraId": "driver",
+        "navigationMode": "tabs",
+        "layout": "single"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -621,6 +727,20 @@
       ]
     },
     {
+      "surfaceId": "rear-wing",
+      "componentId": "rear-wing",
+      "displayName": "尾翼",
+      "required": true,
+      "reviewRequired": true,
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "尾翼（用户确认，暂不可选）"
+        }
+      ]
+    },
+    {
       "surfaceId": "steering-wheel-skin",
       "componentId": "steering-wheel",
       "displayName": "表皮",
@@ -637,7 +757,7 @@
     {
       "surfaceId": "steering-wheel-addon",
       "componentId": "steering-wheel",
-      "displayName": "加粗",
+      "displayName": "加粗(EVA海绵)",
       "required": false,
       "reviewRequired": true,
       "sourceRefs": [
@@ -960,7 +1080,7 @@
       "surfaceId": "door-sill",
       "componentId": "personalization-trim",
       "displayName": "门板口袋",
-      "required": false,
+      "required": true,
       "reviewRequired": true,
       "sourceRefs": [
         {
@@ -973,7 +1093,7 @@
     {
       "surfaceId": "embroidered-logo",
       "componentId": "personalization-stitching",
-      "displayName": "缝线徽标",
+      "displayName": "缝线",
       "required": true,
       "reviewRequired": false,
       "sourceRefs": [
@@ -985,10 +1105,38 @@
       ]
     },
     {
+      "surfaceId": "headrest-embroidery",
+      "componentId": "personalization-stitching",
+      "displayName": "头枕刺绣",
+      "required": true,
+      "reviewRequired": false,
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "旧刹车项拆分 / 头枕刺绣（用户确认）"
+        }
+      ]
+    },
+    {
+      "surfaceId": "door-panel-embroidery",
+      "componentId": "personalization-stitching",
+      "displayName": "门中板刺绣",
+      "required": true,
+      "reviewRequired": false,
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "旧刹车项拆分 / 门中板刺绣（用户确认）"
+        }
+      ]
+    },
+    {
       "surfaceId": "center-panel-trim",
       "componentId": "personalization-stitching",
-      "displayName": "中面板横饰板",
-      "required": false,
+      "displayName": "中面板缝线",
+      "required": true,
       "reviewRequired": true,
       "sourceRefs": [
         {
@@ -999,30 +1147,16 @@
       ]
     },
     {
-      "surfaceId": "shift-knob",
-      "componentId": "personalization-controls",
-      "displayName": "换挡",
+      "surfaceId": "nameplate",
+      "componentId": "personalization-stitching",
+      "displayName": "铭牌",
       "required": false,
       "reviewRequired": false,
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "换挡（清单第 4 页）"
-        }
-      ]
-    },
-    {
-      "surfaceId": "brake-handle",
-      "componentId": "personalization-controls",
-      "displayName": "刹车",
-      "required": false,
-      "reviewRequired": true,
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 4,
-          "locator": "刹车（清单第 4 页）"
+          "locator": "铭牌（清单第 4 页）"
         }
       ]
     },
@@ -1126,7 +1260,9 @@
     {
       "materialFamilyId": "alcantara",
       "displayName": "Alcantara",
-      "ui": { "variantSort": "achromatic-then-rainbow" },
+      "ui": {
+        "variantSort": "achromatic-then-rainbow"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-color-card",
@@ -1138,7 +1274,9 @@
     {
       "materialFamilyId": "leather",
       "displayName": "牛皮",
-      "ui": { "variantSort": "achromatic-then-rainbow" },
+      "ui": {
+        "variantSort": "achromatic-then-rainbow"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-color-card",
@@ -1246,7 +1384,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2911",
       "colorCode": "2911",
-      "ui": { "sortColorHex": "#DFDBBE" },
+      "ui": {
+        "sortColorHex": "#DFDBBE"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2911.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1262,7 +1402,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2901",
       "colorCode": "2901",
-      "ui": { "sortColorHex": "#BCB092" },
+      "ui": {
+        "sortColorHex": "#BCB092"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2901.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1278,7 +1420,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1112",
       "colorCode": "1112",
-      "ui": { "sortColorHex": "#908063" },
+      "ui": {
+        "sortColorHex": "#908063"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1112.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1294,7 +1438,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2293",
       "colorCode": "2293",
-      "ui": { "sortColorHex": "#978F7A" },
+      "ui": {
+        "sortColorHex": "#978F7A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2293.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1310,7 +1456,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2100",
       "colorCode": "2100",
-      "ui": { "sortColorHex": "#C3B798" },
+      "ui": {
+        "sortColorHex": "#C3B798"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2100.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1326,7 +1474,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1510",
       "colorCode": "1510",
-      "ui": { "sortColorHex": "#C3AB94" },
+      "ui": {
+        "sortColorHex": "#C3AB94"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1510.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1342,7 +1492,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1108",
       "colorCode": "1108",
-      "ui": { "sortColorHex": "#D2B491" },
+      "ui": {
+        "sortColorHex": "#D2B491"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1108.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1358,7 +1510,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2292",
       "colorCode": "2292",
-      "ui": { "sortColorHex": "#BF9D6D" },
+      "ui": {
+        "sortColorHex": "#BF9D6D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2292.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1374,7 +1528,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1594",
       "colorCode": "1594",
-      "ui": { "sortColorHex": "#D7CB9E" },
+      "ui": {
+        "sortColorHex": "#D7CB9E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1594.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1390,7 +1546,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2974",
       "colorCode": "2974",
-      "ui": { "sortColorHex": "#B0A174" },
+      "ui": {
+        "sortColorHex": "#B0A174"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2974.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1406,7 +1564,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1110",
       "colorCode": "1110",
-      "ui": { "sortColorHex": "#C2B58E" },
+      "ui": {
+        "sortColorHex": "#C2B58E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1110.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1422,7 +1582,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2909",
       "colorCode": "2909",
-      "ui": { "sortColorHex": "#CCBA86" },
+      "ui": {
+        "sortColorHex": "#CCBA86"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2909.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1438,7 +1600,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2940",
       "colorCode": "2940",
-      "ui": { "sortColorHex": "#B99F67" },
+      "ui": {
+        "sortColorHex": "#B99F67"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2940.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1454,7 +1618,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "4415",
       "colorCode": "4415",
-      "ui": { "sortColorHex": "#9E805E" },
+      "ui": {
+        "sortColorHex": "#9E805E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-4415.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1470,7 +1636,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "4914",
       "colorCode": "4914",
-      "ui": { "sortColorHex": "#8D7351" },
+      "ui": {
+        "sortColorHex": "#8D7351"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-4914.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1486,7 +1654,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2930",
       "colorCode": "2930",
-      "ui": { "sortColorHex": "#8E7361" },
+      "ui": {
+        "sortColorHex": "#8E7361"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-2930.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1502,7 +1672,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1125",
       "colorCode": "1125",
-      "ui": { "sortColorHex": "#B89637" },
+      "ui": {
+        "sortColorHex": "#B89637"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1125.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1518,7 +1690,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1452",
       "colorCode": "1452",
-      "ui": { "sortColorHex": "#CDC11B" },
+      "ui": {
+        "sortColorHex": "#CDC11B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1452.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1534,7 +1708,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1045",
       "colorCode": "1045",
-      "ui": { "sortColorHex": "#CAD076" },
+      "ui": {
+        "sortColorHex": "#CAD076"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1045.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1550,7 +1726,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1581",
       "colorCode": "1581",
-      "ui": { "sortColorHex": "#6A9E22" },
+      "ui": {
+        "sortColorHex": "#6A9E22"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-1581.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1566,7 +1744,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "3314",
       "colorCode": "3314",
-      "ui": { "sortColorHex": "#637135" },
+      "ui": {
+        "sortColorHex": "#637135"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-3314.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1582,7 +1762,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "3322",
       "colorCode": "3322",
-      "ui": { "sortColorHex": "#837F52" },
+      "ui": {
+        "sortColorHex": "#837F52"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-3322.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1598,7 +1780,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "6676",
       "colorCode": "6676",
-      "ui": { "sortColorHex": "#676E55" },
+      "ui": {
+        "sortColorHex": "#676E55"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-6676.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1614,7 +1798,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9073",
       "colorCode": "9073",
-      "ui": { "sortColorHex": "#5B6759" },
+      "ui": {
+        "sortColorHex": "#5B6759"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p2-9073.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1630,7 +1816,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1041",
       "colorCode": "1041",
-      "ui": { "sortColorHex": "#E6E787" },
+      "ui": {
+        "sortColorHex": "#E6E787"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-1041.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1646,7 +1834,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1352",
       "colorCode": "1352",
-      "ui": { "sortColorHex": "#E0C21A" },
+      "ui": {
+        "sortColorHex": "#E0C21A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-1352.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1662,7 +1852,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2969",
       "colorCode": "2969",
-      "ui": { "sortColorHex": "#D5782E" },
+      "ui": {
+        "sortColorHex": "#D5782E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2969.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1678,7 +1870,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2014",
       "colorCode": "2014",
-      "ui": { "sortColorHex": "#B2542C" },
+      "ui": {
+        "sortColorHex": "#B2542C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2014.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1694,7 +1888,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "4996",
       "colorCode": "4996",
-      "ui": { "sortColorHex": "#AD3939" },
+      "ui": {
+        "sortColorHex": "#AD3939"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-4996.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1710,7 +1906,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "3679",
       "colorCode": "3679",
-      "ui": { "sortColorHex": "#9F3D36" },
+      "ui": {
+        "sortColorHex": "#9F3D36"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-3679.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1726,7 +1924,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2916",
       "colorCode": "2916",
-      "ui": { "sortColorHex": "#864541" },
+      "ui": {
+        "sortColorHex": "#864541"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2916.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1742,7 +1942,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9076",
       "colorCode": "9076",
-      "ui": { "sortColorHex": "#72444B" },
+      "ui": {
+        "sortColorHex": "#72444B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9076.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1758,7 +1960,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2846",
       "colorCode": "2846",
-      "ui": { "sortColorHex": "#702820" },
+      "ui": {
+        "sortColorHex": "#702820"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2846.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1774,7 +1978,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2439",
       "colorCode": "2439",
-      "ui": { "sortColorHex": "#6D3E34" },
+      "ui": {
+        "sortColorHex": "#6D3E34"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2439.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1790,7 +1996,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "4897",
       "colorCode": "4897",
-      "ui": { "sortColorHex": "#5C4632" },
+      "ui": {
+        "sortColorHex": "#5C4632"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-4897.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1806,7 +2014,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "4859",
       "colorCode": "4859",
-      "ui": { "sortColorHex": "#5D5145" },
+      "ui": {
+        "sortColorHex": "#5D5145"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-4859.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1822,7 +2032,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2910",
       "colorCode": "2910",
-      "ui": { "sortColorHex": "#57463C" },
+      "ui": {
+        "sortColorHex": "#57463C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-2910.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1838,7 +2050,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "6833",
       "colorCode": "6833",
-      "ui": { "sortColorHex": "#4D4439" },
+      "ui": {
+        "sortColorHex": "#4D4439"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-6833.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1854,7 +2068,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9714",
       "colorCode": "9714",
-      "ui": { "sortColorHex": "#5D5249" },
+      "ui": {
+        "sortColorHex": "#5D5249"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9714.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1870,7 +2086,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9500",
       "colorCode": "9500",
-      "ui": { "sortColorHex": "#4D4240" },
+      "ui": {
+        "sortColorHex": "#4D4240"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9500.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1886,7 +2104,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9036",
       "colorCode": "9036",
-      "ui": { "sortColorHex": "#3B2827" },
+      "ui": {
+        "sortColorHex": "#3B2827"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9036.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1902,7 +2122,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "5226",
       "colorCode": "5226",
-      "ui": { "sortColorHex": "#422835" },
+      "ui": {
+        "sortColorHex": "#422835"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-5226.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1918,7 +2140,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "8813",
       "colorCode": "8813",
-      "ui": { "sortColorHex": "#413E36" },
+      "ui": {
+        "sortColorHex": "#413E36"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-8813.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1934,7 +2158,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9980",
       "colorCode": "9980",
-      "ui": { "sortColorHex": "#2E3230" },
+      "ui": {
+        "sortColorHex": "#2E3230"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9980.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1950,7 +2176,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9041",
       "colorCode": "9041",
-      "ui": { "sortColorHex": "#313542" },
+      "ui": {
+        "sortColorHex": "#313542"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9041.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1966,7 +2194,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "6408",
       "colorCode": "6408",
-      "ui": { "sortColorHex": "#39446C" },
+      "ui": {
+        "sortColorHex": "#39446C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-6408.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1982,7 +2212,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9022",
       "colorCode": "9022",
-      "ui": { "sortColorHex": "#555B75" },
+      "ui": {
+        "sortColorHex": "#555B75"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-9022.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -1998,7 +2230,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "5432",
       "colorCode": "5432",
-      "ui": { "sortColorHex": "#696970" },
+      "ui": {
+        "sortColorHex": "#696970"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p3-5432.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2014,7 +2248,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1363",
       "colorCode": "1363",
-      "ui": { "sortColorHex": "#84C1A6" },
+      "ui": {
+        "sortColorHex": "#84C1A6"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-1363.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2030,7 +2266,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1259",
       "colorCode": "1259",
-      "ui": { "sortColorHex": "#288096" },
+      "ui": {
+        "sortColorHex": "#288096"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-1259.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2046,7 +2284,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1934",
       "colorCode": "1934",
-      "ui": { "sortColorHex": "#1D75A2" },
+      "ui": {
+        "sortColorHex": "#1D75A2"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-1934.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2062,7 +2302,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2853",
       "colorCode": "2853",
-      "ui": { "sortColorHex": "#345D89" },
+      "ui": {
+        "sortColorHex": "#345D89"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2853.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2078,7 +2320,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "7586",
       "colorCode": "7586",
-      "ui": { "sortColorHex": "#456B8A" },
+      "ui": {
+        "sortColorHex": "#456B8A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-7586.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2094,7 +2338,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "7687",
       "colorCode": "7687",
-      "ui": { "sortColorHex": "#496B88" },
+      "ui": {
+        "sortColorHex": "#496B88"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-7687.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2110,7 +2356,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "5751",
       "colorCode": "5751",
-      "ui": { "sortColorHex": "#526675" },
+      "ui": {
+        "sortColorHex": "#526675"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-5751.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2126,7 +2374,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "6632",
       "colorCode": "6632",
-      "ui": { "sortColorHex": "#56585D" },
+      "ui": {
+        "sortColorHex": "#56585D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-6632.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2142,7 +2392,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2156",
       "colorCode": "2156",
-      "ui": { "sortColorHex": "#7E8E74" },
+      "ui": {
+        "sortColorHex": "#7E8E74"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2156.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2158,7 +2410,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2932",
       "colorCode": "2932",
-      "ui": { "sortColorHex": "#6E7972" },
+      "ui": {
+        "sortColorHex": "#6E7972"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2932.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2174,7 +2428,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2938",
       "colorCode": "2938",
-      "ui": { "sortColorHex": "#686A63" },
+      "ui": {
+        "sortColorHex": "#686A63"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2938.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2190,7 +2446,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "5919",
       "colorCode": "5919",
-      "ui": { "sortColorHex": "#909280" },
+      "ui": {
+        "sortColorHex": "#909280"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-5919.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2206,7 +2464,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2957",
       "colorCode": "2957",
-      "ui": { "sortColorHex": "#626462" },
+      "ui": {
+        "sortColorHex": "#626462"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2957.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2222,7 +2482,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "6609",
       "colorCode": "6609",
-      "ui": { "sortColorHex": "#4A494E" },
+      "ui": {
+        "sortColorHex": "#4A494E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-6609.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2238,7 +2500,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "6406",
       "colorCode": "6406",
-      "ui": { "sortColorHex": "#4E575B" },
+      "ui": {
+        "sortColorHex": "#4E575B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-6406.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2254,7 +2518,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9040",
       "colorCode": "9040",
-      "ui": { "sortColorHex": "#434343" },
+      "ui": {
+        "sortColorHex": "#434343"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-9040.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2270,7 +2536,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "1398",
       "colorCode": "1398",
-      "ui": { "sortColorHex": "#AAACA2" },
+      "ui": {
+        "sortColorHex": "#AAACA2"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-1398.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2286,7 +2554,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "4978",
       "colorCode": "4978",
-      "ui": { "sortColorHex": "#ADAD9E" },
+      "ui": {
+        "sortColorHex": "#ADAD9E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-4978.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2302,7 +2572,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "2934",
       "colorCode": "2934",
-      "ui": { "sortColorHex": "#8A8C80" },
+      "ui": {
+        "sortColorHex": "#8A8C80"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-2934.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2318,7 +2590,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "7052",
       "colorCode": "7052",
-      "ui": { "sortColorHex": "#545654" },
+      "ui": {
+        "sortColorHex": "#545654"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-7052.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2334,7 +2608,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9052",
       "colorCode": "9052",
-      "ui": { "sortColorHex": "#4D4B4A" },
+      "ui": {
+        "sortColorHex": "#4D4B4A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-9052.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2350,7 +2626,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9806",
       "colorCode": "9806",
-      "ui": { "sortColorHex": "#4F4E4C" },
+      "ui": {
+        "sortColorHex": "#4F4E4C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-9806.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2366,7 +2644,9 @@
       "materialFamilyId": "alcantara",
       "displayName": "9002",
       "colorCode": "9002",
-      "ui": { "sortColorHex": "#4E4E4E" },
+      "ui": {
+        "sortColorHex": "#4E4E4E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/alcantara-p4-9002.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2382,7 +2662,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Black UF7",
       "colorCode": "UF7",
-      "ui": { "sortColorHex": "#292C29" },
+      "ui": {
+        "sortColorHex": "#292C29"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-uf7.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2398,7 +2680,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Camel SF4",
       "colorCode": "SF4",
-      "ui": { "sortColorHex": "#E77230" },
+      "ui": {
+        "sortColorHex": "#E77230"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sf4.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2414,7 +2698,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Silver Pearl SF5",
       "colorCode": "SF5",
-      "ui": { "sortColorHex": "#2F4D79" },
+      "ui": {
+        "sortColorHex": "#2F4D79"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sf5.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2430,7 +2716,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Orange SF8",
       "colorCode": "SF8",
-      "ui": { "sortColorHex": "#B27042" },
+      "ui": {
+        "sortColorHex": "#B27042"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sf8.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2446,7 +2734,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Coffee Bean UF8",
       "colorCode": "UF8",
-      "ui": { "sortColorHex": "#C69C6B" },
+      "ui": {
+        "sortColorHex": "#C69C6B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-uf8.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2462,7 +2752,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Bordeaux SG5",
       "colorCode": "SG5",
-      "ui": { "sortColorHex": "#4C423B" },
+      "ui": {
+        "sortColorHex": "#4C423B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg5.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2478,7 +2770,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Jazz Blue UF9",
       "colorCode": "UF9",
-      "ui": { "sortColorHex": "#C83A49" },
+      "ui": {
+        "sortColorHex": "#C83A49"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-uf9.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2494,7 +2788,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Red SG7",
       "colorCode": "SG7",
-      "ui": { "sortColorHex": "#674E4E" },
+      "ui": {
+        "sortColorHex": "#674E4E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg7.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2510,7 +2806,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Violine UG2",
       "colorCode": "UG2",
-      "ui": { "sortColorHex": "#D5D7CC" },
+      "ui": {
+        "sortColorHex": "#D5D7CC"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-ug2.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2526,7 +2824,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Clove SG2",
       "colorCode": "SG2",
-      "ui": { "sortColorHex": "#A04248" },
+      "ui": {
+        "sortColorHex": "#A04248"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg2.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2542,7 +2842,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Burgundy SG0",
       "colorCode": "SG0",
-      "ui": { "sortColorHex": "#5C5A5C" },
+      "ui": {
+        "sortColorHex": "#5C5A5C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg0.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2558,7 +2860,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "Sunshine SG4",
       "colorCode": "SG4",
-      "ui": { "sortColorHex": "#F8DE49" },
+      "ui": {
+        "sortColorHex": "#F8DE49"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p6-sg4.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2574,7 +2878,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "BK575",
       "colorCode": "BK575",
-      "ui": { "sortColorHex": "#1C2120" },
+      "ui": {
+        "sortColorHex": "#1C2120"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-bk575.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2590,7 +2896,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "BEG1",
       "colorCode": "BEG1",
-      "ui": { "sortColorHex": "#A98167" },
+      "ui": {
+        "sortColorHex": "#A98167"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-beg1.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2606,7 +2914,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "GRY1",
       "colorCode": "GRY1",
-      "ui": { "sortColorHex": "#E8D4B4" },
+      "ui": {
+        "sortColorHex": "#E8D4B4"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-gry1.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2622,7 +2932,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "LBRW1",
       "colorCode": "LBRW1",
-      "ui": { "sortColorHex": "#4C4D4A" },
+      "ui": {
+        "sortColorHex": "#4C4D4A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-lbrw1.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2638,7 +2950,9 @@
       "materialFamilyId": "ultrasuede",
       "displayName": "BK905",
       "colorCode": "BK905",
-      "ui": { "sortColorHex": "#D2CBBA" },
+      "ui": {
+        "sortColorHex": "#D2CBBA"
+      },
       "thumbnailUrl": "/sc01/thumbnails/ultrasuede-p7-bk905.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2654,7 +2968,9 @@
       "materialFamilyId": "leather",
       "displayName": "2978 Bianco Polar",
       "colorCode": "2978",
-      "ui": { "sortColorHex": "#CDD5BE" },
+      "ui": {
+        "sortColorHex": "#CDD5BE"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-2978.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2670,7 +2986,9 @@
       "materialFamilyId": "leather",
       "displayName": "9259 Blu Amon",
       "colorCode": "9259",
-      "ui": { "sortColorHex": "#3F5EAA" },
+      "ui": {
+        "sortColorHex": "#3F5EAA"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-9259.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2686,7 +3004,9 @@
       "materialFamilyId": "leather",
       "displayName": "1280 Verde Ulysses",
       "colorCode": "1280",
-      "ui": { "sortColorHex": "#8BC62A" },
+      "ui": {
+        "sortColorHex": "#8BC62A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-1280.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2702,7 +3022,9 @@
       "materialFamilyId": "leather",
       "displayName": "9572 Arancia Dryope",
       "colorCode": "9572",
-      "ui": { "sortColorHex": "#ED5625" },
+      "ui": {
+        "sortColorHex": "#ED5625"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-9572.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2718,7 +3040,9 @@
       "materialFamilyId": "leather",
       "displayName": "3622 Marrone Janus",
       "colorCode": "3622",
-      "ui": { "sortColorHex": "#473B30" },
+      "ui": {
+        "sortColorHex": "#473B30"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-3622.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2734,7 +3058,9 @@
       "materialFamilyId": "leather",
       "displayName": "6927 Giallo Taurus",
       "colorCode": "6927",
-      "ui": { "sortColorHex": "#D3AC16" },
+      "ui": {
+        "sortColorHex": "#D3AC16"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-6927.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2750,7 +3076,9 @@
       "materialFamilyId": "leather",
       "displayName": "0308 Blu Cepheus",
       "colorCode": "0308",
-      "ui": { "sortColorHex": "#1687CE" },
+      "ui": {
+        "sortColorHex": "#1687CE"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-0308.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2766,7 +3094,9 @@
       "materialFamilyId": "leather",
       "displayName": "9504 New Verde",
       "colorCode": "9504",
-      "ui": { "sortColorHex": "#B7DE35" },
+      "ui": {
+        "sortColorHex": "#B7DE35"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-9504.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2782,7 +3112,9 @@
       "materialFamilyId": "leather",
       "displayName": "1281 Verde Sagitta",
       "colorCode": "1281",
-      "ui": { "sortColorHex": "#314E3B" },
+      "ui": {
+        "sortColorHex": "#314E3B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-1281.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2798,7 +3130,9 @@
       "materialFamilyId": "leather",
       "displayName": "9743 Nero",
       "colorCode": "9743",
-      "ui": { "sortColorHex": "#18191A" },
+      "ui": {
+        "sortColorHex": "#18191A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p9-9743.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2814,7 +3148,9 @@
       "materialFamilyId": "leather",
       "displayName": "1253 Kieselgrau",
       "colorCode": "1253",
-      "ui": { "sortColorHex": "#9DA99D" },
+      "ui": {
+        "sortColorHex": "#9DA99D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1253.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2830,7 +3166,9 @@
       "materialFamilyId": "leather",
       "displayName": "2054 Luxorbeige",
       "colorCode": "2054",
-      "ui": { "sortColorHex": "#796D4B" },
+      "ui": {
+        "sortColorHex": "#796D4B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-2054.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2846,7 +3184,9 @@
       "materialFamilyId": "leather",
       "displayName": "3024 Achatgrau",
       "colorCode": "3024",
-      "ui": { "sortColorHex": "#262625" },
+      "ui": {
+        "sortColorHex": "#262625"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-3024.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2862,7 +3202,9 @@
       "materialFamilyId": "leather",
       "displayName": "8526 Kreide",
       "colorCode": "8526",
-      "ui": { "sortColorHex": "#2C2C2C" },
+      "ui": {
+        "sortColorHex": "#2C2C2C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-8526.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2878,7 +3220,9 @@
       "materialFamilyId": "leather",
       "displayName": "1262 Mojave",
       "colorCode": "1262",
-      "ui": { "sortColorHex": "#8E9386" },
+      "ui": {
+        "sortColorHex": "#8E9386"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1262.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2894,7 +3238,9 @@
       "materialFamilyId": "leather",
       "displayName": "1265 Schiefergrau",
       "colorCode": "1265",
-      "ui": { "sortColorHex": "#6E674D" },
+      "ui": {
+        "sortColorHex": "#6E674D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1265.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2910,7 +3256,9 @@
       "materialFamilyId": "leather",
       "displayName": "1242 Granatrot",
       "colorCode": "1242",
-      "ui": { "sortColorHex": "#232422" },
+      "ui": {
+        "sortColorHex": "#232422"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1242.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2926,7 +3274,9 @@
       "materialFamilyId": "leather",
       "displayName": "8776 Bordeaux",
       "colorCode": "8776",
-      "ui": { "sortColorHex": "#292929" },
+      "ui": {
+        "sortColorHex": "#292929"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-8776.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2942,7 +3292,9 @@
       "materialFamilyId": "leather",
       "displayName": "1217 Nachtblau",
       "colorCode": "1217",
-      "ui": { "sortColorHex": "#632C2D" },
+      "ui": {
+        "sortColorHex": "#632C2D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-1217.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2958,7 +3310,9 @@
       "materialFamilyId": "leather",
       "displayName": "9743 Nero",
       "colorCode": "9743",
-      "ui": { "sortColorHex": "#3C2727" },
+      "ui": {
+        "sortColorHex": "#3C2727"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p10-9743.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2974,7 +3328,9 @@
       "materialFamilyId": "leather",
       "displayName": "2588 Linen",
       "colorCode": "2588",
-      "ui": { "sortColorHex": "#D4CFB3" },
+      "ui": {
+        "sortColorHex": "#D4CFB3"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-2588.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -2990,7 +3346,9 @@
       "materialFamilyId": "leather",
       "displayName": "9764 Saddle",
       "colorCode": "9764",
-      "ui": { "sortColorHex": "#8F683D" },
+      "ui": {
+        "sortColorHex": "#8F683D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9764.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3006,7 +3364,9 @@
       "materialFamilyId": "leather",
       "displayName": "9193 Hotspur",
       "colorCode": "9193",
-      "ui": { "sortColorHex": "#843A35" },
+      "ui": {
+        "sortColorHex": "#843A35"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9193.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3022,7 +3382,9 @@
       "materialFamilyId": "leather",
       "displayName": "9747 Magnolia",
       "colorCode": "9747",
-      "ui": { "sortColorHex": "#DED795" },
+      "ui": {
+        "sortColorHex": "#DED795"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9747.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3038,7 +3400,9 @@
       "materialFamilyId": "leather",
       "displayName": "9206 Portland",
       "colorCode": "9206",
-      "ui": { "sortColorHex": "#9E9D7A" },
+      "ui": {
+        "sortColorHex": "#9E9D7A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9206.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3054,7 +3418,9 @@
       "materialFamilyId": "leather",
       "displayName": "9767 Windsor Blue",
       "colorCode": "9767",
-      "ui": { "sortColorHex": "#303B3E" },
+      "ui": {
+        "sortColorHex": "#303B3E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9767.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3070,7 +3436,9 @@
       "materialFamilyId": "leather",
       "displayName": "9748 Newmarket Tan",
       "colorCode": "9748",
-      "ui": { "sortColorHex": "#8A5C2E" },
+      "ui": {
+        "sortColorHex": "#8A5C2E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9748.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3086,7 +3454,9 @@
       "materialFamilyId": "leather",
       "displayName": "9765 Bourbon",
       "colorCode": "9765",
-      "ui": { "sortColorHex": "#675033" },
+      "ui": {
+        "sortColorHex": "#675033"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9765.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3102,7 +3472,9 @@
       "materialFamilyId": "leather",
       "displayName": "9189 Burnt Oak",
       "colorCode": "9189",
-      "ui": { "sortColorHex": "#36322F" },
+      "ui": {
+        "sortColorHex": "#36322F"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9189.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3118,7 +3490,9 @@
       "materialFamilyId": "leather",
       "displayName": "9766 Saffron",
       "colorCode": "9766",
-      "ui": { "sortColorHex": "#C0AE61" },
+      "ui": {
+        "sortColorHex": "#C0AE61"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9766.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3134,7 +3508,9 @@
       "materialFamilyId": "leather",
       "displayName": "9225 Slate",
       "colorCode": "9225",
-      "ui": { "sortColorHex": "#4E5148" },
+      "ui": {
+        "sortColorHex": "#4E5148"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9225.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3150,7 +3526,9 @@
       "materialFamilyId": "leather",
       "displayName": "9762 Imperial Blue",
       "colorCode": "9762",
-      "ui": { "sortColorHex": "#23282C" },
+      "ui": {
+        "sortColorHex": "#23282C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p11-9762.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3166,7 +3544,9 @@
       "materialFamilyId": "leather",
       "displayName": "3997 Crema",
       "colorCode": "3997",
-      "ui": { "sortColorHex": "#E7DFA1" },
+      "ui": {
+        "sortColorHex": "#E7DFA1"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-3997.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3182,7 +3562,9 @@
       "materialFamilyId": "leather",
       "displayName": "4208 Tradizione Beige",
       "colorCode": "4208",
-      "ui": { "sortColorHex": "#C8A054" },
+      "ui": {
+        "sortColorHex": "#C8A054"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4208.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3198,7 +3580,9 @@
       "materialFamilyId": "leather",
       "displayName": "4210 Rosso",
       "colorCode": "4210",
-      "ui": { "sortColorHex": "#A22A27" },
+      "ui": {
+        "sortColorHex": "#A22A27"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4210.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3214,7 +3598,9 @@
       "materialFamilyId": "leather",
       "displayName": "4481 Bordeaux",
       "colorCode": "4481",
-      "ui": { "sortColorHex": "#643132" },
+      "ui": {
+        "sortColorHex": "#643132"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4481.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3230,7 +3616,9 @@
       "materialFamilyId": "leather",
       "displayName": "4806 Blu Medio",
       "colorCode": "4806",
-      "ui": { "sortColorHex": "#2C3A40" },
+      "ui": {
+        "sortColorHex": "#2C3A40"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4806.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3246,7 +3634,9 @@
       "materialFamilyId": "leather",
       "displayName": "4008 Blu Sterling",
       "colorCode": "4008",
-      "ui": { "sortColorHex": "#252A33" },
+      "ui": {
+        "sortColorHex": "#252A33"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4008.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3262,7 +3652,9 @@
       "materialFamilyId": "leather",
       "displayName": "3998 Sabbia",
       "colorCode": "3998",
-      "ui": { "sortColorHex": "#CDBF84" },
+      "ui": {
+        "sortColorHex": "#CDBF84"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-3998.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3278,7 +3670,9 @@
       "materialFamilyId": "leather",
       "displayName": "4225 Tortora",
       "colorCode": "4225",
-      "ui": { "sortColorHex": "#918A69" },
+      "ui": {
+        "sortColorHex": "#918A69"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4225.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3294,7 +3688,9 @@
       "materialFamilyId": "leather",
       "displayName": "4609 Cuoio",
       "colorCode": "4609",
-      "ui": { "sortColorHex": "#825930" },
+      "ui": {
+        "sortColorHex": "#825930"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4609.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3310,7 +3706,9 @@
       "materialFamilyId": "leather",
       "displayName": "4610 Iroko",
       "colorCode": "4610",
-      "ui": { "sortColorHex": "#483927" },
+      "ui": {
+        "sortColorHex": "#483927"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4610.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3326,7 +3724,9 @@
       "materialFamilyId": "leather",
       "displayName": "4296 Cioccolato",
       "colorCode": "4296",
-      "ui": { "sortColorHex": "#372C25" },
+      "ui": {
+        "sortColorHex": "#372C25"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4296.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3342,7 +3742,9 @@
       "materialFamilyId": "leather",
       "displayName": "4128 Charcoal",
       "colorCode": "4128",
-      "ui": { "sortColorHex": "#313234" },
+      "ui": {
+        "sortColorHex": "#313234"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p12-4128.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3358,7 +3760,9 @@
       "materialFamilyId": "leather",
       "displayName": "3251 Arctic White",
       "colorCode": "3251",
-      "ui": { "sortColorHex": "#E8EAE6" },
+      "ui": {
+        "sortColorHex": "#E8EAE6"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3251.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3374,7 +3778,9 @@
       "materialFamilyId": "leather",
       "displayName": "3105 Charles Blue",
       "colorCode": "3105",
-      "ui": { "sortColorHex": "#BFD9DF" },
+      "ui": {
+        "sortColorHex": "#BFD9DF"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3105.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3390,7 +3796,9 @@
       "materialFamilyId": "leather",
       "displayName": "2233 Powder Blue",
       "colorCode": "2233",
-      "ui": { "sortColorHex": "#C1CDC8" },
+      "ui": {
+        "sortColorHex": "#C1CDC8"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-2233.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3406,7 +3814,9 @@
       "materialFamilyId": "leather",
       "displayName": "3252 Turchese",
       "colorCode": "3252",
-      "ui": { "sortColorHex": "#016691" },
+      "ui": {
+        "sortColorHex": "#016691"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3252.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3422,7 +3832,9 @@
       "materialFamilyId": "leather",
       "displayName": "0343 Cobalto Blue",
       "colorCode": "0343",
-      "ui": { "sortColorHex": "#374789" },
+      "ui": {
+        "sortColorHex": "#374789"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-0343.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3438,7 +3850,9 @@
       "materialFamilyId": "leather",
       "displayName": "0342 Dyson Blue",
       "colorCode": "0342",
-      "ui": { "sortColorHex": "#2F2F50" },
+      "ui": {
+        "sortColorHex": "#2F2F50"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-0342.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3454,7 +3868,9 @@
       "materialFamilyId": "leather",
       "displayName": "5372 Blushing Pink",
       "colorCode": "5372",
-      "ui": { "sortColorHex": "#EAA4B8" },
+      "ui": {
+        "sortColorHex": "#EAA4B8"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-5372.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3470,7 +3886,9 @@
       "materialFamilyId": "leather",
       "displayName": "1855 Peony Pink",
       "colorCode": "1855",
-      "ui": { "sortColorHex": "#903E56" },
+      "ui": {
+        "sortColorHex": "#903E56"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1855.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3486,7 +3904,9 @@
       "materialFamilyId": "leather",
       "displayName": "9591 Sunset",
       "colorCode": "9591",
-      "ui": { "sortColorHex": "#C46746" },
+      "ui": {
+        "sortColorHex": "#C46746"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-9591.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3502,7 +3922,9 @@
       "materialFamilyId": "leather",
       "displayName": "3106 Forge Yellow",
       "colorCode": "3106",
-      "ui": { "sortColorHex": "#E2A009" },
+      "ui": {
+        "sortColorHex": "#E2A009"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3106.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3518,7 +3940,9 @@
       "materialFamilyId": "leather",
       "displayName": "9592 Mandarin",
       "colorCode": "9592",
-      "ui": { "sortColorHex": "#E07E08" },
+      "ui": {
+        "sortColorHex": "#E07E08"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-9592.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3534,7 +3958,9 @@
       "materialFamilyId": "leather",
       "displayName": "1645 Ardent Red",
       "colorCode": "1645",
-      "ui": { "sortColorHex": "#462B27" },
+      "ui": {
+        "sortColorHex": "#462B27"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1645.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3550,7 +3976,9 @@
       "materialFamilyId": "leather",
       "displayName": "1616 Aequus Green",
       "colorCode": "1616",
-      "ui": { "sortColorHex": "#90CB93" },
+      "ui": {
+        "sortColorHex": "#90CB93"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1616.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3566,7 +3994,9 @@
       "materialFamilyId": "leather",
       "displayName": "3636 Emerald Green",
       "colorCode": "3636",
-      "ui": { "sortColorHex": "#016A41" },
+      "ui": {
+        "sortColorHex": "#016A41"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3636.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3582,7 +4012,9 @@
       "materialFamilyId": "leather",
       "displayName": "3345 Dark Turquoise",
       "colorCode": "3345",
-      "ui": { "sortColorHex": "#2E4A52" },
+      "ui": {
+        "sortColorHex": "#2E4A52"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-3345.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3598,7 +4030,9 @@
       "materialFamilyId": "leather",
       "displayName": "1386 Tailored Purple",
       "colorCode": "1386",
-      "ui": { "sortColorHex": "#4C3147" },
+      "ui": {
+        "sortColorHex": "#4C3147"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1386.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3614,7 +4048,9 @@
       "materialFamilyId": "leather",
       "displayName": "1387 Purple Silk",
       "colorCode": "1387",
-      "ui": { "sortColorHex": "#30282F" },
+      "ui": {
+        "sortColorHex": "#30282F"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-1387.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3630,7 +4066,9 @@
       "materialFamilyId": "leather",
       "displayName": "2234 Blue Grey",
       "colorCode": "2234",
-      "ui": { "sortColorHex": "#667674" },
+      "ui": {
+        "sortColorHex": "#667674"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p13-2234.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3646,7 +4084,9 @@
       "materialFamilyId": "leather",
       "displayName": "8463 Opal Weiss",
       "colorCode": "8463",
-      "ui": { "sortColorHex": "#B8B9AF" },
+      "ui": {
+        "sortColorHex": "#B8B9AF"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-8463.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3662,7 +4102,9 @@
       "materialFamilyId": "leather",
       "displayName": "3800 Tiffany Blue",
       "colorCode": "3800",
-      "ui": { "sortColorHex": "#4B7A72" },
+      "ui": {
+        "sortColorHex": "#4B7A72"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-3800.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3678,7 +4120,9 @@
       "materialFamilyId": "leather",
       "displayName": "1811 Magmarot",
       "colorCode": "1811",
-      "ui": { "sortColorHex": "#251A19" },
+      "ui": {
+        "sortColorHex": "#251A19"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-1811.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3694,7 +4138,9 @@
       "materialFamilyId": "leather",
       "displayName": "2979 Beige",
       "colorCode": "2979",
-      "ui": { "sortColorHex": "#1C1E1F" },
+      "ui": {
+        "sortColorHex": "#1C1E1F"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-2979.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3710,7 +4156,9 @@
       "materialFamilyId": "leather",
       "displayName": "3928 Flaxen",
       "colorCode": "3928",
-      "ui": { "sortColorHex": "#A29F75" },
+      "ui": {
+        "sortColorHex": "#A29F75"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-3928.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3726,7 +4174,9 @@
       "materialFamilyId": "leather",
       "displayName": "5226 Coffee",
       "colorCode": "5226",
-      "ui": { "sortColorHex": "#5C4E33" },
+      "ui": {
+        "sortColorHex": "#5C4E33"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-5226.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3742,7 +4192,9 @@
       "materialFamilyId": "leather",
       "displayName": "1185 Seidenbeige Silk",
       "colorCode": "1185",
-      "ui": { "sortColorHex": "#1A1918" },
+      "ui": {
+        "sortColorHex": "#1A1918"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-1185.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3758,7 +4210,9 @@
       "materialFamilyId": "leather",
       "displayName": "6468 Hermes Orange",
       "colorCode": "6468",
-      "ui": { "sortColorHex": "#1C1D1F" },
+      "ui": {
+        "sortColorHex": "#1C1D1F"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-6468.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3774,7 +4228,9 @@
       "materialFamilyId": "leather",
       "displayName": "1164 Muschelgrau",
       "colorCode": "1164",
-      "ui": { "sortColorHex": "#938C73" },
+      "ui": {
+        "sortColorHex": "#938C73"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-1164.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3790,7 +4246,9 @@
       "materialFamilyId": "leather",
       "displayName": "3030 Steering Wheel",
       "colorCode": "3030",
-      "ui": { "sortColorHex": "#814720" },
+      "ui": {
+        "sortColorHex": "#814720"
+      },
       "thumbnailUrl": "/sc01/thumbnails/leather-p14-3030.webp",
       "reviewRequired": false,
       "sourceRefs": [
@@ -3806,7 +4264,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3001 纯净白",
       "colorCode": "NP-3001",
-      "ui": { "sortColorHex": "#FFFFFF" },
+      "ui": {
+        "sortColorHex": "#FFFFFF"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3001.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3822,7 +4282,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3002 特斯拉白",
       "colorCode": "NP-3002",
-      "ui": { "sortColorHex": "#F7F7F7" },
+      "ui": {
+        "sortColorHex": "#F7F7F7"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3002.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3838,7 +4300,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3003 LM珍珠琉璃白",
       "colorCode": "NP-3003",
-      "ui": { "sortColorHex": "#E0E0E0" },
+      "ui": {
+        "sortColorHex": "#E0E0E0"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3003.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3854,7 +4318,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3004 艾维亚白",
       "colorCode": "NP-3004",
-      "ui": { "sortColorHex": "#C0BFBD" },
+      "ui": {
+        "sortColorHex": "#C0BFBD"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3004.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3870,7 +4336,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3005 珍珠白",
       "colorCode": "NP-3005",
-      "ui": { "sortColorHex": "#BBBBBB" },
+      "ui": {
+        "sortColorHex": "#BBBBBB"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3005.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3886,7 +4354,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3006 奶白",
       "colorCode": "NP-3006",
-      "ui": { "sortColorHex": "#D1CBAD" },
+      "ui": {
+        "sortColorHex": "#D1CBAD"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3006.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3902,7 +4372,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3007 象牙白",
       "colorCode": "NP-3007",
-      "ui": { "sortColorHex": "#ABA998" },
+      "ui": {
+        "sortColorHex": "#ABA998"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3007.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3918,7 +4390,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3008 竞速米",
       "colorCode": "NP-3008",
-      "ui": { "sortColorHex": "#CCB67B" },
+      "ui": {
+        "sortColorHex": "#CCB67B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3008.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3934,7 +4408,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3009 艾维亚米",
       "colorCode": "NP-3009",
-      "ui": { "sortColorHex": "#C2BE9F" },
+      "ui": {
+        "sortColorHex": "#C2BE9F"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3009.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3950,7 +4426,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3010 贵士米",
       "colorCode": "NP-3010",
-      "ui": { "sortColorHex": "#928468" },
+      "ui": {
+        "sortColorHex": "#928468"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3010.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3966,7 +4444,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3011 丰田系列米",
       "colorCode": "NP-3011",
-      "ui": { "sortColorHex": "#827561" },
+      "ui": {
+        "sortColorHex": "#827561"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3011.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3982,7 +4462,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3012 迈巴赫米",
       "colorCode": "NP-3012",
-      "ui": { "sortColorHex": "#888166" },
+      "ui": {
+        "sortColorHex": "#888166"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3012.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -3998,7 +4480,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3013 谦和米",
       "colorCode": "NP-3013",
-      "ui": { "sortColorHex": "#928769" },
+      "ui": {
+        "sortColorHex": "#928769"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3013.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4014,7 +4498,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3014 埃尔法米",
       "colorCode": "NP-3014",
-      "ui": { "sortColorHex": "#968B61" },
+      "ui": {
+        "sortColorHex": "#968B61"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3014.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4030,7 +4516,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3015 保时捷莫哈韦米",
       "colorCode": "NP-3015",
-      "ui": { "sortColorHex": "#7E623E" },
+      "ui": {
+        "sortColorHex": "#7E623E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3015.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4046,7 +4534,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3016 大漠米",
       "colorCode": "NP-3016",
-      "ui": { "sortColorHex": "#70593F" },
+      "ui": {
+        "sortColorHex": "#70593F"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3016.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4062,7 +4552,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3017 理想棕",
       "colorCode": "NP-3017",
-      "ui": { "sortColorHex": "#8A5E28" },
+      "ui": {
+        "sortColorHex": "#8A5E28"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3017.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4078,7 +4570,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3018 橡木棕",
       "colorCode": "NP-3018",
-      "ui": { "sortColorHex": "#754825" },
+      "ui": {
+        "sortColorHex": "#754825"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3018.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4094,7 +4588,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3019 丹霞棕",
       "colorCode": "NP-3019",
-      "ui": { "sortColorHex": "#7B4621" },
+      "ui": {
+        "sortColorHex": "#7B4621"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3019.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4110,7 +4606,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3020 琥珀棕",
       "colorCode": "NP-3020",
-      "ui": { "sortColorHex": "#814824" },
+      "ui": {
+        "sortColorHex": "#814824"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3020.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4126,7 +4624,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3021 奔驰S级棕",
       "colorCode": "NP-3021",
-      "ui": { "sortColorHex": "#944922" },
+      "ui": {
+        "sortColorHex": "#944922"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3021.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4142,7 +4642,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3022 大叶棕",
       "colorCode": "NP-3022",
-      "ui": { "sortColorHex": "#793320" },
+      "ui": {
+        "sortColorHex": "#793320"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3022.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4158,7 +4660,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3023 马鞍棕",
       "colorCode": "NP-3023",
-      "ui": { "sortColorHex": "#673015" },
+      "ui": {
+        "sortColorHex": "#673015"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3023.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4174,7 +4678,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3024 迈巴赫棕",
       "colorCode": "NP-3024",
-      "ui": { "sortColorHex": "#5E2B16" },
+      "ui": {
+        "sortColorHex": "#5E2B16"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3024.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4190,7 +4696,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3025 奥迪棕",
       "colorCode": "NP-3025",
-      "ui": { "sortColorHex": "#543E37" },
+      "ui": {
+        "sortColorHex": "#543E37"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3025.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4206,7 +4714,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3026 绅士棕",
       "colorCode": "NP-3026",
-      "ui": { "sortColorHex": "#4A3A2E" },
+      "ui": {
+        "sortColorHex": "#4A3A2E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3026.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4222,7 +4732,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3027 巧克力棕",
       "colorCode": "NP-3027",
-      "ui": { "sortColorHex": "#573D28" },
+      "ui": {
+        "sortColorHex": "#573D28"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3027.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4238,7 +4750,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3028 焦铁棕",
       "colorCode": "NP-3028",
-      "ui": { "sortColorHex": "#552E22" },
+      "ui": {
+        "sortColorHex": "#552E22"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3028.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4254,7 +4768,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3029 玛莎棕",
       "colorCode": "NP-3029",
-      "ui": { "sortColorHex": "#65321D" },
+      "ui": {
+        "sortColorHex": "#65321D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3029.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4270,7 +4786,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3030 欧版棕",
       "colorCode": "NP-3030",
-      "ui": { "sortColorHex": "#5F311A" },
+      "ui": {
+        "sortColorHex": "#5F311A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3030.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4286,7 +4804,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3031 曜石棕",
       "colorCode": "NP-3031",
-      "ui": { "sortColorHex": "#7B2C1E" },
+      "ui": {
+        "sortColorHex": "#7B2C1E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3031.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4302,7 +4822,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3032 紫檀棕",
       "colorCode": "NP-3032",
-      "ui": { "sortColorHex": "#591815" },
+      "ui": {
+        "sortColorHex": "#591815"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3032.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4318,7 +4840,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3033 绅士咖",
       "colorCode": "NP-3033",
-      "ui": { "sortColorHex": "#5D403B" },
+      "ui": {
+        "sortColorHex": "#5D403B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3033.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4334,7 +4858,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3034 奔驰红米棕",
       "colorCode": "NP-3034",
-      "ui": { "sortColorHex": "#523735" },
+      "ui": {
+        "sortColorHex": "#523735"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3034.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4350,7 +4876,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3035 伯爵咖",
       "colorCode": "NP-3035",
-      "ui": { "sortColorHex": "#513B37" },
+      "ui": {
+        "sortColorHex": "#513B37"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3035.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4366,7 +4894,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3036 林肯红棕",
       "colorCode": "NP-3036",
-      "ui": { "sortColorHex": "#392E2D" },
+      "ui": {
+        "sortColorHex": "#392E2D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3036.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4382,7 +4912,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3037 奔驰商务棕",
       "colorCode": "NP-3037",
-      "ui": { "sortColorHex": "#312829" },
+      "ui": {
+        "sortColorHex": "#312829"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3037.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4398,7 +4930,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3038 宝马摩卡棕",
       "colorCode": "NP-3038",
-      "ui": { "sortColorHex": "#312421" },
+      "ui": {
+        "sortColorHex": "#312421"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3038.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4414,7 +4948,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3039 干邑棕",
       "colorCode": "NP-3039",
-      "ui": { "sortColorHex": "#34251E" },
+      "ui": {
+        "sortColorHex": "#34251E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3039.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4430,7 +4966,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3040 迈巴赫咖",
       "colorCode": "NP-3040",
-      "ui": { "sortColorHex": "#2B221C" },
+      "ui": {
+        "sortColorHex": "#2B221C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3040.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4446,7 +4984,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3041 高级灰",
       "colorCode": "NP-3041",
-      "ui": { "sortColorHex": "#898D8D" },
+      "ui": {
+        "sortColorHex": "#898D8D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3041.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4462,7 +5002,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3042 塞纳灰",
       "colorCode": "NP-3042",
-      "ui": { "sortColorHex": "#737471" },
+      "ui": {
+        "sortColorHex": "#737471"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3042.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4478,7 +5020,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3043 巴黎灰",
       "colorCode": "NP-3043",
-      "ui": { "sortColorHex": "#646E78" },
+      "ui": {
+        "sortColorHex": "#646E78"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3043.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4494,7 +5038,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3044 战斗灰",
       "colorCode": "NP-3044",
-      "ui": { "sortColorHex": "#464E57" },
+      "ui": {
+        "sortColorHex": "#464E57"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3044.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4510,7 +5056,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3045 喜马拉雅灰",
       "colorCode": "NP-3045",
-      "ui": { "sortColorHex": "#4F4F51" },
+      "ui": {
+        "sortColorHex": "#4F4F51"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3045.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4526,7 +5074,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3046 玄铁灰",
       "colorCode": "NP-3046",
-      "ui": { "sortColorHex": "#444746" },
+      "ui": {
+        "sortColorHex": "#444746"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3046.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4542,7 +5092,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3047 碳灰",
       "colorCode": "NP-3047",
-      "ui": { "sortColorHex": "#2C2D31" },
+      "ui": {
+        "sortColorHex": "#2C2D31"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3047.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4558,7 +5110,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3048 暗夜黑",
       "colorCode": "NP-3048",
-      "ui": { "sortColorHex": "#0F1112" },
+      "ui": {
+        "sortColorHex": "#0F1112"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3048.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4574,7 +5128,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3049 法拉利棕黄",
       "colorCode": "NP-3049",
-      "ui": { "sortColorHex": "#B4651D" },
+      "ui": {
+        "sortColorHex": "#B4651D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3049.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4590,7 +5146,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3050 保时捷黄",
       "colorCode": "NP-3050",
-      "ui": { "sortColorHex": "#CD8140" },
+      "ui": {
+        "sortColorHex": "#CD8140"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3050.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4606,7 +5164,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3051 加州黄",
       "colorCode": "NP-3051",
-      "ui": { "sortColorHex": "#DCAA4E" },
+      "ui": {
+        "sortColorHex": "#DCAA4E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3051.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4622,7 +5182,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3052 宾利黄",
       "colorCode": "NP-3052",
-      "ui": { "sortColorHex": "#BD9342" },
+      "ui": {
+        "sortColorHex": "#BD9342"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3052.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4638,7 +5200,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3053 皇族黄",
       "colorCode": "NP-3053",
-      "ui": { "sortColorHex": "#E5BC6C" },
+      "ui": {
+        "sortColorHex": "#E5BC6C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3053.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4654,7 +5218,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3054 马卡龙柠檬黄",
       "colorCode": "NP-3054",
-      "ui": { "sortColorHex": "#C9A532" },
+      "ui": {
+        "sortColorHex": "#C9A532"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3054.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4670,7 +5236,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3055 兰博基尼黄",
       "colorCode": "NP-3055",
-      "ui": { "sortColorHex": "#EEBB19" },
+      "ui": {
+        "sortColorHex": "#EEBB19"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3055.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4686,7 +5254,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3056 库里南橙",
       "colorCode": "NP-3056",
-      "ui": { "sortColorHex": "#C06C34" },
+      "ui": {
+        "sortColorHex": "#C06C34"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3056.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4702,7 +5272,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3057 保时捷波尔多红",
       "colorCode": "NP-3057",
-      "ui": { "sortColorHex": "#751F2A" },
+      "ui": {
+        "sortColorHex": "#751F2A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3057.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4718,7 +5290,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3058 路虎干椒红",
       "colorCode": "NP-3058",
-      "ui": { "sortColorHex": "#9B1D23" },
+      "ui": {
+        "sortColorHex": "#9B1D23"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3058.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4734,7 +5308,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3059 兰博基尼红",
       "colorCode": "NP-3059",
-      "ui": { "sortColorHex": "#BF222B" },
+      "ui": {
+        "sortColorHex": "#BF222B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3059.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4750,7 +5326,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3060 火山红",
       "colorCode": "NP-3060",
-      "ui": { "sortColorHex": "#E01810" },
+      "ui": {
+        "sortColorHex": "#E01810"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3060.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4766,7 +5344,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3061 中国红",
       "colorCode": "NP-3061",
-      "ui": { "sortColorHex": "#C81619" },
+      "ui": {
+        "sortColorHex": "#C81619"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3061.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4782,7 +5362,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3062 熔岩棕",
       "colorCode": "NP-3062",
-      "ui": { "sortColorHex": "#852C1C" },
+      "ui": {
+        "sortColorHex": "#852C1C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3062.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4798,7 +5380,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3063 爱马仕橙",
       "colorCode": "NP-3063",
-      "ui": { "sortColorHex": "#A73C1E" },
+      "ui": {
+        "sortColorHex": "#A73C1E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3063.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4814,7 +5398,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3064 水晶橙",
       "colorCode": "NP-3064",
-      "ui": { "sortColorHex": "#AB3025" },
+      "ui": {
+        "sortColorHex": "#AB3025"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3064.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4830,7 +5416,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3065 深红",
       "colorCode": "NP-3065",
-      "ui": { "sortColorHex": "#492C28" },
+      "ui": {
+        "sortColorHex": "#492C28"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3065.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4846,7 +5434,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3066 紫罗兰",
       "colorCode": "NP-3066",
-      "ui": { "sortColorHex": "#432D36" },
+      "ui": {
+        "sortColorHex": "#432D36"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3066.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4862,7 +5452,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3067 幻影紫",
       "colorCode": "NP-3067",
-      "ui": { "sortColorHex": "#552357" },
+      "ui": {
+        "sortColorHex": "#552357"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3067.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4878,7 +5470,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3068 薰衣草紫",
       "colorCode": "NP-3068",
-      "ui": { "sortColorHex": "#7C2279" },
+      "ui": {
+        "sortColorHex": "#7C2279"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3068.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4894,7 +5488,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3069 冰雪奇缘蓝",
       "colorCode": "NP-3069",
-      "ui": { "sortColorHex": "#785D86" },
+      "ui": {
+        "sortColorHex": "#785D86"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3069.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4910,7 +5506,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3070 Royal蓝灰",
       "colorCode": "NP-3070",
-      "ui": { "sortColorHex": "#4D5B76" },
+      "ui": {
+        "sortColorHex": "#4D5B76"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3070.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4926,7 +5524,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3071 北欧蓝",
       "colorCode": "NP-3071",
-      "ui": { "sortColorHex": "#4265A4" },
+      "ui": {
+        "sortColorHex": "#4265A4"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3071.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4942,7 +5542,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3072 帕加尼蓝",
       "colorCode": "NP-3072",
-      "ui": { "sortColorHex": "#5D7191" },
+      "ui": {
+        "sortColorHex": "#5D7191"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3072.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4958,7 +5560,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3073 宇宙蓝",
       "colorCode": "NP-3073",
-      "ui": { "sortColorHex": "#151B3A" },
+      "ui": {
+        "sortColorHex": "#151B3A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3073.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4974,7 +5578,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3074 帝王蓝",
       "colorCode": "NP-3074",
-      "ui": { "sortColorHex": "#1C2A5C" },
+      "ui": {
+        "sortColorHex": "#1C2A5C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3074.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -4990,7 +5596,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3075 奔驰蓝",
       "colorCode": "NP-3075",
-      "ui": { "sortColorHex": "#2F3852" },
+      "ui": {
+        "sortColorHex": "#2F3852"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3075.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5006,7 +5614,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3076 游艇蓝",
       "colorCode": "NP-3076",
-      "ui": { "sortColorHex": "#3E4555" },
+      "ui": {
+        "sortColorHex": "#3E4555"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3076.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5022,7 +5632,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3077 克莱因蓝",
       "colorCode": "NP-3077",
-      "ui": { "sortColorHex": "#113187" },
+      "ui": {
+        "sortColorHex": "#113187"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3077.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5038,7 +5650,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3078 布里斯托蓝",
       "colorCode": "NP-3078",
-      "ui": { "sortColorHex": "#1E4081" },
+      "ui": {
+        "sortColorHex": "#1E4081"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3078.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5054,7 +5668,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3079 劳斯莱斯天空蓝",
       "colorCode": "NP-3079",
-      "ui": { "sortColorHex": "#1567B5" },
+      "ui": {
+        "sortColorHex": "#1567B5"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3079.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5070,7 +5686,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3080 梦幻蓝",
       "colorCode": "NP-3080",
-      "ui": { "sortColorHex": "#189ECF" },
+      "ui": {
+        "sortColorHex": "#189ECF"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3080.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5086,7 +5704,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3081 孔雀绿",
       "colorCode": "NP-3081",
-      "ui": { "sortColorHex": "#0B757E" },
+      "ui": {
+        "sortColorHex": "#0B757E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3081.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5102,7 +5722,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3082 爵士蓝",
       "colorCode": "NP-3082",
-      "ui": { "sortColorHex": "#16A2AF" },
+      "ui": {
+        "sortColorHex": "#16A2AF"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3082.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5118,7 +5740,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3083 蒂芙尼绿",
       "colorCode": "NP-3083",
-      "ui": { "sortColorHex": "#15A397" },
+      "ui": {
+        "sortColorHex": "#15A397"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3083.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5134,7 +5758,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3084 薄荷蓝",
       "colorCode": "NP-3084",
-      "ui": { "sortColorHex": "#6AC6D9" },
+      "ui": {
+        "sortColorHex": "#6AC6D9"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3084.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5150,7 +5776,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3085 蒂芙尼蓝",
       "colorCode": "NP-3085",
-      "ui": { "sortColorHex": "#7ACACC" },
+      "ui": {
+        "sortColorHex": "#7ACACC"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3085.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5166,7 +5794,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3086 天蓝",
       "colorCode": "NP-3086",
-      "ui": { "sortColorHex": "#87C1BB" },
+      "ui": {
+        "sortColorHex": "#87C1BB"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3086.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5182,7 +5812,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3087 马卡龙牛油果绿",
       "colorCode": "NP-3087",
-      "ui": { "sortColorHex": "#6EAC99" },
+      "ui": {
+        "sortColorHex": "#6EAC99"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3087.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5198,7 +5830,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3088 古思特冰蓝",
       "colorCode": "NP-3088",
-      "ui": { "sortColorHex": "#BAE1E8" },
+      "ui": {
+        "sortColorHex": "#BAE1E8"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3088.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5214,7 +5848,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3089 祖母绿",
       "colorCode": "NP-3089",
-      "ui": { "sortColorHex": "#154224" },
+      "ui": {
+        "sortColorHex": "#154224"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3089.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5230,7 +5866,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3090 橄榄绿",
       "colorCode": "NP-3090",
-      "ui": { "sortColorHex": "#495B4E" },
+      "ui": {
+        "sortColorHex": "#495B4E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3090.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5246,7 +5884,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3091 湖蓝",
       "colorCode": "NP-3091",
-      "ui": { "sortColorHex": "#4D868E" },
+      "ui": {
+        "sortColorHex": "#4D868E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3091.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5262,7 +5902,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3092 翡翠绿",
       "colorCode": "NP-3092",
-      "ui": { "sortColorHex": "#1F7036" },
+      "ui": {
+        "sortColorHex": "#1F7036"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3092.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5278,7 +5920,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3093 苹果绿",
       "colorCode": "NP-3093",
-      "ui": { "sortColorHex": "#5EB42F" },
+      "ui": {
+        "sortColorHex": "#5EB42F"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3093.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5294,7 +5938,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3094 荧光绿",
       "colorCode": "NP-3094",
-      "ui": { "sortColorHex": "#C1D428" },
+      "ui": {
+        "sortColorHex": "#C1D428"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3094.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5310,7 +5956,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3095 卡其绿",
       "colorCode": "NP-3095",
-      "ui": { "sortColorHex": "#81B66C" },
+      "ui": {
+        "sortColorHex": "#81B66C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3095.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5326,7 +5974,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3096 薄荷绿",
       "colorCode": "NP-3096",
-      "ui": { "sortColorHex": "#92B97C" },
+      "ui": {
+        "sortColorHex": "#92B97C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3096.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5342,7 +5992,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3097 摩丝灰",
       "colorCode": "NP-3097",
-      "ui": { "sortColorHex": "#93938F" },
+      "ui": {
+        "sortColorHex": "#93938F"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3097.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5358,7 +6010,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3098 世爵灰",
       "colorCode": "NP-3098",
-      "ui": { "sortColorHex": "#888379" },
+      "ui": {
+        "sortColorHex": "#888379"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3098.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5374,7 +6028,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3099 艾维亚灰",
       "colorCode": "NP-3099",
-      "ui": { "sortColorHex": "#6D6F63" },
+      "ui": {
+        "sortColorHex": "#6D6F63"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3099.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5390,7 +6046,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3100 墨版塞纳灰",
       "colorCode": "NP-3100",
-      "ui": { "sortColorHex": "#6E6D5B" },
+      "ui": {
+        "sortColorHex": "#6E6D5B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3100.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5406,7 +6064,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3101 胖头鱼灰",
       "colorCode": "NP-3101",
-      "ui": { "sortColorHex": "#6A6653" },
+      "ui": {
+        "sortColorHex": "#6A6653"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3101.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5422,7 +6082,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3102 贝尔尼纳灰",
       "colorCode": "NP-3102",
-      "ui": { "sortColorHex": "#525450" },
+      "ui": {
+        "sortColorHex": "#525450"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3102.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5438,7 +6100,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3103 保时捷浅灰",
       "colorCode": "NP-3103",
-      "ui": { "sortColorHex": "#6E736F" },
+      "ui": {
+        "sortColorHex": "#6E736F"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3103.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5454,7 +6118,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3104 加版塞纳灰",
       "colorCode": "NP-3104",
-      "ui": { "sortColorHex": "#545253" },
+      "ui": {
+        "sortColorHex": "#545253"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3104.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5470,7 +6136,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3105 马卡龙白桃粉",
       "colorCode": "NP-3105",
-      "ui": { "sortColorHex": "#C9A9AB" },
+      "ui": {
+        "sortColorHex": "#C9A9AB"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3105.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5486,7 +6154,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3106 冰莓粉",
       "colorCode": "NP-3106",
-      "ui": { "sortColorHex": "#BD7169" },
+      "ui": {
+        "sortColorHex": "#BD7169"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3106.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5502,7 +6172,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3107 公主粉",
       "colorCode": "NP-3107",
-      "ui": { "sortColorHex": "#B5504B" },
+      "ui": {
+        "sortColorHex": "#B5504B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3107.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5518,7 +6190,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3108 佩奇粉",
       "colorCode": "NP-3108",
-      "ui": { "sortColorHex": "#8E5151" },
+      "ui": {
+        "sortColorHex": "#8E5151"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3108.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5534,7 +6208,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3109 典雅粉",
       "colorCode": "NP-3109",
-      "ui": { "sortColorHex": "#856259" },
+      "ui": {
+        "sortColorHex": "#856259"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3109.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5550,7 +6226,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3110 理想驼色",
       "colorCode": "NP-3110",
-      "ui": { "sortColorHex": "#604931" },
+      "ui": {
+        "sortColorHex": "#604931"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3110.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5566,7 +6244,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3111 极光灰",
       "colorCode": "NP-3111",
-      "ui": { "sortColorHex": "#889396" },
+      "ui": {
+        "sortColorHex": "#889396"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3111.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5582,7 +6262,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3112 塔西提蓝",
       "colorCode": "NP-3112",
-      "ui": { "sortColorHex": "#4C545D" },
+      "ui": {
+        "sortColorHex": "#4C545D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3112.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5598,7 +6280,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3113 托斯卡紫",
       "colorCode": "NP-3113",
-      "ui": { "sortColorHex": "#772246" },
+      "ui": {
+        "sortColorHex": "#772246"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3113.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5614,7 +6298,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3114 金沙粉",
       "colorCode": "NP-3114",
-      "ui": { "sortColorHex": "#B33B5E" },
+      "ui": {
+        "sortColorHex": "#B33B5E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3114.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5630,7 +6316,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3115 劳斯莱斯少女粉",
       "colorCode": "NP-3115",
-      "ui": { "sortColorHex": "#98485A" },
+      "ui": {
+        "sortColorHex": "#98485A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3115.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5646,7 +6334,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "NP-3116 miumiu粉",
       "colorCode": "NP-3116",
-      "ui": { "sortColorHex": "#905A63" },
+      "ui": {
+        "sortColorHex": "#905A63"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p16-np-3116.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5662,7 +6352,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-065 玉石白",
       "colorCode": "KJ-065",
-      "ui": { "sortColorHex": "#D3D5CC" },
+      "ui": {
+        "sortColorHex": "#D3D5CC"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r01c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5678,7 +6370,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-067 竞速米黄",
       "colorCode": "KJ-067",
-      "ui": { "sortColorHex": "#978564" },
+      "ui": {
+        "sortColorHex": "#978564"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r01c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5694,7 +6388,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-019 艾维亚白",
       "colorCode": "KJ-019",
-      "ui": { "sortColorHex": "#D9D5C0" },
+      "ui": {
+        "sortColorHex": "#D9D5C0"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r02c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5710,7 +6406,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-001 典雅米",
       "colorCode": "KJ-001",
-      "ui": { "sortColorHex": "#CE8E44" },
+      "ui": {
+        "sortColorHex": "#CE8E44"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r02c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5726,7 +6424,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-066 象牙白",
       "colorCode": "KJ-066",
-      "ui": { "sortColorHex": "#C8BFA3" },
+      "ui": {
+        "sortColorHex": "#C8BFA3"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r03c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5742,7 +6442,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-068 贵族黄",
       "colorCode": "KJ-068",
-      "ui": { "sortColorHex": "#C18027" },
+      "ui": {
+        "sortColorHex": "#C18027"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r03c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5758,7 +6460,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-009 赛道白",
       "colorCode": "KJ-009",
-      "ui": { "sortColorHex": "#9B917D" },
+      "ui": {
+        "sortColorHex": "#9B917D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r04c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5774,7 +6478,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-010 天秤黄",
       "colorCode": "KJ-010",
-      "ui": { "sortColorHex": "#8B5423" },
+      "ui": {
+        "sortColorHex": "#8B5423"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r04c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5790,7 +6496,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-062 阿瓦斯米",
       "colorCode": "KJ-062",
-      "ui": { "sortColorHex": "#907F6E" },
+      "ui": {
+        "sortColorHex": "#907F6E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r05c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5806,7 +6514,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-073 琥珀棕",
       "colorCode": "KJ-073",
-      "ui": { "sortColorHex": "#894C25" },
+      "ui": {
+        "sortColorHex": "#894C25"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r05c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5822,7 +6532,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-069 摩德纳米",
       "colorCode": "KJ-069",
-      "ui": { "sortColorHex": "#957D61" },
+      "ui": {
+        "sortColorHex": "#957D61"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r06c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5838,7 +6550,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-097 绅士棕",
       "colorCode": "KJ-097",
-      "ui": { "sortColorHex": "#5C290C" },
+      "ui": {
+        "sortColorHex": "#5C290C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r06c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5854,7 +6568,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-096 大漠米",
       "colorCode": "KJ-096",
-      "ui": { "sortColorHex": "#91754D" },
+      "ui": {
+        "sortColorHex": "#91754D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r07c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5870,7 +6586,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-003 马鞍棕",
       "colorCode": "KJ-003",
-      "ui": { "sortColorHex": "#662814" },
+      "ui": {
+        "sortColorHex": "#662814"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r07c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5886,7 +6604,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-002 高雅黄",
       "colorCode": "KJ-002",
-      "ui": { "sortColorHex": "#AA7B54" },
+      "ui": {
+        "sortColorHex": "#AA7B54"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r08c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5902,7 +6622,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-063 曜石棕",
       "colorCode": "KJ-063",
-      "ui": { "sortColorHex": "#B1880D" },
+      "ui": {
+        "sortColorHex": "#B1880D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r08c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5918,7 +6640,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-095 咖啡金",
       "colorCode": "KJ-095",
-      "ui": { "sortColorHex": "#AD8882" },
+      "ui": {
+        "sortColorHex": "#AD8882"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r09c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5934,7 +6658,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-074 加州黄",
       "colorCode": "KJ-074",
-      "ui": { "sortColorHex": "#D96638" },
+      "ui": {
+        "sortColorHex": "#D96638"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r09c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5950,7 +6676,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-083 典雅粉",
       "colorCode": "KJ-083",
-      "ui": { "sortColorHex": "#C88C8E" },
+      "ui": {
+        "sortColorHex": "#C88C8E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r10c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5966,7 +6694,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-099 荧光橙",
       "colorCode": "KJ-099",
-      "ui": { "sortColorHex": "#A84433" },
+      "ui": {
+        "sortColorHex": "#A84433"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r10c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5982,7 +6712,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-011 缤纷粉",
       "colorCode": "KJ-011",
-      "ui": { "sortColorHex": "#D5877A" },
+      "ui": {
+        "sortColorHex": "#D5877A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r11c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -5998,7 +6730,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-012 活力橙",
       "colorCode": "KJ-012",
-      "ui": { "sortColorHex": "#982B35" },
+      "ui": {
+        "sortColorHex": "#982B35"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r11c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6014,7 +6748,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-088 浪漫粉",
       "colorCode": "KJ-088",
-      "ui": { "sortColorHex": "#E17898" },
+      "ui": {
+        "sortColorHex": "#E17898"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r12c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6030,7 +6766,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-004 火山红",
       "colorCode": "KJ-004",
-      "ui": { "sortColorHex": "#BA4046" },
+      "ui": {
+        "sortColorHex": "#BA4046"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r12c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6046,7 +6784,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-084 樱花粉",
       "colorCode": "KJ-084",
-      "ui": { "sortColorHex": "#AF3F97" },
+      "ui": {
+        "sortColorHex": "#AF3F97"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r13c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6062,7 +6802,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-075 中国红",
       "colorCode": "KJ-075",
-      "ui": { "sortColorHex": "#933F44" },
+      "ui": {
+        "sortColorHex": "#933F44"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r13c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6078,7 +6820,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-076 嫣红紫",
       "colorCode": "KJ-076",
-      "ui": { "sortColorHex": "#412935" },
+      "ui": {
+        "sortColorHex": "#412935"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r14c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6094,7 +6838,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-061 星耀红",
       "colorCode": "KJ-061",
-      "ui": { "sortColorHex": "#804345" },
+      "ui": {
+        "sortColorHex": "#804345"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r14c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6110,7 +6856,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-071 紫罗兰",
       "colorCode": "KJ-071",
-      "ui": { "sortColorHex": "#705E58" },
+      "ui": {
+        "sortColorHex": "#705E58"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r15c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6126,7 +6874,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-005 珊瑚红",
       "colorCode": "KJ-005",
-      "ui": { "sortColorHex": "#5C3A38" },
+      "ui": {
+        "sortColorHex": "#5C3A38"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r15c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6142,7 +6892,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-072 绅士咖",
       "colorCode": "KJ-072",
-      "ui": { "sortColorHex": "#5D5150" },
+      "ui": {
+        "sortColorHex": "#5D5150"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r16c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6158,7 +6910,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-090 玛瑙红",
       "colorCode": "KJ-090",
-      "ui": { "sortColorHex": "#DADF37" },
+      "ui": {
+        "sortColorHex": "#DADF37"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r16c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6174,7 +6928,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-006 伯爵咖",
       "colorCode": "KJ-006",
-      "ui": { "sortColorHex": "#99BCBA" },
+      "ui": {
+        "sortColorHex": "#99BCBA"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r17c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6190,7 +6946,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-098 荧光绿",
       "colorCode": "KJ-098",
-      "ui": { "sortColorHex": "#9DC937" },
+      "ui": {
+        "sortColorHex": "#9DC937"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r17c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6206,7 +6964,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-077 天蓝",
       "colorCode": "KJ-077",
-      "ui": { "sortColorHex": "#67BEC3" },
+      "ui": {
+        "sortColorHex": "#67BEC3"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r18c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6222,7 +6982,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-081 伊拉莫绿",
       "colorCode": "KJ-081",
-      "ui": { "sortColorHex": "#478758" },
+      "ui": {
+        "sortColorHex": "#478758"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r18c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6238,7 +7000,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-022 蒂芙尼蓝",
       "colorCode": "KJ-022",
-      "ui": { "sortColorHex": "#7CC3B8" },
+      "ui": {
+        "sortColorHex": "#7CC3B8"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r19c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6254,7 +7018,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-082 翡翠绿",
       "colorCode": "KJ-082",
-      "ui": { "sortColorHex": "#52685A" },
+      "ui": {
+        "sortColorHex": "#52685A"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r19c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6270,7 +7036,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-021 青瓷蓝",
       "colorCode": "KJ-021",
-      "ui": { "sortColorHex": "#647BA2" },
+      "ui": {
+        "sortColorHex": "#647BA2"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r20c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6286,7 +7054,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-014 泰坦绿",
       "colorCode": "KJ-014",
-      "ui": { "sortColorHex": "#656350" },
+      "ui": {
+        "sortColorHex": "#656350"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r20c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6302,7 +7072,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-078 钴蓝",
       "colorCode": "KJ-078",
-      "ui": { "sortColorHex": "#415A8D" },
+      "ui": {
+        "sortColorHex": "#415A8D"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r21c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6318,7 +7090,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-086 橄榄绿",
       "colorCode": "KJ-086",
-      "ui": { "sortColorHex": "#595246" },
+      "ui": {
+        "sortColorHex": "#595246"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r21c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6334,7 +7108,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-016 孔雀蓝",
       "colorCode": "KJ-016",
-      "ui": { "sortColorHex": "#3F5372" },
+      "ui": {
+        "sortColorHex": "#3F5372"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r22c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6350,7 +7126,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-023 橄榄褐",
       "colorCode": "KJ-023",
-      "ui": { "sortColorHex": "#66619C" },
+      "ui": {
+        "sortColorHex": "#66619C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r22c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6366,7 +7144,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-013 皇家蓝",
       "colorCode": "KJ-013",
-      "ui": { "sortColorHex": "#2A3354" },
+      "ui": {
+        "sortColorHex": "#2A3354"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r23c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6382,7 +7162,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-091 冰雪蓝",
       "colorCode": "KJ-091",
-      "ui": { "sortColorHex": "#272676" },
+      "ui": {
+        "sortColorHex": "#272676"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r23c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6398,7 +7180,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-020 艾维亚蓝",
       "colorCode": "KJ-020",
-      "ui": { "sortColorHex": "#2D304B" },
+      "ui": {
+        "sortColorHex": "#2D304B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r24c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6414,7 +7198,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-079 旋风蓝",
       "colorCode": "KJ-079",
-      "ui": { "sortColorHex": "#78777B" },
+      "ui": {
+        "sortColorHex": "#78777B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r24c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6430,7 +7216,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-080 钻石蓝",
       "colorCode": "KJ-080",
-      "ui": { "sortColorHex": "#C3BEBD" },
+      "ui": {
+        "sortColorHex": "#C3BEBD"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r25c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6446,7 +7234,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-017 复古灰",
       "colorCode": "KJ-017",
-      "ui": { "sortColorHex": "#4D4D4C" },
+      "ui": {
+        "sortColorHex": "#4D4D4C"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r25c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6462,7 +7252,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-015 工业白",
       "colorCode": "KJ-015",
-      "ui": { "sortColorHex": "#B9BCB5" },
+      "ui": {
+        "sortColorHex": "#B9BCB5"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r26c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6478,7 +7270,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-024 曜岩黑",
       "colorCode": "KJ-024",
-      "ui": { "sortColorHex": "#5B5B5B" },
+      "ui": {
+        "sortColorHex": "#5B5B5B"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r26c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6494,7 +7288,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-018 布鲁灰",
       "colorCode": "KJ-018",
-      "ui": { "sortColorHex": "#BCC0BB" },
+      "ui": {
+        "sortColorHex": "#BCC0BB"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r27c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6510,7 +7306,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-089 威尼托黑",
       "colorCode": "KJ-089",
-      "ui": { "sortColorHex": "#494343" },
+      "ui": {
+        "sortColorHex": "#494343"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r27c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6526,7 +7324,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-070 哈瓦那灰",
       "colorCode": "KJ-070",
-      "ui": { "sortColorHex": "#A5A398" },
+      "ui": {
+        "sortColorHex": "#A5A398"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r28c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6542,7 +7342,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-100 深邃咖",
       "colorCode": "KJ-100",
-      "ui": { "sortColorHex": "#474C4E" },
+      "ui": {
+        "sortColorHex": "#474C4E"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r28c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6558,7 +7360,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-064 银母灰",
       "colorCode": "KJ-064",
-      "ui": { "sortColorHex": "#BBBCB8" },
+      "ui": {
+        "sortColorHex": "#BBBCB8"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r29c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6574,7 +7378,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-085 炭黑",
       "colorCode": "KJ-085",
-      "ui": { "sortColorHex": "#313235" },
+      "ui": {
+        "sortColorHex": "#313235"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r29c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6590,7 +7396,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-007 贝尔尼瓦灰",
       "colorCode": "KJ-007",
-      "ui": { "sortColorHex": "#787B83" },
+      "ui": {
+        "sortColorHex": "#787B83"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r30c1.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -6606,7 +7414,9 @@
       "materialFamilyId": "microfiber",
       "displayName": "KJ-008 曜夜黑",
       "colorCode": "KJ-008",
-      "ui": { "sortColorHex": "#FEFEFE" },
+      "ui": {
+        "sortColorHex": "#FEFEFE"
+      },
       "thumbnailUrl": "/sc01/thumbnails/microfiber-p17-kj-p17-r30c2.webp",
       "reviewRequired": true,
       "sourceRefs": [
@@ -7064,6 +7874,9 @@
     {
       "optionId": "wheel-style-multispoke",
       "surfaceId": "wheel-style",
+      "requiresSelections": {
+        "wheel-material": "wheel-aluminum-alloy"
+      },
       "materialFamilyId": "aluminum-alloy",
       "displayName": "多条幅轮毂",
       "colorCode": null,
@@ -7098,27 +7911,30 @@
       }
     },
     {
-      "optionId": "wheel-style-carbon-extension",
+      "optionId": "wheel-style-magnesium-default",
       "surfaceId": "wheel-style",
-      "materialFamilyId": "carbon-fiber",
-      "displayName": "多条幅轮毂碳纤维拓展",
+      "requiresSelections": {
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "默认同款",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
       "parameters": {
         "color": null,
         "material": {
-          "materialFamilyId": "carbon-fiber",
+          "materialFamilyId": "magnesium-alloy",
           "variantId": null
         }
       },
       "thumbnailUrl": null,
       "reviewRequired": false,
       "pricing": {
-        "unitPriceMinor": 50000,
+        "unitPriceMinor": 0,
         "quantity": 1,
         "pricingUnit": "per-piece",
-        "isStandard": false,
+        "isStandard": true,
         "status": "confirmed",
         "quotable": false
       },
@@ -7126,7 +7942,352 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂造型 / 多条幅轮毂碳纤维拓展 / 500 元"
+          "locator": "轮毂造型 / 镁合金 / 默认同款 / 免费（用户确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-style-magnesium-1",
+      "surfaceId": "wheel-style",
+      "requiresSelections": {
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "款式1",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": {
+          "materialFamilyId": "magnesium-alloy",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂造型 / 镁合金 / 款式1（用户确认，价格待确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "door-sill-none",
+      "surfaceId": "door-sill",
+      "materialFamilyId": null,
+      "displayName": "无口袋",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": true,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "门板口袋 / 无口袋 / 免费（用户确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-style-magnesium-2",
+      "surfaceId": "wheel-style",
+      "requiresSelections": {
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "款式2",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": {
+          "materialFamilyId": "magnesium-alloy",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂造型 / 镁合金 / 款式2（用户确认，价格待确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-style-magnesium-3",
+      "surfaceId": "wheel-style",
+      "requiresSelections": {
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "款式3",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": {
+          "materialFamilyId": "magnesium-alloy",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂造型 / 镁合金 / 款式3（用户确认，价格待确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-style-magnesium-4",
+      "surfaceId": "wheel-style",
+      "requiresSelections": {
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "款式4",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": {
+          "materialFamilyId": "magnesium-alloy",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂造型 / 镁合金 / 款式4（用户确认，价格待确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-style-magnesium-5",
+      "surfaceId": "wheel-style",
+      "requiresSelections": {
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "款式5",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": {
+          "materialFamilyId": "magnesium-alloy",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂造型 / 镁合金 / 款式5（用户确认，价格待确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-style-magnesium-6",
+      "surfaceId": "wheel-style",
+      "requiresSelections": {
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "款式6",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": {
+          "materialFamilyId": "magnesium-alloy",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂造型 / 镁合金 / 款式6（用户确认，价格待确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-style-magnesium-7",
+      "surfaceId": "wheel-style",
+      "requiresSelections": {
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "款式7",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": {
+          "materialFamilyId": "magnesium-alloy",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂造型 / 镁合金 / 款式7（用户确认，价格待确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-style-magnesium-8",
+      "surfaceId": "wheel-style",
+      "requiresSelections": {
+        "wheel-material": "wheel-magnesium-alloy"
+      },
+      "materialFamilyId": "magnesium-alloy",
+      "displayName": "款式8",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": {
+          "materialFamilyId": "magnesium-alloy",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂造型 / 镁合金 / 款式8（用户确认，价格待确认）"
         }
       ],
       "ui": {
@@ -7884,6 +9045,85 @@
       ]
     },
     {
+      "optionId": "rear-wing-none",
+      "surfaceId": "rear-wing",
+      "materialFamilyId": null,
+      "displayName": "无尾翼",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": true,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "尾翼 / 无尾翼 / 免费（当前默认）"
+        }
+      ],
+      "ui": {
+        "order": 0,
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "rear-wing-gray",
+      "surfaceId": "rear-wing",
+      "availability": {
+        "status": "disabled",
+        "reason": "暂不可选"
+      },
+      "materialFamilyId": "paint",
+      "displayName": "灰色",
+      "colorCode": "#808080",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#808080",
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "paint",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": null,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "unconfirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "尾翼 / 灰色 / 暂不可选（用户确认）"
+        }
+      ],
+      "ui": {
+        "order": 1,
+        "control": "swatch"
+      }
+    },
+    {
       "optionId": "steering-skin-ultrasuede-black",
       "surfaceId": "steering-wheel-skin",
       "materialFamilyId": "ultrasuede",
@@ -8043,7 +9283,7 @@
       "optionId": "steering-addon-eva",
       "surfaceId": "steering-wheel-addon",
       "materialFamilyId": "eva",
-      "displayName": "EVA海绵",
+      "displayName": "加粗(EVA海绵)",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -8068,7 +9308,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "加粗 / EVA高频 / 1180 元"
+          "locator": "加粗(EVA海绵) / 1180 元（用户确认文案）"
         }
       ],
       "ui": {
@@ -8705,7 +9945,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "碳纤维背板颜色 / 自定义颜色 / 亮面或雾面 / 1680*2 元"
+          "locator": "碳纤维背板颜色 / 自定义颜色 / 亮面或哑光 / 1680*2 元"
         }
       ]
     },
@@ -12418,12 +13658,16 @@
       "optionId": "interior-painted-spray",
       "surfaceId": "interior-painted-parts",
       "materialFamilyId": "spray",
-      "displayName": "喷漆",
+      "displayName": "自定义颜色",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
       "parameters": {
-        "color": null,
+        "color": {
+          "mode": "custom",
+          "value": null,
+          "required": true
+        },
         "material": {
           "materialFamilyId": "spray",
           "variantId": null
@@ -12447,7 +13691,15 @@
         }
       ],
       "ui": {
-        "control": "swatch"
+        "control": "color-picker",
+        "defaultParameters": {
+          "colorHex": "#111111",
+          "metallic": 0.2,
+          "roughness": 0.3,
+          "clearCoat": 0.7,
+          "orangePeel": 0.15,
+          "flakeIntensity": 0.2
+        }
       }
     },
     {
@@ -12491,19 +13743,20 @@
       }
     },
     {
-      "optionId": "embroidered-logo-standard",
+      "optionId": "embroidered-logo-black",
       "surfaceId": "embroidered-logo",
-      "materialFamilyId": "microfiber",
-      "displayName": "黑/红/蓝/绿",
-      "colorCode": null,
+      "materialFamilyId": null,
+      "displayName": "黑色",
+      "colorCode": "#111111",
       "finish": null,
       "renderRelevant": true,
       "parameters": {
-        "color": null,
-        "material": {
-          "materialFamilyId": "microfiber",
-          "variantId": null
-        }
+        "color": {
+          "mode": "fixed",
+          "value": "#111111",
+          "required": true
+        },
+        "material": null
       },
       "thumbnailUrl": null,
       "reviewRequired": false,
@@ -12519,32 +13772,34 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "缝线徽标 / 黑/红/蓝/绿 / 标配"
+          "locator": "缝线 / 黑色 / 免费（用户确认）"
         }
       ],
       "ui": {
+        "order": 0,
         "control": "swatch"
       }
     },
     {
-      "optionId": "embroidered-logo-custom",
+      "optionId": "embroidered-logo-red",
       "surfaceId": "embroidered-logo",
-      "materialFamilyId": "microfiber",
-      "displayName": "缝线颜色拓展",
-      "colorCode": null,
+      "materialFamilyId": null,
+      "displayName": "红色",
+      "colorCode": "#D71920",
       "finish": null,
       "renderRelevant": true,
       "parameters": {
-        "color": null,
-        "material": {
-          "materialFamilyId": "microfiber",
-          "variantId": null
-        }
+        "color": {
+          "mode": "fixed",
+          "value": "#D71920",
+          "required": true
+        },
+        "material": null
       },
       "thumbnailUrl": null,
       "reviewRequired": false,
       "pricing": {
-        "unitPriceMinor": 60000,
+        "unitPriceMinor": 0,
         "quantity": 1,
         "pricingUnit": "per-piece",
         "isStandard": false,
@@ -12555,30 +13810,320 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "缝线徽标 / 缝线颜色拓展 / 600 元"
+          "locator": "缝线 / 红色 / 免费（用户确认）"
         }
       ],
       "ui": {
+        "order": 1,
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "embroidered-logo-yellow",
+      "surfaceId": "embroidered-logo",
+      "materialFamilyId": null,
+      "displayName": "黄色",
+      "colorCode": "#FFD400",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#FFD400",
+          "required": true
+        },
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "缝线 / 黄色 / 免费（用户确认）"
+        }
+      ],
+      "ui": {
+        "order": 2,
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "embroidered-logo-blue",
+      "surfaceId": "embroidered-logo",
+      "materialFamilyId": null,
+      "displayName": "蓝色",
+      "colorCode": "#1769E0",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#1769E0",
+          "required": true
+        },
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "缝线 / 蓝色 / 免费（用户确认）"
+        }
+      ],
+      "ui": {
+        "order": 3,
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "embroidered-logo-green",
+      "surfaceId": "embroidered-logo",
+      "materialFamilyId": null,
+      "displayName": "绿色",
+      "colorCode": "#159447",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#159447",
+          "required": true
+        },
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "缝线 / 绿色 / 免费（用户确认）"
+        }
+      ],
+      "ui": {
+        "order": 4,
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "headrest-embroidery-none",
+      "surfaceId": "headrest-embroidery",
+      "materialFamilyId": null,
+      "displayName": "无刺绣",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": true,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "头枕刺绣 / 无刺绣 / 免费（用户确认）"
+        }
+      ],
+      "ui": {
+        "order": 0,
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "headrest-embroidery-custom",
+      "surfaceId": "headrest-embroidery",
+      "materialFamilyId": null,
+      "displayName": "刺绣",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 128800,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "头枕刺绣 / 刺绣 / 1288 元（用户确认）"
+        }
+      ],
+      "ui": {
+        "order": 1,
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "door-panel-embroidery-none",
+      "surfaceId": "door-panel-embroidery",
+      "materialFamilyId": null,
+      "displayName": "无刺绣",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": true,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "门中板刺绣 / 无刺绣 / 免费（用户确认）"
+        }
+      ],
+      "ui": {
+        "order": 0,
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "door-panel-embroidery-custom",
+      "surfaceId": "door-panel-embroidery",
+      "materialFamilyId": null,
+      "displayName": "刺绣",
+      "colorCode": null,
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": null,
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 168800,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "门中板刺绣 / 刺绣 / 1688 元（用户确认）"
+        }
+      ],
+      "ui": {
+        "order": 1,
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "center-panel-trim-black",
+      "surfaceId": "center-panel-trim",
+      "materialFamilyId": null,
+      "displayName": "黑色",
+      "colorCode": "#111111",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#111111",
+          "required": true
+        },
+        "material": null
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": false,
+      "pricing": {
+        "unitPriceMinor": 0,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": true,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 4,
+          "locator": "中面板缝线 / 黑色 / 免费（用户确认）"
+        }
+      ],
+      "ui": {
+        "order": 0,
         "control": "swatch"
       }
     },
     {
       "optionId": "center-panel-trim-custom",
       "surfaceId": "center-panel-trim",
-      "materialFamilyId": "microfiber",
-      "displayName": "缝线颜色拓展",
+      "materialFamilyId": null,
+      "displayName": "自定义颜色",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
       "parameters": {
-        "color": null,
-        "material": {
-          "materialFamilyId": "microfiber",
-          "variantId": null
-        }
+        "color": {
+          "mode": "custom",
+          "value": null,
+          "required": true
+        },
+        "material": null
       },
       "thumbnailUrl": null,
-      "reviewRequired": true,
+      "reviewRequired": false,
       "pricing": {
         "unitPriceMinor": 30000,
         "quantity": 2,
@@ -12591,16 +14136,26 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "中面板横饰板 / 缝线颜色拓展 / 300*2 元"
+          "locator": "中面板缝线 / 自定义颜色 / 300*2 元（用户确认）"
         }
       ],
       "ui": {
-        "control": "swatch"
+        "order": 1,
+        "iconUrl": "/sc01/option-icons/rainbow.svg",
+        "control": "color-picker",
+        "defaultParameters": {
+          "colorHex": "#D71920",
+          "metallic": 0,
+          "roughness": 0.65,
+          "clearCoat": 0,
+          "orangePeel": 0,
+          "flakeIntensity": 0
+        }
       }
     },
     {
-      "optionId": "shift-knob-copper",
-      "surfaceId": "shift-knob",
+      "optionId": "nameplate-copper",
+      "surfaceId": "nameplate",
       "materialFamilyId": "metal",
       "displayName": "铜",
       "colorCode": null,
@@ -12627,7 +14182,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "换挡 / 铜 / 880 元"
+          "locator": "铭牌 / 铜 / 880 元"
         }
       ],
       "ui": {
@@ -12635,8 +14190,8 @@
       }
     },
     {
-      "optionId": "shift-knob-stainless",
-      "surfaceId": "shift-knob",
+      "optionId": "nameplate-stainless",
+      "surfaceId": "nameplate",
       "materialFamilyId": "metal",
       "displayName": "不锈钢",
       "colorCode": null,
@@ -12663,7 +14218,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "换挡 / 不锈钢 / 860 元"
+          "locator": "铭牌 / 不锈钢 / 860 元"
         }
       ],
       "ui": {
@@ -12671,8 +14226,8 @@
       }
     },
     {
-      "optionId": "shift-knob-carbon",
-      "surfaceId": "shift-knob",
+      "optionId": "nameplate-carbon",
+      "surfaceId": "nameplate",
       "materialFamilyId": "carbon-fiber",
       "displayName": "碳纤维",
       "colorCode": null,
@@ -12699,79 +14254,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "换挡 / 碳纤维 / 980 元"
-        }
-      ],
-      "ui": {
-        "control": "swatch"
-      }
-    },
-    {
-      "optionId": "brake-handle-flamed-blue",
-      "surfaceId": "brake-handle",
-      "materialFamilyId": "metal",
-      "displayName": "火烧钢蓝",
-      "colorCode": null,
-      "finish": null,
-      "renderRelevant": true,
-      "parameters": {
-        "color": null,
-        "material": {
-          "materialFamilyId": "metal",
-          "variantId": null
-        }
-      },
-      "thumbnailUrl": null,
-      "reviewRequired": true,
-      "pricing": {
-        "unitPriceMinor": 128800,
-        "quantity": 1,
-        "pricingUnit": "per-piece",
-        "isStandard": false,
-        "status": "confirmed",
-        "quotable": false
-      },
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 4,
-          "locator": "刹车 / 火烧钢蓝 / 1288 元"
-        }
-      ],
-      "ui": {
-        "control": "swatch"
-      }
-    },
-    {
-      "optionId": "brake-handle-door-panel",
-      "surfaceId": "brake-handle",
-      "materialFamilyId": "metal",
-      "displayName": "门板中刹柄",
-      "colorCode": null,
-      "finish": null,
-      "renderRelevant": true,
-      "parameters": {
-        "color": null,
-        "material": {
-          "materialFamilyId": "metal",
-          "variantId": null
-        }
-      },
-      "thumbnailUrl": null,
-      "reviewRequired": true,
-      "pricing": {
-        "unitPriceMinor": 168800,
-        "quantity": 1,
-        "pricingUnit": "per-piece",
-        "isStandard": false,
-        "status": "confirmed",
-        "quotable": false
-      },
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 4,
-          "locator": "刹车 / 门板中刹柄 / 1688 元"
+          "locator": "铭牌 / 碳纤维 / 980 元"
         }
       ],
       "ui": {
@@ -12854,7 +14337,7 @@
       "optionId": "pedal-luxury-carpet",
       "surfaceId": "pedal",
       "materialFamilyId": "carpet",
-      "displayName": "豪华地毯",
+      "displayName": "金属板+豪华地毯",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -12879,7 +14362,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "脚垫 / 豪华地毯（90%用户选择） / 1680 元"
+          "locator": "脚垫 / 金属板+豪华地毯 / 1680 元（用户确认文案）"
         }
       ],
       "ui": {
@@ -12899,6 +14382,8 @@
     "ip-center-mark-black-paint": "ip-center-mark-uncovered-black",
     "ip-center-mark-leather-felt": "ip-center-mark-ultrasuede",
     "seat-headrest-standard": "seat-headrest-mark-ultrasuede",
-    "seat-shell-black": "seat-shell-carbon-original"
+    "seat-shell-black": "seat-shell-carbon-original",
+    "embroidered-logo-standard": "embroidered-logo-black",
+    "embroidered-logo-custom": "embroidered-logo-black"
   }
 }

@@ -13,6 +13,7 @@ import {
 
 const selections: Record<string, string> = {
   "exterior-body-cover": "body-cover-red",
+  "rear-wing": "rear-wing-none",
   "wheel-material": "wheel-aluminum-alloy",
   "wheel-style": "wheel-style-multispoke",
   "wheel-color": "wheel-color-bright-silver",
@@ -45,10 +46,11 @@ const selections: Record<string, string> = {
   "a-pillar-surface": "a-pillar-woven",
   "interior-painted-parts": "interior-painted-spray",
   "door-sill": "door-sill-leather",
-  "embroidered-logo": "embroidered-logo-standard",
+  "embroidered-logo": "embroidered-logo-black",
+  "headrest-embroidery": "headrest-embroidery-none",
+  "door-panel-embroidery": "door-panel-embroidery-none",
   "center-panel-trim": "center-panel-trim-custom",
-  "shift-knob": "shift-knob-stainless",
-  "brake-handle": "brake-handle-flamed-blue",
+  "nameplate": "nameplate-stainless",
   "pedal": "pedal-racing",
 };
 
@@ -58,7 +60,7 @@ const changedSelections = {
 };
 
 const request = {
-  catalogVersion: "sc01-draft-20260121",
+  catalogVersion: "sc01-draft-20261007",
   vehicleId: "sc01",
   selections,
 };
@@ -139,15 +141,15 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().vehicle.vehicleId, "sc01");
   assert.equal(response.json().vehicle.quotable, false);
-  assert.equal(response.json().options.length, 154);
-  assert.equal(response.json().surfaces.length, 38);
-  assert.equal(response.json().selectionOrder.length, 38);
+  assert.equal(response.json().options.length, 171);
+  assert.equal(response.json().surfaces.length, 40);
+  assert.equal(response.json().selectionOrder.length, 40);
   assert.equal(response.json().categories.map(
     (category: { displayName: string }) => category.displayName,
   ).join(" > "), "外饰 > 内饰 > 性能 > 个性化");
   assert.equal(response.json().surfaces.filter(
     (surface: { required: boolean }) => !surface.required,
-  ).length, 8);
+  ).length, 5);
   assert.equal(response.json().materialVariants.length, 352);
   assert.deepEqual(
     response.json().interactionCameras.map(
@@ -224,6 +226,23 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
       .map((family: { materialFamilyId: string }) => family.materialFamilyId),
     ["ultrasuede", "alcantara", "leather", "microfiber"],
   );
+});
+
+test("Server 对旧 catalogVersion 明确返回 409，不尝试迁移配置", async (t) => {
+  const app = buildApp();
+  t.after(() => app.close());
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v2/configurations",
+    payload: {
+      ...request,
+      catalogVersion: "sc01-draft-20260121",
+    },
+  });
+
+  assert.equal(response.statusCode, 409);
+  assert.equal(response.json().code, "VERSION_CONFLICT");
 });
 
 test("Server 只接受顶层完整骨骼网格和 AnimSequence 对象路径并拒绝 clip 私有路径", async (t) => {
@@ -312,7 +331,7 @@ test("创建配置返回稳定身份、revision 与禁止报价价格明细", as
   assert.equal(body.revision, 1);
   assert.equal(body.priceResult.quoteAllowed, false);
   assert.equal(body.priceResult.basePriceMinor, 22_980_000);
-  assert.equal(body.priceResult.totalPriceMinor, 24_552_800);
+  assert.equal(body.priceResult.totalPriceMinor, 24_424_000);
 });
 
 test("无显式标配的表面默认不选装，Server 计算参考总价", () => {
@@ -423,11 +442,39 @@ test("任一有备选项的 surface 变化都会改变 configurationId", () => {
   for (const surfaceId of data.catalog.selectionOrder) {
     const alternative = data.catalog.options.find(
       (option) => option.surfaceId === surfaceId
-        && option.optionId !== selections[surfaceId],
+        && option.optionId !== selections[surfaceId]
+        && option.availability?.status !== "disabled"
+        && Object.entries(option.requiresSelections ?? {}).every(
+          ([requiredSurfaceId, requiredOptionId]) =>
+            selections[requiredSurfaceId] === requiredOptionId
+        ),
     );
     if (!alternative) continue;
+    const candidateSelections = {
+      ...selections,
+      ...alternative.requiresSelections,
+      [surfaceId]: alternative.optionId,
+    };
+    for (const dependentSurfaceId of data.catalog.selectionOrder) {
+      const selected = data.options.get(candidateSelections[dependentSurfaceId]!);
+      const requirementsMet = Object.entries(selected?.requiresSelections ?? {}).every(
+        ([requiredSurfaceId, requiredOptionId]) =>
+          candidateSelections[requiredSurfaceId] === requiredOptionId
+      );
+      if (requirementsMet) continue;
+      const fallback = data.catalog.options.find(
+        (option) => option.surfaceId === dependentSurfaceId
+          && option.pricing.isStandard
+          && option.availability?.status !== "disabled"
+          && Object.entries(option.requiresSelections ?? {}).every(
+            ([requiredSurfaceId, requiredOptionId]) =>
+              candidateSelections[requiredSurfaceId] === requiredOptionId
+          ),
+      );
+      if (fallback) candidateSelections[dependentSurfaceId] = fallback.optionId;
+    }
     const changed = deriveVehicleConfiguration(
-      { ...selections, [surfaceId]: alternative.optionId },
+      candidateSelections,
       data,
     );
     assert.notEqual(changed.configurationId, baseline.configurationId, surfaceId);
@@ -550,7 +597,7 @@ test("Server 将未选可选 surface 的 customization 识别为 400 客户端�
     (item) => item.materialFamilyId === "leather",
   )!;
   const optionalOmitted = { ...selections };
-  delete optionalOmitted["door-sill"];
+  delete optionalOmitted["lower-skirt"];
 
   const response = await app.inject({
     method: "POST",
@@ -559,7 +606,7 @@ test("Server 将未选可选 surface 的 customization 识别为 400 客户端�
       ...request,
       selections: optionalOmitted,
       customizations: {
-        "door-sill": { materialVariantId: leather.variantId },
+        "lower-skirt": { materialVariantId: leather.variantId },
       },
     },
   });
@@ -583,7 +630,7 @@ test("Server 拒绝不具备 variant 色彩能力的同材料族 option", async 
       ...request,
       selections: {
         ...request.selections,
-        "embroidered-logo": "embroidered-logo-custom",
+        "embroidered-logo": "embroidered-logo-red",
       },
       customizations: {
         "embroidered-logo": { materialVariantId: microfiber.variantId },
@@ -593,6 +640,27 @@ test("Server 拒绝不具备 variant 色彩能力的同材料族 option", async 
 
   assert.equal(response.statusCode, 400);
   assert.equal(response.json().code, "MATERIAL_VARIANT_NOT_SUPPORTED");
+});
+
+test("Server 拒绝目录中标记为暂不可选的选项", async (t) => {
+  const app = buildApp();
+  t.after(() => app.close());
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v2/configurations",
+    payload: {
+      ...request,
+      selections: {
+        ...request.selections,
+        "rear-wing": "rear-wing-gray",
+      },
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().code, "OPTION_UNAVAILABLE");
+  assert.match(response.json().message, /暂不可选/);
 });
 
 test("customizations 可随配置保存并恢复", async (t) => {
@@ -629,7 +697,7 @@ test("customizations 可随配置保存并恢复", async (t) => {
   assert.deepEqual(restored.json().customizations, payload.customizations);
 });
 
-test("旧 optionId 迁移到规范 ID，且自定义色按 option 能力验证", () => {
+test("同 surface 的旧 optionId 可迁移，且自定义色按 option 能力验证", () => {
   const data = loadAutomotiveCatalog();
   const migrated = deriveVehicleConfiguration({
     ...selections,
@@ -639,7 +707,6 @@ test("旧 optionId 迁移到规范 ID，且自定义色按 option 能力验证",
     migrated.selections["steering-wheel-skin"],
     "steering-skin-leather",
   );
-
   const paint = {
     colorHex: "#445566",
     metallic: 0.5,
@@ -652,6 +719,28 @@ test("旧 optionId 迁移到规范 ID，且自定义色按 option 能力验证",
     "engine-bay-cover": paint,
   });
   assert.deepEqual(chassis.customizations["engine-bay-cover"], paint);
+});
+
+test("Server 拒绝 requiresSelections 不满足及跨旧 surface 的 optionId", () => {
+  const data = loadAutomotiveCatalog();
+  assert.throws(
+    () => deriveVehicleConfiguration({
+      ...selections,
+      "wheel-style": "wheel-style-magnesium-1",
+    }, data),
+    (error: unknown) => error instanceof Error
+      && "code" in error
+      && error.code === "SELECTION_REQUIREMENTS_NOT_MET",
+  );
+  assert.throws(
+    () => deriveVehicleConfiguration({
+      ...selections,
+      "headrest-embroidery": "brake-handle-flamed-blue",
+    }, data),
+    (error: unknown) => error instanceof Error
+      && "code" in error
+      && error.code === "INVALID_OPTION",
+  );
 });
 
 test("未配置 v2 bake 时草案 resolve 只返回投影标识", async (t) => {

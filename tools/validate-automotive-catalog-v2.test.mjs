@@ -19,7 +19,7 @@ const fixture = (name) =>
 
 test("SC01 v2 草案 catalog、正反配置、价格结果与黄金向量聚合通过", async () => {
   const result = await validateAutomotiveCatalogFixtures(root);
-  assert.deepEqual(result, { optionCount: 154, vectorCount: 2 });
+  assert.deepEqual(result, { optionCount: 171, vectorCount: 2 });
 });
 
 test("catalog 使用显式 defaultSelections 消除多标配项的顺序歧义", async () => {
@@ -71,6 +71,57 @@ test("catalog 声明五个语义交互镜头并校验层级 cameraId 引用", as
   const invalidLegacyIndex = structuredClone(catalog);
   invalidLegacyIndex.interactionCameras[0].legacyIndex = 6;
   assert.throws(() => validateCatalog(invalidLegacyIndex), /legacyIndex 非法/);
+});
+
+test("SC01 文案修订不改变既有轮毂、内饰和性能稳定 ID", async () => {
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  const surfaces = new Map(catalog.surfaces.map((surface) => [surface.surfaceId, surface]));
+  const options = new Map(catalog.options.map((option) => [option.optionId, option]));
+
+  assert.deepEqual(
+    ["wheel-material", "wheel-style", "wheel-color"].map((surfaceId) =>
+      surfaces.get(surfaceId).displayName),
+    ["轮毂材质", "轮毂造型", "轮毂颜色"]
+  );
+  assert.equal(options.get("wheel-style-multispoke").displayName, "多条幅轮毂");
+  assert.equal(surfaces.get("steering-wheel-skin").displayName, "表皮");
+  assert.equal(surfaces.get("seat-shell-back").displayName, "背板");
+  assert.equal(surfaces.get("door-middle").displayName, "中面板");
+  assert.equal(surfaces.get("ip-upper-trim").displayName, "上层软包");
+  assert.equal(surfaces.get("roof-surface").displayName, "棚面");
+  assert.equal(surfaces.get("steering-wheel-addon").displayName, "加粗(EVA海绵)");
+  assert.equal(options.get("steering-addon-eva").displayName, "加粗(EVA海绵)");
+  assert.equal(options.get("lower-skirt-aluminum").displayName, "铝合金");
+
+  assert.ok(catalog.selectionOrder.includes("lower-skirt"));
+  assert.equal(surfaces.get("lower-skirt").required, false);
+  assert.equal(Object.hasOwn(catalog.defaultSelections, "lower-skirt"), false);
+});
+
+test("轮毂造型按材质声明 requiresSelections，镁合金九款价格状态完整", async () => {
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  const styles = catalog.options.filter((option) => option.surfaceId === "wheel-style");
+  const aluminum = styles.filter((option) =>
+    option.requiresSelections?.["wheel-material"] === "wheel-aluminum-alloy");
+  const magnesium = styles.filter((option) =>
+    option.requiresSelections?.["wheel-material"] === "wheel-magnesium-alloy");
+
+  assert.deepEqual(aluminum.map((option) => option.displayName), ["多条幅轮毂"]);
+  assert.deepEqual(
+    magnesium.map((option) => option.displayName),
+    ["默认同款", "款式1", "款式2", "款式3", "款式4", "款式5", "款式6", "款式7", "款式8"]
+  );
+  assert.equal(magnesium[0].pricing.unitPriceMinor, 0);
+  assert.equal(magnesium[0].pricing.status, "confirmed");
+  assert.ok(magnesium.slice(1).every((option) =>
+    option.pricing.unitPriceMinor === null && option.pricing.status === "unconfirmed"));
+
+  const incompatible = await fixture("sc01.configuration.valid.v2.json");
+  incompatible.selections["wheel-material"] = "wheel-magnesium-alloy";
+  assert.throws(
+    () => validateConfiguration(incompatible, catalog),
+    /requiresSelections 不满足/
+  );
 });
 
 test("catalog 顶层声明完整骨骼网格与动画序列对象路径", async () => {
@@ -223,9 +274,9 @@ test("材料 variant 只允许应用到声明 variant 色彩能力的 option", a
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const valid = await fixture("sc01.configuration.valid.v2.json");
   const unsupported = structuredClone(valid);
-  unsupported.selections["embroidered-logo"] = "embroidered-logo-custom";
+  unsupported.selections["door-upper"] = "door-upper-microfiber-black";
   unsupported.customizations = {
-    "embroidered-logo": { materialVariantId: "microfiber-p16-np-3048" }
+    "door-upper": { materialVariantId: "microfiber-p16-np-3048" }
   };
 
   assert.throws(
@@ -240,9 +291,9 @@ test("价格结果包含基础价、已选选装明细与参考总价", async ()
   const result = buildPriceResult(valid, catalog);
 
   assert.equal(result.basePriceMinor, 22980000);
-  assert.equal(result.totalPriceMinor, 24552800);
+  assert.equal(result.totalPriceMinor, 24424000);
   assert.equal(result.quoteAllowed, false);
-  assert.equal(result.lineItems.length, 38);
+  assert.equal(result.lineItems.length, 40);
   assert.ok(result.lineItems.every(
     (line) => Number.isInteger(line.unitPriceMinor)
       && Number.isInteger(line.subtotalMinor)
@@ -259,9 +310,9 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
     catalog.categories.map((category) => category.displayName),
     ["外饰", "内饰", "性能", "个性化"]
   );
-  assert.equal(catalog.surfaces.length, 38);
-  assert.equal(catalog.selectionOrder.length, 38);
-  assert.equal(catalog.surfaces.filter((surface) => !surface.required).length, 8);
+  assert.equal(catalog.surfaces.length, 40);
+  assert.equal(catalog.selectionOrder.length, 40);
+  assert.equal(catalog.surfaces.filter((surface) => !surface.required).length, 5);
   assert.ok(catalog.surfaces.every((surface) =>
     surface.required === catalog.options.some(
       (option) => option.surfaceId === surface.surfaceId && option.pricing.isStandard
@@ -404,6 +455,82 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
       .filter((option) => option.surfaceId === "wheel-color")
       .map((option) => option.displayName),
     ["亮银色", "黑色", "深灰色", "碳纤维", "金色", "古铜色"]
+  );
+  assert.equal(byId.get("interior-painted-spray").displayName, "自定义颜色");
+  assert.equal(byId.get("interior-painted-spray").parameters.color.mode, "custom");
+  assert.equal(catalog.defaultSelections["door-sill"], "door-sill-none");
+  assert.equal(byId.get("door-sill-none").displayName, "无口袋");
+  assert.deepEqual(
+    catalog.options.filter((option) => option.surfaceId === "embroidered-logo")
+      .map((option) => [option.displayName, option.colorCode, option.pricing.unitPriceMinor]),
+    [
+      ["黑色", "#111111", 0],
+      ["红色", "#D71920", 0],
+      ["黄色", "#FFD400", 0],
+      ["蓝色", "#1769E0", 0],
+      ["绿色", "#159447", 0]
+    ]
+  );
+  assert.equal(
+    catalog.surfaces.find((surface) => surface.surfaceId === "embroidered-logo").displayName,
+    "缝线"
+  );
+  assert.equal(
+    catalog.surfaces.find((surface) => surface.surfaceId === "center-panel-trim").displayName,
+    "中面板缝线"
+  );
+  assert.deepEqual(
+    catalog.options.filter((option) => option.surfaceId === "nameplate")
+      .map((option) => option.displayName),
+    ["铜", "不锈钢", "碳纤维"]
+  );
+  assert.equal(catalog.surfaces.some((surface) => surface.surfaceId === "brake-handle"), false);
+  assert.deepEqual(
+    ["headrest-embroidery", "door-panel-embroidery"].map((surfaceId) =>
+      catalog.options.filter((option) => option.surfaceId === surfaceId)
+        .map((option) => [option.displayName, option.pricing.unitPriceMinor])),
+    [
+      [["无刺绣", 0], ["刺绣", 128800]],
+      [["无刺绣", 0], ["刺绣", 168800]]
+    ]
+  );
+  assert.equal(
+    catalog.optionIdAliases["brake-handle-flamed-blue"],
+    undefined
+  );
+  assert.equal(
+    catalog.optionIdAliases["brake-handle-door-panel"],
+    undefined
+  );
+  assert.deepEqual(
+    catalog.options.filter((option) => option.surfaceId === "center-panel-trim")
+      .map((option) => [option.displayName, option.pricing.unitPriceMinor, option.pricing.quantity]),
+    [["黑色", 0, 1], ["自定义颜色", 30000, 2]]
+  );
+  assert.deepEqual(
+    catalog.options.filter((option) => option.surfaceId === "pedal")
+      .map((option) => option.displayName),
+    ["赛车版", "短绒毛", "金属板+豪华地毯"]
+  );
+  assert.deepEqual(byId.get("rear-wing-gray").availability, {
+    status: "disabled",
+    reason: "暂不可选"
+  });
+});
+
+test("禁用选项必须携带原因且不能进入有效配置", async () => {
+  const catalog = await fixture("sc01.catalog.draft.v2.json");
+  const invalidAvailability = structuredClone(catalog);
+  invalidAvailability.options.find(
+    (option) => option.optionId === "rear-wing-gray"
+  ).availability.reason = "";
+  assert.throws(() => validateCatalog(invalidAvailability), /availability 非法/);
+
+  const configuration = await fixture("sc01.configuration.valid.v2.json");
+  configuration.selections["rear-wing"] = "rear-wing-gray";
+  assert.throws(
+    () => validateConfiguration(configuration, catalog),
+    /暂不可选/
   );
 });
 

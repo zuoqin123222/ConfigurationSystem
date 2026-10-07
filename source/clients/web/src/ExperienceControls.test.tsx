@@ -91,6 +91,12 @@ describe('ExperienceControls', () => {
     await user.hover(within(toolbar).getByRole('button', { name: '动画' }))
     fireEvent.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
     await user.unhover(within(toolbar).getByRole('button', { name: '动画' }))
+    await user.hover(within(toolbar).getByRole('button', { name: '场景' }))
+    const sceneMenu = await screen.findByRole('menu', { name: '场景预设' })
+    expect(sceneMenu).toHaveClass('compact-popover')
+    expect(within(sceneMenu).getAllByRole('menuitemradio').map((item) => item.textContent))
+      .toEqual(['影棚', '外景'])
+    await user.unhover(within(toolbar).getByRole('button', { name: '场景' }))
     await user.click(within(toolbar).getByRole('button', { name: '场景' }))
     await user.click(within(toolbar).getByRole('button', { name: '渲染' }))
     await user.click(within(toolbar).getByRole('button', { name: '全屏' }))
@@ -135,7 +141,7 @@ describe('ExperienceControls', () => {
     expect(animation).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('只展示 UE 当前车辆实际支持的动画', async () => {
+  it('能力探测部分瞬态失败时仍保留完整动画菜单', async () => {
     const user = userEvent.setup()
     const bridge = {
       getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
@@ -155,10 +161,9 @@ describe('ExperienceControls', () => {
     const animation = await screen.findByRole('button', { name: '动画' })
     await user.hover(animation)
     const menu = await screen.findByRole('menu', { name: '动画列表' })
-    await waitFor(() => {
-      expect(within(menu).queryByRole('menuitemradio', { name: '后盖往复' }))
-        .not.toBeInTheDocument()
-    })
+    await waitFor(() => expect(bridge.canplayanimation).toHaveBeenCalledWith('wheel-spin'))
+    expect(within(menu).getByRole('menuitemradio', { name: '后盖往复' }))
+      .toBeInTheDocument()
     expect(within(menu).getByRole('menuitemradio', { name: '开启机舱盖' }))
       .toBeInTheDocument()
     expect(bridge.canplayanimation).toHaveBeenCalledWith('hood')
@@ -195,7 +200,7 @@ describe('ExperienceControls', () => {
       .toBeInTheDocument()
   })
 
-  it('一级按钮单击循环子项，悬停时只展示一个二级菜单', async () => {
+  it('镜头一级按钮循环，动画一级按钮固定切到车轮旋转', async () => {
     const user = userEvent.setup()
     let currentState = {
       cameraId: 'wheel',
@@ -229,13 +234,47 @@ describe('ExperienceControls', () => {
     await user.click(cameraButton)
     await waitFor(() => expect(bridge.setcameraid).toHaveBeenCalledWith('driver'))
     await user.click(animationButton)
-    await waitFor(() => expect(bridge.focusanimation).toHaveBeenCalledWith('hood'))
+    await waitFor(() => expect(bridge.focusanimation).toHaveBeenCalledWith('wheel-spin'))
 
     await user.hover(cameraButton)
     expect(await screen.findByRole('menu', { name: '镜头预设' })).toBeInTheDocument()
     await user.hover(screen.getByRole('button', { name: '场景' }))
     expect(screen.queryByRole('menu', { name: '镜头预设' })).not.toBeInTheDocument()
     expect(await screen.findByRole('menu', { name: '场景预设' })).toBeInTheDocument()
+  })
+
+  it('右门动画开启后点一级动画会切到车轮旋转并同步二级选中态', async () => {
+    const user = userEvent.setup()
+    let currentState = {
+      cameraId: 'wheel',
+      animationEnabled: true,
+      animationId: 'door-right' as string | null,
+      lightPreset: 'studio',
+      renderMode: 'realtime',
+      quality: 'epic',
+      fullscreen: false,
+    }
+    const bridge = {
+      getpresentationstatejson: vi.fn(async () => JSON.stringify(currentState)),
+      focusanimation: vi.fn(async (animationId: string) => {
+        currentState = {
+          ...currentState,
+          animationEnabled: animationId !== '',
+          animationId: animationId || null,
+        }
+        return true
+      }),
+    }
+    window.ue = { uebridge: bridge }
+    render(<ExperienceControls ueEnabled />)
+
+    const animationButton = await screen.findByRole('button', { name: '动画' })
+    await user.click(animationButton)
+    await waitFor(() => expect(bridge.focusanimation).toHaveBeenCalledWith('wheel-spin'))
+    await user.unhover(animationButton)
+    await user.hover(animationButton)
+    expect(await screen.findByRole('menuitemradio', { name: '车轮旋转' }))
+      .toHaveAttribute('aria-checked', 'true')
   })
 
   it('Path Tracing 被拒绝时显示 UE 返回的具体原因', async () => {

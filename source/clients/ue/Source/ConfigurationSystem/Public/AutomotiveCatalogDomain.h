@@ -5,7 +5,7 @@
 /** 车型目录 v2 独立领域层。类型名称与实现均不复用 v1 的四分区状态。 */
 namespace AutomotiveCatalog
 {
-	inline constexpr int32 RequiredSelectionCount = 38;
+	inline constexpr int32 RequiredSelectionCount = 40;
 	inline constexpr TCHAR SchemaVersion[] = TEXT("2.0.0");
 
 	struct CONFIGURATIONSYSTEM_API FError

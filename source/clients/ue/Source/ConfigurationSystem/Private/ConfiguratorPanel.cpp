@@ -798,14 +798,14 @@ FString UConfiguratorPanel::GetExperienceStateJson()
 	State->SetBoolField(
 		TEXT("animationEnabled"),
 		Controller->IsAnimationEnabled());
-	const FName ActiveAnimationId = Controller->GetActiveAnimationId();
-	if (ActiveAnimationId.IsNone())
+	const FName FocusedAnimationId = Controller->GetFocusedAnimationId();
+	if (FocusedAnimationId.IsNone())
 	{
 		State->SetField(TEXT("animationId"), MakeShared<FJsonValueNull>());
 	}
 	else
 	{
-		State->SetStringField(TEXT("animationId"), ActiveAnimationId.ToString());
+		State->SetStringField(TEXT("animationId"), FocusedAnimationId.ToString());
 	}
 	State->SetStringField(TEXT("lightPreset"), Controller->GetLightPreset());
 	State->SetStringField(TEXT("renderMode"), Controller->GetRenderMode());

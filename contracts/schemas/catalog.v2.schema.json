@@ -435,6 +435,32 @@
       "properties": {
         "optionId": { "$ref": "#/$defs/id" },
         "surfaceId": { "$ref": "#/$defs/id" },
+"requiresSelections": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "availability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reason"
+          ],
+          "properties": {
+            "status": {
+              "const": "disabled"
+            },
+            "reason": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        },
         "materialFamilyId": {
           "anyOf": [
             { "$ref": "#/$defs/id" },

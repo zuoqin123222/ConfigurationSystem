@@ -70,6 +70,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "车辆体验")
 	FName GetActiveVehicleAnimationId() const;
 
+	/** 面向 UI 的焦点状态；切焦过程中立即暴露 pending 目标。 */
+	UFUNCTION(BlueprintPure, Category = "车辆体验")
+	FName GetFocusedVehicleAnimationId() const;
+
 	UFUNCTION(BlueprintPure, Category = "车辆体验")
 	bool IsVehicleAnimationPlaying() const;
 

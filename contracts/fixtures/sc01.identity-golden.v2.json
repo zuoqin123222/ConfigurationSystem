@@ -11,6 +11,7 @@
       "name": "standard-draft-selection",
       "selections": {
         "exterior-body-cover": "body-cover-red",
+        "rear-wing": "rear-wing-none",
         "wheel-material": "wheel-aluminum-alloy",
         "wheel-style": "wheel-style-multispoke",
         "wheel-color": "wheel-color-bright-silver",
@@ -43,23 +44,25 @@
         "a-pillar-surface": "a-pillar-woven",
         "interior-painted-parts": "interior-painted-spray",
         "door-sill": "door-sill-leather",
-        "embroidered-logo": "embroidered-logo-standard",
+        "embroidered-logo": "embroidered-logo-black",
+        "headrest-embroidery": "headrest-embroidery-none",
+        "door-panel-embroidery": "door-panel-embroidery-none",
         "center-panel-trim": "center-panel-trim-custom",
-        "shift-knob": "shift-knob-stainless",
-        "brake-handle": "brake-handle-flamed-blue",
+        "nameplate": "nameplate-stainless",
         "pedal": "pedal-racing"
       },
       "customizations": {},
-      "configurationId": "cfg-3f068ece7b6dff2b6f228976",
-      "renderKey": "sc01__sc01-draft-20260121__render-3f068ece7b6dff2b6f228976"
+      "configurationId": "cfg-4287ebefd7eca0771b077a61",
+      "renderKey": "sc01__sc01-draft-20261007__render-4287ebefd7eca0771b077a61"
     },
     {
       "name": "property-order-independent-selection",
       "selections": {
         "steering-wheel-skin": "steering-skin-alcantara",
         "exterior-body-cover": "body-cover-silver",
+        "rear-wing": "rear-wing-none",
         "wheel-material": "wheel-magnesium-alloy",
-        "wheel-style": "wheel-style-multispoke",
+        "wheel-style": "wheel-style-magnesium-default",
         "wheel-color": "wheel-color-bright-silver",
         "lower-skirt": "lower-skirt-aluminum",
         "front-caliper-color": "front-caliper-black",
@@ -89,15 +92,16 @@
         "a-pillar-surface": "a-pillar-woven",
         "interior-painted-parts": "interior-painted-spray",
         "door-sill": "door-sill-leather",
-        "embroidered-logo": "embroidered-logo-standard",
+        "embroidered-logo": "embroidered-logo-black",
+        "headrest-embroidery": "headrest-embroidery-none",
+        "door-panel-embroidery": "door-panel-embroidery-none",
         "center-panel-trim": "center-panel-trim-custom",
-        "shift-knob": "shift-knob-stainless",
-        "brake-handle": "brake-handle-flamed-blue",
+        "nameplate": "nameplate-stainless",
         "pedal": "pedal-racing"
       },
       "customizations": {},
-      "configurationId": "cfg-abee58a0628ecf6ebf599370",
-      "renderKey": "sc01__sc01-draft-20260121__render-abee58a0628ecf6ebf599370"
+      "configurationId": "cfg-8e72d56ccb7f980057787409",
+      "renderKey": "sc01__sc01-draft-20261007__render-8e72d56ccb7f980057787409"
     }
   ]
 }

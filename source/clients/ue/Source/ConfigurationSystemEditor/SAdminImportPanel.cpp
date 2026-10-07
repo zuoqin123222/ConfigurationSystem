@@ -66,7 +66,7 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 	SelectedProviderTypeOption = ProviderTypeOptions[0];
 
 	FContentPackProviderManagerPolicy ContentPackPolicy;
-	ContentPackPolicy.CatalogVersion = TEXT("sc01-draft-20260121");
+	ContentPackPolicy.CatalogVersion = TEXT("sc01-draft-20261007");
 	ContentPackPolicy.EngineVersion = TEXT("5.8");
 	ContentPackPolicy.Platform = TEXT("Win64");
 	ContentPackPolicy.RegistryPath = FPaths::Combine(
@@ -254,7 +254,7 @@ void SAdminImportPanel::Construct(const FArguments& InArgs)
 						.AutoWrapText(true)
 						.Text(LOCTEXT(
 							"ContentPackExplanation",
-							"固定策略：catalog=sc01-draft-20260121、engine=5.8、platform=Win64。"
+							"固定策略：catalog=sc01-draft-20261007、engine=5.8、platform=Win64。"
 							"SC01 Provider 通过预检后才可激活并写入持久 registry；"
 							"旧 mvp-v1 manifest 仅保留预检兼容，不能激活。"))
 				]
@@ -689,7 +689,7 @@ void SAdminImportPanel::RefreshContentPackStatus()
 
 	const EContentPackProviderType Type = GetSelectedProviderType();
 	FString Status = FString::Printf(
-		TEXT("策略：catalog=sc01-draft-20260121；engine=5.8；platform=Win64\n"
+		TEXT("策略：catalog=sc01-draft-20261007；engine=5.8；platform=Win64\n"
 			"类型：%s\n"),
 		*FContentPackProviderManager::LexToString(Type));
 

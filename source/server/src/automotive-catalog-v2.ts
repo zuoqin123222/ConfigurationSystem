@@ -48,6 +48,11 @@ export interface CatalogPricing {
 export interface CatalogOption {
   optionId: string;
   surfaceId: string;
+  requiresSelections?: Record<string, string>;
+  availability?: {
+    status: "disabled";
+    reason: string;
+  };
   materialFamilyId: string | null;
   renderRelevant: boolean;
   parameters: {
@@ -421,6 +426,24 @@ export function validateCatalogSelections(
         `${surfaceId} 包含未知或跨表面的 optionId`,
       );
     }
+    const option = data.options.get(optionId);
+    if (option?.availability?.status === "disabled") {
+      throw new RequestError(
+        400,
+        "OPTION_UNAVAILABLE",
+        `${surfaceId} 所选 option 暂不可选：${option.availability.reason}`,
+      );
+    }
+    if (!Object.entries(option?.requiresSelections ?? {}).every(
+      ([requiredSurfaceId, requiredOptionId]) =>
+        selections[requiredSurfaceId] === requiredOptionId
+    )) {
+      throw new RequestError(
+        400,
+        "SELECTION_REQUIREMENTS_NOT_MET",
+        `${surfaceId} 所选 option 的 requiresSelections 不满足`,
+      );
+    }
     selections[surfaceId] = optionId;
   }
   return selections;
@@ -750,6 +773,14 @@ export function loadAutomotiveCatalog(contractRoot = defaultContractRoot()): Aut
             || option.pricing.status !== "confirmed"
       ) ||
       option.pricing.quotable !== false ||
+      (
+        option.availability !== undefined
+        && (
+          option.availability.status !== "disabled"
+          || typeof option.availability.reason !== "string"
+          || option.availability.reason.trim().length === 0
+        )
+      ) ||
       (
         option.parameters.color?.mode === "variant"
         && (

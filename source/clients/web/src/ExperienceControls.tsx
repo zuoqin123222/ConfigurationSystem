@@ -61,6 +61,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const idleTimer = useRef<number | null>(null)
   const cameraRequestIdRef = useRef(0)
   const animationRequestIdRef = useRef(0)
+  const animationActionRequestIdRef = useRef(0)
   const animationCandidatesRef = useRef<CatalogAnimation[]>([])
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     return () => {
       cameraRequestIdRef.current += 1
       animationRequestIdRef.current += 1
+      animationActionRequestIdRef.current += 1
       document.documentElement.classList.remove('controls-document')
       document.body.classList.remove('controls-document')
     }
@@ -131,7 +133,10 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     if (animationRequestIdRef.current !== requestId) return
     // 车辆至少有静态执行器回退；全 false 更可能是 CEF/Owner 尚未就绪。
     // 保留目录候选项，避免一次启动瞬态让整个动画入口永久消失。
-    setAnimations(supported.length > 0 ? supported : candidates)
+    // Catalog 只声明产品支持的五个稳定动画。CEF/Owner 在启动阶段可能只对
+    // 部分能力查询返回瞬态 false；若按部分结果过滤，会把前后机盖永久隐藏。
+    // 只有完整探测成功时采用探测结果，否则保留 Catalog 候选项。
+    setAnimations(supported.length === candidates.length ? supported : candidates)
   }, [ueEnabled])
 
   useEffect(() => {
@@ -266,10 +271,16 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     }
   }
 
-  const selectAnimation = async (nextAnimationId: string) => {
+  const selectAnimation = async (
+    nextAnimationId: string,
+    toggleCurrent = true,
+  ) => {
     if (!ueEnabled) return
     const bridge = getUeBridge(true)
+    const requestId = animationActionRequestIdRef.current + 1
+    animationActionRequestIdRef.current = requestId
     const currentState = await getUePresentationState(bridge)
+    if (animationActionRequestIdRef.current !== requestId) return
     if (!currentState) {
       setError(bridge
         ? '无法读取 UE 展示状态'
@@ -278,19 +289,24 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     }
     applyState(currentState)
     const currentAnimationId = currentState.animationId ?? null
-    const nextId = currentAnimationId === nextAnimationId ? null : nextAnimationId
+    const nextId = toggleCurrent && currentAnimationId === nextAnimationId
+      ? null
+      : nextAnimationId
     const accepted = await focusUeAnimation(
       bridge,
       currentAnimationId,
       nextId,
     )
+    if (animationActionRequestIdRef.current !== requestId) return
     setError(accepted ? '' : 'UE 控制桥不可用或命令被拒绝')
     if (accepted) {
       setAnimationId(nextId)
       setAnimationEnabled(nextId !== null)
       setOpenMenu(null)
       const updatedState = await getUePresentationState(bridge)
-      if (updatedState) applyState(updatedState)
+      if (animationActionRequestIdRef.current === requestId && updatedState) {
+        applyState(updatedState)
+      }
     }
   }
 
@@ -326,10 +342,12 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     void selectCamera(cameras[(currentIndex + 1 + cameras.length) % cameras.length])
   }
 
-  const cycleAnimation = () => {
-    if (animations.length === 0) return
-    const currentIndex = animations.findIndex((animation) => animation.animationId === animationId)
-    void selectAnimation(animations[(currentIndex + 1 + animations.length) % animations.length].animationId)
+  const playPrimaryAnimation = () => {
+    const wheelAnimation = animations.find(
+      (animation) => animation.animationId === 'wheel-spin',
+    )
+    if (!wheelAnimation) return
+    void selectAnimation(wheelAnimation.animationId, false)
   }
 
   return (
@@ -379,7 +397,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
           <button
             aria-expanded={openMenu === 'animation'}
             aria-pressed={animationEnabled}
-            onClick={cycleAnimation}
+            onClick={playPrimaryAnimation}
           >
             <span aria-hidden="true">▷</span>
             动画

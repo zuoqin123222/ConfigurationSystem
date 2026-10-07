@@ -1,11 +1,12 @@
 {
   "schemaVersion": "2.0.0",
-  "catalogVersion": "sc01-draft-20260121",
+  "catalogVersion": "sc01-draft-20261007",
   "vehicleId": "sc01",
   "configurationId": "cfg-000000000000000000000000",
-  "renderKey": "sc01__sc01-draft-20260121__cfg-000000000000000000000000",
+  "renderKey": "sc01__sc01-draft-20261007__cfg-000000000000000000000000",
   "selections": {
     "exterior-body-cover": "wheel-magnesium-alloy",
+    "rear-wing": "rear-wing-none",
     "wheel-material": "wheel-option-not-in-catalog",
     "wheel-style": "wheel-style-multispoke",
     "wheel-color": "wheel-color-bright-silver",
@@ -38,10 +39,11 @@
     "a-pillar-surface": "a-pillar-woven",
     "interior-painted-parts": "interior-painted-spray",
     "door-sill": "door-sill-leather",
-    "embroidered-logo": "embroidered-logo-standard",
+    "embroidered-logo": "embroidered-logo-black",
+    "headrest-embroidery": "headrest-embroidery-none",
+    "door-panel-embroidery": "door-panel-embroidery-none",
     "center-panel-trim": "center-panel-trim-custom",
-    "shift-knob": "shift-knob-stainless",
-    "brake-handle": "brake-handle-flamed-blue",
+    "nameplate": "nameplate-stainless",
     "pedal": "pedal-racing"
   },
   "customizations": {}

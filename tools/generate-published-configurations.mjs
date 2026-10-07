@@ -81,6 +81,30 @@ function indexV2Options(catalog) {
   return bySurface;
 }
 
+function optionIsAvailable(option, selections) {
+  return option.availability?.status !== "disabled"
+    && Object.entries(option.requiresSelections ?? {}).every(
+    ([surfaceId, optionId]) => selections[surfaceId] === optionId
+  );
+}
+
+function normalizeV2Selections(catalog, bySurface, selections) {
+  const normalized = {};
+  for (const surfaceId of catalog.selectionOrder) {
+    const options = bySurface.get(surfaceId);
+    const selected = options.find(
+      (option) => option.optionId === selections[surfaceId]
+        && optionIsAvailable(option, normalized)
+    );
+    const fallback = options.find(
+      (option) => option.pricing?.isStandard && optionIsAvailable(option, normalized)
+    );
+    const option = selected ?? fallback;
+    if (option) normalized[surfaceId] = option.optionId;
+  }
+  return normalized;
+}
+
 export function estimateV2Scale(
   catalog,
   { viewCount = DEFAULT_VIEW_COUNT, secondsPerRender = DEFAULT_SECONDS_PER_RENDER } = {}
@@ -92,10 +116,30 @@ export function estimateV2Scale(
     throw new Error("secondsPerRender 必须是正数");
   }
   const bySurface = indexV2Options(catalog);
-  let configurationCount = 1n;
-  for (const options of bySurface.values()) {
-    configurationCount *= BigInt(options.length);
+  const requirementSurfaceIds = new Set(
+    (catalog.options ?? []).flatMap((option) => Object.keys(option.requiresSelections ?? {}))
+  );
+  let states = new Map([["", { count: 1n, selections: {} }]]);
+  for (const [surfaceId, options] of bySurface) {
+    const nextStates = new Map();
+    for (const { count, selections } of states.values()) {
+      for (const option of options.filter((candidate) =>
+        optionIsAvailable(candidate, selections))) {
+        const nextSelections = requirementSurfaceIds.has(surfaceId)
+          ? { ...selections, [surfaceId]: option.optionId }
+          : selections;
+        const key = JSON.stringify(nextSelections);
+        const existing = nextStates.get(key);
+        nextStates.set(key, {
+          count: (existing?.count ?? 0n) + count,
+          selections: nextSelections
+        });
+      }
+    }
+    states = nextStates;
   }
+  const configurationCount = [...states.values()]
+    .reduce((total, state) => total + state.count, 0n);
   const renderCount = configurationCount * BigInt(viewCount);
   const estimatedSeconds = renderCount * BigInt(Math.ceil(secondsPerRender));
   return {
@@ -109,10 +153,19 @@ export function estimateV2Scale(
 }
 
 function baselineV2Selections(catalog, bySurface) {
-  return Object.fromEntries(catalog.selectionOrder.flatMap((surfaceId) => {
+  const configured = Object.fromEntries(catalog.selectionOrder.flatMap((surfaceId) => {
     const optionId = catalog.defaultSelections?.[surfaceId];
     return optionId ? [[surfaceId, optionId]] : [];
   }));
+  return normalizeV2Selections(catalog, bySurface, configured);
+}
+
+function selectionsForV2Option(catalog, bySurface, baseline, option) {
+  return normalizeV2Selections(catalog, bySurface, {
+    ...baseline,
+    ...option.requiresSelections,
+    [option.surfaceId]: option.optionId
+  });
 }
 
 export function generateV2Coverage(catalog) {
@@ -120,6 +173,7 @@ export function generateV2Coverage(catalog) {
   const baseline = baselineV2Selections(catalog, bySurface);
   const renderRelevant = (catalog.options ?? []).filter(
     (option) => option.renderRelevant === true
+      && option.availability?.status !== "disabled"
   );
   const uniqueSelections = new Map();
   const baselineIdentity = deriveConfigurationIdentity(catalog, baseline);
@@ -131,7 +185,7 @@ export function generateV2Coverage(catalog) {
     customizations: {}
   });
   for (const option of renderRelevant) {
-    const selections = { ...baseline, [option.surfaceId]: option.optionId };
+    const selections = selectionsForV2Option(catalog, bySurface, baseline, option);
     const identity = deriveConfigurationIdentity(catalog, selections);
     uniqueSelections.set(identity.renderKey, {
       configurationKey: identity.renderKey,
@@ -144,6 +198,7 @@ export function generateV2Coverage(catalog) {
   const variantOptions = (catalog.options ?? []).filter(
     (option) =>
       option.renderRelevant === true
+      && option.availability?.status !== "disabled"
       && option.parameters?.color?.mode === "variant"
       && option.pricing?.isStandard === false
       && option.pricing?.unitPriceMinor !== null
@@ -155,7 +210,7 @@ export function generateV2Coverage(catalog) {
     );
     if (!option) continue;
     availableMaterialVariants.push(variant);
-    const selections = { ...baseline, [option.surfaceId]: option.optionId };
+    const selections = selectionsForV2Option(catalog, bySurface, baseline, option);
     const customizations = {
       [option.surfaceId]: { materialVariantId: variant.variantId }
     };

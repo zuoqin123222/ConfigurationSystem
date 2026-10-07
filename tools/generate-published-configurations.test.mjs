@@ -96,7 +96,13 @@ const v2Catalog = {
       pricing: { isStandard: false, unitPriceMinor: 100 }
     },
     { optionId: "trim-none", surfaceId: "trim", renderRelevant: false },
-    { optionId: "trim-carbon", surfaceId: "trim", renderRelevant: true }
+    { optionId: "trim-carbon", surfaceId: "trim", renderRelevant: true },
+    {
+      optionId: "trim-gray",
+      surfaceId: "trim",
+      renderRelevant: true,
+      availability: { status: "disabled", reason: "暂不可选" }
+    }
   ],
   materialVariants: [
     { variantId: "wheel-black", materialFamilyId: "wheel-finish" },
@@ -126,9 +132,13 @@ test("v2 coverage 保证每个 renderRelevant 选项至少出现一次", () => {
   const covered = new Set(
     coverage.configurations.flatMap(({ selections }) => Object.values(selections))
   );
-  for (const option of v2Catalog.options.filter(({ renderRelevant }) => renderRelevant)) {
+  for (const option of v2Catalog.options.filter(
+    ({ renderRelevant, availability }) =>
+      renderRelevant && availability?.status !== "disabled"
+  )) {
     assert.ok(covered.has(option.optionId), `${option.optionId} 应被 coverage 覆盖`);
   }
+  assert.equal(covered.has("trim-gray"), false);
   assert.equal(coverage.coveredRenderRelevantOptionCount, 5);
   assert.equal(coverage.availableMaterialVariantCount, 2);
   assert.equal(coverage.coveredMaterialVariantCount, 2);

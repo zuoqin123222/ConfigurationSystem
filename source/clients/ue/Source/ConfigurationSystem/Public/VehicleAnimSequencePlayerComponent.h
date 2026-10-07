@@ -116,6 +116,13 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Vehicle Animation")
 	FName GetActiveAnimationId() const { return ActiveAnimationId; }
 
+	/** UI 状态使用：切焦反播期间立即返回最新目标；NAME_None 也可表示待关闭。 */
+	UFUNCTION(BlueprintPure, Category = "Vehicle Animation")
+	FName GetFocusedAnimationId() const
+	{
+		return bHasPendingFocus ? PendingAnimationId : ActiveAnimationId;
+	}
+
 	UFUNCTION(BlueprintPure, Category = "Vehicle Animation")
 	bool IsPlaying() const { return bPlaying; }
 

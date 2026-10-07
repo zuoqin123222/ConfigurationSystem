@@ -104,11 +104,17 @@ function validatePayload(
   }
   const surfaceIds = new Set(catalog.selectionOrder)
   for (const [surfaceId, optionId] of Object.entries(payload.selections)) {
+    const option = typeof optionId === 'string'
+      ? catalog.options.find((item) =>
+          item.surfaceId === surfaceId && item.optionId === optionId)
+      : undefined
     if (
       !surfaceIds.has(surfaceId)
-      || typeof optionId !== 'string'
-      || !catalog.options.some((option) =>
-        option.surfaceId === surfaceId && option.optionId === optionId)
+      || !option
+      || option.availability?.status === 'disabled'
+      || !Object.entries(option.requiresSelections ?? {}).every(
+        ([requiredSurfaceId, requiredOptionId]) =>
+          payload.selections?.[requiredSurfaceId] === requiredOptionId)
     ) {
       return false
     }

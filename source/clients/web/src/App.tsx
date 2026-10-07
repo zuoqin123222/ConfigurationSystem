@@ -27,6 +27,7 @@ import {
   materialVariantsForOption,
   normalizeCustomizations,
   normalizeSelections,
+  optionIsAvailable,
   optionsForSurface,
   sortMaterialVariants,
   supportsMaterialVariants,
@@ -110,7 +111,7 @@ const SEAT_BACKPLATE_FINISH_PRESETS = {
     clearCoat: 0.8,
   },
   matte: {
-    label: '雾面',
+    label: '哑光',
     roughness: 0.72,
     clearCoat: 0.05,
   },
@@ -118,6 +119,7 @@ const SEAT_BACKPLATE_FINISH_PRESETS = {
 
 type SeatBackplateFinish = keyof typeof SEAT_BACKPLATE_FINISH_PRESETS
 type WorkflowStepId = 'preset' | 'summary' | string
+type TransferMode = 'import' | 'share'
 
 interface WorkflowStep {
   id: WorkflowStepId
@@ -660,6 +662,7 @@ function Configurator({
   )
   const [syncMessage, setSyncMessage] = useState('')
   const [transferOpen, setTransferOpen] = useState(false)
+  const [transferMode, setTransferMode] = useState<TransferMode>('import')
   const [importValue, setImportValue] = useState('')
   const currentCategory = catalog.categories.find((category) => category.categoryId === categoryId)
   const surfacesAsComponents = currentCategory?.ui?.navigationMode === 'surfaces-as-components'
@@ -687,8 +690,10 @@ function Configurator({
     [catalog, customizations, selections],
   )
   const portableQr = useMemo(
-    () => transferOpen ? createPortableConfigurationQr(portableValue) : '',
-    [portableValue, transferOpen],
+    () => transferOpen && transferMode === 'share'
+      ? createPortableConfigurationQr(portableValue)
+      : '',
+    [portableValue, transferMode, transferOpen],
   )
   const dirty = portableValue !== savedPortableValue
   const renderSelectionKey = createRenderCanonicalKey(catalog, selections, customizations)
@@ -933,9 +938,10 @@ function Configurator({
   }, [customizations, embedded, selections])
 
   const selectOption = (surfaceId: string, optionId?: string) => {
-    const nextSelections = { ...selections }
-    if (optionId) nextSelections[surfaceId] = optionId
-    else delete nextSelections[surfaceId]
+    const requestedSelections = { ...selections }
+    if (optionId) requestedSelections[surfaceId] = optionId
+    else delete requestedSelections[surfaceId]
+    const nextSelections = normalizeSelections(catalog, requestedSelections)
     setSelections(nextSelections)
     const option = catalog.options.find((item) => item.optionId === optionId)
     const existing = customizations[surfaceId]
@@ -1019,6 +1025,7 @@ function Configurator({
   const share = async () => {
     const value = portableValue
     setImportValue(value)
+    setTransferMode('share')
     setTransferOpen(true)
     const url = new URL(window.location.href)
     url.searchParams.delete('configuration')
@@ -1117,7 +1124,7 @@ function Configurator({
   const visibleSurfaces = [currentSurface]
 
   const renderSurfaceOptions = (surface: CatalogV2['surfaces'][number]) => {
-    const options = optionsForSurface(catalog, surface.surfaceId)
+    const options = optionsForSurface(catalog, surface.surfaceId, selections)
     const groupedFamilyIds = new Set(
       options.flatMap((option) =>
         option.materialFamilyId
@@ -1157,13 +1164,17 @@ function Configurator({
     ) => {
       const optionSelected = selections[surface.surfaceId] === option.optionId
         && !(currentCustomization && 'materialVariantId' in currentCustomization)
+      const optionAvailable = optionIsAvailable(option, selections)
+      const optionStatus = option.availability?.reason
+        ?? (optionAvailable ? optionPrice(option) : '当前不可用')
       return (
         <button
           key={option.optionId}
-          className={`color-choice ${optionSelected ? 'selected' : ''}`}
+          className={`color-choice ${optionSelected ? 'selected' : ''} ${optionAvailable ? '' : 'unavailable'}`}
           onClick={() => selectOption(surface.surfaceId, option.optionId)}
           aria-pressed={optionSelected}
-          aria-label={`${displayName}，${optionPrice(option)}`}
+          aria-label={`${displayName}，${optionStatus}`}
+          disabled={!optionAvailable}
         >
           {(option.ui?.iconUrl ?? thumbnailUrl)
             ? <img
@@ -1180,7 +1191,7 @@ function Configurator({
                 aria-hidden="true"
               />}
           <span className="color-choice-name">{displayName}</span>
-          <small>{optionPrice(option)}</small>
+          <small>{optionStatus}</small>
         </button>
       )
     }
@@ -1290,9 +1301,19 @@ function Configurator({
             }
             return (
               <section
-                className={`material-family ${familySelected ? 'selected' : 'muted'}`}
+                className={`material-family clickable ${familySelected ? 'selected' : 'muted'}`}
                 key={materialFamily.materialFamilyId}
                 aria-label={`${materialFamily.displayName}材质`}
+                tabIndex={0}
+                onClick={(event) => {
+                  if (!(event.target as HTMLElement).closest('button, input')) activateFamily()
+                }}
+                onKeyDown={(event) => {
+                  if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault()
+                    activateFamily()
+                  }
+                }}
               >
                 <button
                   className="material-family-title"
@@ -1370,55 +1391,60 @@ function Configurator({
           || (!selectedOption?.ui?.control && selectedOption?.parameters.color?.mode === 'custom'))
           && currentCustomization
           && !('materialVariantId' in currentCustomization) && (
-          <section className="paint-editor" aria-label={customEditorLabel(selectedOption.displayName)}>
+          <section
+            className={`paint-editor ${showSeatBackplateFinish ? 'custom-finish-editor' : ''}`}
+            aria-label={customEditorLabel(selectedOption.displayName)}
+          >
             <div className="section-title">
               <h3>自定义颜色</h3>
               <span>{optionPrice(selectedOption)}</span>
             </div>
-            <div className="color-control">
-              <span>颜色</span>
-              <div className="color-picker-wrap">
-                <InlineColorPicker
-                  value={currentCustomization.colorHex}
-                  onChange={(value) => setPaintParameter(surface.surfaceId, 'colorHex', value)}
-                />
-                <input
-                  className="color-hex-input"
-                  aria-label={`${surface.displayName}颜色`}
-                  type="text"
-                  maxLength={7}
-                  value={currentCustomization.colorHex}
-                  onChange={(event) => {
-                    const value = event.target.value.toUpperCase()
-                    if (/^#[0-9A-F]{6}$/.test(value)) {
-                      setPaintParameter(surface.surfaceId, 'colorHex', value)
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            {showSeatBackplateFinish && seatBackplateFinish && (
-              <div className="finish-control">
-                <span>效果</span>
-                <div role="group" aria-label={`${surface.displayName}表面效果`}>
-                  {(Object.entries(SEAT_BACKPLATE_FINISH_PRESETS) as Array<
-                    [SeatBackplateFinish, (typeof SEAT_BACKPLATE_FINISH_PRESETS)[SeatBackplateFinish]]
-                  >).map(([finishId, preset]) => (
-                    <button
-                      key={finishId}
-                      className={seatBackplateFinish === finishId ? 'selected' : ''}
-                      aria-pressed={seatBackplateFinish === finishId}
-                      onClick={() => patchPaintCustomization(surface.surfaceId, {
-                        roughness: preset.roughness,
-                        clearCoat: preset.clearCoat,
-                      })}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
+            <div className={showSeatBackplateFinish ? 'custom-finish-layout' : undefined}>
+              {showSeatBackplateFinish && seatBackplateFinish && (
+                <div className="finish-control">
+                  <span>饰面</span>
+                  <div role="group" aria-label={`${surface.displayName}表面效果`}>
+                    {(Object.entries(SEAT_BACKPLATE_FINISH_PRESETS) as Array<
+                      [SeatBackplateFinish, (typeof SEAT_BACKPLATE_FINISH_PRESETS)[SeatBackplateFinish]]
+                    >).map(([finishId, preset]) => (
+                      <button
+                        key={finishId}
+                        className={seatBackplateFinish === finishId ? 'selected' : ''}
+                        aria-pressed={seatBackplateFinish === finishId}
+                        onClick={() => patchPaintCustomization(surface.surfaceId, {
+                          roughness: preset.roughness,
+                          clearCoat: preset.clearCoat,
+                        })}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="color-control">
+                <span>颜色</span>
+                <div className="color-picker-wrap">
+                  <InlineColorPicker
+                    value={currentCustomization.colorHex}
+                    onChange={(value) => setPaintParameter(surface.surfaceId, 'colorHex', value)}
+                  />
+                  <input
+                    className="color-hex-input"
+                    aria-label={`${surface.displayName}颜色`}
+                    type="text"
+                    maxLength={7}
+                    value={currentCustomization.colorHex}
+                    onChange={(event) => {
+                      const value = event.target.value.toUpperCase()
+                      if (/^#[0-9A-F]{6}$/.test(value)) {
+                        setPaintParameter(surface.surfaceId, 'colorHex', value)
+                      }
+                    }}
+                  />
                 </div>
               </div>
-            )}
+            </div>
           </section>
         )}
       </section>
@@ -1535,12 +1561,10 @@ function Configurator({
                       src={versionStaticAssetUrl('/sc01/presets/default-exterior.webp')}
                       alt=""
                     />
-                    {selectedPresetId === 'default' && (
-                      <img
-                        src={versionStaticAssetUrl('/sc01/presets/default-interior.webp')}
-                        alt=""
-                      />
-                    )}
+                    <img
+                      src={versionStaticAssetUrl('/sc01/presets/default-interior.webp')}
+                      alt=""
+                    />
                   </span>
                   <strong>默认配置</strong>
                   <small>¥{(catalog.vehicle.basePriceMinor / 100).toLocaleString('zh-CN')}</small>
@@ -1550,6 +1574,7 @@ function Configurator({
                   aria-label="导入配置"
                   onClick={() => {
                     setImportValue('')
+                    setTransferMode('import')
                     setTransferOpen(true)
                   }}
                 >
@@ -1656,15 +1681,24 @@ function Configurator({
       </div>
       {transferOpen && (
         <div className="portable-dialog-backdrop" role="presentation">
-          <section className="portable-dialog" role="dialog" aria-modal="true" aria-label="配置传输">
+          <section
+            className={`portable-dialog ${transferMode === 'import' ? 'portable-import-dialog' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={transferMode === 'import' ? '配置导入' : '配置传输'}
+          >
             <button
               className="portable-dialog-close"
               aria-label="关闭配置传输"
               onClick={() => setTransferOpen(false)}
             >×</button>
-            <h2>配置传输</h2>
-            <p>保存与分享使用同一个自包含字符串；二维码编码的也是该字符串。</p>
-            <img src={portableQr} alt="当前配置二维码" />
+            {transferMode === 'share' && (
+              <>
+                <h2>配置传输</h2>
+                <p>保存与分享使用同一个自包含字符串；二维码编码的也是该字符串。</p>
+                <img src={portableQr} alt="当前配置二维码" />
+              </>
+            )}
             <textarea
               aria-label="配置字符串"
               value={importValue}
@@ -1673,10 +1707,12 @@ function Configurator({
             />
             <div className="portable-dialog-actions">
               <button onClick={importPortable}>导入</button>
-              <button onClick={() => {
-                setImportValue(portableValue)
-                void copyPortableValue(portableValue)
-              }}>复制当前配置</button>
+              {transferMode === 'share' && (
+                <button onClick={() => {
+                  setImportValue(portableValue)
+                  void copyPortableValue(portableValue)
+                }}>复制当前配置</button>
+              )}
             </div>
           </section>
         </div>

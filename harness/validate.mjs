@@ -211,7 +211,7 @@ if (ueHarnessPath) {
 const catalog = readJson("contracts/fixtures/sc01.catalog.draft.v2.json");
 if (catalog) {
   expectEqual(catalog.schemaVersion, "2.0.0", "SC01 schemaVersion");
-  expectEqual(catalog.catalogVersion, "sc01-draft-20260121", "SC01 catalogVersion");
+  expectEqual(catalog.catalogVersion, "sc01-draft-20261007", "SC01 catalogVersion");
   expectEqual(catalog.lifecycle, "draft", "SC01 lifecycle");
   expectEqual(catalog.vehicle?.vehicleId, "sc01", "SC01 vehicleId");
   expectEqual(catalog.vehicle?.displayName, "SC01", "SC01 displayName");
@@ -219,11 +219,11 @@ if (catalog) {
   expectEqual(catalog.vehicle?.priceStatus, "confirmed", "SC01 基础价状态");
   expectEqual(catalog.vehicle?.quotable, false, "SC01 正式报价门禁");
   expectEqual(catalog.categories?.length, 4, "SC01 阶段数量");
-  expectEqual(catalog.components?.length, 16, "SC01 部件数量");
-  expectEqual(catalog.surfaces?.length, 38, "SC01 surface 数量");
+  expectEqual(catalog.components?.length, 17, "SC01 部件数量");
+  expectEqual(catalog.surfaces?.length, 40, "SC01 surface 数量");
   expectEqual(catalog.materialFamilies?.length, 17, "SC01 材料族数量");
-  expectEqual(catalog.options?.length, 154, "SC01 option 数量");
-  expectEqual(catalog.selectionOrder?.length, 38, "SC01 selectionOrder 数量");
+  expectEqual(catalog.options?.length, 171, "SC01 option 数量");
+  expectEqual(catalog.selectionOrder?.length, 40, "SC01 selectionOrder 数量");
 
   const aPillar = optionById(catalog, "a-pillar-woven");
   if (aPillar) {

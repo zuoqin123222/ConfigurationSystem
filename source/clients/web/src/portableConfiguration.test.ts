@@ -72,4 +72,19 @@ describe('portable configuration', () => {
     expect(() => parsePortableConfiguration(corrupted, catalogFixture))
       .toThrow('配置字符串已损坏')
   })
+
+  it('拒绝 requiresSelections 不满足的可移植配置', () => {
+    const incompatible = createPortableConfiguration(
+      catalogFixture,
+      {
+        ...initialSelections,
+        'wheel-material': 'wheel-aluminum-alloy',
+        'wheel-style': 'wheel-style-magnesium-1',
+      },
+      {},
+    )
+
+    expect(() => parsePortableConfiguration(incompatible, catalogFixture))
+      .toThrow('配置字符串与当前目录版本不兼容')
+  })
 })

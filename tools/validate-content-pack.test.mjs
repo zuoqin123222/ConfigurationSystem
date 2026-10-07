@@ -33,7 +33,7 @@ test("SC01 Provider v2 支持三类并固定 catalogVersion", async () => {
     const manifest = structuredClone(base);
     manifest.providerType = providerType;
     const result = validateContentPackManifest(manifest, {
-      catalogVersion: "sc01-draft-20260121",
+      catalogVersion: "sc01-draft-20261007",
       providerType
     });
     assert.deepEqual(result, { valid: true, errors: [] });
