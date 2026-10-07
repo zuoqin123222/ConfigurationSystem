@@ -679,7 +679,7 @@ describe('App v2', () => {
     const wheelColors = screen.getByRole('region', { name: '轮毂颜色配置' })
     expect(within(wheelColors).getAllByRole('button')).toHaveLength(10)
     expect(within(wheelColors).getByRole('button', { name: '亮银色，免费' })).toBeEnabled()
-    for (const name of ['黑色', '深灰色', '碳纤维', '金色', '古铜色', '白色', '红色', '蓝色', '黄色']) {
+    for (const name of ['哑光银', '黑色', '哑光黑', '枪灰', '哑光枪灰', '香槟金', '哑光香槟金', '古铜', '哑光古铜']) {
       expect(within(wheelColors).getByRole('button', { name: `${name}，¥1,200` })).toBeEnabled()
     }
     await user.click(screen.getByRole('button', { name: '下一步' }))
@@ -697,7 +697,7 @@ describe('App v2', () => {
     await selectStage('个性化')
     const personalizationParts = await screen.findByRole('region', { name: '部件筛选' })
     expect(personalizationParts).toHaveTextContent(
-      '内饰全车黑色喷漆件门板口袋缝线头枕刺绣门中板刺绣中面板缝线铭牌脚垫',
+      '内饰组件门板口袋缝线头枕刺绣中板刺绣中板缝线铭牌脚垫',
     )
     expect(screen.queryByRole('region', { name: '子项筛选' })).not.toBeInTheDocument()
   })
@@ -721,13 +721,16 @@ describe('App v2', () => {
     expect(unavailable).toHaveTextContent('暂不可选')
   })
 
-  it('个性化缝线、刺绣、中面板和脚垫按新目录展示', async () => {
+  it('个性化缝线、刺绣、中板和脚垫按新目录展示', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
     await selectStage('个性化')
     const parts = screen.getByRole('region', { name: '部件筛选' })
+
+    await user.click(within(parts).getByRole('button', { name: '内饰组件' }))
+    expect(screen.getByRole('button', { name: '黑色，¥1,680' })).toBeEnabled()
 
     await user.click(within(parts).getByRole('button', { name: '缝线' }))
     const stitching = screen.getByRole('region', { name: '缝线配置' })
@@ -744,13 +747,13 @@ describe('App v2', () => {
     expect(headrestEmbroidery.querySelector('img'))
       .toHaveAttribute('src', '/sc01/interior-parts/headrest-embroidery.webp')
 
-    await user.click(within(parts).getByRole('button', { name: '门中板刺绣' }))
-    const doorEmbroidery = screen.getByRole('button', { name: '门中板刺绣，¥1,688' })
+    await user.click(within(parts).getByRole('button', { name: '中板刺绣' }))
+    const doorEmbroidery = screen.getByRole('button', { name: '中板刺绣，¥1,688' })
     expect(doorEmbroidery).toBeEnabled()
     expect(doorEmbroidery.querySelector('img'))
       .toHaveAttribute('src', '/sc01/interior-parts/door-panel-embroidery.webp')
 
-    await user.click(within(parts).getByRole('button', { name: '中面板缝线' }))
+    await user.click(within(parts).getByRole('button', { name: '中板缝线' }))
     expect(screen.getByRole('button', { name: '黑色，免费' }))
       .toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: '自定义颜色，¥600' })).toBeEnabled()
@@ -760,8 +763,8 @@ describe('App v2', () => {
       .toHaveAttribute('aria-pressed', 'true')
 
     await user.click(within(parts).getByRole('button', { name: '脚垫' }))
-    expect(screen.getByRole('button', { name: '豪车毯，¥1,680' }))
-      .toBeEnabled()
+    expect(screen.getByRole('button', { name: '豪车毯，¥560' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '豪车毯+金属板，¥1,680' })).toBeEnabled()
   })
 
   it('不为未声明 variant 色彩能力的付费材质选项展示色卡', async () => {

@@ -62,12 +62,12 @@ const additionalDefaults = [
   ['handbrake', 'handbrake-microfiber-black', '手刹把'],
   ['roof-surface', 'roof-woven-standard', '棚面'],
   ['a-pillar-surface', 'a-pillar-woven', 'A柱'],
-  ['interior-painted-parts', 'interior-painted-spray', '内饰全车黑色喷漆件'],
+  ['interior-painted-parts', 'interior-painted-spray', '内饰组件'],
   ['door-sill', 'door-sill-none', '门板口袋'],
   ['embroidered-logo', 'embroidered-logo-black', '缝线'],
   ['headrest-embroidery', 'headrest-embroidery-none', '头枕刺绣'],
-  ['door-panel-embroidery', 'door-panel-embroidery-none', '门中板刺绣'],
-  ['center-panel-trim', 'center-panel-trim-black', '中面板缝线'],
+  ['door-panel-embroidery', 'door-panel-embroidery-none', '中板刺绣'],
+  ['center-panel-trim', 'center-panel-trim-black', '中板缝线'],
   ['nameplate', 'nameplate-stainless', '铭牌'],
   ['pedal', 'pedal-racing', '脚垫'],
   ['rear-wing', 'rear-wing-none', '尾翼'],
@@ -366,18 +366,19 @@ export const catalogFixture: CatalogV2 = {
       },
     })),
     ...([
+      ['wheel-color-matte-silver', '哑光银', '#AEB3B6', 'paint'],
       ['wheel-color-black', '黑色', '#111111', 'paint'],
-      ['wheel-color-dark-gray', '深灰色', '#3A3A3A', 'paint'],
-      ['wheel-color-carbon-fiber', '碳纤维', null, 'carbon-fiber'],
-      ['wheel-color-gold', '金色', '#C6A15B', 'paint'],
-      ['wheel-color-bronze', '古铜色', '#8C6239', 'paint'],
-      ['wheel-color-white', '白色', '#F2F2EE', 'paint'],
-      ['wheel-color-red', '红色', '#D71920', 'paint'],
-      ['wheel-color-blue', '蓝色', '#1D4F91', 'paint'],
-      ['wheel-color-yellow', '黄色', '#D6A900', 'paint'],
+      ['wheel-color-matte-black', '哑光黑', '#1A1A1A', 'paint'],
+      ['wheel-color-gunmetal', '枪灰', '#4B4E52', 'paint'],
+      ['wheel-color-matte-gunmetal', '哑光枪灰', '#55585C', 'paint'],
+      ['wheel-color-champagne-gold', '香槟金', '#C6A56B', 'paint'],
+      ['wheel-color-matte-champagne-gold', '哑光香槟金', '#B79A68', 'paint'],
+      ['wheel-color-bronze', '古铜', '#8C6239', 'paint'],
+      ['wheel-color-matte-bronze', '哑光古铜', '#75513A', 'paint'],
     ] as const).map(([optionId, displayName, colorCode, materialFamilyId]) => ({
       ...option(optionId, 'wheel-color', materialFamilyId, displayName, false),
       colorCode,
+      finish: displayName.startsWith('哑光') ? 'matte' as const : null,
       parameters: {
         color: colorCode
           ? { mode: 'fixed' as const, value: colorCode, required: true }
@@ -562,7 +563,7 @@ export const catalogFixture: CatalogV2 = {
       },
     },
     {
-      ...option('door-panel-embroidery-custom', 'door-panel-embroidery', null, '门中板刺绣', false),
+      ...option('door-panel-embroidery-custom', 'door-panel-embroidery', null, '中板刺绣', false),
       thumbnailUrl: '/sc01/interior-parts/door-panel-embroidery.webp',
       pricing: {
         ...pricing,
@@ -600,7 +601,7 @@ export const catalogFixture: CatalogV2 = {
       },
     },
     {
-      ...option('pedal-luxury-carpet', 'pedal', null, '豪车毯', false),
+      ...option('pedal-luxury-carpet', 'pedal', null, '豪车毯+金属板', false),
       pricing: {
         ...pricing,
         unitPriceMinor: 168000,
@@ -682,7 +683,27 @@ export const catalogFixture: CatalogV2 = {
       if (surfaceId === 'interior-painted-parts') {
         return {
           ...result,
-          displayName: '内饰全车黑色喷漆',
+          displayName: '黑色',
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 168000,
+            quantity: 1,
+            isStandard: false,
+            status: 'confirmed' as const,
+          },
+        }
+      }
+      if (surfaceId === 'pedal') {
+        return {
+          ...result,
+          displayName: '豪车毯',
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 56000,
+            quantity: 1,
+            isStandard: false,
+            status: 'confirmed' as const,
+          },
         }
       }
       if (surfaceId === 'door-sill') {

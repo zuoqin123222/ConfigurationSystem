@@ -129,12 +129,12 @@ describe('v2 动态选配逻辑', () => {
   it('由 category surfaces-as-components 配置把 surface 平铺为部件入口', () => {
     expect(componentsForCategory(catalogFixture, 'personalization').map((item) => item.displayName))
       .toEqual([
-        '内饰全车黑色喷漆件',
+        '内饰组件',
         '门板口袋',
         '缝线',
         '头枕刺绣',
-        '门中板刺绣',
-        '中面板缝线',
+        '中板刺绣',
+        '中板缝线',
         '铭牌',
         '脚垫',
       ])

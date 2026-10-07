@@ -1112,7 +1112,7 @@
     {
       "surfaceId": "interior-painted-parts",
       "componentId": "personalization-trim",
-      "displayName": "内饰全车黑色喷漆件",
+      "displayName": "内饰组件",
       "required": false,
       "reviewRequired": false,
       "sourceRefs": [
@@ -1168,21 +1168,21 @@
     {
       "surfaceId": "door-panel-embroidery",
       "componentId": "personalization-stitching",
-      "displayName": "门中板刺绣",
+      "displayName": "中板刺绣",
       "required": true,
       "reviewRequired": false,
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "旧刹车项拆分 / 门中板刺绣（用户确认）"
+          "locator": "旧刹车项拆分 / 中板刺绣（用户确认）"
         }
       ]
     },
     {
       "surfaceId": "center-panel-trim",
       "componentId": "personalization-stitching",
-      "displayName": "中面板缝线",
+      "displayName": "中板缝线",
       "required": true,
       "reviewRequired": true,
       "sourceRefs": [
@@ -8339,6 +8339,46 @@
       }
     },
     {
+      "optionId": "wheel-color-matte-silver",
+      "surfaceId": "wheel-color",
+      "materialFamilyId": "paint",
+      "displayName": "哑光银",
+      "colorCode": "#AEB3B6",
+      "finish": "matte",
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#AEB3B6",
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "paint",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": 120000,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂颜色 / 哑光银 / 1200 元（用户确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
       "optionId": "wheel-color-black",
       "surfaceId": "wheel-color",
       "materialFamilyId": "paint",
@@ -8371,7 +8411,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
+          "locator": "轮毂颜色 / 黑色 / 1200 元（用户确认）"
         }
       ],
       "ui": {
@@ -8379,17 +8419,17 @@
       }
     },
     {
-      "optionId": "wheel-color-dark-gray",
+      "optionId": "wheel-color-matte-black",
       "surfaceId": "wheel-color",
       "materialFamilyId": "paint",
-      "displayName": "深灰色",
-      "colorCode": "#3A3A3A",
-      "finish": null,
+      "displayName": "哑光黑",
+      "colorCode": "#1A1A1A",
+      "finish": "matte",
       "renderRelevant": true,
       "parameters": {
         "color": {
           "mode": "fixed",
-          "value": "#3A3A3A",
+          "value": "#1A1A1A",
           "required": true
         },
         "material": {
@@ -8411,7 +8451,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
+          "locator": "轮毂颜色 / 哑光黑 / 1200 元（用户确认）"
         }
       ],
       "ui": {
@@ -8419,53 +8459,17 @@
       }
     },
     {
-      "optionId": "wheel-color-carbon-fiber",
-      "surfaceId": "wheel-color",
-      "materialFamilyId": "carbon-fiber",
-      "displayName": "碳纤维",
-      "colorCode": null,
-      "finish": null,
-      "renderRelevant": true,
-      "parameters": {
-        "color": null,
-        "material": {
-          "materialFamilyId": "carbon-fiber",
-          "variantId": null
-        }
-      },
-      "thumbnailUrl": null,
-      "reviewRequired": true,
-      "pricing": {
-        "unitPriceMinor": 120000,
-        "quantity": 1,
-        "pricingUnit": "per-piece",
-        "isStandard": false,
-        "status": "confirmed",
-        "quotable": false
-      },
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 1,
-          "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
-        }
-      ],
-      "ui": {
-        "control": "swatch"
-      }
-    },
-    {
-      "optionId": "wheel-color-gold",
+      "optionId": "wheel-color-gunmetal",
       "surfaceId": "wheel-color",
       "materialFamilyId": "paint",
-      "displayName": "金色",
-      "colorCode": "#C6A15B",
+      "displayName": "枪灰",
+      "colorCode": "#4B4E52",
       "finish": null,
       "renderRelevant": true,
       "parameters": {
         "color": {
           "mode": "fixed",
-          "value": "#C6A15B",
+          "value": "#4B4E52",
           "required": true
         },
         "material": {
@@ -8487,7 +8491,127 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
+          "locator": "轮毂颜色 / 枪灰 / 1200 元（用户确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-color-matte-gunmetal",
+      "surfaceId": "wheel-color",
+      "materialFamilyId": "paint",
+      "displayName": "哑光枪灰",
+      "colorCode": "#55585C",
+      "finish": "matte",
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#55585C",
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "paint",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": 120000,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂颜色 / 哑光枪灰 / 1200 元（用户确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-color-champagne-gold",
+      "surfaceId": "wheel-color",
+      "materialFamilyId": "paint",
+      "displayName": "香槟金",
+      "colorCode": "#C6A56B",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#C6A56B",
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "paint",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": 120000,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂颜色 / 香槟金 / 1200 元（用户确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-color-matte-champagne-gold",
+      "surfaceId": "wheel-color",
+      "materialFamilyId": "paint",
+      "displayName": "哑光香槟金",
+      "colorCode": "#B79A68",
+      "finish": "matte",
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#B79A68",
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "paint",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": 120000,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂颜色 / 哑光香槟金 / 1200 元（用户确认）"
         }
       ],
       "ui": {
@@ -8498,7 +8622,7 @@
       "optionId": "wheel-color-bronze",
       "surfaceId": "wheel-color",
       "materialFamilyId": "paint",
-      "displayName": "古铜色",
+      "displayName": "古铜",
       "colorCode": "#8C6239",
       "finish": null,
       "renderRelevant": true,
@@ -8527,7 +8651,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
+          "locator": "轮毂颜色 / 古铜 / 1200 元（用户确认）"
         }
       ],
       "ui": {
@@ -8535,17 +8659,17 @@
       }
     },
     {
-      "optionId": "wheel-color-white",
+      "optionId": "wheel-color-matte-bronze",
       "surfaceId": "wheel-color",
       "materialFamilyId": "paint",
-      "displayName": "白色",
-      "colorCode": "#F2F2EE",
-      "finish": null,
+      "displayName": "哑光古铜",
+      "colorCode": "#75513A",
+      "finish": "matte",
       "renderRelevant": true,
       "parameters": {
         "color": {
           "mode": "fixed",
-          "value": "#F2F2EE",
+          "value": "#75513A",
           "required": true
         },
         "material": {
@@ -8567,127 +8691,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂颜色 / 白色 / 1200 元（用户确认）"
-        }
-      ],
-      "ui": {
-        "control": "swatch"
-      }
-    },
-    {
-      "optionId": "wheel-color-red",
-      "surfaceId": "wheel-color",
-      "materialFamilyId": "paint",
-      "displayName": "红色",
-      "colorCode": "#D71920",
-      "finish": null,
-      "renderRelevant": true,
-      "parameters": {
-        "color": {
-          "mode": "fixed",
-          "value": "#D71920",
-          "required": true
-        },
-        "material": {
-          "materialFamilyId": "paint",
-          "variantId": null
-        }
-      },
-      "thumbnailUrl": null,
-      "reviewRequired": true,
-      "pricing": {
-        "unitPriceMinor": 120000,
-        "quantity": 1,
-        "pricingUnit": "per-piece",
-        "isStandard": false,
-        "status": "confirmed",
-        "quotable": false
-      },
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 1,
-          "locator": "轮毂颜色 / 红色 / 1200 元（用户确认）"
-        }
-      ],
-      "ui": {
-        "control": "swatch"
-      }
-    },
-    {
-      "optionId": "wheel-color-blue",
-      "surfaceId": "wheel-color",
-      "materialFamilyId": "paint",
-      "displayName": "蓝色",
-      "colorCode": "#1D4F91",
-      "finish": null,
-      "renderRelevant": true,
-      "parameters": {
-        "color": {
-          "mode": "fixed",
-          "value": "#1D4F91",
-          "required": true
-        },
-        "material": {
-          "materialFamilyId": "paint",
-          "variantId": null
-        }
-      },
-      "thumbnailUrl": null,
-      "reviewRequired": true,
-      "pricing": {
-        "unitPriceMinor": 120000,
-        "quantity": 1,
-        "pricingUnit": "per-piece",
-        "isStandard": false,
-        "status": "confirmed",
-        "quotable": false
-      },
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 1,
-          "locator": "轮毂颜色 / 蓝色 / 1200 元（用户确认）"
-        }
-      ],
-      "ui": {
-        "control": "swatch"
-      }
-    },
-    {
-      "optionId": "wheel-color-yellow",
-      "surfaceId": "wheel-color",
-      "materialFamilyId": "paint",
-      "displayName": "黄色",
-      "colorCode": "#D6A900",
-      "finish": null,
-      "renderRelevant": true,
-      "parameters": {
-        "color": {
-          "mode": "fixed",
-          "value": "#D6A900",
-          "required": true
-        },
-        "material": {
-          "materialFamilyId": "paint",
-          "variantId": null
-        }
-      },
-      "thumbnailUrl": null,
-      "reviewRequired": true,
-      "pricing": {
-        "unitPriceMinor": 120000,
-        "quantity": 1,
-        "pricingUnit": "per-piece",
-        "isStandard": false,
-        "status": "confirmed",
-        "quotable": false
-      },
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 1,
-          "locator": "轮毂颜色 / 黄色 / 1200 元（用户确认）"
+          "locator": "轮毂颜色 / 哑光古铜 / 1200 元（用户确认）"
         }
       ],
       "ui": {
@@ -13830,7 +13834,7 @@
       "optionId": "interior-painted-spray",
       "surfaceId": "interior-painted-parts",
       "materialFamilyId": "spray",
-      "displayName": "内饰全车黑色喷漆",
+      "displayName": "黑色",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -14198,7 +14202,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "门中板刺绣 / 无刺绣 / 免费（用户确认）"
+          "locator": "中板刺绣 / 无刺绣 / 免费（用户确认）"
         }
       ],
       "ui": {
@@ -14210,7 +14214,7 @@
       "optionId": "door-panel-embroidery-custom",
       "surfaceId": "door-panel-embroidery",
       "materialFamilyId": null,
-      "displayName": "门中板刺绣",
+      "displayName": "中板刺绣",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -14232,7 +14236,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "门中板刺绣 / 刺绣 / 1688 元（用户确认）"
+          "locator": "中板刺绣 / 刺绣 / 1688 元（用户确认）"
         }
       ],
       "ui": {
@@ -14270,7 +14274,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "中面板缝线 / 黑色 / 免费（用户确认）"
+          "locator": "中板缝线 / 黑色 / 免费（用户确认）"
         }
       ],
       "ui": {
@@ -14308,7 +14312,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "中面板缝线 / 自定义颜色 / 300*2 元（用户确认）"
+          "locator": "中板缝线 / 自定义颜色 / 300*2 元（用户确认）"
         }
       ],
       "ui": {
@@ -14437,7 +14441,7 @@
       "optionId": "pedal-racing",
       "surfaceId": "pedal",
       "materialFamilyId": "rubber",
-      "displayName": "赛车版",
+      "displayName": "豪车毯",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -14509,7 +14513,7 @@
       "optionId": "pedal-luxury-carpet",
       "surfaceId": "pedal",
       "materialFamilyId": "carpet",
-      "displayName": "豪车毯",
+      "displayName": "豪车毯+金属板",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -14534,7 +14538,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "脚垫 / 豪车毯 / 1680 元（用户确认文案）"
+          "locator": "脚垫 / 豪车毯+金属板 / 1680 元（用户确认文案）"
         }
       ],
       "ui": {

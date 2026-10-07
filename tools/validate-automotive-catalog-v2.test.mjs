@@ -479,7 +479,7 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
     catalog.options
       .filter((option) => option.surfaceId === "wheel-color")
       .map((option) => option.displayName),
-    ["亮银色", "黑色", "深灰色", "碳纤维", "金色", "古铜色", "白色", "红色", "蓝色", "黄色"]
+    ["亮银色", "哑光银", "黑色", "哑光黑", "枪灰", "哑光枪灰", "香槟金", "哑光香槟金", "古铜", "哑光古铜"]
   );
   assert.equal(byId.get("wheel-color-bright-silver").pricing.unitPriceMinor, 0);
   assert.ok(catalog.options
@@ -487,7 +487,12 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
       && option.optionId !== "wheel-color-bright-silver")
     .every((option) => option.pricing.unitPriceMinor === 120000));
   assert.equal(byId.get("steering-addon-eva").colorCode, "#000000");
-  assert.equal(byId.get("interior-painted-spray").displayName, "内饰全车黑色喷漆");
+  assert.equal(byId.get("steering-addon-eva").thumbnailUrl, null);
+  assert.equal(
+    catalog.surfaces.find((surface) => surface.surfaceId === "interior-painted-parts").displayName,
+    "内饰组件"
+  );
+  assert.equal(byId.get("interior-painted-spray").displayName, "黑色");
   assert.equal(byId.get("interior-painted-spray").parameters.color.mode, "custom");
   assert.equal(catalog.defaultSelections["door-sill"], "door-sill-none");
   assert.equal(byId.get("door-sill-none").displayName, "无口袋");
@@ -508,7 +513,11 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
   );
   assert.equal(
     catalog.surfaces.find((surface) => surface.surfaceId === "center-panel-trim").displayName,
-    "中面板缝线"
+    "中板缝线"
+  );
+  assert.equal(
+    catalog.surfaces.find((surface) => surface.surfaceId === "door-panel-embroidery").displayName,
+    "中板刺绣"
   );
   assert.deepEqual(
     catalog.options.filter((option) => option.surfaceId === "nameplate")
@@ -522,7 +531,7 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
         .map((option) => [option.displayName, option.pricing.unitPriceMinor])),
     [
       [["无刺绣", 0], ["头枕刺绣", 128800]],
-      [["无刺绣", 0], ["门中板刺绣", 168800]]
+      [["无刺绣", 0], ["中板刺绣", 168800]]
     ]
   );
   assert.equal(
@@ -558,7 +567,7 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
   assert.deepEqual(
     catalog.options.filter((option) => option.surfaceId === "pedal")
       .map((option) => option.displayName),
-    ["赛车版", "短绒毛", "豪车毯"]
+    ["豪车毯", "短绒毛", "豪车毯+金属板"]
   );
   assert.deepEqual(byId.get("rear-wing-gray").availability, {
     status: "disabled",
