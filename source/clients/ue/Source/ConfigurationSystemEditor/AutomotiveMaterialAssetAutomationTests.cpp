@@ -3,7 +3,9 @@
 #include "AutomotiveMaterialAssetGenerator.h"
 
 #include "AutomotiveMaterialLibrary.h"
+#include "Engine/SkeletalMesh.h"
 #include "Materials/MaterialInstanceConstant.h"
+#include "Materials/MaterialInterface.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/Paths.h"
 #include "UObject/MetaData.h"
@@ -11,6 +13,11 @@
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAutomotiveMaterialAssetGenerationAutomationTest,
 	"ConfigurationSystem.Editor.AutomotiveMaterials.MaterializeCatalogVariants",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAutomotiveVehicleMaterialAssignmentAutomationTest,
+	"ConfigurationSystem.Editor.AutomotiveMaterials.VehicleHasNoEngineDefaults",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAutomotiveMaterialAssetGenerationAutomationTest::RunTest(
@@ -85,6 +92,62 @@ bool FAutomotiveMaterialAssetGenerationAutomationTest::RunTest(
 		TEXT("写出 UE5.8 母材质审计证据"),
 		FAutomotiveMaterialAssetGenerator::WriteAuditReport(AuditPath, Second));
 	TestTrue(TEXT("审计报告存在"), FPaths::FileExists(AuditPath));
+	return true;
+}
+
+bool FAutomotiveVehicleMaterialAssignmentAutomationTest::RunTest(
+	const FString& Parameters)
+{
+	(void)Parameters;
+	USkeletalMesh* Vehicle = LoadObject<USkeletalMesh>(
+		nullptr,
+		TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/"
+			"automotive-configurator-audi-a5-dcc-v2-slotted-zup."
+			"automotive-configurator-audi-a5-dcc-v2-slotted-zup"));
+	TestNotNull(TEXT("加载当前完整骨骼车辆"), Vehicle);
+	if (!IsValid(Vehicle))
+	{
+		return false;
+	}
+
+	const TArray<FSkeletalMaterial>& Materials = Vehicle->GetMaterials();
+	TestEqual(TEXT("骨骼车辆固定包含 48 个材质槽"), Materials.Num(), 48);
+	for (int32 Index = 0; Index < Materials.Num(); ++Index)
+	{
+		const FSkeletalMaterial& Material = Materials[Index];
+		const FString Path = IsValid(Material.MaterialInterface)
+			? Material.MaterialInterface->GetPathName()
+			: FString();
+		TestTrue(
+			*FString::Printf(
+				TEXT("槽 %d/%s 使用项目材质"),
+				Index,
+				*Material.MaterialSlotName.ToString()),
+			IsValid(Material.MaterialInterface)
+				&& !Path.Contains(TEXT("DefaultMaterial"))
+				&& !Path.Contains(TEXT("WorldGridMaterial")));
+	}
+
+	const auto FindMaterial = [&Materials](const FName SlotName)
+		-> UMaterialInterface*
+	{
+		const FSkeletalMaterial* Match = Materials.FindByPredicate(
+			[SlotName](const FSkeletalMaterial& Material)
+			{
+				return Material.MaterialSlotName == SlotName;
+			});
+		return Match != nullptr ? Match->MaterialInterface : nullptr;
+	};
+	UMaterialInterface* ConfigurablePaint =
+		FindMaterial(TEXT("sc01_exterior_body_cover"));
+	UMaterialInterface* BasePaint =
+		FindMaterial(TEXT("CS_Validation_Paint"));
+	TestTrue(
+		TEXT("两个车漆槽均以 M_A5_Paint 为资产基线"),
+		IsValid(ConfigurablePaint)
+			&& IsValid(BasePaint)
+			&& ConfigurablePaint->GetFName() == TEXT("M_A5_Paint")
+			&& BasePaint->GetFName() == TEXT("M_A5_Paint"));
 	return true;
 }
 

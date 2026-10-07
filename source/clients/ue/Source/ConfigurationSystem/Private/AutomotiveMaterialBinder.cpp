@@ -404,6 +404,20 @@ int32 UAutomotiveMaterialBinder::GetBoundSlotCount(
 	return Count;
 }
 
+TArray<FAutomotiveBoundMaterialSlot> UAutomotiveMaterialBinder::GetBoundSlots(
+	const FString& SurfaceId) const
+{
+	TArray<FAutomotiveBoundMaterialSlot> Result;
+	for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+	{
+		if (Bound.SurfaceId == SurfaceId)
+		{
+			Result.Add(Bound);
+		}
+	}
+	return Result;
+}
+
 bool UAutomotiveMaterialBinder::GetSingleBoundSlot(
 	const FString& SurfaceId,
 	UMeshComponent*& OutComponent,

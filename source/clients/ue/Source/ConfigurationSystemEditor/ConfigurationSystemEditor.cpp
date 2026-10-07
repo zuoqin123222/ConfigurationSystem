@@ -631,7 +631,7 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 
 	AConfiguratorVehicleActor* Vehicle = FindOrSpawnActor<AConfiguratorVehicleActor>(
 		World,
-		TEXT("ConfiguratorPlaceholderVehicle_TEMP"),
+		TEXT("ConfiguratorVehicle"),
 		FTransform(FRotator::ZeroRotator, FVector::ZeroVector));
 
 	const TCHAR* CameraLabels[] = {

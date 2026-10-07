@@ -162,7 +162,7 @@
     "schemaVersion": "1.0.0",
     "capability": "proxy",
     "bindings": [
-      { "surfaceId": "exterior-body-cover", "materialSlotIds": ["sc01_exterior_body_cover"] },
+      { "surfaceId": "exterior-body-cover", "materialSlotIds": ["sc01_exterior_body_cover", "CS_Validation_Paint"] },
       { "surfaceId": "engine-bay-cover", "materialSlotIds": ["sc01_engine_bay_cover"] },
       { "surfaceId": "rear-wing", "materialSlotIds": ["sc01_rear_wing"] },
       { "surfaceId": "wheel-material", "materialSlotIds": ["sc01_wheel_material"] },

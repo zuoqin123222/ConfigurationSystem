@@ -124,9 +124,9 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 		TEXT("地图覆盖使用展厅 GameMode"),
 		World->GetWorldSettings()->DefaultGameMode == AConfigShowroomGameMode::StaticClass());
 	TestEqual(
-		TEXT("占位车辆唯一"),
+		TEXT("配置车辆唯一"),
 		ConfigShowroomAutomation::CountByLabel<AConfiguratorVehicleActor>(
-			World, TEXT("ConfiguratorPlaceholderVehicle_TEMP")),
+			World, TEXT("ConfiguratorVehicle")),
 		1);
 	TestEqual(
 		TEXT("六个兼容机位与四个独立语义近景机位完整"),

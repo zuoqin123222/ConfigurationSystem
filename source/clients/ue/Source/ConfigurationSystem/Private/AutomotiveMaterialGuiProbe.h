@@ -32,7 +32,8 @@ struct FAutomotiveMaterialGuiProbeSurfaceResult
 /**
  * 真实 RHI/viewport 阶段 4 验收探针。
  * 等待展厅车辆与真实 Game viewport 初始化后，逐项切换 Catalog 的 40 个 surface，
- * 验证 Binder 的唯一可见目标、回执和材质变化，最后截取 GUI 并写 JSON 证据。
+ * 验证 Binder 的全部可见目标槽、回执、目标槽变化与非目标槽隔离，最后截取 GUI
+ * 并写 JSON 证据。
  */
 UCLASS()
 class UAutomotiveMaterialGuiProbe final : public UObject

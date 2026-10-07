@@ -264,8 +264,10 @@ bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 	{
 		const int32 BoundSlotCount =
 			CandidateBinder->GetBoundSlotCount(SurfaceId);
+		const int32 ExpectedSlotCount =
+			SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
 		ReadinessBoundSlotCounts.Add(SurfaceId, BoundSlotCount);
-		if (BoundSlotCount != 1)
+		if (BoundSlotCount != ExpectedSlotCount)
 		{
 			bReadinessBinder = false;
 		}
@@ -291,33 +293,34 @@ bool UAutomotiveMaterialGuiProbe::ValidateAllSurfaceMaterialSlots(
 	OutFailureReason.Reset();
 	for (const FString& SurfaceId : SurfaceIds)
 	{
-		UMeshComponent* Component = nullptr;
-		FName SlotId;
-		int32 MaterialIndex = INDEX_NONE;
-		if (!IsValid(Binder)
-			|| !Binder->GetSingleBoundSlot(
-				SurfaceId,
-				Component,
-				SlotId,
-				MaterialIndex)
-			|| !IsValid(Component)
-			|| MaterialIndex < 0
-			|| MaterialIndex >= Component->GetNumMaterials())
+		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
+			IsValid(Binder)
+				? Binder->GetBoundSlots(SurfaceId)
+				: TArray<FAutomotiveBoundMaterialSlot>();
+		const int32 ExpectedSlotCount =
+			SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
+		if (BoundSlots.Num() != ExpectedSlotCount)
 		{
 			OutFailureReason = FString::Printf(
-				TEXT("surfaceId=%s 没有有效唯一材质槽。"),
-				*SurfaceId);
+				TEXT("surfaceId=%s 期望 %d 个材质槽，实际为 %d。"),
+				*SurfaceId,
+				ExpectedSlotCount,
+				BoundSlots.Num());
 			return false;
 		}
-		UMaterialInterface* ExpectedMaterial =
-			Component->GetMaterial(MaterialIndex);
-		if (!IsValid(ExpectedMaterial))
+		for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
 		{
-			OutFailureReason = FString::Printf(
-				TEXT("surfaceId=%s 的目标槽 %d 材质为空。"),
-				*SurfaceId,
-				MaterialIndex);
-			return false;
+			if (!IsValid(Bound.Component)
+				|| Bound.MaterialIndex < 0
+				|| Bound.MaterialIndex >= Bound.Component->GetNumMaterials()
+				|| !IsValid(Bound.Component->GetMaterial(Bound.MaterialIndex)))
+			{
+				OutFailureReason = FString::Printf(
+					TEXT("surfaceId=%s 的目标槽 %s 无效或材质为空。"),
+					*SurfaceId,
+					*Bound.SlotId.ToString());
+				return false;
+			}
 		}
 	}
 	return true;
@@ -409,32 +412,77 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 		return false;
 	}
 
-	UMeshComponent* Component = nullptr;
-	FName SlotId;
-	int32 MaterialIndex = INDEX_NONE;
-	const bool bUniqueSlot = Binder->GetBoundSlotCount(SurfaceId) == 1
-		&& Binder->GetSingleBoundSlot(
-			SurfaceId,
-			Component,
-			SlotId,
-			MaterialIndex);
-	if (!bUniqueSlot || !IsValid(Component)
-		|| !Component->IsVisible() || Component->bHiddenInGame)
+	const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
+		Binder->GetBoundSlots(SurfaceId);
+	const int32 ExpectedSlotCount =
+		SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
+	const bool bExpectedSlotsHit = BoundSlots.Num() == ExpectedSlotCount;
+	if (!bExpectedSlotsHit)
 	{
 		OutFailureReason = FString::Printf(
-			TEXT("surfaceId=%s 未命中唯一可见运行时目标。"),
-			*SurfaceId);
+			TEXT("surfaceId=%s 期望命中 %d 个运行时目标，实际为 %d。"),
+			*SurfaceId,
+			ExpectedSlotCount,
+			BoundSlots.Num());
 		return false;
 	}
 
-	TArray<UMaterialInterface*> BeforeMaterials;
-	BeforeMaterials.Reserve(Component->GetNumMaterials());
-	for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+	struct FComponentMaterialSnapshot
 	{
-		BeforeMaterials.Add(Component->GetMaterial(Index));
+		UMeshComponent* Component = nullptr;
+		TArray<UMaterialInterface*> Materials;
+		TSet<int32> TargetIndices;
+	};
+	TArray<FComponentMaterialSnapshot> ComponentSnapshots;
+	TArray<FString> ComponentNames;
+	TArray<FString> SlotNames;
+	TArray<FString> BeforeDescriptions;
+	TArray<FName> ExpectedReceiptSlots;
+	int32 ComponentMaterialSlotCount = 0;
+	bool bVisible = true;
+	for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+	{
+		if (!IsValid(Bound.Component)
+			|| Bound.MaterialIndex < 0
+			|| Bound.MaterialIndex >= Bound.Component->GetNumMaterials())
+		{
+			OutFailureReason = FString::Printf(
+				TEXT("surfaceId=%s 的目标槽 %s 无效。"),
+				*SurfaceId,
+				*Bound.SlotId.ToString());
+			return false;
+		}
+		FComponentMaterialSnapshot* Snapshot =
+			ComponentSnapshots.FindByPredicate(
+				[&Bound](const FComponentMaterialSnapshot& Value)
+				{
+					return Value.Component == Bound.Component;
+				});
+		if (Snapshot == nullptr)
+		{
+			FComponentMaterialSnapshot& Added =
+				ComponentSnapshots.AddDefaulted_GetRef();
+			Added.Component = Bound.Component;
+			Added.Materials.Reserve(Bound.Component->GetNumMaterials());
+			for (int32 Index = 0;
+				Index < Bound.Component->GetNumMaterials();
+				++Index)
+			{
+				Added.Materials.Add(Bound.Component->GetMaterial(Index));
+			}
+			ComponentMaterialSlotCount += Bound.Component->GetNumMaterials();
+			Snapshot = &Added;
+		}
+		Snapshot->TargetIndices.Add(Bound.MaterialIndex);
+		ComponentNames.Add(Bound.Component->GetPathName());
+		SlotNames.Add(Bound.SlotId.ToString());
+		BeforeDescriptions.Add(DescribeMaterial(
+			Bound.Component->GetMaterial(Bound.MaterialIndex)));
+		ExpectedReceiptSlots.Add(Bound.SlotId);
+		bVisible = bVisible
+			&& Bound.Component->IsVisible()
+			&& !Bound.Component->bHiddenInGame;
 	}
-	UMaterialInterface* BeforeMaterial = Component->GetMaterial(MaterialIndex);
-	const FString Before = DescribeMaterial(BeforeMaterial);
 	Selections.Add(SurfaceId, *NextOptionId);
 	TMap<FString, FAutomotiveCustomization> Customizations =
 		State->GetCustomizations();
@@ -478,9 +526,22 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 	{
 		UnsupportedSurfaceIds.AddUnique(Unsupported);
 	}
-	UMaterialInterface* AfterMaterial = Component->GetMaterial(MaterialIndex);
-	const FString After = DescribeMaterial(AfterMaterial);
-	const bool bVisible = Component->IsVisible() && !Component->bHiddenInGame;
+	TArray<FString> AfterDescriptions;
+	TArray<UMaterialInterface*> AfterMaterials;
+	bool bChanged = true;
+	for (int32 Index = 0; Index < BoundSlots.Num(); ++Index)
+	{
+		const FAutomotiveBoundMaterialSlot& Bound = BoundSlots[Index];
+		UMaterialInterface* AfterMaterial =
+			Bound.Component->GetMaterial(Bound.MaterialIndex);
+		const FString AfterDescription = DescribeMaterial(AfterMaterial);
+		AfterMaterials.Add(AfterMaterial);
+		AfterDescriptions.Add(AfterDescription);
+		bChanged = bChanged
+			&& IsValid(AfterMaterial)
+			&& BeforeDescriptions.IsValidIndex(Index)
+			&& BeforeDescriptions[Index] != AfterDescription;
+	}
 	FString ColorPolicy = TEXT("neutral-gray");
 	if (!VariantId.IsEmpty())
 	{
@@ -502,38 +563,42 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 	bool bNeutralProxyColorValid = true;
 	if (bNeutralProxy)
 	{
-		UMaterialInstanceDynamic* Dynamic =
-			Cast<UMaterialInstanceDynamic>(AfterMaterial);
-		if (!IsValid(Dynamic))
+		for (UMaterialInterface* AfterMaterial : AfterMaterials)
 		{
-			bNeutralProxyColorValid = false;
-		}
-		else
-		{
+			UMaterialInstanceDynamic* Dynamic =
+				Cast<UMaterialInstanceDynamic>(AfterMaterial);
+			if (!IsValid(Dynamic))
+			{
+				bNeutralProxyColorValid = false;
+				break;
+			}
 			const FLinearColor Color =
 				Dynamic->K2_GetVectorParameterValue(TEXT("BaseColor"));
-			bNeutralProxyColorValid =
+			bNeutralProxyColorValid = bNeutralProxyColorValid
+				&&
 				FMath::IsNearlyEqual(Color.R, Color.G, 0.0001f)
 				&& FMath::IsNearlyEqual(Color.G, Color.B, 0.0001f);
 		}
 	}
-	bool bTargetSlotIsolated = IsValid(AfterMaterial);
-	for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+	bool bTargetSlotIsolated = true;
+	for (const FComponentMaterialSnapshot& Snapshot : ComponentSnapshots)
 	{
-		if (Index != MaterialIndex)
+		for (int32 Index = 0; Index < Snapshot.Materials.Num(); ++Index)
 		{
-			bTargetSlotIsolated = bTargetSlotIsolated
-				&& BeforeMaterials.IsValidIndex(Index)
-				&& Component->GetMaterial(Index) == BeforeMaterials[Index];
+			if (!Snapshot.TargetIndices.Contains(Index))
+			{
+				bTargetSlotIsolated = bTargetSlotIsolated
+					&& Snapshot.Component->GetMaterial(Index)
+						== Snapshot.Materials[Index];
+			}
 		}
 	}
 	const bool bReceiptValid =
 		Result.bSuccess
 		&& Result.Code == TEXT("APPLIED")
 		&& Result.AppliedSurfaceIds == TArray<FString>({SurfaceId})
-		&& Result.AppliedSlotIds == TArray<FName>({SlotId})
+		&& Result.AppliedSlotIds == ExpectedReceiptSlots
 		&& Result.UnsupportedSurfaceIds.IsEmpty();
-	const bool bChanged = IsValid(AfterMaterial) && Before != After;
 	if (!bReceiptValid || !bVisible || !bChanged
 		|| !bNeutralProxyColorValid || !bTargetSlotIsolated)
 	{
@@ -544,8 +609,8 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 			bVisible ? TEXT("true") : TEXT("false"),
 			bNeutralProxyColorValid ? TEXT("true") : TEXT("false"),
 			bTargetSlotIsolated ? TEXT("true") : TEXT("false"),
-			*Before,
-			*After);
+			*FString::Join(BeforeDescriptions, TEXT(";")),
+			*FString::Join(AfterDescriptions, TEXT(";")));
 		return false;
 	}
 
@@ -554,15 +619,15 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 	Report.SurfaceId = SurfaceId;
 	Report.OptionId = *NextOptionId;
 	Report.MaterialVariantId = VariantId;
-	Report.Component = Component->GetPathName();
-	Report.Slot = SlotId.ToString();
-	Report.Before = Before;
-	Report.After = After;
+	Report.Component = FString::Join(ComponentNames, TEXT(";"));
+	Report.Slot = FString::Join(SlotNames, TEXT(";"));
+	Report.Before = FString::Join(BeforeDescriptions, TEXT(";"));
+	Report.After = FString::Join(AfterDescriptions, TEXT(";"));
 	Report.ReceiptCode = Result.Code;
 	Report.ColorPolicy = ColorPolicy;
-	Report.ComponentMaterialSlotCount = Component->GetNumMaterials();
+	Report.ComponentMaterialSlotCount = ComponentMaterialSlotCount;
 	Report.bVisible = bVisible;
-	Report.bUniqueSlotHit = bUniqueSlot;
+	Report.bUniqueSlotHit = bExpectedSlotsHit;
 	Report.bTargetSlotIsolated = bTargetSlotIsolated;
 	Report.bChanged = bChanged;
 	Report.bNeutralProxy = bNeutralProxy;

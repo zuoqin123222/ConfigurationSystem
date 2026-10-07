@@ -5,6 +5,7 @@
 #include "AutomotiveMaterialBinder.h"
 #include "AutomotiveMaterialLibrary.h"
 #include "ConfiguratorVehicleActor.h"
+#include "Components/MeshComponent.h"
 #include "HAL/FileManager.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
@@ -321,12 +322,32 @@ bool FConfigurationBatchBakeBinderTransactionTest::RunTest(
 			State->GetCatalogIndex().GetCatalog()));
 	UAutomotiveMaterialBinder* Binder =
 		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
-	TestTrue(TEXT("Batch 测试绑定骨骼车 40 个 sc01 槽"), Binder->Bind(State, Library, Vehicle));
+	TestTrue(TEXT("Batch 测试绑定骨骼车 41 个槽"), Binder->Bind(State, Library, Vehicle));
+	TestEqual(
+		TEXT("Batch 车漆 surface 绑定两个槽"),
+		Binder->GetBoundSlotCount(UAutomotiveMaterialBinder::PaintSurfaceId),
+		2);
+	int32 TotalBoundSlotCount = 0;
+	for (const FString& SurfaceId :
+		State->GetCatalogIndex().GetCatalog().SelectionOrder)
+	{
+		const int32 ExpectedSlotCount =
+			SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
+		TestEqual(
+			*FString::Printf(TEXT("Batch %s 绑定槽数"), *SurfaceId),
+			Binder->GetBoundSlotCount(SurfaceId),
+			ExpectedSlotCount);
+		TotalBoundSlotCount += Binder->GetBoundSlotCount(SurfaceId);
+	}
+	TestEqual(TEXT("Batch 总绑定槽数为 41"), TotalBoundSlotCount, 41);
 
 	FConfigurationBakeTask Task;
 	Task.Selections = State->GetSelections();
 	Task.Customizations = State->GetCustomizations();
-	Task.Selections.Add(TEXT("wheel-style"), TEXT("wheel-style-magnesium-1"));
+	Task.Selections.Add(
+		UAutomotiveMaterialBinder::PaintSurfaceId,
+		TEXT("body-cover-silver"));
+	Task.Customizations.Remove(UAutomotiveMaterialBinder::PaintSurfaceId);
 	FString Error;
 	TestTrue(
 		*FString::Printf(TEXT("v2 Batch 通过 Binder 应用事务：%s"), *Error),
@@ -336,11 +357,24 @@ bool FConfigurationBatchBakeBinderTransactionTest::RunTest(
 			Error));
 	TestEqual(
 		TEXT("Batch Binder 同时提交配置状态"),
-		State->GetSelections().FindRef(TEXT("wheel-style")),
-		FString(TEXT("wheel-style-magnesium-1")));
-	TestNotNull(
-		TEXT("Batch Binder 更新可见骨骼车命名槽材质"),
-		Binder->GetAppliedMaterialForSurface(TEXT("wheel-style")));
+		State->GetSelections().FindRef(UAutomotiveMaterialBinder::PaintSurfaceId),
+		FString(TEXT("body-cover-silver")));
+	const TArray<FAutomotiveBoundMaterialSlot> PaintSlots =
+		Binder->GetBoundSlots(UAutomotiveMaterialBinder::PaintSurfaceId);
+	TestTrue(
+		TEXT("Batch Binder 更新两个可见车漆槽材质"),
+		PaintSlots.Num() == 2
+			&& IsValid(PaintSlots[0].Component)
+			&& IsValid(PaintSlots[1].Component)
+			&& IsValid(PaintSlots[0].Component->GetMaterial(
+				PaintSlots[0].MaterialIndex))
+			&& IsValid(PaintSlots[1].Component->GetMaterial(
+				PaintSlots[1].MaterialIndex)));
+	const FString ReceiptJson = Binder->GetLastTransactionResultJson();
+	TestTrue(
+		TEXT("Batch 车漆回执包含两个命名槽"),
+		ReceiptJson.Contains(TEXT("\"sc01_exterior_body_cover\""))
+			&& ReceiptJson.Contains(TEXT("\"CS_Validation_Paint\"")));
 	return true;
 }
 

@@ -2,6 +2,7 @@
 
 #include "AutomotiveMaterialBinder.h"
 
+#include "Algo/AllOf.h"
 #include "ConfiguratorVehicleActor.h"
 #include "Components/MeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -342,51 +343,65 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	for (const AutomotiveCatalog::FSurfaceBinding& Binding :
 		State->GetCatalogIndex().GetCatalog().VehicleSurfaceBinding.Bindings)
 	{
-		UMeshComponent* BoundComponent = nullptr;
-		FName BoundSlot;
-		int32 BoundMaterialIndex = INDEX_NONE;
-		TestTrue(
-			*FString::Printf(TEXT("%s Binder 唯一槽可查询"), *Binding.SurfaceId),
-			Binder->GetSingleBoundSlot(
-				Binding.SurfaceId,
-				BoundComponent,
-				BoundSlot,
-				BoundMaterialIndex));
+		const int32 ExpectedSlotCount =
+			Binding.SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId
+				? 2
+				: 1;
+		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
+			Binder->GetBoundSlots(Binding.SurfaceId);
 		TestEqual(
-			*FString::Printf(TEXT("%s Binder 只命中一个槽"), *Binding.SurfaceId),
+			*FString::Printf(TEXT("%s Binder 命中预期槽数"), *Binding.SurfaceId),
 			Binder->GetBoundSlotCount(Binding.SurfaceId),
-			1);
-		TestTrue(
-			*FString::Printf(TEXT("%s Binder 命中可见骨骼组件"), *Binding.SurfaceId),
-			IsValid(BoundComponent)
-				&& Cast<USkeletalMeshComponent>(BoundComponent) != nullptr
-				&& BoundComponent->IsVisible()
-				&& !BoundComponent->bHiddenInGame);
-		USkeletalMeshComponent* CurrentSkeletalComponent =
-			Cast<USkeletalMeshComponent>(BoundComponent);
-		if (BoundSkeletalComponent == nullptr)
+			ExpectedSlotCount);
+		TestEqual(
+			*FString::Printf(TEXT("%s 只读查询返回预期槽数"), *Binding.SurfaceId),
+			BoundSlots.Num(),
+			ExpectedSlotCount);
+		bool bCatalogSlotOrderMatches =
+			BoundSlots.Num() == Binding.MaterialSlotIds.Num();
+		for (int32 SlotIndex = 0;
+			bCatalogSlotOrderMatches && SlotIndex < BoundSlots.Num();
+			++SlotIndex)
 		{
-			BoundSkeletalComponent = CurrentSkeletalComponent;
+			bCatalogSlotOrderMatches =
+				BoundSlots[SlotIndex].SlotId == Binding.MaterialSlotIds[SlotIndex];
 		}
 		TestTrue(
-			*FString::Printf(TEXT("%s 复用同一个可见骨骼组件"), *Binding.SurfaceId),
-			CurrentSkeletalComponent == BoundSkeletalComponent);
-		TestEqual(
-			*FString::Printf(TEXT("%s Binder 命中 catalog 槽名"), *Binding.SurfaceId),
-			BoundSlot,
-			Binding.MaterialSlotIds[0]);
-		TestFalse(
-			*FString::Printf(TEXT("%s 不复用其他 surface 槽名"), *Binding.SurfaceId),
-			UniqueSlots.Contains(BoundSlot));
-		UniqueSlots.Add(BoundSlot);
-		TestFalse(
-			*FString::Printf(TEXT("%s 不复用其他 surface 材质索引"), *Binding.SurfaceId),
-			UniqueMaterialIndices.Contains(BoundMaterialIndex));
-		UniqueMaterialIndices.Add(BoundMaterialIndex);
+			*FString::Printf(TEXT("%s 查询结果保持 catalog 槽顺序"), *Binding.SurfaceId),
+			bCatalogSlotOrderMatches);
+		for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+		{
+			TestTrue(
+				*FString::Printf(
+					TEXT("%s/%s Binder 命中可见骨骼组件"),
+					*Binding.SurfaceId,
+					*Bound.SlotId.ToString()),
+				IsValid(Bound.Component)
+					&& Cast<USkeletalMeshComponent>(Bound.Component) != nullptr
+					&& Bound.Component->IsVisible()
+					&& !Bound.Component->bHiddenInGame);
+			USkeletalMeshComponent* CurrentSkeletalComponent =
+				Cast<USkeletalMeshComponent>(Bound.Component);
+			if (BoundSkeletalComponent == nullptr)
+			{
+				BoundSkeletalComponent = CurrentSkeletalComponent;
+			}
+			TestTrue(
+				*FString::Printf(TEXT("%s 复用同一个可见骨骼组件"), *Binding.SurfaceId),
+				CurrentSkeletalComponent == BoundSkeletalComponent);
+			TestFalse(
+				*FString::Printf(TEXT("%s 槽名不被复用"), *Bound.SlotId.ToString()),
+				UniqueSlots.Contains(Bound.SlotId));
+			UniqueSlots.Add(Bound.SlotId);
+			TestFalse(
+				*FString::Printf(TEXT("%s 材质索引不被复用"), *Bound.SlotId.ToString()),
+				UniqueMaterialIndices.Contains(Bound.MaterialIndex));
+			UniqueMaterialIndices.Add(Bound.MaterialIndex);
+		}
 	}
 	TestNotNull(TEXT("40 个 surface 绑定单一 SkeletalMeshComponent"), BoundSkeletalComponent);
-	TestEqual(TEXT("骨骼车包含 40 个唯一 sc01 槽"), UniqueSlots.Num(), 40);
-	TestEqual(TEXT("骨骼车包含 40 个唯一材质索引"), UniqueMaterialIndices.Num(), 40);
+	TestEqual(TEXT("骨骼车包含 41 个唯一槽"), UniqueSlots.Num(), 41);
+	TestEqual(TEXT("骨骼车包含 41 个唯一材质索引"), UniqueMaterialIndices.Num(), 41);
 	const AutomotiveCatalog::FOption* RedOption =
 		State->GetCatalogIndex().FindOption(TEXT("body-cover-red"));
 	TestTrue(
@@ -651,9 +666,11 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		PaintResult.AppliedSurfaceIds
 			== TArray<FString>({TEXT("exterior-body-cover")}));
 	TestTrue(
-		TEXT("车漆事务回执包含命名槽"),
+		TEXT("车漆事务回执包含两个命名槽"),
 		PaintResult.AppliedSlotIds
-			== TArray<FName>({TEXT("sc01_exterior_body_cover")}));
+			== TArray<FName>({
+				TEXT("sc01_exterior_body_cover"),
+				TEXT("CS_Validation_Paint")}));
 
 	PaintInstance = Binder->GetPaintMaterialInstance();
 	TestNotNull(TEXT("车身代理使用动态车漆实例"), PaintInstance);
@@ -742,9 +759,8 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		const TArray<FName>* ExpectedSlots =
 			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(SurfaceId);
 		TestTrue(
-			*FString::Printf(TEXT("%s 回执包含唯一 catalog 槽"), *SurfaceId),
+			*FString::Printf(TEXT("%s 回执包含全部 catalog 槽"), *SurfaceId),
 			ExpectedSlots != nullptr
-				&& ExpectedSlots->Num() == 1
 				&& Result.AppliedSlotIds == *ExpectedSlots);
 		TestTrue(
 			*FString::Printf(TEXT("%s unsupported 为空"), *SurfaceId),
@@ -760,19 +776,35 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 					|| (IsValid(AfterDynamic)
 						&& !AfterDynamic->K2_GetVectorParameterValue(
 							TEXT("BaseColor")).Equals(BeforeColor))));
-		UMeshComponent* Target = nullptr;
-		FName BoundSlot;
-		int32 MaterialIndex = INDEX_NONE;
+		const TArray<FAutomotiveBoundMaterialSlot> SurfaceBoundSlots =
+			Binder->GetBoundSlots(SurfaceId);
+		const FLinearColor AfterColor = IsValid(AfterDynamic)
+			? AfterDynamic->K2_GetVectorParameterValue(TEXT("BaseColor"))
+			: FLinearColor::Transparent;
 		TestTrue(
-			*FString::Printf(TEXT("%s 切换后仍绑定唯一骨骼车槽"), *SurfaceId),
-			Binder->GetSingleBoundSlot(
-				SurfaceId,
-				Target,
-				BoundSlot,
-				MaterialIndex)
-				&& IsValid(Target)
-				&& Target == BoundSkeletalComponent
-				&& Target->GetMaterial(MaterialIndex) == After);
+			*FString::Printf(TEXT("%s 切换后全部绑定槽均更新"), *SurfaceId),
+			ExpectedSlots != nullptr
+				&& SurfaceBoundSlots.Num() == ExpectedSlots->Num()
+				&& Algo::AllOf(
+					SurfaceBoundSlots,
+					[BoundSkeletalComponent, After, AfterDynamic, AfterColor](
+						const FAutomotiveBoundMaterialSlot& Bound)
+					{
+						if (!IsValid(Bound.Component)
+							|| Bound.Component != BoundSkeletalComponent)
+						{
+							return false;
+						}
+						UMaterialInterface* BoundMaterial =
+							Bound.Component->GetMaterial(Bound.MaterialIndex);
+						UMaterialInstanceDynamic* BoundDynamic =
+							Cast<UMaterialInstanceDynamic>(BoundMaterial);
+						return BoundMaterial == After
+							|| (IsValid(AfterDynamic)
+								&& IsValid(BoundDynamic)
+								&& BoundDynamic->K2_GetVectorParameterValue(
+									TEXT("BaseColor")).Equals(AfterColor));
+					}));
 	}
 	return true;
 }
@@ -849,47 +881,44 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 	for (const FString& SurfaceId :
 		State->GetCatalogIndex().GetCatalog().SelectionOrder)
 	{
-		UMeshComponent* Component = nullptr;
-		FName SlotId;
-		int32 MaterialIndex = INDEX_NONE;
-		TestTrue(
-			*FString::Printf(TEXT("%s 仅绑定一个 Runtime 槽"), *SurfaceId),
-			Binder->GetSingleBoundSlot(
-				SurfaceId,
-				Component,
-				SlotId,
-				MaterialIndex));
+		const int32 ExpectedSlotCount =
+			SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
+		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
+			Binder->GetBoundSlots(SurfaceId);
 		TestEqual(
-			*FString::Printf(TEXT("%s 槽计数唯一"), *SurfaceId),
+			*FString::Printf(TEXT("%s 槽计数符合 binding"), *SurfaceId),
 			Binder->GetBoundSlotCount(SurfaceId),
-			1);
-		TestTrue(
-			*FString::Printf(TEXT("%s 目标骨骼组件可见"), *SurfaceId),
-			IsValid(Component)
-				&& Cast<USkeletalMeshComponent>(Component) != nullptr
-				&& Component->IsVisible()
-				&& !Component->bHiddenInGame);
-		USkeletalMeshComponent* CurrentSkeletalComponent =
-			Cast<USkeletalMeshComponent>(Component);
-		if (BoundSkeletalComponent == nullptr)
+			ExpectedSlotCount);
+		for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
 		{
-			BoundSkeletalComponent = CurrentSkeletalComponent;
+			TestTrue(
+				*FString::Printf(TEXT("%s 目标骨骼组件可见"), *Bound.SlotId.ToString()),
+				IsValid(Bound.Component)
+					&& Cast<USkeletalMeshComponent>(Bound.Component) != nullptr
+					&& Bound.Component->IsVisible()
+					&& !Bound.Component->bHiddenInGame);
+			USkeletalMeshComponent* CurrentSkeletalComponent =
+				Cast<USkeletalMeshComponent>(Bound.Component);
+			if (BoundSkeletalComponent == nullptr)
+			{
+				BoundSkeletalComponent = CurrentSkeletalComponent;
+			}
+			TestTrue(
+				*FString::Printf(TEXT("%s 复用同一个骨骼组件"), *SurfaceId),
+				CurrentSkeletalComponent == BoundSkeletalComponent);
+			TestFalse(
+				*FString::Printf(TEXT("%s 槽名唯一"), *Bound.SlotId.ToString()),
+				UniqueSlots.Contains(Bound.SlotId));
+			UniqueSlots.Add(Bound.SlotId);
+			TestFalse(
+				*FString::Printf(TEXT("%s 材质索引唯一"), *Bound.SlotId.ToString()),
+				UniqueMaterialIndices.Contains(Bound.MaterialIndex));
+			UniqueMaterialIndices.Add(Bound.MaterialIndex);
 		}
-		TestTrue(
-			*FString::Printf(TEXT("%s 复用同一个骨骼组件"), *SurfaceId),
-			CurrentSkeletalComponent == BoundSkeletalComponent);
-		TestFalse(
-			*FString::Printf(TEXT("%s 槽名唯一"), *SurfaceId),
-			UniqueSlots.Contains(SlotId));
-		UniqueSlots.Add(SlotId);
-		TestFalse(
-			*FString::Printf(TEXT("%s 材质索引唯一"), *SurfaceId),
-			UniqueMaterialIndices.Contains(MaterialIndex));
-		UniqueMaterialIndices.Add(MaterialIndex);
 	}
 	TestNotNull(TEXT("40 个 surface 使用单一可见 SkeletalMeshComponent"), BoundSkeletalComponent);
-	TestEqual(TEXT("40 个 surface 使用 40 个唯一槽名"), UniqueSlots.Num(), 40);
-	TestEqual(TEXT("40 个 surface 使用 40 个唯一材质索引"), UniqueMaterialIndices.Num(), 40);
+	TestEqual(TEXT("40 个 surface 使用 41 个唯一槽名"), UniqueSlots.Num(), 41);
+	TestEqual(TEXT("40 个 surface 使用 41 个唯一材质索引"), UniqueMaterialIndices.Num(), 41);
 
 	int32 AppliedOptionCount = 0;
 	int32 FixedColorOptionCount = 0;
@@ -929,40 +958,56 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 			*FString::Printf(TEXT("%s 回执只包含目标 surface"), *OptionId),
 			Result.AppliedSurfaceIds
 				== TArray<FString>({Option->SurfaceId}));
+		const TArray<FName>* ExpectedReceiptSlots =
+			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(
+				Option->SurfaceId);
+		TestTrue(
+			*FString::Printf(TEXT("%s 回执包含全部目标槽"), *OptionId),
+			ExpectedReceiptSlots != nullptr
+				&& Result.AppliedSlotIds == *ExpectedReceiptSlots);
 
-		UMeshComponent* Component = nullptr;
-		FName SlotId;
-		int32 MaterialIndex = INDEX_NONE;
-		const bool bHasUniqueSlot = Binder->GetSingleBoundSlot(
-			Option->SurfaceId,
-			Component,
-			SlotId,
-			MaterialIndex);
+		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
+			Binder->GetBoundSlots(Option->SurfaceId);
+		const int32 ExpectedSlotCount =
+			Option->SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId
+				? 2
+				: 1;
 		TestTrue(
-			*FString::Printf(TEXT("%s 应用后槽仍唯一"), *OptionId),
-			bHasUniqueSlot);
-		TestTrue(
-			*FString::Printf(TEXT("%s 应用后目标仍可见"), *OptionId),
-			IsValid(Component)
-				&& Component->IsVisible()
-				&& !Component->bHiddenInGame);
+			*FString::Printf(TEXT("%s 应用后槽数符合 binding"), *OptionId),
+			BoundSlots.Num() == ExpectedSlotCount);
 		UMaterialInterface* Applied =
 			Binder->GetAppliedMaterialForSurface(Option->SurfaceId);
 		TestTrue(
-			*FString::Printf(TEXT("%s 实际落到查询到的组件槽"), *OptionId),
-			bHasUniqueSlot
-				&& IsValid(Applied)
-				&& Component->GetMaterial(MaterialIndex) == Applied);
+			*FString::Printf(TEXT("%s 全部目标槽均可见且已应用材质"), *OptionId),
+			IsValid(Applied)
+				&& Algo::AllOf(
+					BoundSlots,
+					[](const FAutomotiveBoundMaterialSlot& Bound)
+					{
+						return IsValid(Bound.Component)
+							&& Bound.Component->IsVisible()
+							&& !Bound.Component->bHiddenInGame
+							&& IsValid(Bound.Component->GetMaterial(
+								Bound.MaterialIndex));
+					}));
 		UMaterialInstanceDynamic* Dynamic =
 			Cast<UMaterialInstanceDynamic>(Applied);
 		const FString FamilyId = Option->MaterialFamilyId.Get(TEXT("paint"));
 		UMaterialInterface* ExpectedParent =
 			Library->LoadInteriorMaterial(FamilyId);
 		TestTrue(
-			*FString::Printf(TEXT("%s 使用正确材料族 MID"), *OptionId),
-			IsValid(Dynamic)
-				&& IsValid(ExpectedParent)
-				&& Dynamic->IsChildOf(ExpectedParent));
+			*FString::Printf(TEXT("%s 全部目标槽使用正确材料族 MID"), *OptionId),
+			IsValid(ExpectedParent)
+				&& Algo::AllOf(
+					BoundSlots,
+					[ExpectedParent](const FAutomotiveBoundMaterialSlot& Bound)
+					{
+						UMaterialInstanceDynamic* BoundDynamic =
+							Cast<UMaterialInstanceDynamic>(
+								Bound.Component->GetMaterial(Bound.MaterialIndex));
+						return IsValid(BoundDynamic)
+							&& BoundDynamic->IsChildOf(ExpectedParent);
+					}));
 
 		const TOptional<FLinearColor> ExpectedColor =
 			AutomotiveMaterialBinderAutomation::ResolveExpectedOptionColor(*Option);
@@ -977,7 +1022,20 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 					TEXT("%s 固定色遵循 ColorCode/DisplayColorHex"),
 					*OptionId),
 				IsValid(Dynamic)
-					&& ActualColor.Equals(ExpectedColor.GetValue(), 0.001f));
+					&& ActualColor.Equals(ExpectedColor.GetValue(), 0.001f)
+					&& Algo::AllOf(
+						BoundSlots,
+						[&ExpectedColor](const FAutomotiveBoundMaterialSlot& Bound)
+						{
+							UMaterialInstanceDynamic* BoundDynamic =
+								Cast<UMaterialInstanceDynamic>(
+									Bound.Component->GetMaterial(Bound.MaterialIndex));
+							return IsValid(BoundDynamic)
+								&& BoundDynamic->K2_GetVectorParameterValue(
+									TEXT("BaseColor")).Equals(
+										ExpectedColor.GetValue(),
+										0.001f);
+						}));
 		}
 		else
 		{
@@ -986,7 +1044,24 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 				*FString::Printf(TEXT("%s 无色代理为灰阶"), *OptionId),
 				IsValid(Dynamic)
 					&& FMath::IsNearlyEqual(ActualColor.R, ActualColor.G)
-					&& FMath::IsNearlyEqual(ActualColor.G, ActualColor.B));
+					&& FMath::IsNearlyEqual(ActualColor.G, ActualColor.B)
+					&& Algo::AllOf(
+						BoundSlots,
+						[](const FAutomotiveBoundMaterialSlot& Bound)
+						{
+							UMaterialInstanceDynamic* BoundDynamic =
+								Cast<UMaterialInstanceDynamic>(
+									Bound.Component->GetMaterial(Bound.MaterialIndex));
+							if (!IsValid(BoundDynamic))
+							{
+								return false;
+							}
+							const FLinearColor Color =
+								BoundDynamic->K2_GetVectorParameterValue(
+									TEXT("BaseColor"));
+							return FMath::IsNearlyEqual(Color.R, Color.G)
+								&& FMath::IsNearlyEqual(Color.G, Color.B);
+						}));
 		}
 		if (Result.bSuccess
 			&& Result.Code == TEXT("APPLIED")
@@ -1046,32 +1121,48 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 			*FString::Printf(TEXT("%s variant 回执只包含目标 surface"), *Variant.VariantId),
 			Result.AppliedSurfaceIds
 				== TArray<FString>({Option->SurfaceId}));
+		const TArray<FName>* ExpectedReceiptSlots =
+			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(
+				Option->SurfaceId);
+		TestTrue(
+			*FString::Printf(TEXT("%s variant 回执包含全部目标槽"), *Variant.VariantId),
+			ExpectedReceiptSlots != nullptr
+				&& Result.AppliedSlotIds == *ExpectedReceiptSlots);
 
-		UMeshComponent* Component = nullptr;
-		FName SlotId;
-		int32 MaterialIndex = INDEX_NONE;
-		const bool bHasUniqueSlot = Binder->GetSingleBoundSlot(
-			Option->SurfaceId,
-			Component,
-			SlotId,
-			MaterialIndex);
+		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
+			Binder->GetBoundSlots(Option->SurfaceId);
+		const int32 ExpectedSlotCount =
+			Option->SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId
+				? 2
+				: 1;
 		UMaterialInterface* Expected =
 			Library->LoadVariantMaterial(Variant.VariantId);
 		UMaterialInterface* Applied =
 			Binder->GetAppliedMaterialForSurface(Option->SurfaceId);
 		UMaterialInstance* ExpectedInstance = Cast<UMaterialInstance>(Expected);
 		TestTrue(
-			*FString::Printf(TEXT("%s variant 目标可见且槽唯一"), *Variant.VariantId),
-			bHasUniqueSlot
-				&& Binder->GetBoundSlotCount(Option->SurfaceId) == 1
-				&& IsValid(Component)
-				&& Component->IsVisible()
-				&& !Component->bHiddenInGame);
+			*FString::Printf(TEXT("%s variant 全部目标可见"), *Variant.VariantId),
+			BoundSlots.Num() == ExpectedSlotCount
+				&& Algo::AllOf(
+					BoundSlots,
+					[](const FAutomotiveBoundMaterialSlot& Bound)
+					{
+						return IsValid(Bound.Component)
+							&& Bound.Component->IsVisible()
+							&& !Bound.Component->bHiddenInGame;
+					}));
 		TestTrue(
 			*FString::Printf(TEXT("%s 精确应用已物化 MI"), *Variant.VariantId),
 			IsValid(Expected)
 				&& Applied == Expected
-				&& Component->GetMaterial(MaterialIndex) == Expected
+				&& Algo::AllOf(
+					BoundSlots,
+					[Expected](const FAutomotiveBoundMaterialSlot& Bound)
+					{
+						return IsValid(Bound.Component)
+							&& Bound.Component->GetMaterial(Bound.MaterialIndex)
+								== Expected;
+					})
 				&& IsValid(ExpectedInstance)
 				&& ExpectedInstance->IsChildOf(
 					Library->LoadInteriorMaterial(Variant.MaterialFamilyId)));

@@ -27,7 +27,7 @@ struct CONFIGURATIONSYSTEM_API FAutomotiveMaterialTransactionResult
 };
 
 USTRUCT()
-struct FAutomotiveBoundMaterialSlot
+struct CONFIGURATIONSYSTEM_API FAutomotiveBoundMaterialSlot
 {
 	GENERATED_BODY()
 
@@ -102,6 +102,9 @@ public:
 	UMaterialInstanceDynamic* GetPaintMaterialInstance() const { return PaintMaterialInstance; }
 	UMaterialInstanceDynamic* GetInteriorMaterialInstance() const { return InteriorMaterialInstance; }
 	int32 GetBoundSlotCount(const FString& SurfaceId) const;
+	/** 返回指定 surface 的全部绑定槽快照；修改返回值不会改变 Binder。 */
+	TArray<FAutomotiveBoundMaterialSlot> GetBoundSlots(
+		const FString& SurfaceId) const;
 	bool GetSingleBoundSlot(
 		const FString& SurfaceId,
 		UMeshComponent*& OutComponent,
