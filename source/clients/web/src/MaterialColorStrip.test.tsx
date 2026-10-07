@@ -62,13 +62,9 @@ function Harness({ onCommit }: { onCommit: (choice: MaterialStripChoice) => void
   const [selected, setSelected] = useState(choices[1])
   return (
     <MaterialColorStrip
-      familyName="奥司维"
       choices={choices}
       selectedOptionId={selected.option.optionId}
       selectedVariantId={selected.materialVariantId}
-      formatPrice={(item) => `¥${(item.pricing.unitPriceMinor ?? 0) / 100}`}
-      resolveImageUrl={(url) => url}
-      onImageError={() => undefined}
       onCommit={(choice) => {
         onCommit(choice)
         setSelected(choice)
@@ -78,22 +74,21 @@ function Harness({ onCommit }: { onCommit: (choice: MaterialStripChoice) => void
 }
 
 describe('MaterialColorStrip', () => {
-  it('默认免费材质被选中时优先显示默认项摘要', () => {
+  it('默认免费材质被选中时色彩条指向默认项且不重复摘要', () => {
     render(
       <MaterialColorStrip
-        familyName="奥司维"
         choices={choices}
         selectedOptionId="seat-ultrasuede-black"
-        formatPrice={(item) => item.pricing.isStandard ? '免费' : '¥1,180'}
-        resolveImageUrl={(url) => url}
-        onImageError={() => undefined}
         onCommit={() => undefined}
       />,
     )
 
-    expect(screen.getByRole('img', { name: '奥司维（黑）材质实拍' }))
-      .toHaveAttribute('src', '/sc01/thumbnails/ultrasuede-black-default.webp')
-    expect(screen.getAllByText('免费')).toHaveLength(2)
+    expect(screen.getAllByRole('slider')[0]).toHaveAttribute(
+      'aria-valuetext',
+      '奥司维（黑）',
+    )
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.queryByText('免费')).not.toBeInTheDocument()
   })
 
   it('按价格拆分无前置文字的全宽色彩条并保留传入顺序', () => {
@@ -103,17 +98,18 @@ describe('MaterialColorStrip', () => {
     expect(screen.queryByText('价格组 1')).not.toBeInTheDocument()
     expect(screen.queryByText('价格组 2')).not.toBeInTheDocument()
     expect(document.querySelector('.material-strip-label')).toBeNull()
-    expect(screen.getByRole('img', { name: 'Black UF7材质实拍' }))
-      .toHaveAttribute('src', '/sc01/thumbnails/ultrasuede-black.webp')
+    expect(screen.getAllByRole('slider')[0]).toHaveAttribute('aria-valuetext', 'Black UF7')
+    expect(screen.getAllByRole('slider')[1]).toHaveAttribute('aria-valuetext', 'Blue UB8')
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
-  it('色彩条数值变化时立即提交并更新实拍预览', () => {
+  it('色彩条数值变化时立即提交并更新当前色值', () => {
     const onCommit = vi.fn()
     render(<Harness onCommit={onCommit} />)
     const firstStrip = screen.getAllByRole('slider')[0]
 
     fireEvent.input(firstStrip, { target: { value: '2' } })
     expect(onCommit).toHaveBeenCalledWith(choices[2])
-    expect(screen.getByRole('img', { name: 'Red US3材质实拍' })).toBeInTheDocument()
+    expect(firstStrip).toHaveAttribute('aria-valuetext', 'Red US3')
   })
 })

@@ -212,6 +212,41 @@ export function surfacesForComponent(
     .map(({ surface }) => surface)
 }
 
+export interface WorkflowPage {
+  componentId: string
+  surfaces: CatalogSurface[]
+}
+
+export function workflowPagesForCategory(
+  catalog: CatalogV2,
+  categoryId: string,
+): WorkflowPage[] {
+  const category = catalog.categories.find((item) => item.categoryId === categoryId)
+  const components = componentsForCategory(catalog, categoryId)
+  if (category?.ui?.navigationMode === 'surfaces-as-components') {
+    return components.flatMap((component) => {
+      const surface = catalog.surfaces.find(
+        (item) => item.surfaceId === component.componentId,
+      )
+      return surface
+        ? [{ componentId: component.componentId, surfaces: [surface] }]
+        : []
+    })
+  }
+  return components.flatMap((component) => {
+    const componentSurfaces = surfacesForComponent(catalog, component.componentId)
+    if (component.ui?.layout === 'stack') {
+      return componentSurfaces.length > 0
+        ? [{ componentId: component.componentId, surfaces: componentSurfaces }]
+        : []
+    }
+    return componentSurfaces.map((surface) => ({
+      componentId: component.componentId,
+      surfaces: [surface],
+    }))
+  })
+}
+
 export function optionsForSurface(
   catalog: CatalogV2,
   surfaceId: string,

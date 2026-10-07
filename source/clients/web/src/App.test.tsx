@@ -348,6 +348,45 @@ describe('App v2', () => {
     expect(screen.getByRole('region', { name: '预设配置' })).toBeInTheDocument()
   })
 
+  it('性能尾翼与个性化八页连续前后导航，脚垫后才进入总览', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    await selectStage('性能')
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
+      .getByRole('button', { name: '尾翼' }))
+    expect(screen.getByRole('region', { name: '尾翼配置' })).toBeInTheDocument()
+
+    const personalizationPages = [
+      '内饰组件',
+      '门板口袋',
+      '缝线',
+      '头枕刺绣',
+      '中板刺绣',
+      '中板缝线',
+      '铭牌',
+      '脚垫',
+    ]
+    for (const displayName of personalizationPages) {
+      await user.click(screen.getByRole('button', { name: '下一步' }))
+      expect(screen.getByRole('region', { name: `${displayName}配置` })).toBeInTheDocument()
+    }
+    await user.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByRole('region', { name: '配置总览' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '上一步' }))
+    expect(screen.getByRole('region', { name: '脚垫配置' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '上一步' }))
+    expect(screen.getByRole('region', { name: '铭牌配置' })).toBeInTheDocument()
+
+    await selectStage('个性化')
+    expect(screen.getByRole('region', { name: '内饰组件配置' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '上一步' }))
+    expect(screen.getByRole('region', { name: '尾翼配置' })).toBeInTheDocument()
+  })
+
   it('总览逐项显示价格，底部只保留上一步与分享', async () => {
     const user = userEvent.setup()
     mockApi()
@@ -775,11 +814,10 @@ describe('App v2', () => {
     await selectStage('内饰')
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
-    expect(await screen.findByText('Black UF7')).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: '奥司维材质' })).toHaveTextContent('Black UF7')
-    await user.click(screen.getByRole('button', { name: /Black UF7，奥司维，¥1,180/ }))
-    expect(screen.getByRole('button', { name: /Black UF7，奥司维，¥1,180/ }))
-      .toHaveAttribute('aria-pressed', 'true')
+    expect(within(screen.getByRole('region', { name: '奥司维材质' }))
+      .getAllByRole('slider')[0])
+      .toHaveAttribute('aria-valuetext', '奥司维（黑）')
+    expect(document.querySelector('.selected-material-preview')).toHaveTextContent('奥司维')
 
     await selectStage('个性化')
     const personalizationParts = await screen.findByRole('region', { name: '部件筛选' })
@@ -877,7 +915,7 @@ describe('App v2', () => {
       .not.toBeInTheDocument()
   })
 
-  it('材料整卡可直接选择材质，色卡保持其显式关联的付费 option', async () => {
+  it('材料标题可直接选择材质，公共预览显示选定项名称和价格', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
@@ -889,10 +927,16 @@ describe('App v2', () => {
     const leatherFamily = within(screen.getByRole('region', { name: '牛皮材质' }))
     await user.click(screen.getByRole('region', { name: '牛皮材质' }))
     expect(screen.getByRole('region', { name: '牛皮材质' })).toHaveClass('selected')
-    await user.click(leatherFamily.getByRole('button', { name: /9743 Nero，牛皮，¥1,280/ }))
-
-    expect(leatherFamily.getByRole('button', { name: /9743 Nero，牛皮，¥1,280/ }))
-      .toHaveAttribute('aria-pressed', 'true')
+    expect(leatherFamily.getAllByRole('slider')[0]).toHaveAttribute(
+      'aria-valuetext',
+      '9743 Nero',
+    )
+    await waitFor(() => {
+      const preview = document.querySelector('.selected-material-preview')
+      expect(preview).toHaveTextContent('9743 Nero')
+      expect(preview).toHaveTextContent('牛皮')
+      expect(preview).toHaveTextContent('¥1,280')
+    })
   })
 
   it('自定义车漆显示调色盘和受限参数，并在颜色变化时实时提交', async () => {
@@ -992,10 +1036,12 @@ describe('App v2', () => {
     await user.click(within(screen.getByRole('region', { name: '子项筛选' }))
       .getByRole('button', { name: '回中标' }))
 
-    expect(screen.getByRole('region', { name: '奥司维材质' })).toHaveTextContent('免费')
-    expect(screen.getByRole('region', { name: 'Alcantara材质' })).toHaveTextContent('免费')
-    expect(screen.getByRole('region', { name: '超纤皮材质' })).toHaveTextContent('免费')
-    expect(screen.getByRole('region', { name: '牛皮材质' })).toHaveTextContent('免费')
+    for (const familyName of ['奥司维', 'Alcantara', '超纤皮', '牛皮']) {
+      const family = within(screen.getByRole('region', { name: `${familyName}材质` }))
+      expect(family.getAllByRole('slider').length).toBeGreaterThan(0)
+      expect(family.queryByText('免费')).not.toBeInTheDocument()
+    }
+    expect(document.querySelector('.selected-material-preview')).toHaveTextContent('免费')
     expect(document.querySelectorAll('.material-family .check')).toHaveLength(1)
     expect(screen.getByRole('region', { name: '奥司维材质' })).toHaveClass('selected')
     expect(screen.getByRole('region', { name: 'Alcantara材质' })).not.toHaveClass('selected')

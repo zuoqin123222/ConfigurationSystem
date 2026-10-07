@@ -16,6 +16,7 @@ import {
   renderRelevantSelections,
   sortMaterialVariants,
   surfacesForComponent,
+  workflowPagesForCategory,
 } from './configurator'
 import { catalogFixture, initialSelections } from './test/catalogFixture'
 
@@ -147,6 +148,22 @@ describe('v2 动态选配逻辑', () => {
         '铭牌',
         '脚垫',
       ])
+  })
+
+  it('个性化 surfaces-as-components 生成八个连续工作流页面', () => {
+    expect(workflowPagesForCategory(catalogFixture, 'personalization').map((page) => ({
+      componentId: page.componentId,
+      surfaceIds: page.surfaces.map((surface) => surface.surfaceId),
+    }))).toEqual([
+      { componentId: 'interior-painted-parts', surfaceIds: ['interior-painted-parts'] },
+      { componentId: 'door-sill', surfaceIds: ['door-sill'] },
+      { componentId: 'embroidered-logo', surfaceIds: ['embroidered-logo'] },
+      { componentId: 'headrest-embroidery', surfaceIds: ['headrest-embroidery'] },
+      { componentId: 'door-panel-embroidery', surfaceIds: ['door-panel-embroidery'] },
+      { componentId: 'center-panel-trim', surfaceIds: ['center-panel-trim'] },
+      { componentId: 'nameplate', surfaceIds: ['nameplate'] },
+      { componentId: 'pedal', surfaceIds: ['pedal'] },
+    ])
   })
 
   it('中性色先按亮度排序，其余颜色按红橙黄绿青蓝紫色相排序', () => {

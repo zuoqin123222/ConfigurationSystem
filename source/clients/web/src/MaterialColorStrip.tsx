@@ -3,7 +3,6 @@ import {
   useMemo,
   useState,
   type CSSProperties,
-  type SyntheticEvent,
 } from 'react'
 import type { CatalogOption } from './types'
 
@@ -17,14 +16,10 @@ export interface MaterialStripChoice {
 }
 
 interface MaterialColorStripProps {
-  familyName: string
   choices: MaterialStripChoice[]
   selectedOptionId?: string
   selectedVariantId?: string
-  formatPrice: (option: CatalogOption) => string
-  resolveImageUrl: (url: string) => string | undefined
   onCommit: (choice: MaterialStripChoice) => void
-  onImageError: (event: SyntheticEvent<HTMLImageElement>) => void
 }
 
 function priceGroupKey(option: CatalogOption): string {
@@ -48,14 +43,10 @@ function stripGradient(choices: MaterialStripChoice[]): string {
 }
 
 export default function MaterialColorStrip({
-  familyName,
   choices,
   selectedOptionId,
   selectedVariantId,
-  formatPrice,
-  resolveImageUrl,
   onCommit,
-  onImageError,
 }: MaterialColorStripProps) {
   const groups = useMemo(() => {
     const result: Array<{ key: string; option: CatalogOption; choices: MaterialStripChoice[] }> = []
@@ -80,26 +71,8 @@ export default function MaterialColorStrip({
     return result
   }, [choices])
 
-  const committedChoice = choices.find(({ option, materialVariantId }) =>
-    option.optionId === selectedOptionId && materialVariantId === selectedVariantId)
-  const summary = committedChoice ?? choices[0]
-
   return (
     <div className="material-strip-layout">
-      {summary && (
-        <div className="material-strip-summary" aria-live="polite">
-          <div className="material-strip-copy">
-            <strong>{summary.displayName}</strong>
-            <span>{familyName}</span>
-            <small>{formatPrice(summary.option)}</small>
-          </div>
-          <img
-            src={resolveImageUrl(summary.imageUrl)}
-            alt={`${summary.displayName}材质实拍`}
-            onError={onImageError}
-          />
-        </div>
-      )}
       <div className="material-strip-groups">
         {groups.map((group, groupIndex) => {
           const selectedIndex = group.choices.findIndex(({ option, materialVariantId }) =>
@@ -110,7 +83,6 @@ export default function MaterialColorStrip({
               label={groups.length > 1 ? `价格组 ${groupIndex + 1}` : '色彩'}
               choices={group.choices}
               selectedIndex={selectedIndex}
-              formatPrice={formatPrice}
               onCommit={onCommit}
             />
           )
@@ -124,7 +96,6 @@ interface MaterialStripRangeProps {
   label: string
   choices: MaterialStripChoice[]
   selectedIndex: number
-  formatPrice: (option: CatalogOption) => string
   onCommit: (choice: MaterialStripChoice) => void
 }
 
@@ -132,7 +103,6 @@ function MaterialStripRange({
   label,
   choices,
   selectedIndex,
-  formatPrice,
   onCommit,
 }: MaterialStripRangeProps) {
   const initialIndex = selectedIndex >= 0 ? selectedIndex : 0
@@ -173,10 +143,6 @@ function MaterialStripRange({
           onInput={(event) => selectValue(event.currentTarget.value)}
         />
         <span className="material-strip-indicator" aria-hidden="true" />
-      </div>
-      <div className="material-strip-draft-name">
-        <span>{draftChoice?.displayName}</span>
-        <small>{draftChoice ? formatPrice(draftChoice.option) : ''}</small>
       </div>
     </div>
   )

@@ -32,7 +32,7 @@ import {
   sortMaterialVariants,
   supportsMaterialVariants,
   surfacesForComponent,
-  usesMaterialStrip,
+  workflowPagesForCategory,
 } from './configurator'
 import type {
   CatalogCameraId,
@@ -145,8 +145,9 @@ function surfacesInCategoryUiOrder(
   catalog: CatalogV2,
   categoryId: string,
 ): CatalogV2['surfaces'] {
-  return componentsForCategory(catalog, categoryId).flatMap((component) =>
-    surfacesForComponent(catalog, component.componentId))
+  return workflowPagesForCategory(catalog, categoryId).flatMap(
+    (page) => page.surfaces,
+  )
 }
 
 interface WorkflowStep {
@@ -614,18 +615,10 @@ function Configurator({
     () => configurationReferenceTotal(catalog, defaultSelections),
     [catalog, defaultSelections],
   )
-  const workflowPages = useMemo(() => components.flatMap((component) => {
-    const componentSurfaces = surfacesForComponent(catalog, component.componentId)
-    if (component.ui?.layout === 'stack') {
-      return componentSurfaces.length > 0
-        ? [{ componentId: component.componentId, surfaces: componentSurfaces }]
-        : []
-    }
-    return componentSurfaces.map((surface) => ({
-      componentId: component.componentId,
-      surfaces: [surface],
-    }))
-  }), [catalog, components])
+  const workflowPages = useMemo(
+    () => workflowPagesForCategory(catalog, categoryId),
+    [catalog, categoryId],
+  )
   const currentPageIndex = Math.max(
     0,
     workflowPages.findIndex((page) =>
@@ -667,18 +660,16 @@ function Configurator({
 
   const applyCategoryLocally = useCallback((nextCategoryId: string) => {
     if (!catalog.categories.some((category) => category.categoryId === nextCategoryId)) return
-    const firstComponent = componentsForCategory(catalog, nextCategoryId)[0]
-    const firstSurface = firstComponent
-      ? surfacesForComponent(catalog, firstComponent.componentId)[0]
-      : undefined
+    const firstPage = workflowPagesForCategory(catalog, nextCategoryId)[0]
+    const firstSurface = firstPage?.surfaces[0]
     setActiveStepId(nextCategoryId)
     setCategoryId(nextCategoryId)
-    setComponentId(firstComponent?.componentId ?? 'all')
-    setSurfaceId(firstSurface?.surfaceId ?? catalog.selectionOrder[0] ?? '')
+    setComponentId(firstPage?.componentId ?? 'all')
+    setSurfaceId(firstSurface?.surfaceId ?? '')
     if (embedded) {
       focusCatalogNode({
         categoryId: nextCategoryId,
-        componentId: firstComponent?.componentId,
+        componentId: firstPage?.componentId,
         surfaceId: firstSurface?.surfaceId,
       })
     }
@@ -1117,6 +1108,22 @@ function Configurator({
     const currentCustomization = customizations[surface.surfaceId]
     const referenceImageUrl = INTERIOR_PART_IMAGES[surface.surfaceId]
     const blackReference = BLACK_REFERENCE_SURFACES.has(surface.surfaceId)
+    const selectedVariantId = currentCustomization && 'materialVariantId' in currentCustomization
+      ? currentCustomization.materialVariantId
+      : undefined
+    const selectedVariant = selectedVariantId
+      ? catalog.materialVariants.find((variant) => variant.variantId === selectedVariantId)
+      : undefined
+    const selectedMaterialFamily = selectedOption?.materialFamilyId
+      ? catalog.materialFamilies.find(
+          (family) => family.materialFamilyId === selectedOption.materialFamilyId,
+        )
+      : undefined
+    const selectedPreviewUrl = selectedVariant?.thumbnailUrl
+      ?? selectedOption?.ui?.iconUrl
+      ?? selectedOption?.thumbnailUrl
+      ?? referenceImageUrl
+    const selectedDisplayName = selectedVariant?.displayName ?? selectedOption?.displayName
     const showSeatBackplateFinish = surface.surfaceId === 'seat-shell-back'
       && selectedOption?.optionId === 'seat-shell-custom'
       && currentCustomization
@@ -1170,17 +1177,29 @@ function Configurator({
         <div className="section-title">
           <h3>{surface.displayName}</h3>
         </div>
-        {(referenceImageUrl || blackReference) && (
-          <div
-            className={`surface-reference ${blackReference ? 'surface-reference-black' : ''}`}
-            aria-label={`${surface.displayName}定制项目参考`}
-          >
-            {referenceImageUrl && (
+        {(selectedOption || referenceImageUrl || blackReference) && (
+          <div className="selected-material-preview" aria-live="polite">
+            <div
+              className={`surface-reference ${blackReference && !selectedPreviewUrl ? 'surface-reference-black' : ''}`}
+              aria-label={`${surface.displayName}当前选定材质预览`}
+            >
+              {selectedPreviewUrl && (
               <img
-                src={versionStaticAssetUrl(referenceImageUrl)}
-                alt={`${surface.displayName}定制项目参考`}
+                src={versionStaticAssetUrl(selectedPreviewUrl)}
+                alt={`${selectedDisplayName ?? surface.displayName}预览`}
                 loading="lazy"
+                onError={useDefaultImage}
               />
+              )}
+            </div>
+            {selectedOption && (
+              <div className="selected-material-copy">
+                <div>
+                  <strong>{selectedDisplayName}</strong>
+                  {selectedMaterialFamily && <span>{selectedMaterialFamily.displayName}</span>}
+                </div>
+                <small>{optionPrice(selectedOption)}</small>
+              </div>
             )}
           </div>
         )}
@@ -1219,16 +1238,16 @@ function Configurator({
                 materialFamily.ui?.variantSort,
               )
                 .map((variant) => ({ option, variant })))
-            const variantStripChoices = variantChoices.filter(({ option }) => usesMaterialStrip(option))
-            const cardVariantChoices = variantChoices.filter(({ option }) => !usesMaterialStrip(option))
-            const standardInStrip = Boolean(standardFamilyOption && variantStripChoices.length > 0)
             const standardFamilyVariant = materialFamily.ui?.defaultVariantId
               ? catalog.materialVariants.find(
                   (variant) => variant.variantId === materialFamily.ui?.defaultVariantId,
                 )
               : undefined
+            const remainingFamilyOptions = familyOptions.filter(
+              (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
+            )
             const stripChoices = [
-              ...(standardInStrip && standardFamilyOption
+              ...(standardFamilyOption
                 ? [{
                     option: standardFamilyOption,
                     choiceId: standardFamilyOption.optionId,
@@ -1242,7 +1261,7 @@ function Configurator({
                       ?? optionSwatch(standardFamilyOption),
                   }]
                 : []),
-              ...variantStripChoices.map(({ option, variant }) => ({
+              ...variantChoices.map(({ option, variant }) => ({
                 option,
                 choiceId: `${option.optionId}:${variant.variantId}`,
                 displayName: variant.displayName,
@@ -1250,10 +1269,16 @@ function Configurator({
                 colorHex: variant.ui?.sortColorHex ?? '#777a74',
                 materialVariantId: variant.variantId,
               })),
+              ...remainingFamilyOptions.map((option) => ({
+                option,
+                choiceId: option.optionId,
+                displayName: option.displayName,
+                imageUrl: option.ui?.iconUrl
+                  ?? option.thumbnailUrl
+                  ?? DEFAULT_IMAGE_URL,
+                colorHex: optionSwatch(option),
+              })),
             ]
-            const remainingFamilyOptions = familyOptions.filter(
-              (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
-            )
             const firstVariantChoice = variantChoices[0]
             const activateFamily = () => {
               if (standardFamilyOption) {
@@ -1292,56 +1317,11 @@ function Configurator({
                   <strong>{materialFamily.displayName}</strong>
                   {familySelected && <span className="check" aria-hidden="true">✓</span>}
                 </button>
-                <div className="choice-grid material-family-defaults">
-                  {standardFamilyOption && !standardInStrip && renderFlatOption(
-                    standardFamilyOption,
-                    standardFamilyOption.displayName,
-                    standardFamilyOption.ui?.iconUrl ?? standardFamilyOption.thumbnailUrl,
-                  )}
-                  {remainingFamilyOptions.map((option) => renderFlatOption(option))}
-                  {cardVariantChoices
-                    .map(({ option, variant }) => {
-                      const variantSelected = selections[surface.surfaceId] === option.optionId
-                        && currentCustomization
-                        && 'materialVariantId' in currentCustomization
-                        && currentCustomization.materialVariantId === variant.variantId
-                      return (
-                      <button
-                        key={`${option.optionId}:${variant.variantId}`}
-                        className={`color-choice ${variantSelected ? 'selected' : ''}`}
-                        onClick={() => setMaterialVariant(
-                          surface.surfaceId,
-                          variant.variantId,
-                          option.optionId,
-                        )}
-                        aria-pressed={Boolean(variantSelected)}
-                        aria-label={`${variant.displayName}，${materialFamily.displayName}，${optionPrice(option)}`}
-                      >
-                        <img
-                          src={versionStaticAssetUrl(variant.thumbnailUrl)}
-                          alt=""
-                          loading="lazy"
-                          onError={useDefaultImage}
-                        />
-                        <span className="color-choice-name">{variant.displayName}</span>
-                        <small>{optionPrice(option)}</small>
-                      </button>
-                      )
-                    })}
-                </div>
                 {stripChoices.length > 0 && (
                   <MaterialColorStrip
-                    familyName={materialFamily.displayName}
                     choices={stripChoices}
                     selectedOptionId={selectedOption?.optionId}
-                    selectedVariantId={
-                      currentCustomization && 'materialVariantId' in currentCustomization
-                        ? currentCustomization.materialVariantId
-                        : undefined
-                    }
-                    formatPrice={optionPrice}
-                    resolveImageUrl={versionStaticAssetUrl}
-                    onImageError={useDefaultImage}
+                    selectedVariantId={selectedVariantId}
                     onCommit={({ option, materialVariantId }) => {
                       if (materialVariantId) {
                         setMaterialVariant(surface.surfaceId, materialVariantId, option.optionId)
