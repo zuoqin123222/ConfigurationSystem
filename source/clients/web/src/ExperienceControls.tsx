@@ -16,6 +16,7 @@ import {
   getUePresentationState,
   getUeRenderModeError,
   hasUeAnimationBridgeMethod,
+  reportUeUiReady,
   type ReflectedUeBridge,
   type UeControlCommand,
   type UeCameraIndex,
@@ -55,7 +56,11 @@ function presentationStateError(bridge: ReflectedUeBridge | null): string {
 }
 
 export default function ExperienceControls({ ueEnabled = false }: ExperienceControlsProps) {
-  const [openMenu, setOpenMenu] = useState<ControlMenu | null>(null)
+  const [openMenu, setOpenMenu] = useState<ControlMenu | null>(() => (
+    new URLSearchParams(window.location.search).get('feedbackGuiProbe') === '1'
+      ? 'animation'
+      : null
+  ))
   const [cameras, setCameras] = useState<CatalogInteractionCamera[]>([])
   const [animations, setAnimations] = useState<CatalogAnimation[]>([])
   const [cameraId, setCameraId] = useState<CatalogCameraId | null>(null)
@@ -77,6 +82,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const animationRequestIdRef = useRef(0)
   const animationActionRequestIdRef = useRef(0)
   const animationCandidatesRef = useRef<CatalogAnimation[]>([])
+  const primaryAnimationIndexRef = useRef(0)
   const cefBridgeProbeStartedRef = useRef(false)
 
   useEffect(() => {
@@ -137,7 +143,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         setAnimationBridgeReady(false)
         setAnimations(candidates)
       }
-      return
+      return false
     }
     setAnimationBridgeReady(true)
     const supported: CatalogAnimation[] = []
@@ -199,6 +205,9 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
           setAnimationBridgeReady(true)
           setError('')
           await refreshAnimationAvailability()
+          window.requestAnimationFrame(() => {
+            void reportUeUiReady('controls')
+          })
           return
         }
         setAnimationBridgeReady(false)
@@ -334,15 +343,15 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     nextAnimationId: string,
     toggleCurrent = true,
   ) => {
-    if (!ueEnabled) return
+    if (!ueEnabled) return false
     const bridge = getUeBridge(true)
     const requestId = animationActionRequestIdRef.current + 1
     animationActionRequestIdRef.current = requestId
     const currentState = await getUePresentationState(bridge)
-    if (animationActionRequestIdRef.current !== requestId) return
+    if (animationActionRequestIdRef.current !== requestId) return false
     if (!currentState) {
       setError(presentationStateError(bridge))
-      return
+      return false
     }
     applyState(currentState)
     const currentAnimationId = currentState.animationId ?? null
@@ -354,7 +363,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       currentAnimationId,
       nextId,
     )
-    if (animationActionRequestIdRef.current !== requestId) return
+    if (animationActionRequestIdRef.current !== requestId) return false
     setError(accepted
       ? ''
       : getUeControlFailureMessage(
@@ -373,6 +382,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         applyState(updatedState)
       }
     }
+    return accepted
   }
 
   const selectScene = (preset: 'studio' | 'outdoor') => {
@@ -408,11 +418,20 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   }
 
   const playPrimaryAnimation = () => {
-    const wheelAnimation = animations.find(
-      (animation) => animation.animationId === 'wheel-spin',
-    )
-    if (!wheelAnimation) return
-    void selectAnimation(wheelAnimation.animationId, false)
+    if (animations.length === 0) return
+    if (animationId) {
+      const currentIndex = animations.findIndex(
+        (animation) => animation.animationId === animationId,
+      )
+      void selectAnimation(animationId).then((accepted) => {
+        if (accepted && currentIndex >= 0) {
+          primaryAnimationIndexRef.current = (currentIndex + 1) % animations.length
+        }
+      })
+      return
+    }
+    const index = primaryAnimationIndexRef.current % animations.length
+    void selectAnimation(animations[index].animationId, false)
   }
 
   return (
@@ -491,7 +510,6 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         >
           <button
             aria-expanded={openMenu === 'scene'}
-            aria-pressed={lightPreset === 'outdoor'}
             onClick={() => selectScene(lightPreset === 'studio' ? 'outdoor' : 'studio')}
           >
             <span aria-hidden="true">☼</span>

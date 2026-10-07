@@ -39,6 +39,8 @@ namespace
 	constexpr float ControlsLayerWidth = 620.0f;
 	constexpr float ControlsLayerHeight = 240.0f;
 	constexpr float ControlsBottomInset = 32.0f;
+	constexpr float StartupFadeDuration = 1.0f;
+	constexpr int32 RequiredStartupUiCount = 3;
 	constexpr int32 MaxBridgeJsonCharacters = 65536;
 
 	bool HasOnlyFields(
@@ -104,6 +106,10 @@ FString UConfiguratorPanel::GetControlsWebUrl()
 	if (FParse::Param(FCommandLine::Get(), TEXT("CefBridgeProbe")))
 	{
 		Url += TEXT("&cefBridgeProbe=1");
+	}
+	if (FParse::Param(FCommandLine::Get(), TEXT("FeedbackGuiProbe")))
+	{
+		Url += TEXT("&feedbackGuiProbe=1");
 	}
 	return Url;
 }
@@ -268,6 +274,15 @@ TSharedRef<SWidget> UConfiguratorPanel::RebuildWidget()
 void UConfiguratorPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
+	ReadyUiViews.Reset();
+	StartupFadeElapsed = 0.0f;
+	bStartupFadeActive = false;
+	bStartupRevealTriggered = false;
+	if (StartupCurtain != nullptr)
+	{
+		StartupCurtain->SetRenderOpacity(1.0f);
+		StartupCurtain->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
 	SetExperienceQualityLevel(TEXT("epic"));
 	if (FParse::Param(FCommandLine::Get(), TEXT("CefBridgeProbe"))
 		&& GetWorld() != nullptr)
@@ -309,6 +324,73 @@ void UConfiguratorPanel::FailCefBridgeProbeTimeout()
 		TEXT("{\"schemaVersion\":1,\"probe\":\"ShippingCefBridgeProbe\","
 			"\"ok\":false,\"error\":\"TIMEOUT\",\"expectedAnimationIds\":[],"
 			"\"steps\":[]}"));
+}
+
+bool UConfiguratorPanel::AreStartupPrerequisitesReady(
+	const bool bSceneReady,
+	const bool bVehicleReady,
+	const int32 ReadyUiCount)
+{
+	return bSceneReady && bVehicleReady
+		&& ReadyUiCount >= RequiredStartupUiCount;
+}
+
+bool UConfiguratorPanel::ShouldTriggerStartupReveal(
+	const float PreviousProgress,
+	const float CurrentProgress)
+{
+	return PreviousProgress < 0.5f && CurrentProgress >= 0.5f;
+}
+
+void UConfiguratorPanel::NativeTick(
+	const FGeometry& MyGeometry,
+	const float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+	UpdateStartupTransition(InDeltaTime);
+}
+
+void UConfiguratorPanel::UpdateStartupTransition(const float DeltaSeconds)
+{
+	if (StartupCurtain == nullptr
+		|| StartupCurtain->GetVisibility() == ESlateVisibility::Collapsed)
+	{
+		return;
+	}
+	AConfigShowroomPlayerController* Controller =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
+	const bool bSceneReady = Controller != nullptr
+		&& Controller->IsStartupSceneReady();
+	const bool bVehicleReady = Controller != nullptr
+		&& Controller->IsStartupVehicleReady();
+	if (!bStartupFadeActive)
+	{
+		if (!AreStartupPrerequisitesReady(
+			bSceneReady,
+			bVehicleReady,
+			ReadyUiViews.Num()))
+		{
+			return;
+		}
+		bStartupFadeActive = true;
+	}
+
+	const float PreviousProgress = FMath::Clamp(
+		StartupFadeElapsed / StartupFadeDuration, 0.0f, 1.0f);
+	StartupFadeElapsed += FMath::Max(DeltaSeconds, 0.0f);
+	const float CurrentProgress = FMath::Clamp(
+		StartupFadeElapsed / StartupFadeDuration, 0.0f, 1.0f);
+	StartupCurtain->SetRenderOpacity(1.0f - CurrentProgress);
+	if (!bStartupRevealTriggered
+		&& ShouldTriggerStartupReveal(PreviousProgress, CurrentProgress))
+	{
+		bStartupRevealTriggered = true;
+		Controller->BeginInitialCameraReveal();
+	}
+	if (CurrentProgress >= 1.0f)
+	{
+		StartupCurtain->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UConfiguratorPanel::BuildWidgetTree()
@@ -460,6 +542,15 @@ void UConfiguratorPanel::BuildWidgetTree()
 		-ControlsBottomInset));
 	ControlsCanvasSlot->SetSize(FVector2D(ControlsLayerWidth, ControlsLayerHeight));
 	ControlsCanvasSlot->SetZOrder(10);
+
+	StartupCurtain = WidgetTree->ConstructWidget<UBorder>(
+		UBorder::StaticClass(), TEXT("StartupCurtain"));
+	StartupCurtain->SetBrushColor(FLinearColor::Black);
+	StartupCurtain->SetVisibility(ESlateVisibility::HitTestInvisible);
+	UCanvasPanelSlot* CurtainSlot = Root->AddChildToCanvas(StartupCurtain);
+	CurtainSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+	CurtainSlot->SetOffsets(FMargin(0.0f));
+	CurtainSlot->SetZOrder(100);
 }
 
 void UConfiguratorPanel::ApplyWebConfigurationJson(
@@ -823,6 +914,18 @@ bool UConfiguratorPanel::CompleteCefBridgeProbe(const FString& ResultJson)
 	}
 	FPlatformMisc::RequestExitWithStatus(false, bWritten && bPassed ? 0 : 12);
 	return bWritten;
+}
+
+bool UConfiguratorPanel::ReportUiReady(const FString& ViewId)
+{
+	if (ViewId != TEXT("embedded")
+		&& ViewId != TEXT("controls")
+		&& ViewId != TEXT("header"))
+	{
+		return false;
+	}
+	ReadyUiViews.Add(ViewId);
+	return true;
 }
 
 bool UConfiguratorPanel::SetExperienceCameraId(const FString& CameraId)

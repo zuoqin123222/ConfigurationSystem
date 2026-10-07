@@ -130,6 +130,13 @@ public:
 	/** 车内滚轮只调整 FOV：正向滚轮缩小 FOV，反向滚轮扩大 FOV。 */
 	static float CalculateInteriorZoomFov(float CurrentFov, float WheelDelta);
 
+	/** 启动暗场只在展厅环境、默认机位与车辆 Actor 均完成 BeginPlay 后放行。 */
+	bool IsStartupSceneReady() const;
+	bool IsStartupVehicleReady() const;
+
+	/** 由启动暗场渐变中点触发，避免 Reveal 在 CEF 尚未绘制时提前结束。 */
+	void BeginInitialCameraReveal();
+
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	void ToggleEnvironment();
 

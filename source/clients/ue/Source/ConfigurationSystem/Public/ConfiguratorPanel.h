@@ -37,6 +37,13 @@ public:
 		float ViewportWidth,
 		float LeftInset,
 		float RightInset);
+	static bool AreStartupPrerequisitesReady(
+		bool bSceneReady,
+		bool bVehicleReady,
+		int32 ReadyUiCount);
+	static bool ShouldTriggerStartupReveal(
+		float PreviousProgress,
+		float CurrentProgress);
 
 	void ApplyWebConfigurationJson(const FString& ConfigurationJson);
 	FString ApplyWebConfigurationTransactionJson(const FString& ConfigurationJson);
@@ -49,6 +56,7 @@ public:
 	bool CanPlayExperienceAnimation(const FString& AnimationId) const;
 	FString GetAnimationExecutorStateJson(const FString& AnimationId) const;
 	bool CompleteCefBridgeProbe(const FString& ResultJson);
+	bool ReportUiReady(const FString& ViewId);
 	bool SetExperienceLightPreset(const FString& Preset);
 	bool SetExperienceRenderMode(const FString& Mode);
 	bool SetExperienceQualityLevel(const FString& Quality);
@@ -71,10 +79,14 @@ protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual void NativeTick(
+		const FGeometry& MyGeometry,
+		float InDeltaTime) override;
 
 private:
 	void BuildWidgetTree();
 	void FailCefBridgeProbeTimeout();
+	void UpdateStartupTransition(float DeltaSeconds);
 	UPROPERTY(Transient)
 	TObjectPtr<UConfiguratorBrowserWidget> WebBrowser;
 	UPROPERTY(Transient)
@@ -83,6 +95,8 @@ private:
 	TObjectPtr<UConfiguratorBrowserWidget> HeaderBrowser;
 	UPROPERTY(Transient)
 	TObjectPtr<UCanvasPanelSlot> ControlsCanvasSlot;
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> StartupCurtain;
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UWidget>> PageMasks;
 
@@ -93,4 +107,8 @@ private:
 	FString LatestConfiguratorHeaderStateJson;
 	FString LastRenderModeError;
 	FTimerHandle CefBridgeProbeTimeoutTimer;
+	TSet<FString> ReadyUiViews;
+	float StartupFadeElapsed = 0.0f;
+	bool bStartupFadeActive = false;
+	bool bStartupRevealTriggered = false;
 };

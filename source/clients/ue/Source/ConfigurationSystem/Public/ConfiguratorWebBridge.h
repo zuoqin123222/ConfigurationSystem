@@ -51,6 +51,8 @@ public:
 	UFUNCTION()
 	bool CompleteCefBridgeProbe(const FString& ResultJson);
 	UFUNCTION()
+	bool ReportUiReady(const FString& ViewId);
+	UFUNCTION()
 	bool SetLightPreset(const FString& Preset);
 	UFUNCTION()
 	bool SetRenderMode(const FString& Mode);

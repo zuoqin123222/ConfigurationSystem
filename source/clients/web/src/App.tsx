@@ -62,6 +62,7 @@ import {
   getUeBridge,
   focusUeAnimation,
   isUeConfiguratorHeaderState,
+  reportUeUiReady,
   syncUeConfiguratorCategory,
   syncUeConfiguratorHeaderState,
   setUeCameraId,
@@ -337,6 +338,9 @@ function ConfiguratorHeader() {
     void catalogRequest.then((catalog) => {
       const nextCategories = categoriesInUiOrder(catalog)
       setCategories(nextCategories)
+      window.requestAnimationFrame(() => {
+        void reportUeUiReady('header')
+      })
       setHeaderState((current) => (
         current.categoryId === 'preset'
         || current.categoryId === 'summary'
@@ -727,6 +731,13 @@ function Configurator({
     0,
     categorySurfaces.findIndex((surface) => surface.surfaceId === currentSurface.surfaceId),
   )
+
+  useEffect(() => {
+    if (!embedded) return
+    window.requestAnimationFrame(() => {
+      void reportUeUiReady('embedded')
+    })
+  }, [embedded])
 
   const focusCatalogNode = useCallback((selection: {
     categoryId?: string

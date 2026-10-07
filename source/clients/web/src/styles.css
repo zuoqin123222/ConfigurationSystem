@@ -813,7 +813,9 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   white-space: nowrap;
 }
 .animation-popover {
+  left: 50%;
   min-width: max-content;
+  transform: translateX(-50%);
 }
 .animation-popover button {
   white-space: nowrap;

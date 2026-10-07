@@ -546,12 +546,6 @@ void AConfigShowroomPlayerController::BeginPlay()
 		ApplyRuntimeCameraPOV(CameraTransitionStartPOV);
 		SetViewTarget(RuntimeCamera);
 		bInitialRevealPending = true;
-		GetWorldTimerManager().SetTimer(
-			InitialRevealTimer,
-			this,
-			&AConfigShowroomPlayerController::StartInitialCameraReveal,
-			1.2f,
-			false);
 	}
 
 	ConfiguratorPanel = CreateWidget<UConfiguratorPanel>(
@@ -880,6 +874,29 @@ AConfigRuntimeCameraActor* AConfigShowroomPlayerController::GetInteractiveCamera
 		return nullptr;
 	}
 	return RuntimeCamera;
+}
+
+bool AConfigShowroomPlayerController::IsStartupSceneReady() const
+{
+	return IsValid(RuntimeCamera)
+		&& IsValid(Environment)
+		&& Environment->HasActorBegunPlay()
+		&& IsValid(CurrentCameraPreset)
+		&& ShowroomCameras.IsValidIndex(0)
+		&& IsValid(ShowroomCameras[0]);
+}
+
+bool AConfigShowroomPlayerController::IsStartupVehicleReady() const
+{
+	return IsValid(Vehicle) && Vehicle->HasActorBegunPlay();
+}
+
+void AConfigShowroomPlayerController::BeginInitialCameraReveal()
+{
+	if (bInitialRevealPending)
+	{
+		StartInitialCameraReveal();
+	}
 }
 
 void AConfigShowroomPlayerController::StartInitialCameraReveal()

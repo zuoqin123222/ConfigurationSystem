@@ -17,6 +17,7 @@ export interface ReflectedUeBridge {
   canplayanimation?: (animationId: string) => Promise<boolean>
   getanimationexecutorstatejson?: (animationId: string) => Promise<string>
   completecefbridgeprobe?: (resultJson: string) => Promise<boolean>
+  reportuiready?: (viewId: string) => Promise<boolean>
   setlightpreset?: (preset: string) => Promise<boolean>
   setrendermode?: (mode: string) => Promise<boolean>
   getrendermodeerror?: () => Promise<string>
@@ -135,6 +136,18 @@ export function getUeControlFailureKind(
     }
   })()
   return hasMethod ? 'command-rejected' : 'method-unavailable'
+}
+
+export type UeUiViewId = 'embedded' | 'controls' | 'header'
+
+export async function reportUeUiReady(viewId: UeUiViewId): Promise<boolean> {
+  const bridge = getUeBridge(true)
+  if (typeof bridge?.reportuiready !== 'function') return false
+  try {
+    return await bridge.reportuiready(viewId)
+  } catch {
+    return false
+  }
 }
 
 export function getUeControlFailureMessage(kind: UeControlFailureKind): string {

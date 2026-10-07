@@ -361,6 +361,20 @@ bool FConfiguratorCameraOrbitAutomationTest::RunTest(const FString& Parameters)
 		RevealStart.Rotation.Equals((Pivot - RevealStart.Location).Rotation(), 0.1f));
 	TestTrue(TEXT("首次 Reveal 保留目标机位 FOV"),
 		FMath::IsNearlyEqual(RevealStart.FOV, RevealTarget.FOV));
+	TestFalse(TEXT("场景未就绪时启动暗场保持"),
+		UConfiguratorPanel::AreStartupPrerequisitesReady(false, true, 3));
+	TestFalse(TEXT("车辆未就绪时启动暗场保持"),
+		UConfiguratorPanel::AreStartupPrerequisitesReady(true, false, 3));
+	TestFalse(TEXT("三块 CEF 未全部 ready 时启动暗场保持"),
+		UConfiguratorPanel::AreStartupPrerequisitesReady(true, true, 2));
+	TestTrue(TEXT("场景、车辆和三块 CEF 全部 ready 后允许渐变"),
+		UConfiguratorPanel::AreStartupPrerequisitesReady(true, true, 3));
+	TestFalse(TEXT("渐变中点前不触发 Reveal"),
+		UConfiguratorPanel::ShouldTriggerStartupReveal(0.2f, 0.49f));
+	TestTrue(TEXT("渐变跨越中点时触发一次 Reveal"),
+		UConfiguratorPanel::ShouldTriggerStartupReveal(0.49f, 0.5f));
+	TestFalse(TEXT("渐变中点后不重复触发 Reveal"),
+		UConfiguratorPanel::ShouldTriggerStartupReveal(0.5f, 0.8f));
 	FMinimalViewInfo OffAxisPOV = RevealTarget;
 	OffAxisPOV.Rotation += FRotator(3.0f, -2.0f, 0.0f);
 	const FVector ViewAlignedPivot =

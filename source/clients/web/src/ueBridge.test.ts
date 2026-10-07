@@ -15,6 +15,7 @@ import {
   focusUeAnimation,
   isUeConfiguratorHeaderState,
   playUeAnimation,
+  reportUeUiReady,
   setUeCameraId,
   syncUeConfiguratorCategory,
   syncUeConfiguratorHeaderState,
@@ -358,6 +359,17 @@ describe('受限 UE bridge', () => {
       .toBe('UE 控制桥缺少所需方法')
     expect(getUeControlFailureMessage('command-rejected'))
       .toBe('UE 命令被拒绝或执行失败')
+  })
+
+  it('向 UE 报告三块 CEF 的稳定视图标识', async () => {
+    const reportuiready = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { reportuiready } }
+
+    await expect(reportUeUiReady('embedded')).resolves.toBe(true)
+    await expect(reportUeUiReady('controls')).resolves.toBe(true)
+    await expect(reportUeUiReady('header')).resolves.toBe(true)
+    expect(reportuiready.mock.calls.map(([viewId]) => viewId))
+      .toEqual(['embedded', 'controls', 'header'])
   })
 
   it('继续读取只有 cameraIndex 的旧 UE 展示状态', async () => {

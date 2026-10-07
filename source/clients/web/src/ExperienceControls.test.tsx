@@ -64,6 +64,7 @@ describe('ExperienceControls', () => {
         currentState = { ...currentState, fullscreen: enabled }
         return true
       }),
+      reportuiready: vi.fn().mockResolvedValue(true),
     }
     window.ue = { uebridge: bridge }
     render(<ExperienceControls ueEnabled />)
@@ -105,6 +106,9 @@ describe('ExperienceControls', () => {
     expect(bridge.focusanimation).toHaveBeenNthCalledWith(1, 'hood')
     expect(bridge.focusanimation).toHaveBeenNthCalledWith(2, '')
     expect(bridge.setlightpreset).toHaveBeenCalledWith('outdoor')
+    expect(within(toolbar).getByRole('button', { name: '场景' }))
+      .not.toHaveAttribute('aria-pressed')
+    expect(bridge.reportuiready).toHaveBeenCalledWith('controls')
     expect(bridge.setrendermode).toHaveBeenCalledWith('path-tracing')
     expect(bridge.setfullscreen).toHaveBeenCalledWith(true)
     expect(within(toolbar).queryByRole('button', { name: '画质' })).not.toBeInTheDocument()
@@ -203,7 +207,7 @@ describe('ExperienceControls', () => {
       .toBeInTheDocument()
   })
 
-  it('镜头一级按钮循环，动画一级按钮固定切到车轮旋转', async () => {
+  it('镜头一级按钮循环，动画一级按钮按目录逐项开关循环', async () => {
     const user = userEvent.setup()
     let currentState = {
       cameraId: 'wheel',
@@ -237,7 +241,11 @@ describe('ExperienceControls', () => {
     await user.click(cameraButton)
     await waitFor(() => expect(bridge.setcameraid).toHaveBeenCalledWith('driver'))
     await user.click(animationButton)
-    await waitFor(() => expect(bridge.focusanimation).toHaveBeenCalledWith('wheel-spin'))
+    await waitFor(() => expect(bridge.focusanimation).toHaveBeenNthCalledWith(1, 'hood'))
+    await user.click(animationButton)
+    await waitFor(() => expect(bridge.focusanimation).toHaveBeenNthCalledWith(2, ''))
+    await user.click(animationButton)
+    await waitFor(() => expect(bridge.focusanimation).toHaveBeenNthCalledWith(3, 'trunk'))
 
     await user.hover(cameraButton)
     expect(await screen.findByRole('menu', { name: '镜头预设' })).toBeInTheDocument()
@@ -246,7 +254,7 @@ describe('ExperienceControls', () => {
     expect(await screen.findByRole('menu', { name: '场景预设' })).toBeInTheDocument()
   })
 
-  it('右门动画开启后点一级动画会切到车轮旋转并同步二级选中态', async () => {
+  it('已有非当前目录动画时一级动画先关闭，再从目录首项继续', async () => {
     const user = userEvent.setup()
     let currentState = {
       cameraId: 'wheel',
@@ -273,10 +281,12 @@ describe('ExperienceControls', () => {
 
     const animationButton = await screen.findByRole('button', { name: '动画' })
     await user.click(animationButton)
-    await waitFor(() => expect(bridge.focusanimation).toHaveBeenCalledWith('wheel-spin'))
+    await waitFor(() => expect(bridge.focusanimation).toHaveBeenNthCalledWith(1, ''))
+    await user.click(animationButton)
+    await waitFor(() => expect(bridge.focusanimation).toHaveBeenNthCalledWith(2, 'hood'))
     await user.unhover(animationButton)
     await user.hover(animationButton)
-    expect(await screen.findByRole('menuitemradio', { name: '车轮旋转' }))
+    expect(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
       .toHaveAttribute('aria-checked', 'true')
   })
 

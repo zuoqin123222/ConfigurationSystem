@@ -456,7 +456,10 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 void UAutomotiveMaterialGuiProbe::RequestScreenshot()
 {
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(ScreenshotPath), true);
-	FScreenshotRequest::RequestScreenshot(ScreenshotPath, false, false);
+	FScreenshotRequest::RequestScreenshot(
+		ScreenshotPath,
+		FParse::Param(FCommandLine::Get(), TEXT("FeedbackGuiProbe")),
+		false);
 	bScreenshotRequested = true;
 }
 

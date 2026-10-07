@@ -102,6 +102,11 @@ bool UConfiguratorWebBridge::CompleteCefBridgeProbe(
 	return Owner != nullptr && Owner->CompleteCefBridgeProbe(ResultJson);
 }
 
+bool UConfiguratorWebBridge::ReportUiReady(const FString& ViewId)
+{
+	return Owner != nullptr && Owner->ReportUiReady(ViewId);
+}
+
 bool UConfiguratorWebBridge::IsSupportedLightPreset(const FString& Preset)
 {
 	return Preset == TEXT("studio") || Preset == TEXT("outdoor");
