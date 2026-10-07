@@ -30,6 +30,8 @@ $PackageRoot = Join-Path $RepositoryRoot "package"
 $EmbeddedWebRoot = Join-Path $RepositoryRoot "source\clients\ue\Content\WebUI"
 $WebDeployScript = Join-Path $WebRoot "scripts\deploy-embedded.mjs"
 $BakeOwnershipSentinelName = ".configuration-system-bake-output"
+$UeAppLocalDependenciesRoot = Join-Path $EngineRoot "Engine\Binaries\ThirdParty\AppLocalDependencies"
+$UeVcRedistSource = Join-Path $EngineRoot "Engine\Extras\Redist\en-us\vc_redist.x64.exe"
 $script:WebArtifact = $null
 $script:PreparedReleaseItems = @()
 $script:SourceWasDirty = $null
@@ -298,6 +300,59 @@ function Write-ReleaseManifest {
     )
 }
 
+function Add-UeRuntimePrerequisiteFiles {
+    param([Parameter(Mandatory = $true)][string]$ArchiveRoot)
+    $prerequisitesRoot = Join-Path $ArchiveRoot "Windows\Prerequisites"
+    $installerDestination = Join-Path $prerequisitesRoot "vc_redist.x64.exe"
+    $readmeDestination = Join-Path $ArchiveRoot "Windows\Runtime-Prerequisites.txt"
+    if ($DryRun) {
+        Write-Host "[dry-run] copy VC++ x64 prerequisite installer -> $installerDestination"
+        Write-Host "[dry-run] write runtime dependency instructions -> $readmeDestination"
+        return
+    }
+    New-Item -ItemType Directory -Path $prerequisitesRoot -Force | Out-Null
+    Copy-Item -LiteralPath $UeVcRedistSource -Destination $installerDestination -Force
+    $instructions = @(
+        "ConfigurationSystem runtime prerequisites",
+        "",
+        "This release includes App-local Microsoft Visual C++ runtime files.",
+        "Normally you can launch the application directly:",
+        "ConfigurationSystem.exe",
+        "",
+        "If Windows still reports that Microsoft Visual C++ 2015-2022 Redistributable (x64)",
+        "is required, install or repair it by running:",
+        "Prerequisites\vc_redist.x64.exe",
+        "",
+        "Then launch ConfigurationSystem.exe again."
+    ) -join [Environment]::NewLine
+    [IO.File]::WriteAllText(
+        $readmeDestination,
+        $instructions,
+        [Text.UTF8Encoding]::new($true)
+    )
+}
+
+function Assert-UeRuntimeDependencies {
+    param([Parameter(Mandatory = $true)][string]$ArchiveRoot)
+    if ($DryRun) {
+        Write-Host "[dry-run] verify UE archive contains App-local VC++ runtime DLLs and x64 prerequisite installer"
+        return
+    }
+    $requiredFiles = @(
+        "Windows\ConfigurationSystem\Binaries\Win64\msvcp140.dll",
+        "Windows\ConfigurationSystem\Binaries\Win64\vcruntime140.dll",
+        "Windows\ConfigurationSystem\Binaries\Win64\vcruntime140_1.dll",
+        "Windows\Prerequisites\vc_redist.x64.exe",
+        "Windows\Runtime-Prerequisites.txt"
+    )
+    foreach ($relativePath in $requiredFiles) {
+        $fullPath = Join-Path $ArchiveRoot $relativePath
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+            throw "UE release is missing required runtime dependency: $relativePath"
+        }
+    }
+}
+
 function Format-Command {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
@@ -413,6 +468,14 @@ function Assert-ReleaseInputs {
         }
         if ($validatedTargets -contains "UE" -or $validatedTargets -contains "BakeWeb") {
             $requiredPaths += $ProjectPath
+        }
+        if ($validatedTargets -contains "UE") {
+            $requiredPaths += @(
+                $UeVcRedistSource,
+                (Join-Path $UeAppLocalDependenciesRoot "Win64\x64\Microsoft.VC.CRT\msvcp140.dll"),
+                (Join-Path $UeAppLocalDependenciesRoot "Win64\x64\Microsoft.VC.CRT\vcruntime140.dll"),
+                (Join-Path $UeAppLocalDependenciesRoot "Win64\x64\Microsoft.VC.CRT\vcruntime140_1.dll")
+            )
         }
         foreach ($requiredPath in $requiredPaths) {
             if (-not (Test-Path -LiteralPath $requiredPath)) {
@@ -658,11 +721,15 @@ function Build-UE {
             "-stage",
             "-pak",
             "-iostore",
+            "-prereqs",
+            "-applocaldir=$UeAppLocalDependenciesRoot",
             "-archive",
             "-archivedirectory=$stagingArchive",
             "-unattended",
             "-utf8output"
         )
+        Add-UeRuntimePrerequisiteFiles -ArchiveRoot $stagingArchive
+        Assert-UeRuntimeDependencies -ArchiveRoot $stagingArchive
         Write-ReleaseManifest -Root $stagingArchive -ReleaseTarget "UE"
     } catch {
         $prepareError = $_

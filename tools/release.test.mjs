@@ -8,6 +8,10 @@ import test from "node:test";
 
 const toolsRoot = dirname(fileURLToPath(import.meta.url));
 const releaseScript = resolve(toolsRoot, "release.ps1");
+const gameConfig = resolve(
+  toolsRoot,
+  "../source/clients/ue/Config/DefaultGame.ini",
+);
 
 function runRelease(args = []) {
   return spawnSync(
@@ -57,6 +61,9 @@ test("All dry-run 编排 Web、Server、UE 与 Bake 全链路", () => {
   assert.match(result.stdout, /npm\.cmd exec vite/);
   assert.match(result.stdout, /-gather/);
   assert.match(result.stdout, /RunUAT\.bat" BuildCookRun/);
+  assert.match(result.stdout, /-prereqs/);
+  assert.match(result.stdout, /-applocaldir=.*AppLocalDependencies/);
+  assert.match(result.stdout, /verify UE archive contains App-local VC\+\+ runtime DLLs/);
   assert.match(result.stdout, /generate-published-configurations\.mjs/);
   assert.match(result.stdout, /npm\.cmd run validate:bake/);
   assert.match(result.stdout, /start-server\.ps1/);
@@ -85,6 +92,28 @@ test("组合目标只执行选中的 UE 和 ServerWeb", () => {
   assert.match(result.stdout, /portable bundle without renders/);
   assert.doesNotMatch(result.stdout, /generate-published-configurations\.mjs/);
   assert.doesNotMatch(result.stdout, /npm\.cmd test/);
+});
+
+test("UE 发布配置同时启用安装器和 App-local 运行库", () => {
+  const source = readFileSync(gameConfig, "utf8");
+  assert.match(source, /^IncludePrerequisites=True$/m);
+  assert.match(source, /^IncludeAppLocalPrerequisites=True$/m);
+});
+
+test("UE 归档缺少运行库时拒绝写入正式发布", () => {
+  const result = runImportedPowerShell(`
+    $root = Join-Path ([IO.Path]::GetTempPath()) ('ue-runtime-dependencies-' + [Guid]::NewGuid().ToString('N'));
+    New-Item -ItemType Directory -Path $root -Force | Out-Null;
+    try {
+      Assert-UeRuntimeDependencies -ArchiveRoot $root;
+      exit 91;
+    } catch {
+      if ($_.Exception.Message -notmatch 'missing required runtime dependency') { exit 92 }
+    } finally {
+      Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+    }
+  `);
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
 
 test("ServerWeb 仅在显式 IncludeRenders 时复制 renders", () => {

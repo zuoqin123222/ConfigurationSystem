@@ -37,6 +37,12 @@ online 与 embedded 入口。
 
 - 通过官方 UE5.8 执行 UBT `-gather`。
 - Build/Cook/Stage/Pak/IoStore/Archive 成功。
+- `BuildCookRun` 固定使用 `-prereqs` 和 UE5.8 的 `AppLocalDependencies`：
+  VC++ x64 CRT DLL 与程序并置，未安装全局运行库的 Windows 机器可直接启动。
+- 归档同时包含 `Windows/Prerequisites/vc_redist.x64.exe` 和
+  `Windows/Runtime-Prerequisites.txt`，用于系统运行库损坏或 App-local 加载异常时手动修复。
+- 写入 manifest 前必须验证 `msvcp140.dll`、`vcruntime140.dll`、
+  `vcruntime140_1.dll` 和 x64 安装器均存在；任一缺失则拒绝晋升发布包。
 - `package/clients/ue/release-manifest.json` 覆盖归档中的逐文件 SHA-256。
 - 包内 WebUI 与离线保存、分享、二维码验证见
   [UE 离线自包含验证](UE_OFFLINE_SELF_CONTAINED.md)。
