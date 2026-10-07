@@ -432,6 +432,19 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		TEXT("清除 variant 后槽恢复 leather family 的可见实例"),
 		Binder->GetAppliedInteriorFamilyId() == TEXT("leather")
 			&& IsValid(Binder->GetInteriorComponent()->GetMaterial(0)));
+	TMap<FString, FString> InvalidSelections = State->GetSelections();
+	InvalidSelections.Add(TEXT("exterior-body-cover"), TEXT("unknown-option"));
+	const FAutomotiveMaterialTransactionResult InvalidResult =
+		Binder->ApplyTransaction(InvalidSelections, State->GetCustomizations());
+	TestFalse(TEXT("非法 option 事务被拒绝"), InvalidResult.bSuccess);
+	TestEqual(
+		TEXT("Binder 保留目录返回的具体事务错误码"),
+		InvalidResult.Code,
+		FString(TEXT("INVALID_OPTION")));
+	TestTrue(
+		TEXT("Binder 保留目录返回的具体事务错误消息"),
+		InvalidResult.Message.Contains(TEXT("exterior-body-cover"))
+			&& InvalidResult.Message.Contains(TEXT("optionId")));
 	const FString BeforeRejectedConfigurationId = State->GetConfigurationId();
 	UMaterialInterface* BeforeRejectedMaterial =
 		Binder->GetInteriorComponent()->GetMaterial(0);
@@ -762,12 +775,12 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		AutomotiveMaterialBinderAutomation::ParseCoverageSpec(
 			Catalog->CatalogJson,
 			Coverage));
-	TestEqual(TEXT("可烘焙 option 数"), Coverage.BakeOptionIds.Num(), 165);
+	TestEqual(TEXT("可烘焙 option 数"), Coverage.BakeOptionIds.Num(), 168);
 	TestEqual(
 		TEXT("coverage 排除 color-picker 数"),
 		Coverage.ExcludedColorPickerOptionCount,
 		5);
-	if (Coverage.BakeOptionIds.Num() != 165)
+	if (Coverage.BakeOptionIds.Num() != 168)
 	{
 		return false;
 	}
@@ -1012,9 +1025,9 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		}
 	}
 
-	TestEqual(TEXT("165 个可烘焙 option 全部通过 Binder"), AppliedOptionCount, 165);
-	TestEqual(TEXT("可解析固定色 option 统计"), FixedColorOptionCount, 24);
-	TestEqual(TEXT("无可解析色值的灰阶代理 option 统计"), NeutralProxyOptionCount, 141);
+	TestEqual(TEXT("168 个可烘焙 option 全部通过 Binder"), AppliedOptionCount, 168);
+	TestEqual(TEXT("可解析固定色 option 统计"), FixedColorOptionCount, 30);
+	TestEqual(TEXT("无可解析色值的灰阶代理 option 统计"), NeutralProxyOptionCount, 138);
 	TestEqual(TEXT("352 个 material variant 全部通过 Binder"), AppliedVariantCount, 352);
 	AddInfo(FString::Printf(
 		TEXT("Runtime 穷举统计：option=%d（固定色=%d，灰阶代理=%d），"

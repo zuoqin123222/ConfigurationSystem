@@ -11,6 +11,10 @@
 #include "Components/Border.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/TextBlock.h"
+#include "Components/Throbber.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Dom/JsonObject.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
@@ -546,7 +550,28 @@ void UConfiguratorPanel::BuildWidgetTree()
 	StartupCurtain = WidgetTree->ConstructWidget<UBorder>(
 		UBorder::StaticClass(), TEXT("StartupCurtain"));
 	StartupCurtain->SetBrushColor(FLinearColor::Black);
+	StartupCurtain->SetHorizontalAlignment(HAlign_Center);
+	StartupCurtain->SetVerticalAlignment(VAlign_Center);
 	StartupCurtain->SetVisibility(ESlateVisibility::HitTestInvisible);
+	UVerticalBox* StartupLoadingLayout =
+		WidgetTree->ConstructWidget<UVerticalBox>(
+			UVerticalBox::StaticClass(), TEXT("StartupLoadingLayout"));
+	UThrobber* StartupThrobber = WidgetTree->ConstructWidget<UThrobber>(
+		UThrobber::StaticClass(), TEXT("StartupThrobber"));
+	StartupThrobber->SetNumberOfPieces(3);
+	UVerticalBoxSlot* ThrobberSlot =
+		StartupLoadingLayout->AddChildToVerticalBox(StartupThrobber);
+	ThrobberSlot->SetHorizontalAlignment(HAlign_Center);
+	ThrobberSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 18.0f));
+	UTextBlock* StartupText = WidgetTree->ConstructWidget<UTextBlock>(
+		UTextBlock::StaticClass(), TEXT("StartupLoadingText"));
+	StartupText->SetText(FText::FromString(TEXT("正在准备 SC01 定制体验")));
+	StartupText->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+	StartupText->SetJustification(ETextJustify::Center);
+	UVerticalBoxSlot* TextSlot =
+		StartupLoadingLayout->AddChildToVerticalBox(StartupText);
+	TextSlot->SetHorizontalAlignment(HAlign_Center);
+	StartupCurtain->AddChild(StartupLoadingLayout);
 	UCanvasPanelSlot* CurtainSlot = Root->AddChildToCanvas(StartupCurtain);
 	CurtainSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 	CurtainSlot->SetOffsets(FMargin(0.0f));

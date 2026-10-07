@@ -43,7 +43,7 @@ bool FAutomotiveCatalogPrimaryAssetLoadAutomationTest::RunTest(const FString& Pa
 	UAutomotiveConfigurationState* State =
 		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
 	TestTrue(TEXT("从 Primary Asset 初始化 v2 状态"), State->Initialize(CatalogAsset));
-	TestEqual(TEXT("默认状态包含 35 个显式标配项目"), State->GetSelections().Num(), 35);
+	TestEqual(TEXT("默认状态包含 36 个显式默认项目"), State->GetSelections().Num(), 36);
 	TestEqual(
 		TEXT("车漆读取首个显式标配项"),
 		State->GetSelections().FindRef(TEXT("exterior-body-cover")),
@@ -52,6 +52,10 @@ bool FAutomotiveCatalogPrimaryAssetLoadAutomationTest::RunTest(const FString& Pa
 		TEXT("车架默认银色"),
 		State->GetSelections().FindRef(TEXT("engine-bay-cover")),
 		FString(TEXT("engine-cover-silver")));
+	TestEqual(
+		TEXT("铭牌默认显式为不选装"),
+		State->GetSelections().FindRef(TEXT("nameplate")),
+		FString(TEXT("nameplate-none")));
 	TestFalse(TEXT("初始化已派生 configurationId"), State->GetConfigurationId().IsEmpty());
 	TestFalse(TEXT("初始化已派生 renderKey"), State->GetRenderKey().IsEmpty());
 

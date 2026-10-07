@@ -655,7 +655,7 @@ function Configurator({
     })
   }, [catalog, embedded])
 
-  const selectCategory = useCallback((nextCategoryId: string) => {
+  const applyCategoryLocally = useCallback((nextCategoryId: string) => {
     if (!catalog.categories.some((category) => category.categoryId === nextCategoryId)) return
     const firstComponent = componentsForCategory(catalog, nextCategoryId)[0]
     const firstSurface = firstComponent
@@ -666,7 +666,6 @@ function Configurator({
     setComponentId(firstComponent?.componentId ?? 'all')
     setSurfaceId(firstSurface?.surfaceId ?? catalog.selectionOrder[0] ?? '')
     if (embedded) {
-      void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
       focusCatalogNode({
         categoryId: nextCategoryId,
         componentId: firstComponent?.componentId,
@@ -674,6 +673,14 @@ function Configurator({
       })
     }
   }, [catalog, embedded, focusCatalogNode])
+
+  const selectCategory = useCallback((nextCategoryId: string) => {
+    if (!catalog.categories.some((category) => category.categoryId === nextCategoryId)) return
+    applyCategoryLocally(nextCategoryId)
+    if (embedded) {
+      void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
+    }
+  }, [applyCategoryLocally, catalog.categories, embedded])
 
   const selectWorkflowStep = useCallback((stepId: WorkflowStepId) => {
     if (stepId === 'preset' || stepId === 'summary') {
@@ -770,12 +777,12 @@ function Configurator({
         return
       }
       if (catalog.categories.some((category) => category.categoryId === nextCategoryId)) {
-        selectCategory(nextCategoryId)
+        applyCategoryLocally(nextCategoryId)
       }
     }
     window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
     return () => window.removeEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
-  }, [catalog.categories, embedded, selectCategory])
+  }, [applyCategoryLocally, catalog.categories, embedded])
 
   useEffect(() => {
     const firstComponent = components[0]?.componentId
@@ -1513,10 +1520,12 @@ function Configurator({
                       src={versionStaticAssetUrl('/sc01/presets/default-exterior.webp')}
                       alt=""
                     />
-                    <img
-                      src={versionStaticAssetUrl('/sc01/presets/default-interior.webp')}
-                      alt=""
-                    />
+                    {selectedPresetId === 'default' && (
+                      <img
+                        src={versionStaticAssetUrl('/sc01/presets/default-interior.webp')}
+                        alt=""
+                      />
+                    )}
                   </span>
                   <strong>默认配置</strong>
                   <small>¥{(defaultReferenceTotal / 100).toLocaleString('zh-CN')}</small>

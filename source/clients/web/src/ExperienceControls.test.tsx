@@ -134,7 +134,7 @@ describe('ExperienceControls', () => {
 
     const animation = await screen.findByRole('button', { name: '动画' })
     const renderButton = screen.getByRole('button', { name: '渲染' })
-    await waitFor(() => expect(animation).toHaveAttribute('aria-pressed', 'true'))
+    await waitFor(() => expect(animation).not.toHaveAttribute('aria-pressed'))
     await waitFor(() => expect(renderButton.querySelector('.render-progress-value'))
       .toHaveStyle({ strokeDashoffset: 58 }))
     await user.hover(animation)
@@ -142,7 +142,7 @@ describe('ExperienceControls', () => {
 
     expect(await screen.findByRole('alert'))
       .toHaveTextContent('UE 命令被拒绝或执行失败')
-    expect(animation).toHaveAttribute('aria-pressed', 'true')
+    expect(animation).not.toHaveAttribute('aria-pressed')
   })
 
   it('能力探测部分不支持时只过滤对应动画项', async () => {
@@ -286,6 +286,7 @@ describe('ExperienceControls', () => {
     await waitFor(() => expect(bridge.focusanimation).toHaveBeenNthCalledWith(2, 'hood'))
     await user.unhover(animationButton)
     await user.hover(animationButton)
+    expect(animationButton).not.toHaveAttribute('aria-pressed')
     expect(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
       .toHaveAttribute('aria-checked', 'true')
   })
@@ -488,7 +489,7 @@ describe('ExperienceControls', () => {
     const animation = await screen.findByRole('button', { name: '动画' })
     expect(animation).toBeDisabled()
     expect(screen.getByRole('alert')).toHaveTextContent('UE 控制桥不可用')
-    expect(animation).toHaveAttribute('aria-pressed', 'false')
+    expect(animation).not.toHaveAttribute('aria-pressed')
 
     const canplayanimation = vi.fn().mockResolvedValue(true)
     window.ue = {

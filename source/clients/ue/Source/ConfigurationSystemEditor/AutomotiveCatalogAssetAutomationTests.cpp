@@ -26,6 +26,62 @@ namespace AutomotiveCatalogAssetAutomation
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAutomotiveCatalogPrimaryAssetConsistencyTest,
+	"ConfigurationSystem.Editor.AutomotiveCatalog.AssetConsistency",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAutomotiveCatalogPrimaryAssetConsistencyTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	using namespace AutomotiveCatalogAssetAutomation;
+
+	FString SharedCatalogJson;
+	TestTrue(
+		TEXT("读取当前共享车型目录 JSON"),
+		FFileHelper::LoadFileToString(
+			SharedCatalogJson,
+			*SharedCatalogFilename()));
+	UAutomotiveCatalogData* Asset = LoadObject<UAutomotiveCatalogData>(
+		nullptr,
+		TEXT("/Game/SC01/DA_SC01Catalog.DA_SC01Catalog"));
+	TestNotNull(TEXT("加载已提交 DA_SC01Catalog"), Asset);
+	if (Asset == nullptr || SharedCatalogJson.IsEmpty())
+	{
+		return false;
+	}
+	TestEqual(
+		TEXT("资产内嵌 JSON 与当前共享 JSON 逐字一致"),
+		Asset->CatalogJson,
+		SharedCatalogJson);
+
+	AutomotiveCatalog::FCatalogIndex Catalog;
+	AutomotiveCatalog::FError Error;
+	TestTrue(
+		TEXT("已提交资产内嵌目录可通过 Runtime 校验"),
+		Catalog.LoadJson(Asset->CatalogJson, Error));
+	if (!Catalog.IsValid())
+	{
+		AddError(Error.Code + TEXT(": ") + Error.Message);
+		return false;
+	}
+	TestEqual(TEXT("已提交资产包含当前 175 个 option"),
+		Catalog.GetCatalog().Options.Num(), 175);
+	TestEqual(TEXT("已提交资产包含当前 36 个默认选择"),
+		Catalog.GetCatalog().DefaultSelections.Num(), 36);
+	TestEqual(
+		TEXT("铭牌默认显式为不选装"),
+		Catalog.GetCatalog().DefaultSelections.FindRef(TEXT("nameplate")),
+		FString(TEXT("nameplate-none")));
+	const AutomotiveCatalog::FOption* NameplateNone =
+		Catalog.FindOption(TEXT("nameplate-none"));
+	TestTrue(
+		TEXT("nameplate-none 存在且属于铭牌 surface"),
+		NameplateNone != nullptr
+			&& NameplateNone->SurfaceId == TEXT("nameplate"));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAutomotiveGenerateCatalogPrimaryAssetTest,
 	"ConfigurationSystem.Editor.AutomotiveCatalog.GenerateCatalogPrimaryAsset",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)

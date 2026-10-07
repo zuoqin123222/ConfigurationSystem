@@ -91,7 +91,8 @@ public:
 	/** 仅校验并派生候选，不修改状态，供持久化恢复做原子预检。 */
 	bool CanApplyTransaction(
 		const TMap<FString, FString>& InSelections,
-		const TMap<FString, FAutomotiveCustomization>& InCustomizations) const;
+		const TMap<FString, FAutomotiveCustomization>& InCustomizations,
+		AutomotiveCatalog::FError* OutError = nullptr) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Automotive Catalog")
 	bool SelectOption(const FString& SurfaceId, const FString& OptionId);

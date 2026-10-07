@@ -682,11 +682,19 @@ FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction
 		SetFailure(TEXT("BINDER_UNAVAILABLE"), TEXT("材质 Binder 尚未完成有效绑定。"));
 		return LastTransactionResult;
 	}
-	if (!State->CanApplyTransaction(InSelections, InCustomizations))
+	AutomotiveCatalog::FError ValidationError;
+	if (!State->CanApplyTransaction(
+		InSelections,
+		InCustomizations,
+		&ValidationError))
 	{
 		SetFailure(
-			TEXT("INVALID_CONFIGURATION_TRANSACTION"),
-			TEXT("配置事务未通过目录与定制参数校验。"));
+			ValidationError.Code.IsEmpty()
+				? TEXT("INVALID_CONFIGURATION_TRANSACTION")
+				: ValidationError.Code,
+			ValidationError.Message.IsEmpty()
+				? TEXT("配置事务未通过目录与定制参数校验。")
+				: ValidationError.Message);
 		return LastTransactionResult;
 	}
 

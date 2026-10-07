@@ -66,7 +66,6 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const [cameraId, setCameraId] = useState<CatalogCameraId | null>(null)
   const [cameraIndex, setCameraIndex] = useState<UeCameraIndex | null>(null)
   const [pendingCameraSelection, setPendingCameraSelection] = useState<PendingCameraSelection | null>(null)
-  const [animationEnabled, setAnimationEnabled] = useState(false)
   const [animationId, setAnimationId] = useState<string | null>(null)
   const [animationBridgeReady, setAnimationBridgeReady] = useState(false)
   const [lightPreset, setLightPreset] = useState<'studio' | 'outdoor'>('studio')
@@ -120,7 +119,6 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         ? null
         : current
     ))
-    setAnimationEnabled(state.animationEnabled)
     setAnimationId(state.animationId ?? null)
     setLightPreset(state.lightPreset)
     setRenderMode(state.renderMode)
@@ -375,7 +373,6 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       ))
     if (accepted) {
       setAnimationId(nextId)
-      setAnimationEnabled(nextId !== null)
       setOpenMenu(null)
       const updatedState = await getUePresentationState(bridge)
       if (animationActionRequestIdRef.current === requestId && updatedState) {
@@ -480,7 +477,6 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
         >
           <button
             aria-expanded={openMenu === 'animation'}
-            aria-pressed={animationEnabled}
             disabled={!animationBridgeReady}
             title={!animationBridgeReady ? 'UE 动画控制尚未就绪' : undefined}
             onClick={playPrimaryAnimation}

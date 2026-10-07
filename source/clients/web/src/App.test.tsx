@@ -131,11 +131,33 @@ describe('App v2', () => {
     )).toBe('/sc01/thumbnails/leather-p10-1242.webp')
   })
 
-  it('默认预设双图使用桌面高预览，并在窄屏按比例收敛', () => {
+  it('默认预设仅选中时使用双图高预览，未选中时收敛为单图', () => {
     const styles = readFileSync('src/styles.css', 'utf8')
-    expect(styles).toMatch(/\.preset-card-visual\s*\{[^}]*grid-template-rows:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)[^}]*height:\s*344px/s)
+    expect(styles).toMatch(/\.preset-card-visual\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)[^}]*height:\s*170px/s)
+    expect(styles).toMatch(/\.preset-card\.selected \.preset-card-visual\s*\{[^}]*grid-template-rows:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)[^}]*height:\s*344px/s)
     expect(styles).toMatch(/\.preset-card-visual img\s*\{[^}]*height:\s*100%[^}]*object-fit:\s*cover/s)
-    expect(styles).toMatch(/@media \(max-width:\s*520px\)\s*\{[\s\S]*?\.preset-card-visual\s*\{[^}]*height:\s*clamp\(284px,\s*84vw,\s*344px\)/)
+    expect(styles).toMatch(/@media \(max-width:\s*520px\)\s*\{[\s\S]*?\.preset-card\.selected \.preset-card-visual\s*\{[^}]*height:\s*clamp\(284px,\s*84vw,\s*344px\)/)
+  })
+
+  it('默认预设选中显示内外双图，修改配置后仅保留外观单图', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+    const defaultPreset = screen.getByRole('button', { name: '默认配置' })
+    expect(defaultPreset.querySelectorAll('.preset-card-visual img')).toHaveLength(2)
+
+    await user.click(screen.getByRole('button', { name: '下一步' }))
+    await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
+    await user.click(within(screen.getByRole('navigation', { name: '选配阶段' }))
+      .getByRole('button', { name: '预设' }))
+
+    const unselectedDefaultPreset = screen.getByRole('button', { name: '默认配置' })
+    expect(unselectedDefaultPreset).toHaveAttribute('aria-pressed', 'false')
+    expect(unselectedDefaultPreset.querySelectorAll('.preset-card-visual img')).toHaveLength(1)
+    expect(unselectedDefaultPreset.querySelector('img'))
+      .toHaveAttribute('src', '/sc01/presets/default-exterior.webp')
   })
 
   it('默认独立页使用现代顶栏、紧凑侧栏和烘焙车辆视角', async () => {
@@ -479,7 +501,8 @@ describe('App v2', () => {
   it('embedded 右栏响应顶部阶段事件并触发目录阶段镜头', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const setcameraid = vi.fn().mockResolvedValue(true)
-    window.ue = { uebridge: { setcameraid } }
+    const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { setcameraid, setconfiguratorcategory } }
     mockApi()
     render(<App />)
     const panel = await screen.findByRole('complementary', { name: '车辆选配' })
@@ -489,6 +512,7 @@ describe('App v2', () => {
     expect(await within(screen.getByRole('region', { name: '部件筛选' }))
       .findByRole('button', { name: '方向盘' })).toBeInTheDocument()
     await waitFor(() => expect(setcameraid).toHaveBeenCalledWith('driver'))
+    expect(setconfiguratorcategory).not.toHaveBeenCalled()
     const scrollRegion = panel.querySelector('.panel-scroll')
     const summary = panel.querySelector('.summary')
     expect(scrollRegion).not.toBeNull()

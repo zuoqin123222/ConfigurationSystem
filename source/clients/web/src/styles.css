@@ -1275,15 +1275,20 @@ html.controls-document #root::-webkit-scrollbar {
 .preset-card-visual {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
   gap: 4px;
-  height: 344px;
-  min-height: 344px;
+  height: 170px;
+  min-height: 170px;
   margin: -2px -2px 8px;
   align-items: stretch;
   border-radius: 8px;
   overflow: hidden;
   background: #e8e7e2;
+}
+.preset-card.selected .preset-card-visual {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  height: 344px;
+  min-height: 344px;
 }
 .preset-card-visual img {
   display: block;
@@ -1462,6 +1467,10 @@ html.controls-document #root::-webkit-scrollbar {
   .choice-grid { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
   .option-card { grid-column: 1 / -1; }
   .preset-card-visual {
+    height: clamp(140px, 42vw, 170px);
+    min-height: 0;
+  }
+  .preset-card.selected .preset-card-visual {
     height: clamp(284px, 84vw, 344px);
     min-height: 0;
   }

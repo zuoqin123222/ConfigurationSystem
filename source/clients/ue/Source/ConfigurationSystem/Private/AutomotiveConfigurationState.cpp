@@ -113,20 +113,32 @@ bool UAutomotiveConfigurationState::ApplyTransaction(
 
 bool UAutomotiveConfigurationState::CanApplyTransaction(
 	const TMap<FString, FString>& InSelections,
-	const TMap<FString, FAutomotiveCustomization>& InCustomizations) const
+	const TMap<FString, FAutomotiveCustomization>& InCustomizations,
+	AutomotiveCatalog::FError* OutError) const
 {
+	AutomotiveCatalog::FError Error;
 	if (!bInitialized)
 	{
+		Error.Code = TEXT("STATE_NOT_INITIALIZED");
+		Error.Message = TEXT("车型配置状态尚未初始化。");
+		if (OutError != nullptr)
+		{
+			*OutError = Error;
+		}
 		return false;
 	}
 	AutomotiveCatalog::FConfiguration Ignored;
-	AutomotiveCatalog::FError Error;
-	return AutomotiveCatalog::DeriveConfiguration(
+	const bool bValid = AutomotiveCatalog::DeriveConfiguration(
 		InSelections,
 		ToDomainCustomizations(InCustomizations),
 		CatalogIndex,
 		Ignored,
 		Error);
+	if (OutError != nullptr)
+	{
+		*OutError = Error;
+	}
+	return bValid;
 }
 
 bool UAutomotiveConfigurationState::SelectOption(
