@@ -6,7 +6,9 @@
 #include "Components/MeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Dom/JsonObject.h"
+#include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "Misc/AutomationTest.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -15,9 +17,232 @@
 #include "AutomotiveCatalogData.h"
 #include "AutomotiveConfigurationState.h"
 
+namespace AutomotiveMaterialBinderAutomation
+{
+	struct FCoverageSpec
+	{
+		TArray<FString> BakeOptionIds;
+		TMap<FString, FString> VariantOptionByFamily;
+		int32 ExcludedColorPickerOptionCount = 0;
+	};
+
+	bool IsDisabled(const TSharedPtr<FJsonObject>& Option)
+	{
+		const TSharedPtr<FJsonObject>* Availability = nullptr;
+		FString Status;
+		return Option->TryGetObjectField(TEXT("availability"), Availability)
+			&& Availability != nullptr
+			&& (*Availability)->TryGetStringField(TEXT("status"), Status)
+			&& Status == TEXT("disabled");
+	}
+
+	FString GetUiControl(const TSharedPtr<FJsonObject>& Option)
+	{
+		const TSharedPtr<FJsonObject>* Ui = nullptr;
+		FString Control;
+		if (Option->TryGetObjectField(TEXT("ui"), Ui) && Ui != nullptr)
+		{
+			(*Ui)->TryGetStringField(TEXT("control"), Control);
+		}
+		return Control;
+	}
+
+	bool IsPricedVariantOption(const TSharedPtr<FJsonObject>& Option)
+	{
+		const TSharedPtr<FJsonObject>* Parameters = nullptr;
+		const TSharedPtr<FJsonObject>* Color = nullptr;
+		FString Mode;
+		if (!Option->TryGetObjectField(TEXT("parameters"), Parameters)
+			|| Parameters == nullptr
+			|| !(*Parameters)->TryGetObjectField(TEXT("color"), Color)
+			|| Color == nullptr
+			|| !(*Color)->TryGetStringField(TEXT("mode"), Mode)
+			|| Mode != TEXT("variant"))
+		{
+			return false;
+		}
+		const TSharedPtr<FJsonObject>* Pricing = nullptr;
+		bool bIsStandard = true;
+		if (!Option->TryGetObjectField(TEXT("pricing"), Pricing)
+			|| Pricing == nullptr
+			|| !(*Pricing)->TryGetBoolField(TEXT("isStandard"), bIsStandard)
+			|| bIsStandard)
+		{
+			return false;
+		}
+		const TSharedPtr<FJsonValue>* UnitPrice =
+			(*Pricing)->Values.Find(TEXT("unitPriceMinor"));
+		return UnitPrice != nullptr
+			&& UnitPrice->IsValid()
+			&& (*UnitPrice)->Type == EJson::Number;
+	}
+
+	bool ParseCoverageSpec(
+		const FString& CatalogJson,
+		FCoverageSpec& OutSpec)
+	{
+		OutSpec = FCoverageSpec();
+		TSharedPtr<FJsonObject> Root;
+		if (!FJsonSerializer::Deserialize(
+				TJsonReaderFactory<>::Create(CatalogJson),
+				Root)
+			|| !Root.IsValid())
+		{
+			return false;
+		}
+		const TArray<TSharedPtr<FJsonValue>>* Options = nullptr;
+		if (!Root->TryGetArrayField(TEXT("options"), Options)
+			|| Options == nullptr)
+		{
+			return false;
+		}
+		for (const TSharedPtr<FJsonValue>& Value : *Options)
+		{
+			const TSharedPtr<FJsonObject> Option = Value->AsObject();
+			bool bRenderRelevant = false;
+			if (!Option.IsValid()
+				|| !Option->TryGetBoolField(
+					TEXT("renderRelevant"),
+					bRenderRelevant)
+				|| !bRenderRelevant
+				|| IsDisabled(Option))
+			{
+				continue;
+			}
+			const FString Control = GetUiControl(Option);
+			if (Control == TEXT("color-picker"))
+			{
+				++OutSpec.ExcludedColorPickerOptionCount;
+				continue;
+			}
+			FString OptionId;
+			FString FamilyId;
+			if (!Option->TryGetStringField(TEXT("optionId"), OptionId))
+			{
+				return false;
+			}
+			OutSpec.BakeOptionIds.Add(OptionId);
+			if (IsPricedVariantOption(Option)
+				&& Option->TryGetStringField(
+					TEXT("materialFamilyId"),
+					FamilyId)
+				&& !OutSpec.VariantOptionByFamily.Contains(FamilyId))
+			{
+				// 与 generateV2Coverage 的 Array.find 语义一致：每个材料族使用
+				// Catalog 中第一个满足 coverage 规则的付费 variant option。
+				OutSpec.VariantOptionByFamily.Add(FamilyId, OptionId);
+			}
+		}
+		return true;
+	}
+
+	TOptional<FLinearColor> ResolveCatalogColor(const FString& Value)
+	{
+		if (Value.Equals(TEXT("red"), ESearchCase::IgnoreCase))
+		{
+			return FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#A61D24")));
+		}
+		if (Value.Equals(TEXT("silver"), ESearchCase::IgnoreCase))
+		{
+			return FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#BFC3C7")));
+		}
+		const FString Hex = Value.StartsWith(TEXT("#")) ? Value.Mid(1) : Value;
+		bool bValid = Hex.Len() == 6 || Hex.Len() == 8;
+		for (const TCHAR Character : Hex)
+		{
+			bValid = bValid && FChar::IsHexDigit(Character);
+		}
+		return bValid
+			? TOptional<FLinearColor>(
+				FLinearColor::FromSRGBColor(FColor::FromHex(Value)))
+			: TOptional<FLinearColor>();
+	}
+
+	TOptional<FLinearColor> ResolveExpectedOptionColor(
+		const AutomotiveCatalog::FOption& Option)
+	{
+		if (Option.ColorCode.IsSet())
+		{
+			const TOptional<FLinearColor> Color =
+				ResolveCatalogColor(Option.ColorCode.GetValue());
+			if (Color.IsSet())
+			{
+				return Color;
+			}
+		}
+		return Option.DisplayColorHex.IsSet()
+			? ResolveCatalogColor(Option.DisplayColorHex.GetValue())
+			: TOptional<FLinearColor>();
+	}
+
+	FAutomotiveCustomization MakeNeutralPaintCustomization()
+	{
+		FAutomotiveCustomization Result;
+		Result.Kind = EAutomotiveCustomizationKind::Paint;
+		Result.Paint.ColorHex = TEXT("#808080");
+		Result.Paint.Metallic = 0.35;
+		Result.Paint.Roughness = 0.22;
+		Result.Paint.ClearCoat = 0.85;
+		Result.Paint.OrangePeel = 0.12;
+		Result.Paint.FlakeIntensity = 0.25;
+		return Result;
+	}
+
+	bool PrimeDifferentOption(
+		UAutomotiveMaterialBinder* Binder,
+		UAutomotiveConfigurationState* State,
+		const AutomotiveCatalog::FOption& Target)
+	{
+		if (State->GetSelections().FindRef(Target.SurfaceId) != Target.OptionId)
+		{
+			return true;
+		}
+		const TArray<FString>* SurfaceOptions =
+			State->GetCatalogIndex().FindOptionIdsForSurface(Target.SurfaceId);
+		if (SurfaceOptions == nullptr)
+		{
+			return false;
+		}
+		for (const FString& CandidateId : *SurfaceOptions)
+		{
+			if (CandidateId == Target.OptionId)
+			{
+				continue;
+			}
+			const AutomotiveCatalog::FOption* Candidate =
+				State->GetCatalogIndex().FindOption(CandidateId);
+			if (Candidate == nullptr)
+			{
+				continue;
+			}
+			TMap<FString, FString> Selections = State->GetSelections();
+			TMap<FString, FAutomotiveCustomization> Customizations =
+				State->GetCustomizations();
+			Selections.Add(Target.SurfaceId, CandidateId);
+			Customizations.Remove(Target.SurfaceId);
+			if (Candidate->SupportsCustomColor())
+			{
+				Customizations.Add(
+					Target.SurfaceId,
+					MakeNeutralPaintCustomization());
+			}
+			if (Binder->ApplyTransaction(Selections, Customizations).bSuccess)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FAutomotiveMaterialBinderAutomationTest,
 	"ConfigurationSystem.Runtime.AutomotiveMaterials.Binder",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest,
+	"ConfigurationSystem.Runtime.AutomotiveMaterials.ExhaustiveCoverage",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
@@ -511,6 +736,294 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 						&& !AfterDynamic->K2_GetVectorParameterValue(
 							TEXT("BaseColor")).Equals(BeforeColor))));
 	}
+	return true;
+}
+
+bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
+	const FString& Parameters)
+{
+	(void)Parameters;
+	UAutomotiveCatalogData* Catalog = LoadObject<UAutomotiveCatalogData>(
+		nullptr,
+		TEXT("/Game/SC01/DA_SC01Catalog.DA_SC01Catalog"));
+	UAutomotiveMaterialLibrary* Library = LoadObject<UAutomotiveMaterialLibrary>(
+		nullptr,
+		TEXT("/Game/SC01/Materials/DA_SC01MaterialLibrary.DA_SC01MaterialLibrary"));
+	TestNotNull(TEXT("穷举测试加载当前 Catalog"), Catalog);
+	TestNotNull(TEXT("穷举测试加载当前材质库"), Library);
+	if (Catalog == nullptr || Library == nullptr)
+	{
+		return false;
+	}
+
+	AutomotiveMaterialBinderAutomation::FCoverageSpec Coverage;
+	TestTrue(
+		TEXT("按 generateV2Coverage 同源规则解析 Runtime 覆盖集"),
+		AutomotiveMaterialBinderAutomation::ParseCoverageSpec(
+			Catalog->CatalogJson,
+			Coverage));
+	TestEqual(TEXT("可烘焙 option 数"), Coverage.BakeOptionIds.Num(), 165);
+	TestEqual(
+		TEXT("coverage 排除 color-picker 数"),
+		Coverage.ExcludedColorPickerOptionCount,
+		5);
+	if (Coverage.BakeOptionIds.Num() != 165)
+	{
+		return false;
+	}
+
+	UAutomotiveConfigurationState* State =
+		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
+	AConfiguratorVehicleActor* Vehicle =
+		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+	UAutomotiveMaterialBinder* Binder =
+		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
+	TestTrue(TEXT("穷举测试初始化 Runtime 状态"), State->Initialize(Catalog));
+	TestTrue(TEXT("穷举测试绑定真实 AutomotiveMaterialBinder"), Binder->Bind(State, Library, Vehicle));
+	if (!State->IsInitialized() || Binder->GetBoundSlotCount(TEXT("exterior-body-cover")) == 0)
+	{
+		AddError(Binder->GetLastError());
+		return false;
+	}
+
+	TSet<const UMeshComponent*> UniqueComponents;
+	for (const FString& SurfaceId :
+		State->GetCatalogIndex().GetCatalog().SelectionOrder)
+	{
+		UMeshComponent* Component = nullptr;
+		FName SlotId;
+		int32 MaterialIndex = INDEX_NONE;
+		TestTrue(
+			*FString::Printf(TEXT("%s 仅绑定一个 Runtime 槽"), *SurfaceId),
+			Binder->GetSingleBoundSlot(
+				SurfaceId,
+				Component,
+				SlotId,
+				MaterialIndex));
+		TestEqual(
+			*FString::Printf(TEXT("%s 槽计数唯一"), *SurfaceId),
+			Binder->GetBoundSlotCount(SurfaceId),
+			1);
+		TestTrue(
+			*FString::Printf(TEXT("%s 目标组件可见"), *SurfaceId),
+			IsValid(Component)
+				&& Component->IsVisible()
+				&& !Component->bHiddenInGame);
+		TestFalse(
+			*FString::Printf(TEXT("%s 不复用其他 surface 的组件"), *SurfaceId),
+			UniqueComponents.Contains(Component));
+		UniqueComponents.Add(Component);
+	}
+	TestEqual(TEXT("40 个 surface 使用 40 个唯一可见组件"), UniqueComponents.Num(), 40);
+
+	int32 AppliedOptionCount = 0;
+	int32 FixedColorOptionCount = 0;
+	int32 NeutralProxyOptionCount = 0;
+	for (const FString& OptionId : Coverage.BakeOptionIds)
+	{
+		const AutomotiveCatalog::FOption* Option =
+			State->GetCatalogIndex().FindOption(OptionId);
+		TestNotNull(*FString::Printf(TEXT("%s 存在于 Runtime Catalog"), *OptionId), Option);
+		if (Option == nullptr)
+		{
+			continue;
+		}
+		TestTrue(
+			*FString::Printf(TEXT("%s 可建立不同前态"), *OptionId),
+			AutomotiveMaterialBinderAutomation::PrimeDifferentOption(
+				Binder,
+				State,
+				*Option));
+
+		TMap<FString, FString> Selections = State->GetSelections();
+		TMap<FString, FAutomotiveCustomization> Customizations =
+			State->GetCustomizations();
+		Selections.Add(Option->SurfaceId, OptionId);
+		Customizations.Remove(Option->SurfaceId);
+		const FAutomotiveMaterialTransactionResult Result =
+			Binder->ApplyTransaction(Selections, Customizations);
+		TestTrue(*FString::Printf(TEXT("%s 事务成功"), *OptionId), Result.bSuccess);
+		TestEqual(
+			*FString::Printf(TEXT("%s 返回 APPLIED"), *OptionId),
+			Result.Code,
+			FString(TEXT("APPLIED")));
+		TestTrue(
+			*FString::Printf(TEXT("%s unsupported 为空"), *OptionId),
+			Result.UnsupportedSurfaceIds.IsEmpty());
+		TestTrue(
+			*FString::Printf(TEXT("%s 回执只包含目标 surface"), *OptionId),
+			Result.AppliedSurfaceIds
+				== TArray<FString>({Option->SurfaceId}));
+
+		UMeshComponent* Component = nullptr;
+		FName SlotId;
+		int32 MaterialIndex = INDEX_NONE;
+		const bool bHasUniqueSlot = Binder->GetSingleBoundSlot(
+			Option->SurfaceId,
+			Component,
+			SlotId,
+			MaterialIndex);
+		TestTrue(
+			*FString::Printf(TEXT("%s 应用后槽仍唯一"), *OptionId),
+			bHasUniqueSlot);
+		TestTrue(
+			*FString::Printf(TEXT("%s 应用后目标仍可见"), *OptionId),
+			IsValid(Component)
+				&& Component->IsVisible()
+				&& !Component->bHiddenInGame);
+		UMaterialInterface* Applied =
+			Binder->GetAppliedMaterialForSurface(Option->SurfaceId);
+		TestTrue(
+			*FString::Printf(TEXT("%s 实际落到查询到的组件槽"), *OptionId),
+			bHasUniqueSlot
+				&& IsValid(Applied)
+				&& Component->GetMaterial(MaterialIndex) == Applied);
+		UMaterialInstanceDynamic* Dynamic =
+			Cast<UMaterialInstanceDynamic>(Applied);
+		const FString FamilyId = Option->MaterialFamilyId.Get(TEXT("paint"));
+		UMaterialInterface* ExpectedParent =
+			Library->LoadInteriorMaterial(FamilyId);
+		TestTrue(
+			*FString::Printf(TEXT("%s 使用正确材料族 MID"), *OptionId),
+			IsValid(Dynamic)
+				&& IsValid(ExpectedParent)
+				&& Dynamic->IsChildOf(ExpectedParent));
+
+		const TOptional<FLinearColor> ExpectedColor =
+			AutomotiveMaterialBinderAutomation::ResolveExpectedOptionColor(*Option);
+		const FLinearColor ActualColor = IsValid(Dynamic)
+			? Dynamic->K2_GetVectorParameterValue(TEXT("BaseColor"))
+			: FLinearColor::Transparent;
+		if (ExpectedColor.IsSet())
+		{
+			++FixedColorOptionCount;
+			TestTrue(
+				*FString::Printf(
+					TEXT("%s 固定色遵循 ColorCode/DisplayColorHex"),
+					*OptionId),
+				IsValid(Dynamic)
+					&& ActualColor.Equals(ExpectedColor.GetValue(), 0.001f));
+		}
+		else
+		{
+			++NeutralProxyOptionCount;
+			TestTrue(
+				*FString::Printf(TEXT("%s 无色代理为灰阶"), *OptionId),
+				IsValid(Dynamic)
+					&& FMath::IsNearlyEqual(ActualColor.R, ActualColor.G)
+					&& FMath::IsNearlyEqual(ActualColor.G, ActualColor.B));
+		}
+		if (Result.bSuccess
+			&& Result.Code == TEXT("APPLIED")
+			&& Result.UnsupportedSurfaceIds.IsEmpty())
+		{
+			++AppliedOptionCount;
+		}
+	}
+
+	int32 AppliedVariantCount = 0;
+	const AutomotiveCatalog::FCatalog& RuntimeCatalog =
+		State->GetCatalogIndex().GetCatalog();
+	TestEqual(TEXT("Runtime Catalog material variant 数"), RuntimeCatalog.MaterialVariants.Num(), 352);
+	TestEqual(TEXT("材质库物化 variant 数"), Library->Variants.Num(), 352);
+	for (const AutomotiveCatalog::FMaterialVariant& Variant :
+		RuntimeCatalog.MaterialVariants)
+	{
+		const FString* OptionId =
+			Coverage.VariantOptionByFamily.Find(Variant.MaterialFamilyId);
+		TestNotNull(
+			*FString::Printf(
+				TEXT("%s 材料族存在 coverage option"),
+				*Variant.VariantId),
+			OptionId);
+		if (OptionId == nullptr)
+		{
+			continue;
+		}
+		const AutomotiveCatalog::FOption* Option =
+			State->GetCatalogIndex().FindOption(*OptionId);
+		if (Option == nullptr)
+		{
+			AddError(Variant.VariantId + TEXT(" 的 coverage option 不存在"));
+			continue;
+		}
+		TMap<FString, FString> Selections = State->GetSelections();
+		TMap<FString, FAutomotiveCustomization> Customizations =
+			State->GetCustomizations();
+		Selections.Add(Option->SurfaceId, *OptionId);
+		FAutomotiveCustomization Customization;
+		Customization.Kind = EAutomotiveCustomizationKind::MaterialVariant;
+		Customization.MaterialVariantId = Variant.VariantId;
+		Customizations.Add(Option->SurfaceId, Customization);
+		const FAutomotiveMaterialTransactionResult Result =
+			Binder->ApplyTransaction(Selections, Customizations);
+		TestTrue(
+			*FString::Printf(TEXT("%s variant 事务成功"), *Variant.VariantId),
+			Result.bSuccess);
+		TestEqual(
+			*FString::Printf(TEXT("%s variant 返回 APPLIED"), *Variant.VariantId),
+			Result.Code,
+			FString(TEXT("APPLIED")));
+		TestTrue(
+			*FString::Printf(TEXT("%s variant unsupported 为空"), *Variant.VariantId),
+			Result.UnsupportedSurfaceIds.IsEmpty());
+		TestTrue(
+			*FString::Printf(TEXT("%s variant 回执只包含目标 surface"), *Variant.VariantId),
+			Result.AppliedSurfaceIds
+				== TArray<FString>({Option->SurfaceId}));
+
+		UMeshComponent* Component = nullptr;
+		FName SlotId;
+		int32 MaterialIndex = INDEX_NONE;
+		const bool bHasUniqueSlot = Binder->GetSingleBoundSlot(
+			Option->SurfaceId,
+			Component,
+			SlotId,
+			MaterialIndex);
+		UMaterialInterface* Expected =
+			Library->LoadVariantMaterial(Variant.VariantId);
+		UMaterialInterface* Applied =
+			Binder->GetAppliedMaterialForSurface(Option->SurfaceId);
+		UMaterialInstance* ExpectedInstance = Cast<UMaterialInstance>(Expected);
+		TestTrue(
+			*FString::Printf(TEXT("%s variant 目标可见且槽唯一"), *Variant.VariantId),
+			bHasUniqueSlot
+				&& Binder->GetBoundSlotCount(Option->SurfaceId) == 1
+				&& IsValid(Component)
+				&& Component->IsVisible()
+				&& !Component->bHiddenInGame);
+		TestTrue(
+			*FString::Printf(TEXT("%s 精确应用已物化 MI"), *Variant.VariantId),
+			IsValid(Expected)
+				&& Applied == Expected
+				&& Component->GetMaterial(MaterialIndex) == Expected
+				&& IsValid(ExpectedInstance)
+				&& ExpectedInstance->IsChildOf(
+					Library->LoadInteriorMaterial(Variant.MaterialFamilyId)));
+		TestTrue(
+			*FString::Printf(TEXT("%s 保留 Catalog 固定色"), *Variant.VariantId),
+			Variant.ColorCode.IsSet() || Variant.DisplayColorHex.IsSet());
+		if (Result.bSuccess
+			&& Result.Code == TEXT("APPLIED")
+			&& Result.UnsupportedSurfaceIds.IsEmpty()
+			&& Applied == Expected)
+		{
+			++AppliedVariantCount;
+		}
+	}
+
+	TestEqual(TEXT("165 个可烘焙 option 全部通过 Binder"), AppliedOptionCount, 165);
+	TestEqual(TEXT("可解析固定色 option 统计"), FixedColorOptionCount, 24);
+	TestEqual(TEXT("无可解析色值的灰阶代理 option 统计"), NeutralProxyOptionCount, 141);
+	TestEqual(TEXT("352 个 material variant 全部通过 Binder"), AppliedVariantCount, 352);
+	AddInfo(FString::Printf(
+		TEXT("Runtime 穷举统计：option=%d（固定色=%d，灰阶代理=%d），"
+			"materialVariant=%d，surface=%d，unsupported=0"),
+		AppliedOptionCount,
+		FixedColorOptionCount,
+		NeutralProxyOptionCount,
+		AppliedVariantCount,
+		UniqueComponents.Num()));
 	return true;
 }
 
