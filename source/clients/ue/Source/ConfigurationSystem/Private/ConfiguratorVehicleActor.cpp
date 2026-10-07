@@ -658,6 +658,9 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 	}
 
 	SkeletalVehicle->SetSkeletalMeshAsset(WholeVehicleMesh);
+	// Transient 组件引用不能只依赖构造阶段的默认子对象复制；Shipping
+	// 实例在设置真实 SkeletalMesh 后重新绑定，确保序列播放器持有当前 Actor 的组件。
+	AnimationPlayer->BindMesh(SkeletalVehicle);
 	ConfiguratorVehicle::PopulateMissingSkeletalMaterials(
 		SkeletalVehicle,
 		WholeVehicleMesh);
