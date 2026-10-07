@@ -62,7 +62,7 @@ test("All dry-run 编排 Web、Server、UE 与 Bake 全链路", () => {
   assert.match(result.stdout, /-gather/);
   assert.match(result.stdout, /RunUAT\.bat" BuildCookRun/);
   assert.match(result.stdout, /-prereqs/);
-  assert.match(result.stdout, /-applocaldir=.*AppLocalDependencies/);
+  assert.match(result.stdout, /-applocaldirectory=.*AppLocalDependencies/);
   assert.match(result.stdout, /verify UE archive contains App-local VC\+\+ runtime DLLs/);
   assert.match(result.stdout, /generate-published-configurations\.mjs/);
   assert.match(result.stdout, /npm\.cmd run validate:bake/);

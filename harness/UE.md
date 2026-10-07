@@ -108,7 +108,8 @@ JSON 通过不代表 FBX 内容、Pivot、穿模、材质和授权真实性通�
    `-DryRun`。
 3. 脚本检查 Git、Harness、契约和受影响测试，并只构建一次共享 Web artifact。
 4. UE 目标使用 UBT `-gather` 和 UAT `BuildCookRun`。
-   Windows 归档必须同时使用 `-prereqs` 与 `-applocaldir`，把 VC++ x64 CRT
+   Windows 归档必须同时使用 `-prereqs` 与 AutomationTool 实际解析的
+   `-applocaldirectory`，把 VC++ x64 CRT
    并置到程序目录，并在 `Windows/Prerequisites/` 附带 `vc_redist.x64.exe`。
 5. Bake 目标生成计划、等待 UE Batch Bake 结束并调用 Server manifest 校验。
 6. 检查 UAT 退出码、Cook 警告、归档文件、Editor 模块泄漏及

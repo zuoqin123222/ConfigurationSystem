@@ -37,7 +37,8 @@ online 与 embedded 入口。
 
 - 通过官方 UE5.8 执行 UBT `-gather`。
 - Build/Cook/Stage/Pak/IoStore/Archive 成功。
-- `BuildCookRun` 固定使用 `-prereqs` 和 UE5.8 的 `AppLocalDependencies`：
+- `BuildCookRun` 固定使用 `-prereqs` 和 AutomationTool 实际解析的
+  `-applocaldirectory=<UE5.8 AppLocalDependencies>`：
   VC++ x64 CRT DLL 与程序并置，未安装全局运行库的 Windows 机器可直接启动。
 - 归档同时包含 `Windows/Prerequisites/vc_redist.x64.exe` 和
   `Windows/Runtime-Prerequisites.txt`，用于系统运行库损坏或 App-local 加载异常时手动修复。

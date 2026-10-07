@@ -722,7 +722,7 @@ function Build-UE {
             "-pak",
             "-iostore",
             "-prereqs",
-            "-applocaldir=$UeAppLocalDependenciesRoot",
+            "-applocaldirectory=$UeAppLocalDependenciesRoot",
             "-archive",
             "-archivedirectory=$stagingArchive",
             "-unattended",
