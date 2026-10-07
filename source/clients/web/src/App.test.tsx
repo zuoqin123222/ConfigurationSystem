@@ -679,7 +679,7 @@ describe('App v2', () => {
     const evaOptions = screen.getByRole('region', { name: '加粗(EVA海绵)配置' })
     expect(evaOptions).toBeInTheDocument()
     expect(within(evaOptions).queryByRole('img', { name: /定制项目参考/ })).not.toBeInTheDocument()
-    expect(within(evaOptions).getByRole('button', { name: /纯黑色/ })
+    expect(within(evaOptions).getByRole('button', { name: /加粗\(EVA海绵\)/ })
       .querySelector('.color-choice-swatch')).toHaveStyle({ background: '#000000' })
     await user.click(screen.getByRole('button', { name: '下一步' }))
     expect(screen.getByRole('region', { name: '回中标配置' })).toBeInTheDocument()

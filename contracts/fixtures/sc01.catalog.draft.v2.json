@@ -9510,7 +9510,7 @@
       "optionId": "steering-addon-eva",
       "surfaceId": "steering-wheel-addon",
       "materialFamilyId": "eva",
-      "displayName": "纯黑色",
+      "displayName": "加粗(EVA海绵)",
       "colorCode": "#000000",
       "finish": null,
       "renderRelevant": true,

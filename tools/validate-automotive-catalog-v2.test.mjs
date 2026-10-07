@@ -117,7 +117,7 @@ test("SC01 文案修订不改变既有轮毂、内饰和性能稳定 ID", async 
   assert.equal(surfaces.get("ip-upper-trim").displayName, "上层软包");
   assert.equal(surfaces.get("roof-surface").displayName, "棚面");
   assert.equal(surfaces.get("steering-wheel-addon").displayName, "加粗(EVA海绵)");
-  assert.equal(options.get("steering-addon-eva").displayName, "纯黑色");
+  assert.equal(options.get("steering-addon-eva").displayName, "加粗(EVA海绵)");
   assert.equal(options.get("lower-skirt-aluminum").displayName, "铝合金");
 
   assert.ok(catalog.selectionOrder.includes("lower-skirt"));

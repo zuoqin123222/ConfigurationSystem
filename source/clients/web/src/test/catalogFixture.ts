@@ -802,7 +802,7 @@ export const catalogFixture: CatalogV2 = {
       if (surfaceId === 'steering-wheel-addon') {
         return {
           ...result,
-          displayName: '纯黑色',
+          displayName: '加粗(EVA海绵)',
           colorCode: '#000000',
           parameters: {
             color: { mode: 'fixed' as const, value: '#000000', required: true },
