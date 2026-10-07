@@ -70,7 +70,9 @@ bool UVehicleAnimSequencePlayerComponent::SetSequenceAndClips(
 	TArray<FVehicleAnimationClip> NormalizedClips = InClips;
 	for (FVehicleAnimationClip& Clip : NormalizedClips)
 	{
-		if (!IsStableAnimationId(Clip.AnimationId.ToString()) || Clip.FrameRate <= 0.0f
+		const FString StableAnimationId =
+			Clip.AnimationId.ToString().ToLower();
+		if (!IsStableAnimationId(StableAnimationId) || Clip.FrameRate <= 0.0f
 			|| !NormalizeFrameRange(Clip.StartFrame, Clip.EndFrame, MaxFrame))
 		{
 			LastSetupError = FString::Printf(
