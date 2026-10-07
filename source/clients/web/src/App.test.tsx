@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -130,6 +131,13 @@ describe('App v2', () => {
     )).toBe('/sc01/thumbnails/leather-p10-1242.webp')
   })
 
+  it('默认预设双图使用桌面高预览，并在窄屏按比例收敛', () => {
+    const styles = readFileSync('src/styles.css', 'utf8')
+    expect(styles).toMatch(/\.preset-card-visual\s*\{[^}]*grid-template-rows:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)[^}]*height:\s*344px/s)
+    expect(styles).toMatch(/\.preset-card-visual img\s*\{[^}]*height:\s*100%[^}]*object-fit:\s*cover/s)
+    expect(styles).toMatch(/@media \(max-width:\s*520px\)\s*\{[\s\S]*?\.preset-card-visual\s*\{[^}]*height:\s*clamp\(284px,\s*84vw,\s*344px\)/)
+  })
+
   it('默认独立页使用现代顶栏、紧凑侧栏和烘焙车辆视角', async () => {
     mockApi()
     render(<App />)
@@ -148,7 +156,10 @@ describe('App v2', () => {
     expect(screen.getByRole('region', { name: '预设配置' })).toBeInTheDocument()
     const defaultPreset = screen.getByRole('button', { name: '默认配置' })
     expect(defaultPreset).toHaveAttribute('aria-pressed', 'true')
-    expect(Array.from(defaultPreset.querySelectorAll('img')).map((image) => image.getAttribute('src')))
+    const presetVisual = defaultPreset.querySelector('.preset-card-visual')
+    expect(presetVisual).toBeInstanceOf(HTMLSpanElement)
+    expect(presetVisual?.children).toHaveLength(2)
+    expect(Array.from(presetVisual?.querySelectorAll('img') ?? []).map((image) => image.getAttribute('src')))
       .toEqual([
         '/sc01/presets/default-exterior.webp',
         '/sc01/presets/default-interior.webp',

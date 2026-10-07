@@ -1275,8 +1275,10 @@ html.controls-document #root::-webkit-scrollbar {
 .preset-card-visual {
   display: grid;
   grid-template-columns: 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 4px;
-  min-height: 220px;
+  height: 344px;
+  min-height: 344px;
   margin: -2px -2px 8px;
   align-items: stretch;
   border-radius: 8px;
@@ -1286,8 +1288,10 @@ html.controls-document #root::-webkit-scrollbar {
 .preset-card-visual img {
   display: block;
   width: 100%;
-  height: 108px;
+  height: 100%;
+  min-height: 0;
   object-fit: cover;
+  object-position: center;
 }
 .preset-plus {
   display: grid;
@@ -1457,6 +1461,10 @@ html.controls-document #root::-webkit-scrollbar {
   .app-shell.embedded .step { max-width: 92px; text-align: center; }
   .choice-grid { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
   .option-card { grid-column: 1 / -1; }
+  .preset-card-visual {
+    height: clamp(284px, 84vw, 344px);
+    min-height: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
