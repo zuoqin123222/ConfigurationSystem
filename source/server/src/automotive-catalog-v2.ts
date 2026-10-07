@@ -289,7 +289,7 @@ function validateCatalogUi(catalog: AutomotiveCatalog): void {
     || catalog.selectionOrder.some((surfaceId) => !covered.has(surfaceId))
     || (binding.capability === "complete" && binding.unsupportedSurfaceIds.length > 0)
     || (binding.capability === "proxy" && binding.unsupportedSurfaceIds.length === 0)) {
-    throw new Error("车型目录 v2 vehicleSurfaceBinding 必须完整覆盖 38 surface");
+    throw new Error("车型目录 v2 vehicleSurfaceBinding 必须完整覆盖 40 surface");
   }
   if (!Array.isArray(catalog.animations) || catalog.animations.length === 0) {
     throw new Error("车型目录 v2 animations 必须是非空数组");

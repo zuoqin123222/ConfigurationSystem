@@ -245,7 +245,7 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	}
 	ConfiguratorVehicle::MarkPartition(
 		InteriorCabin, InteriorPartTag, InteriorSlotTag, bAuthorizedInterior);
-	// 车型目录 v2 最小闭环只驱动这一个明确代理槽，避免把 38 个 surface
+	// 车型目录 v2 最小闭环只驱动这一个明确代理槽，避免把 40 个 surface
 	// 错误地广播到整车所有内饰 Mesh。
 	InteriorCabin->ComponentTags.Add(UAutomotiveMaterialBinder::InteriorProxySlotTag);
 

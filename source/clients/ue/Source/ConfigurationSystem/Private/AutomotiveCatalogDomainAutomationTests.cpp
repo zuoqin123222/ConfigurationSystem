@@ -151,7 +151,7 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 		Catalog.FindMaterialSlotIdsForSurface(TEXT("seat-backrest")));
 	TestTrue(TEXT("代理 capability 显式声明未支持 surface"),
 		Catalog.IsSurfaceBindingExplicitlyUnsupported(TEXT("seat-backrest")));
-	TestTrue(TEXT("38 个 surface 均命中 binding 或显式 capability 缺口"),
+	TestTrue(TEXT("40 个 surface 均命中 binding 或显式 capability 缺口"),
 		Algo::AllOf(
 			Catalog.GetCatalog().SelectionOrder,
 			[&Catalog](const FString& SurfaceId)

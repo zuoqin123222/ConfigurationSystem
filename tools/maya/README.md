@@ -58,7 +58,7 @@ canary 在指定目录内自行创建 Cube、相机和灯光，先导出测试 F
 
 canary 仅证明 Maya/FBX 插件和程序化规范化链路可运行，不替代真实车辆的层级、Pivot、材质、穿模和 Unreal 导入验收。
 
-## SC01 38 surface 材质槽重建
+## SC01 40 surface 材质槽重建
 
 `build_sc01_surface_slots_maya2025.py` 读取独立
 `vehicle-surface-binding` 1.0 契约，严格按固定 `selectionOrder` 处理 38 条
@@ -75,5 +75,5 @@ shadingEngine。规则重叠、节点/材质不存在、面越界、输入哈希
 ```
 
 输出固定为二进制 FBX 2020，并打印每个 surface 的面数、输出大小和 SHA-256。
-仓库正向 fixture 只验证规则形状与 38 surface 完整性；其中节点、来源材质、
+仓库正向 fixture 只验证规则形状与 40 surface 完整性；其中节点、来源材质、
 面范围及哈希不对应任何真实车辆，不能直接用于生产重建。

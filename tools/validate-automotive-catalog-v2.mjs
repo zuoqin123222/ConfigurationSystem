@@ -301,7 +301,7 @@ export function validateCatalog(catalog) {
   }
   check(coveredSurfaceIds.size === catalog.selectionOrder.length
     && catalog.selectionOrder.every((surfaceId) => coveredSurfaceIds.has(surfaceId)),
-  "vehicleSurfaceBinding 必须以绑定或显式缺口覆盖全部 38 surface");
+      "vehicleSurfaceBinding 必须以绑定或显式缺口覆盖全部 40 surface");
   check(surfaceBinding.capability !== "complete"
     || surfaceBinding.unsupportedSurfaceIds.length === 0,
   "complete vehicleSurfaceBinding 不得包含显式缺口");

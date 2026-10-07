@@ -863,7 +863,7 @@ namespace AutomotiveCatalog
 				|| CategoryId == nullptr)
 			{
 				Private::SetError(OutError, TEXT("INVALID_CATALOG"),
-					TEXT("surfaces 必须包含 38 个唯一且组件有效的表面"));
+					TEXT("surfaces 必须包含 40 个唯一且组件有效的表面"));
 				return false;
 			}
 			SurfaceIds.Add(Surface.SurfaceId);
@@ -883,7 +883,7 @@ namespace AutomotiveCatalog
 			if (SurfaceIndex == nullptr || OrderedSurfaceIds.Contains(SurfaceId))
 			{
 				Private::SetError(OutError, TEXT("INVALID_CATALOG"),
-					TEXT("selectionOrder 必须覆盖 38 个唯一 surface"));
+					TEXT("selectionOrder 必须覆盖 40 个唯一 surface"));
 				return false;
 			}
 			OrderedSurfaceIds.Add(SurfaceId);

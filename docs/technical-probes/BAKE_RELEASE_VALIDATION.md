@@ -56,15 +56,15 @@ Screen Percentage；关闭后使用 Lit，并等待稳定帧再回读。PNG 回�
 
 - v1 使用 `--mode exhaustive`，完整枚举有限笛卡尔积。
 - v2 默认只执行 `estimate`。SC01 当前完整空间为
-  `391820820480000000000`（约 3.9e20）个配置，生成器明确拒绝 `exhaustive`。
+  `19591041024000000000000`（约 1.96e22）个配置，生成器明确拒绝 `exhaustive`。
 - v2 `coverage` 从默认/首选基线生成去重集合，保证每个可生成 Bake 的
   `renderRelevant` 选项以及每个可被已定价色卡选项消费的 `materialVariant` 至少出现
   一次。`ui.control=color-picker` 的自定义颜色选项继续参与配置、UI 和 UE 实时材质，
   但不生成有限的预烘焙任务；该规则不排除 `swatch` 等普通 paint 色卡。基线严格复用
   `defaultSelections`，不会给无默认项的可选 surface 强行选择第一个选项，确保 Web
-  初始状态可以直接命中渲染。当前 SC01 覆盖 151 个 Bake 选项、排除 3 个
-  `color-picker`，并覆盖 352 个可用材料色卡，去重后得到 474 个配置；按 4 个视角为
-  1896 个渲染任务。
+  初始状态可以直接命中渲染。当前 SC01 覆盖 165 个 Bake 选项、排除 5 个
+  `color-picker`，并覆盖 352 个可用材料色卡，去重后得到 482 个配置；按 4 个视角为
+  1928 个渲染任务。
 - v2 `shard` 对 coverage 集合做确定性取模分片，`--shard=0/4` 到 `3/4` 合并后不重不漏。
 - v2 coverage/shard 输出固定声明四个 `renderViewIds`，并对每项写出
   `configurationKey = renderKey`。`FConfigurationBakePlan::Load` 同时读取通用
@@ -122,7 +122,7 @@ node tools/generate-published-configurations.mjs `
   RTPSO 预热在 Batch 模式下跳过，避免 manifest 完成后的关机竞态崩溃。
 - V2 Binder 已优先绑定可见骨骼车辆的 `CS_Validation_Paint` 与
   `CS_Validation_Interior` 命名槽。标准红/银车漆和两个内饰色卡 canary 已确认
-  产生不同视觉结果；其他 surface 尚无独立骨骼槽，1908 张覆盖图不代表 38 个
+  产生不同视觉结果；其他 surface 尚无独立骨骼槽，1908 张历史覆盖图不代表当前 40 个
   surface 都已具备独立视觉变化。
 - UE Batch Bake：16 个 canonical configuration × 4 个 RenderView，共 64 个任务。
 - Server：19 个测试全部通过。

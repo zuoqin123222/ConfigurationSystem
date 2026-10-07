@@ -7,6 +7,10 @@ Publication：`sc01-materials-20261007-r2`
 
 ## 结论
 
+该记录对应 `sc01-draft-20260121` 的 38-surface 历史目录。后续 main 已升级为
+`sc01-draft-20261007`、40 surface、482 个 coverage 配置和 1928 个任务，因此 R2
+不得作为新目录的最终 publication；本文件只保留旧批次的可复验证据。
+
 `BakeWeb` 统一发布入口完成 Shipping coverage Bake、Server manifest 校验和原子晋升。
 R2 共包含 474 个覆盖配置、4 个标准视角和 1896 张 Path Tracing PNG；全部任务为
 `ready`，没有缺图、失败任务或 SHA-256 不一致。

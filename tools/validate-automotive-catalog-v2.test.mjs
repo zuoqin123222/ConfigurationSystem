@@ -144,13 +144,13 @@ test("catalog 顶层声明完整骨骼网格与动画序列对象路径", async 
   assert.throws(() => validateCatalog(incompleteSequence), /sequencePath/);
 });
 
-test("catalog 代理 surface capability 完整覆盖 38 surface 且不复用 slot", async () => {
+test("catalog 代理 surface capability 完整覆盖 40 surface 且不复用 slot", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const capability = catalog.vehicleSurfaceBinding;
   assert.equal(capability.capability, "proxy");
   assert.equal(
     capability.bindings.length + capability.unsupportedSurfaceIds.length,
-    38
+    40
   );
   assert.deepEqual(
     capability.bindings.find((binding) => binding.surfaceId === "door-middle")
@@ -167,7 +167,7 @@ test("catalog 代理 surface capability 完整覆盖 38 surface 且不复用 slo
 
   const implicitGap = structuredClone(catalog);
   implicitGap.vehicleSurfaceBinding.unsupportedSurfaceIds.pop();
-  assert.throws(() => validateCatalog(implicitGap), /覆盖全部 38 surface/);
+  assert.throws(() => validateCatalog(implicitGap), /覆盖全部 40 surface/);
 });
 
 test("catalog UI 扩展保持向后兼容并接受旧数字 cameraId", async () => {

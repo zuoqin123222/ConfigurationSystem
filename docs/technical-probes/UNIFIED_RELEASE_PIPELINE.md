@@ -54,7 +54,7 @@ online 与 embedded 入口。
 
 ```powershell
 .\tools\release.ps1 -Target BakeWeb -Profile debug `
-  -Mode shard -Shard 0/474 -Publication sc01-release-canary `
+  -Mode shard -Shard 0/482 -Publication sc01-release-canary `
   -Output staging/release-bake-canary
 ```
 

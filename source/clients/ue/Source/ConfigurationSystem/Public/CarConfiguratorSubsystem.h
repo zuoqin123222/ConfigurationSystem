@@ -100,7 +100,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Automotive Catalog")
 	UAutomotiveCatalogData* GetAutomotiveCatalog() const { return AutomotiveCatalogData; }
 
-	/** 独立于四分区 v1 状态的 38 surface 动态状态。 */
+	/** 独立于四分区 v1 状态的 40 surface 动态状态。 */
 	UFUNCTION(BlueprintPure, Category = "Automotive Catalog")
 	UAutomotiveConfigurationState* GetAutomotiveConfigurationState() const
 	{
