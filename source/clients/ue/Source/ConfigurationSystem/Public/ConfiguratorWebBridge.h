@@ -47,6 +47,10 @@ public:
 	UFUNCTION()
 	bool CanPlayAnimation(const FString& AnimationId) const;
 	UFUNCTION()
+	FString GetAnimationExecutorStateJson(const FString& AnimationId) const;
+	UFUNCTION()
+	bool CompleteCefBridgeProbe(const FString& ResultJson);
+	UFUNCTION()
 	bool SetLightPreset(const FString& Preset);
 	UFUNCTION()
 	bool SetRenderMode(const FString& Mode);

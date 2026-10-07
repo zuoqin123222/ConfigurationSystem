@@ -696,6 +696,99 @@ bool FVehicleAnimSequenceFramePlayerAutomationTest::RunTest(
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FControllerVehicleHoodTrunkAutomationTest,
+	"ConfigurationSystem.Runtime.Experience.ControllerVehicleHoodTrunk",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FControllerVehicleHoodTrunkAutomationTest::RunTest(
+	const FString& Parameters)
+{
+	(void)Parameters;
+	AConfiguratorVehicleActor* Vehicle = NewObject<AConfiguratorVehicleActor>();
+	AConfigShowroomPlayerController* Controller =
+		NewObject<AConfigShowroomPlayerController>();
+	Controller->SetVehicleForAutomationTest(Vehicle);
+
+	AutomotiveCatalog::FCatalog Catalog;
+	for (const TCHAR* Id : {TEXT("hood"), TEXT("trunk")})
+	{
+		AutomotiveCatalog::FAnimation& Animation =
+			Catalog.Animations.AddDefaulted_GetRef();
+		Animation.AnimationId = Id;
+		Animation.DisplayName = Id;
+		Animation.FrameRate = 30.0;
+		Animation.StartFrame = 0;
+		Animation.EndFrame = 30;
+		Animation.LoopMode = TEXT("none");
+		Animation.CloseMode = TEXT("reverse");
+	}
+	Vehicle->ConfigureAnimationFromCatalog(Catalog);
+
+	USceneComponent* HoodPivot =
+		FindObjectFast<USceneComponent>(Vehicle, TEXT("HoodHingePivot"));
+	USceneComponent* TrunkPivot =
+		FindObjectFast<USceneComponent>(Vehicle, TEXT("TrunkHingePivot"));
+	UReversiblePartActuatorComponent* HoodActuator =
+		FindObjectFast<UReversiblePartActuatorComponent>(Vehicle, TEXT("HoodActuator"));
+	UReversiblePartActuatorComponent* TrunkActuator =
+		FindObjectFast<UReversiblePartActuatorComponent>(Vehicle, TEXT("TrunkActuator"));
+	TestNotNull(TEXT("Controller 链路测试包含 hood 执行器"), HoodActuator);
+	TestNotNull(TEXT("Controller 链路测试包含 trunk 执行器"), TrunkActuator);
+	if (HoodPivot == nullptr || TrunkPivot == nullptr
+		|| HoodActuator == nullptr || TrunkActuator == nullptr)
+	{
+		return false;
+	}
+	HoodActuator->BindPart(
+		HoodPivot,
+		FTransform::Identity,
+		FTransform(AConfiguratorVehicleActor::GetHoodOpenRotation()));
+	TrunkActuator->BindPart(
+		TrunkPivot,
+		FTransform::Identity,
+		FTransform(AConfiguratorVehicleActor::GetTrunkOpenRotation()));
+
+	TestTrue(TEXT("Controller 可探测 hood"), Controller->CanPlayAnimation(TEXT("hood")));
+	TestTrue(TEXT("Controller 可探测 trunk"), Controller->CanPlayAnimation(TEXT("trunk")));
+	TestTrue(TEXT("Controller→Vehicle 开启 hood"), Controller->PlayAnimation(TEXT("hood")));
+	TestTrue(TEXT("hood 执行器收到开启目标"), HoodActuator->IsOpenRequested());
+	HoodActuator->AdvanceActuation(1.0f);
+	TestEqual(TEXT("hood 到达开启端"), HoodActuator->GetProgress(), 1.0f);
+	TestTrue(TEXT("Controller→Vehicle 关闭 hood"), Controller->CloseAnimation(TEXT("hood")));
+	TestFalse(TEXT("hood 执行器收到关闭目标"), HoodActuator->IsOpenRequested());
+	HoodActuator->AdvanceActuation(1.0f);
+	TestEqual(TEXT("hood reverse 回到闭合端"), HoodActuator->GetProgress(), 0.0f);
+
+	TestTrue(TEXT("Controller→Vehicle 开启 trunk"), Controller->PlayAnimation(TEXT("trunk")));
+	TestTrue(TEXT("trunk 执行器收到开启目标"), TrunkActuator->IsOpenRequested());
+	TrunkActuator->AdvanceActuation(1.0f);
+	TestEqual(TEXT("trunk 到达开启端"), TrunkActuator->GetProgress(), 1.0f);
+	TestTrue(TEXT("Controller→Vehicle 按 Catalog reverse 关闭 trunk"),
+		Controller->CloseAnimation(TEXT("trunk")));
+	TestFalse(TEXT("trunk 执行器收到关闭目标"), TrunkActuator->IsOpenRequested());
+	TrunkActuator->AdvanceActuation(1.0f);
+	TestEqual(TEXT("trunk reverse 回到闭合端"), TrunkActuator->GetProgress(), 0.0f);
+
+	TestTrue(TEXT("Controller 原子聚焦 hood"), Controller->FocusAnimation(TEXT("hood")));
+	HoodActuator->AdvanceActuation(0.5f);
+	TestTrue(TEXT("Controller 从 hood 切焦到 trunk"),
+		Controller->FocusAnimation(TEXT("trunk")));
+	TestFalse(TEXT("切焦先反向关闭 hood"), HoodActuator->IsOpenRequested());
+	HoodActuator->AdvanceActuation(1.0f);
+	Vehicle->Tick(0.0f);
+	TestTrue(TEXT("hood 闭合后启动 trunk"), TrunkActuator->IsOpenRequested());
+	TestEqual(TEXT("Controller 暴露 trunk 焦点"),
+		Controller->GetFocusedAnimationId(), FName(TEXT("trunk")));
+	TestTrue(TEXT("Controller 清除动画焦点"), Controller->FocusAnimation(NAME_None));
+	TestFalse(TEXT("清除焦点反向关闭 trunk"), TrunkActuator->IsOpenRequested());
+	TrunkActuator->AdvanceActuation(1.0f);
+	Vehicle->Tick(0.0f);
+	TestTrue(TEXT("清除后无活动动画"),
+		Controller->GetActiveAnimationId().IsNone());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FReversiblePartActuatorAutomationTest,
 	"ConfigurationSystem.Runtime.Experience.ReversibleActuator",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)

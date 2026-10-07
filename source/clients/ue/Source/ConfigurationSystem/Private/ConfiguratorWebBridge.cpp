@@ -87,6 +87,21 @@ bool UConfiguratorWebBridge::CanPlayAnimation(
 		&& Owner->CanPlayExperienceAnimation(AnimationId);
 }
 
+FString UConfiguratorWebBridge::GetAnimationExecutorStateJson(
+	const FString& AnimationId) const
+{
+	return Owner != nullptr
+		&& IsSupportedAnimationId(AnimationId)
+		? Owner->GetAnimationExecutorStateJson(AnimationId)
+		: FString();
+}
+
+bool UConfiguratorWebBridge::CompleteCefBridgeProbe(
+	const FString& ResultJson)
+{
+	return Owner != nullptr && Owner->CompleteCefBridgeProbe(ResultJson);
+}
+
 bool UConfiguratorWebBridge::IsSupportedLightPreset(const FString& Preset)
 {
 	return Preset == TEXT("studio") || Preset == TEXT("outdoor");

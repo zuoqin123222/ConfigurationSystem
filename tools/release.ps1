@@ -420,6 +420,42 @@ function Invoke-ReleaseProcess {
     }
 }
 
+function Assert-CefBridgeProbeReport {
+    param([Parameter(Mandatory = $true)][string]$ReportPath)
+    if ($DryRun) {
+        Write-Host "[dry-run] validate Shipping CEF bridge probe report: $ReportPath"
+        return
+    }
+    if (-not (Test-Path -LiteralPath $ReportPath -PathType Leaf)) {
+        throw "Shipping CEF bridge probe did not write its report: $ReportPath"
+    }
+    $report = [IO.File]::ReadAllText($ReportPath, [Text.Encoding]::UTF8) |
+        ConvertFrom-Json
+    $expected = @("hood", "door-left", "door-right", "trunk", "wheel-spin")
+    if (
+        -not $report.ok -or
+        $report.buildConfiguration -ne "Shipping" -or
+        $report.withEditor -ne $false -or
+        @($report.expectedAnimationIds).Count -ne $expected.Count -or
+        @($report.steps).Count -ne $expected.Count
+    ) {
+        throw "Shipping CEF bridge probe report failed structural validation: $ReportPath"
+    }
+    for ($index = 0; $index -lt $expected.Count; $index++) {
+        $step = @($report.steps)[$index]
+        if (
+            $step.animationId -ne $expected[$index] -or
+            -not $step.canPlay -or
+            -not $step.focusPassed -or
+            -not $step.clearPassed -or
+            $step.executor.executor -eq "none"
+        ) {
+            throw "Shipping CEF bridge probe failed for '$($expected[$index])': $ReportPath"
+        }
+    }
+    Write-Host "[release] Shipping CEF bridge probe passed: $ReportPath"
+}
+
 function Assert-ReleaseInputs {
     param([Parameter(Mandatory = $true)][string[]]$SelectedTargets)
 
@@ -730,6 +766,18 @@ function Build-UE {
         )
         Add-UeRuntimePrerequisiteFiles -ArchiveRoot $stagingArchive
         Assert-UeRuntimeDependencies -ArchiveRoot $stagingArchive
+        $shippingRoot = Join-Path $stagingArchive "Windows"
+        $shippingExe = Join-Path $shippingRoot "ConfigurationSystem.exe"
+        $cefBridgeProbeReport = Join-Path $stagingArchive "cef-bridge-probe.json"
+        Invoke-ReleaseProcess $shippingExe @(
+            "-windowed",
+            "-ResX=1600",
+            "-ResY=900",
+            "-CefBridgeProbe",
+            "-CefBridgeProbeOutput=$cefBridgeProbeReport",
+            "-log"
+        ) $shippingRoot
+        Assert-CefBridgeProbeReport -ReportPath $cefBridgeProbeReport
         Write-ReleaseManifest -Root $stagingArchive -ReleaseTarget "UE"
     } catch {
         $prepareError = $_

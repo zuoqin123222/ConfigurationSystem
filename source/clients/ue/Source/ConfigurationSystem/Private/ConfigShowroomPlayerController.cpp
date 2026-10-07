@@ -1195,6 +1195,14 @@ FName AConfigShowroomPlayerController::GetFocusedAnimationId() const
 	return IsValid(Vehicle) ? Vehicle->GetFocusedVehicleAnimationId() : NAME_None;
 }
 
+FString AConfigShowroomPlayerController::GetAnimationExecutorStateJson(
+	const FName AnimationId) const
+{
+	return IsValid(Vehicle)
+		? Vehicle->GetAnimationExecutorStateJson(AnimationId)
+		: FString();
+}
+
 bool AConfigShowroomPlayerController::SetLightPreset(const FString& Preset)
 {
 	if (!IsValid(Environment))

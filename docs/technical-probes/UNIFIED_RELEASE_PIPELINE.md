@@ -44,6 +44,10 @@ online 与 embedded 入口。
   `Windows/Runtime-Prerequisites.txt`，用于系统运行库损坏或 App-local 加载异常时手动修复。
 - 写入 manifest 前必须验证 `msvcp140.dll`、`vcruntime140.dll`、
   `vcruntime140_1.dll` 和 x64 安装器均存在；任一缺失则拒绝晋升发布包。
+- 写入 manifest 前启动归档内的 Shipping `ConfigurationSystem.exe
+  -CefBridgeProbe`。探针必须经真实 CEF 反射 bridge 对 `hood`、`door-left`、
+  `door-right`、`trunk`、`wheel-spin` 逐项完成 `canPlay`、`focus`、清除和执行器
+  状态验证；结果写入 `cef-bridge-probe.json`，任一项失败或 45 秒超时均拒绝晋升。
 - `package/clients/ue/release-manifest.json` 覆盖归档中的逐文件 SHA-256。
 - 包内 WebUI 与离线保存、分享、二维码验证见
   [UE 离线自包含验证](UE_OFFLINE_SELF_CONTAINED.md)。

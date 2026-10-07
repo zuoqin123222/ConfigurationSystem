@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchCatalog } from './api'
+import { runCefBridgeProbe } from './cefBridgeProbe'
 import {
   bundledCatalog,
   usesBundledCatalog,
@@ -10,8 +11,12 @@ import {
   executeUeControl,
   focusUeAnimation,
   getUeBridge,
+  getUeControlFailureKind,
+  getUeControlFailureMessage,
   getUePresentationState,
   getUeRenderModeError,
+  hasUeAnimationBridgeMethod,
+  type ReflectedUeBridge,
   type UeControlCommand,
   type UeCameraIndex,
   type UePresentationState,
@@ -41,6 +46,14 @@ function cameraSelectionMatchesState(
     || (selection.cameraIndex !== null && state.cameraIndex === selection.cameraIndex)
 }
 
+function presentationStateError(bridge: ReflectedUeBridge | null): string {
+  if (!bridge) return 'UE 控制桥不可用'
+  if (typeof bridge.getpresentationstatejson !== 'function') {
+    return 'UE 控制桥缺少所需方法'
+  }
+  return '无法读取 UE 展示状态'
+}
+
 export default function ExperienceControls({ ueEnabled = false }: ExperienceControlsProps) {
   const [openMenu, setOpenMenu] = useState<ControlMenu | null>(null)
   const [cameras, setCameras] = useState<CatalogInteractionCamera[]>([])
@@ -50,6 +63,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const [pendingCameraSelection, setPendingCameraSelection] = useState<PendingCameraSelection | null>(null)
   const [animationEnabled, setAnimationEnabled] = useState(false)
   const [animationId, setAnimationId] = useState<string | null>(null)
+  const [animationBridgeReady, setAnimationBridgeReady] = useState(false)
   const [lightPreset, setLightPreset] = useState<'studio' | 'outdoor'>('studio')
   const [renderMode, setRenderMode] = useState<'realtime' | 'path-tracing'>('realtime')
   const [renderProgress, setRenderProgress] = useState(0)
@@ -63,6 +77,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
   const animationRequestIdRef = useRef(0)
   const animationActionRequestIdRef = useRef(0)
   const animationCandidatesRef = useRef<CatalogAnimation[]>([])
+  const cefBridgeProbeStartedRef = useRef(false)
 
   useEffect(() => {
     document.documentElement.classList.add('controls-document')
@@ -117,6 +132,14 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     const requestId = animationRequestIdRef.current + 1
     animationRequestIdRef.current = requestId
     const bridge = getUeBridge(true)
+    if (!hasUeAnimationBridgeMethod(bridge)) {
+      if (animationRequestIdRef.current === requestId) {
+        setAnimationBridgeReady(false)
+        setAnimations(candidates)
+      }
+      return
+    }
+    setAnimationBridgeReady(true)
     const supported: CatalogAnimation[] = []
     for (const animation of candidates) {
       let available = false
@@ -131,12 +154,8 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       if (available) supported.push(animation)
     }
     if (animationRequestIdRef.current !== requestId) return
-    // 车辆至少有静态执行器回退；全 false 更可能是 CEF/Owner 尚未就绪。
-    // 保留目录候选项，避免一次启动瞬态让整个动画入口永久消失。
-    // Catalog 只声明产品支持的五个稳定动画。CEF/Owner 在启动阶段可能只对
-    // 部分能力查询返回瞬态 false；若按部分结果过滤，会把前后机盖永久隐藏。
-    // 只有完整探测成功时采用探测结果，否则保留 Catalog 候选项。
-    setAnimations(supported.length === candidates.length ? supported : candidates)
+    // bridge 已就绪时，能力结果逐项生效；一个执行器不支持不能隐藏其他项。
+    setAnimations(supported)
   }, [ueEnabled])
 
   useEffect(() => {
@@ -160,20 +179,56 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       .catch(() => {
         if (active && !controller.signal.aborted) setError('无法读取镜头目录')
       })
-    void getUePresentationState(getUeBridge(true)).then((state) => {
-      if (!active) return
-      if (state) {
-        applyState(state)
-        setError('')
-      } else {
-        setError('无法读取 UE 展示状态')
-      }
-    })
     return () => {
       active = false
       controller.abort()
     }
   }, [applyState, refreshAnimationAvailability, ueEnabled])
+
+  useEffect(() => {
+    if (!ueEnabled) return
+    let active = true
+    let timer: number | null = null
+    const probeBridge = async () => {
+      const bridge = getUeBridge(true)
+      const state = await getUePresentationState(bridge)
+      if (!active) return
+      if (state) {
+        applyState(state)
+        if (hasUeAnimationBridgeMethod(bridge)) {
+          setAnimationBridgeReady(true)
+          setError('')
+          await refreshAnimationAvailability()
+          return
+        }
+        setAnimationBridgeReady(false)
+        setError((current) => current || 'UE 控制桥缺少所需方法')
+      } else {
+        setAnimationBridgeReady(false)
+        setError((current) => current || presentationStateError(bridge))
+      }
+      timer = window.setTimeout(() => void probeBridge(), 150)
+    }
+    void probeBridge()
+    return () => {
+      active = false
+      if (timer !== null) window.clearTimeout(timer)
+    }
+  }, [applyState, refreshAnimationAvailability, ueEnabled])
+
+  useEffect(() => {
+    if (!ueEnabled
+      || !animationBridgeReady
+      || animations.length === 0
+      || cefBridgeProbeStartedRef.current
+      || new URLSearchParams(window.location.search).get('cefBridgeProbe') !== '1') {
+      return
+    }
+    const bridge = getUeBridge(true)
+    if (!bridge) return
+    cefBridgeProbeStartedRef.current = true
+    void runCefBridgeProbe(bridge, animations)
+  }, [animationBridgeReady, animations, ueEnabled])
 
   useEffect(() => {
     if (!ueEnabled
@@ -201,9 +256,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     const bridge = getUeBridge(true)
     const currentState = await getUePresentationState(bridge)
     if (!currentState) {
-      setError(bridge
-        ? '无法读取 UE 展示状态'
-        : 'UE 控制桥不可用或命令被拒绝')
+      setError(presentationStateError(bridge))
       return false
     }
     applyState(currentState)
@@ -219,7 +272,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
           || '当前设备无法切换到 Path Tracing',
       )
     } else {
-      setError('UE 控制桥不可用或命令被拒绝')
+      setError(getUeControlFailureMessage(getUeControlFailureKind(bridge, command)))
     }
     if (accepted) {
       onSuccess?.(currentState)
@@ -246,7 +299,13 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       legacyIndex: camera.legacyIndex,
     })
     if (cameraRequestIdRef.current !== requestId) return
-    setError(accepted ? '' : 'UE 控制桥不可用或命令被拒绝')
+    setError(accepted
+      ? ''
+      : getUeControlFailureMessage(getUeControlFailureKind(bridge, {
+        type: 'camera',
+        cameraId: camera.cameraId,
+        legacyIndex: camera.legacyIndex,
+      })))
     if (!accepted) {
       setPendingCameraSelection(null)
       return
@@ -282,9 +341,7 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
     const currentState = await getUePresentationState(bridge)
     if (animationActionRequestIdRef.current !== requestId) return
     if (!currentState) {
-      setError(bridge
-        ? '无法读取 UE 展示状态'
-        : 'UE 控制桥不可用或命令被拒绝')
+      setError(presentationStateError(bridge))
       return
     }
     applyState(currentState)
@@ -298,7 +355,15 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
       nextId,
     )
     if (animationActionRequestIdRef.current !== requestId) return
-    setError(accepted ? '' : 'UE 控制桥不可用或命令被拒绝')
+    setError(accepted
+      ? ''
+      : getUeControlFailureMessage(
+        !bridge
+          ? 'bridge-unavailable'
+          : hasUeAnimationBridgeMethod(bridge)
+            ? 'command-rejected'
+            : 'method-unavailable',
+      ))
     if (accepted) {
       setAnimationId(nextId)
       setAnimationEnabled(nextId !== null)
@@ -397,6 +462,8 @@ export default function ExperienceControls({ ueEnabled = false }: ExperienceCont
           <button
             aria-expanded={openMenu === 'animation'}
             aria-pressed={animationEnabled}
+            disabled={!animationBridgeReady}
+            title={!animationBridgeReady ? 'UE 动画控制尚未就绪' : undefined}
             onClick={playPrimaryAnimation}
           >
             <span aria-hidden="true">▷</span>

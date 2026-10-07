@@ -6,6 +6,8 @@ import {
   createUeConfigurationJson,
   createUeConfiguratorHeaderStateJson,
   executeUeControl,
+  getUeControlFailureKind,
+  getUeControlFailureMessage,
   getUeConfiguratorHeaderState,
   getUeBridge,
   getUePresentationState,
@@ -325,13 +327,37 @@ describe('受限 UE bridge', () => {
     await expect(getUeRenderModeError({})).resolves.toBe('')
   })
 
-  it('动画能力检查使用只读 bridge，并兼容旧 bridge', async () => {
+  it('动画能力检查要求可执行 bridge，并兼容具备播放/关闭入口的旧 bridge', async () => {
     const canplayanimation = vi.fn().mockResolvedValue(false)
-    await expect(canPlayUeAnimation({ canplayanimation }, 'door-left'))
+    await expect(canPlayUeAnimation({
+      canplayanimation,
+      focusanimation: vi.fn(),
+    }, 'door-left'))
       .resolves.toBe(false)
     expect(canplayanimation).toHaveBeenCalledWith('door-left')
-    await expect(canPlayUeAnimation({}, 'hood')).resolves.toBe(true)
-    await expect(canPlayUeAnimation({ canplayanimation }, '../hood')).resolves.toBe(false)
+    await expect(canPlayUeAnimation(null, 'hood')).resolves.toBe(false)
+    await expect(canPlayUeAnimation({}, 'hood')).resolves.toBe(false)
+    await expect(canPlayUeAnimation({
+      playanimation: vi.fn(),
+      closeanimation: vi.fn(),
+    }, 'hood')).resolves.toBe(true)
+    await expect(canPlayUeAnimation({
+      canplayanimation,
+      focusanimation: vi.fn(),
+    }, '../hood')).resolves.toBe(false)
+  })
+
+  it('区分 bridge、方法缺失与命令拒绝错误', () => {
+    const command = { type: 'play-animation', animationId: 'hood' } as const
+    expect(getUeControlFailureKind(null, command)).toBe('bridge-unavailable')
+    expect(getUeControlFailureKind({}, command)).toBe('method-unavailable')
+    expect(getUeControlFailureKind({ playanimation: vi.fn() }, command))
+      .toBe('command-rejected')
+    expect(getUeControlFailureMessage('bridge-unavailable')).toBe('UE 控制桥不可用')
+    expect(getUeControlFailureMessage('method-unavailable'))
+      .toBe('UE 控制桥缺少所需方法')
+    expect(getUeControlFailureMessage('command-rejected'))
+      .toBe('UE 命令被拒绝或执行失败')
   })
 
   it('继续读取只有 cameraIndex 的旧 UE 展示状态', async () => {

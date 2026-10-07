@@ -157,6 +157,9 @@ public:
 	UFUNCTION(BlueprintPure, Category="Configurator|Experience")
 	FName GetFocusedAnimationId() const;
 
+	UFUNCTION(BlueprintPure, Category="Configurator|Experience")
+	FString GetAnimationExecutorStateJson(FName AnimationId) const;
+
 	UFUNCTION(BlueprintCallable, Category="Configurator|Environment")
 	bool SetLightPreset(const FString& Preset);
 
@@ -198,6 +201,13 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Configurator|UI")
 	bool IsConfiguratorPanelVisible() const;
+
+#if WITH_DEV_AUTOMATION_TESTS
+	void SetVehicleForAutomationTest(AConfiguratorVehicleActor* InVehicle)
+	{
+		Vehicle = InVehicle;
+	}
+#endif
 
 private:
 	UFUNCTION()

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "AutomotiveConfigurationState.h"
+#include "TimerManager.h"
 #include "ConfiguratorPanel.generated.h"
 
 class UBorder;
@@ -46,6 +47,8 @@ public:
 	bool CloseExperienceAnimation(const FString& AnimationId);
 	bool FocusExperienceAnimation(const FString& NextAnimationId);
 	bool CanPlayExperienceAnimation(const FString& AnimationId) const;
+	FString GetAnimationExecutorStateJson(const FString& AnimationId) const;
+	bool CompleteCefBridgeProbe(const FString& ResultJson);
 	bool SetExperienceLightPreset(const FString& Preset);
 	bool SetExperienceRenderMode(const FString& Mode);
 	bool SetExperienceQualityLevel(const FString& Quality);
@@ -71,6 +74,7 @@ protected:
 
 private:
 	void BuildWidgetTree();
+	void FailCefBridgeProbeTimeout();
 	UPROPERTY(Transient)
 	TObjectPtr<UConfiguratorBrowserWidget> WebBrowser;
 	UPROPERTY(Transient)
@@ -88,4 +92,5 @@ private:
 	bool bWebFullscreen = false;
 	FString LatestConfiguratorHeaderStateJson;
 	FString LastRenderModeError;
+	FTimerHandle CefBridgeProbeTimeoutTimer;
 };

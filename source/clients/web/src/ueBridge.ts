@@ -15,6 +15,8 @@ export interface ReflectedUeBridge {
   closeanimation?: (animationId: string) => Promise<boolean>
   focusanimation?: (nextAnimationId: string) => Promise<boolean>
   canplayanimation?: (animationId: string) => Promise<boolean>
+  getanimationexecutorstatejson?: (animationId: string) => Promise<string>
+  completecefbridgeprobe?: (resultJson: string) => Promise<boolean>
   setlightpreset?: (preset: string) => Promise<boolean>
   setrendermode?: (mode: string) => Promise<boolean>
   getrendermodeerror?: () => Promise<string>
@@ -57,6 +59,10 @@ export type UeControlCommand =
 
 export type UeQualityLevel = 'low' | 'medium' | 'high' | 'epic'
 export type UeRenderAvailability = 'preparing' | 'ready' | 'unavailable'
+export type UeControlFailureKind =
+  | 'bridge-unavailable'
+  | 'method-unavailable'
+  | 'command-rejected'
 export type UeConfiguratorHeaderAction = 'save' | 'share' | 'reset'
 export type UeConfiguratorSyncState = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -93,6 +99,63 @@ declare global {
 export function getUeBridge(embedded: boolean): ReflectedUeBridge | null {
   if (!embedded) return null
   return window.ue?.uebridge ?? null
+}
+
+export function getUeControlFailureKind(
+  bridge: ReflectedUeBridge | null,
+  command: UeControlCommand,
+): UeControlFailureKind {
+  if (!bridge) return 'bridge-unavailable'
+  const hasMethod = (() => {
+    switch (command.type) {
+      case 'camera':
+        return 'cameraId' in command
+          ? typeof bridge.setcameraid === 'function'
+            || (isUeCameraIndex(command.legacyIndex)
+              && typeof bridge.setcamera === 'function')
+          : typeof bridge.setcamera === 'function'
+      case 'animation':
+        return typeof bridge.setanimationenabled === 'function'
+      case 'play-animation':
+        return typeof bridge.playanimation === 'function'
+      case 'close-animation':
+        return typeof bridge.closeanimation === 'function'
+      case 'light':
+        return typeof bridge.setlightpreset === 'function'
+      case 'render':
+        return typeof bridge.setrendermode === 'function'
+      case 'quality':
+        return typeof bridge.setqualitylevel === 'function'
+      case 'reset':
+        return typeof bridge.resetpresentation === 'function'
+      case 'fullscreen':
+        return typeof bridge.setfullscreen === 'function'
+      default:
+        return false
+    }
+  })()
+  return hasMethod ? 'command-rejected' : 'method-unavailable'
+}
+
+export function getUeControlFailureMessage(kind: UeControlFailureKind): string {
+  switch (kind) {
+    case 'bridge-unavailable':
+      return 'UE 控制桥不可用'
+    case 'method-unavailable':
+      return 'UE 控制桥缺少所需方法'
+    case 'command-rejected':
+      return 'UE 命令被拒绝或执行失败'
+  }
+}
+
+export function hasUeAnimationBridgeMethod(
+  bridge: ReflectedUeBridge | null,
+): boolean {
+  return !!bridge && (
+    typeof bridge.focusanimation === 'function'
+    || (typeof bridge.playanimation === 'function'
+      && typeof bridge.closeanimation === 'function')
+  )
 }
 
 export function createUeConfigurationJson(
@@ -280,6 +343,7 @@ export async function canPlayUeAnimation(
   animationId: string,
 ): Promise<boolean> {
   if (!isCatalogNodeId(animationId)) return false
+  if (!hasUeAnimationBridgeMethod(bridge)) return false
   if (typeof bridge?.canplayanimation !== 'function') return true
   try {
     return await bridge.canplayanimation(animationId)

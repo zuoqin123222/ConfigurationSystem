@@ -81,6 +81,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "车辆体验")
 	bool CanPlayVehicleAnimation(FName AnimationId) const;
 
+	/** CEF Shipping 探针使用的只读执行器状态；仅接受稳定动画 ID。 */
+	UFUNCTION(BlueprintPure, Category = "车辆体验")
+	FString GetAnimationExecutorStateJson(FName AnimationId) const;
+
 	/** 从已校验的车型目录一次性加载整车骨骼网格、完整序列并转换全部帧段。 */
 	bool ConfigureAnimationFromCatalog(const AutomotiveCatalog::FCatalog& Catalog);
 
@@ -234,6 +238,7 @@ private:
 	bool bAnimationCatalogConfigured = false;
 	bool bAnimationSequenceReady = false;
 	bool bStaticAnimationFallbackEnabled = true;
+	TMap<FName, FString> StaticAnimationCloseModes;
 	FName ActiveFallbackAnimationId;
 	FName PendingFallbackAnimationId;
 	bool bHasPendingFallbackFocus = false;

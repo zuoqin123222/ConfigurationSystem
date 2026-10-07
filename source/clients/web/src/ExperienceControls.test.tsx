@@ -137,11 +137,11 @@ describe('ExperienceControls', () => {
     fireEvent.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
 
     expect(await screen.findByRole('alert'))
-      .toHaveTextContent('UE 控制桥不可用或命令被拒绝')
+      .toHaveTextContent('UE 命令被拒绝或执行失败')
     expect(animation).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('能力探测部分瞬态失败时仍保留完整动画菜单', async () => {
+  it('能力探测部分不支持时只过滤对应动画项', async () => {
     const user = userEvent.setup()
     const bridge = {
       getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
@@ -154,6 +154,7 @@ describe('ExperienceControls', () => {
         fullscreen: false,
       })),
       canplayanimation: vi.fn(async (animationId: string) => animationId !== 'trunk'),
+      focusanimation: vi.fn().mockResolvedValue(true),
     }
     window.ue = { uebridge: bridge }
     render(<ExperienceControls ueEnabled />)
@@ -162,8 +163,9 @@ describe('ExperienceControls', () => {
     await user.hover(animation)
     const menu = await screen.findByRole('menu', { name: '动画列表' })
     await waitFor(() => expect(bridge.canplayanimation).toHaveBeenCalledWith('wheel-spin'))
-    expect(within(menu).getByRole('menuitemradio', { name: '后盖往复' }))
-      .toBeInTheDocument()
+    await waitFor(() => expect(
+      within(menu).queryByRole('menuitemradio', { name: '后盖往复' }),
+    ).not.toBeInTheDocument())
     expect(within(menu).getByRole('menuitemradio', { name: '开启机舱盖' }))
       .toBeInTheDocument()
     expect(bridge.canplayanimation).toHaveBeenCalledWith('hood')
@@ -189,6 +191,7 @@ describe('ExperienceControls', () => {
         hoodAttempts += 1
         return hoodAttempts > 1
       }),
+      focusanimation: vi.fn().mockResolvedValue(true),
     }
     window.ue = { uebridge: bridge }
     render(<ExperienceControls ueEnabled />)
@@ -428,8 +431,8 @@ describe('ExperienceControls', () => {
     expect(screen.getByRole('menuitemradio', { name: '轮毂' }))
       .toHaveAttribute('aria-checked', 'false')
 
-    expect(await screen.findByRole('alert', {}, { timeout: 1500 }))
-      .toHaveTextContent('UE 镜头切换未确认')
+    await waitFor(() => expect(screen.getByRole('alert'))
+      .toHaveTextContent('UE 镜头切换未确认'), { timeout: 1500 })
     expect(screen.getByRole('menuitemradio', { name: '驾驶位' }))
       .toHaveAttribute('aria-checked', 'false')
     expect(screen.getByRole('menuitemradio', { name: '轮毂' }))
@@ -465,19 +468,39 @@ describe('ExperienceControls', () => {
     fireEvent.click(await screen.findByRole('menuitemradio', { name: '座椅' }))
     expect(bridge.setcamera).toHaveBeenCalledOnce()
     expect(await screen.findByRole('alert'))
-      .toHaveTextContent('UE 控制桥不可用或命令被拒绝')
+      .toHaveTextContent('UE 控制桥缺少所需方法')
   })
 
-  it('bridge 缺失时显示错误且不伪造激活状态', async () => {
+  it('bridge 缺失时禁用动画并在 ready 后重新探测', async () => {
     const user = userEvent.setup()
     render(<ExperienceControls ueEnabled />)
 
     const animation = await screen.findByRole('button', { name: '动画' })
-    await user.hover(animation)
-    fireEvent.click(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
-
-    expect(screen.getByRole('alert')).toHaveTextContent('无法读取 UE 展示状态')
+    expect(animation).toBeDisabled()
+    expect(screen.getByRole('alert')).toHaveTextContent('UE 控制桥不可用')
     expect(animation).toHaveAttribute('aria-pressed', 'false')
+
+    const canplayanimation = vi.fn().mockResolvedValue(true)
+    window.ue = {
+      uebridge: {
+        getpresentationstatejson: vi.fn().mockResolvedValue(JSON.stringify({
+          cameraId: 'wheel',
+          animationEnabled: false,
+          animationId: null,
+          lightPreset: 'studio',
+          renderMode: 'realtime',
+          quality: 'epic',
+          fullscreen: false,
+        })),
+        focusanimation: vi.fn().mockResolvedValue(true),
+        canplayanimation,
+      },
+    }
+    await waitFor(() => expect(animation).toBeEnabled(), { timeout: 1500 })
+    await waitFor(() => expect(canplayanimation).toHaveBeenCalledWith('hood'))
+    await user.hover(animation)
+    expect(await screen.findByRole('menuitemradio', { name: '开启机舱盖' }))
+      .toBeInTheDocument()
   })
 
   it('挂载时为 CEF 控制页启用透明文档，卸载时清理', () => {

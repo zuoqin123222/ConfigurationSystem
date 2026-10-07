@@ -64,6 +64,8 @@ test("All dry-run 编排 Web、Server、UE 与 Bake 全链路", () => {
   assert.match(result.stdout, /-prereqs/);
   assert.match(result.stdout, /-applocaldirectory=.*AppLocalDependencies/);
   assert.match(result.stdout, /verify UE archive contains App-local VC\+\+ runtime DLLs/);
+  assert.match(result.stdout, /ConfigurationSystem\.exe.*-CefBridgeProbe/);
+  assert.match(result.stdout, /validate Shipping CEF bridge probe report/);
   assert.match(result.stdout, /generate-published-configurations\.mjs/);
   assert.match(result.stdout, /npm\.cmd run validate:bake/);
   assert.match(result.stdout, /start-server\.ps1/);
@@ -98,6 +100,20 @@ test("UE 发布配置同时启用安装器和 App-local 运行库", () => {
   const source = readFileSync(gameConfig, "utf8");
   assert.match(source, /^IncludePrerequisites=True$/m);
   assert.match(source, /^IncludeAppLocalPrerequisites=True$/m);
+});
+
+test("UE 发布在写 manifest 前执行 Shipping CEF bridge 五动画探针", () => {
+  const source = readFileSync(releaseScript, "utf8");
+  const probeIndex = source.indexOf("Invoke-ReleaseProcess $shippingExe");
+  const manifestIndex = source.indexOf(
+    'Write-ReleaseManifest -Root $stagingArchive -ReleaseTarget "UE"',
+  );
+  assert.ok(probeIndex >= 0, "必须启动归档后的 Shipping exe");
+  assert.ok(manifestIndex > probeIndex, "CEF bridge 探针必须先于 manifest");
+  assert.match(source, /hood.*door-left.*door-right.*trunk.*wheel-spin/s);
+  assert.match(source, /focusPassed/);
+  assert.match(source, /clearPassed/);
+  assert.match(source, /executor\.executor/);
 });
 
 test("UE 归档缺少运行库时拒绝写入正式发布", () => {

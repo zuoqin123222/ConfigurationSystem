@@ -18,6 +18,11 @@
 #include "Engine/GameInstance.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformProcess.h"
+#include "HAL/PlatformMisc.h"
+#include "Misc/CommandLine.h"
+#include "Misc/EngineVersion.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -96,6 +101,10 @@ FString UConfiguratorPanel::GetControlsWebUrl()
 {
 	FString Url = GetConfiguredWebUrl();
 	Url.ReplaceInline(TEXT("view=embedded"), TEXT("view=controls"));
+	if (FParse::Param(FCommandLine::Get(), TEXT("CefBridgeProbe")))
+	{
+		Url += TEXT("&cefBridgeProbe=1");
+	}
 	return Url;
 }
 
@@ -260,6 +269,16 @@ void UConfiguratorPanel::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SetExperienceQualityLevel(TEXT("epic"));
+	if (FParse::Param(FCommandLine::Get(), TEXT("CefBridgeProbe"))
+		&& GetWorld() != nullptr)
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			CefBridgeProbeTimeoutTimer,
+			this,
+			&UConfiguratorPanel::FailCefBridgeProbeTimeout,
+			45.0f,
+			false);
+	}
 	if (WebBrowser != nullptr)
 	{
 		WebBrowser->LoadURL(GetConfiguredWebUrl());
@@ -276,8 +295,20 @@ void UConfiguratorPanel::NativeConstruct()
 
 void UConfiguratorPanel::NativeDestruct()
 {
+	if (GetWorld() != nullptr)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CefBridgeProbeTimeoutTimer);
+	}
 	WebBridge = nullptr;
 	Super::NativeDestruct();
+}
+
+void UConfiguratorPanel::FailCefBridgeProbeTimeout()
+{
+	CompleteCefBridgeProbe(
+		TEXT("{\"schemaVersion\":1,\"probe\":\"ShippingCefBridgeProbe\","
+			"\"ok\":false,\"error\":\"TIMEOUT\",\"expectedAnimationIds\":[],"
+			"\"steps\":[]}"));
 }
 
 void UConfiguratorPanel::BuildWidgetTree()
@@ -712,6 +743,86 @@ bool UConfiguratorPanel::CanPlayExperienceAnimation(
 	return Controller != nullptr
 		&& UConfiguratorWebBridge::IsSupportedAnimationId(AnimationId)
 		&& Controller->CanPlayAnimation(FName(*AnimationId));
+}
+
+FString UConfiguratorPanel::GetAnimationExecutorStateJson(
+	const FString& AnimationId) const
+{
+	const AConfigShowroomPlayerController* Controller =
+		Cast<AConfigShowroomPlayerController>(GetOwningPlayer());
+	return Controller != nullptr
+		&& UConfiguratorWebBridge::IsSupportedAnimationId(AnimationId)
+		? Controller->GetAnimationExecutorStateJson(FName(*AnimationId))
+		: FString();
+}
+
+bool UConfiguratorPanel::CompleteCefBridgeProbe(const FString& ResultJson)
+{
+	if (!FParse::Param(FCommandLine::Get(), TEXT("CefBridgeProbe"))
+		|| ResultJson.IsEmpty()
+		|| ResultJson.Len() > MaxBridgeJsonCharacters)
+	{
+		return false;
+	}
+	TSharedPtr<FJsonObject> Result;
+	const TSharedRef<TJsonReader<>> Reader =
+		TJsonReaderFactory<>::Create(ResultJson);
+	bool bPassed = false;
+	if (!FJsonSerializer::Deserialize(Reader, Result)
+		|| !Result.IsValid()
+		|| !Result->TryGetBoolField(TEXT("ok"), bPassed))
+	{
+		return false;
+	}
+	if (GetWorld() != nullptr)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CefBridgeProbeTimeoutTimer);
+	}
+#if UE_BUILD_SHIPPING
+	Result->SetStringField(TEXT("buildConfiguration"), TEXT("Shipping"));
+#elif UE_BUILD_DEVELOPMENT
+	Result->SetStringField(TEXT("buildConfiguration"), TEXT("Development"));
+#else
+	Result->SetStringField(TEXT("buildConfiguration"), TEXT("Other"));
+#endif
+	Result->SetBoolField(TEXT("withEditor"), WITH_EDITOR != 0);
+	Result->SetStringField(TEXT("engineVersion"), FEngineVersion::Current().ToString());
+
+	FString OutputPath = FPaths::Combine(
+		FPaths::ProjectSavedDir(),
+		TEXT("CefBridgeProbe"),
+		TEXT("CefBridgeProbe.json"));
+	FParse::Value(FCommandLine::Get(), TEXT("CefBridgeProbeOutput="), OutputPath);
+	OutputPath = FPaths::ConvertRelativePathToFull(OutputPath);
+	FString EnrichedJson;
+	const TSharedRef<TJsonWriter<>> Writer =
+		TJsonWriterFactory<>::Create(&EnrichedJson);
+	const bool bWritten = FJsonSerializer::Serialize(Result.ToSharedRef(), Writer)
+		&& IFileManager::Get().MakeDirectory(*FPaths::GetPath(OutputPath), true)
+		&& FFileHelper::SaveStringToFile(
+			EnrichedJson,
+			*OutputPath,
+			FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+	if (bWritten && bPassed)
+	{
+		UE_LOG(
+			LogTemp,
+			Display,
+			TEXT("Shipping CEF bridge 探针通过：%s"),
+			*OutputPath);
+	}
+	else
+	{
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("Shipping CEF bridge 探针失败：passed=%s written=%s output=%s"),
+			bPassed ? TEXT("true") : TEXT("false"),
+			bWritten ? TEXT("true") : TEXT("false"),
+			*OutputPath);
+	}
+	FPlatformMisc::RequestExitWithStatus(false, bWritten && bPassed ? 0 : 12);
+	return bWritten;
 }
 
 bool UConfiguratorPanel::SetExperienceCameraId(const FString& CameraId)

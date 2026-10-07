@@ -8,6 +8,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "Dom/JsonObject.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "ReversiblePartActuatorComponent.h"
@@ -16,6 +17,8 @@
 #include "VehicleAnimSequencePlayerComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectGlobals.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 
 const FName AConfiguratorVehicleActor::PaintPartTag(TEXT("Configurator.Part.paint"));
 const FName AConfiguratorVehicleActor::WheelPartTag(TEXT("Configurator.Part.wheel"));
@@ -627,6 +630,13 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 		return bAnimationSequenceReady;
 	}
 	bAnimationCatalogConfigured = true;
+	StaticAnimationCloseModes.Reset();
+	for (const AutomotiveCatalog::FAnimation& Animation : Catalog.Animations)
+	{
+		StaticAnimationCloseModes.Add(
+			FName(*Animation.AnimationId),
+			Animation.CloseMode);
+	}
 
 	// 当前发布目标是明确标识的 A5 独立静态代理分件。完整 40 surface
 	// 目标存在时，它们必须保持唯一可见材质目标；骨骼整车不能叠在其上遮挡切换。
@@ -1007,6 +1017,49 @@ bool AConfiguratorVehicleActor::CanPlayVehicleAnimation(
 	return IsStaticAnimationSupported(AnimationId);
 }
 
+FString AConfiguratorVehicleActor::GetAnimationExecutorStateJson(
+	const FName AnimationId) const
+{
+	TSharedRef<FJsonObject> State = MakeShared<FJsonObject>();
+	State->SetStringField(TEXT("animationId"), AnimationId.ToString());
+	State->SetBoolField(TEXT("canPlay"), CanPlayVehicleAnimation(AnimationId));
+	State->SetBoolField(
+		TEXT("active"),
+		GetActiveVehicleAnimationId() == AnimationId);
+	State->SetBoolField(
+		TEXT("focused"),
+		GetFocusedVehicleAnimationId() == AnimationId);
+
+	const UReversiblePartActuatorComponent* Actuator =
+		AnimationId == TEXT("hood") ? HoodActuator
+		: AnimationId == TEXT("trunk") ? TrunkActuator
+		: AnimationId == TEXT("door-left") ? LeftDoorActuator
+		: AnimationId == TEXT("door-right") ? RightDoorActuator
+		: nullptr;
+	if (AnimationId == TEXT("wheel-spin"))
+	{
+		State->SetStringField(TEXT("executor"), TEXT("wheel"));
+		State->SetBoolField(TEXT("enabled"), bWheelsSpinning);
+		State->SetBoolField(TEXT("moving"), bWheelsSpinning);
+	}
+	else if (IsValid(Actuator))
+	{
+		State->SetStringField(TEXT("executor"), TEXT("part-actuator"));
+		State->SetNumberField(TEXT("progress"), Actuator->GetProgress());
+		State->SetBoolField(TEXT("openRequested"), Actuator->IsOpenRequested());
+		State->SetBoolField(TEXT("moving"), Actuator->IsMoving());
+	}
+	else
+	{
+		State->SetStringField(TEXT("executor"), TEXT("none"));
+		State->SetBoolField(TEXT("moving"), false);
+	}
+
+	FString Json;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Json);
+	return FJsonSerializer::Serialize(State, Writer) ? Json : FString();
+}
+
 bool AConfiguratorVehicleActor::ApplyStaticAnimationFallback(
 	const FName AnimationId,
 	const bool bOpen)
@@ -1016,9 +1069,10 @@ bool AConfiguratorVehicleActor::ApplyStaticAnimationFallback(
 		SetWheelAnimationEnabled(bOpen);
 		return true;
 	}
-	if (AnimationId == TEXT("trunk") && !bOpen)
+	const FString* CloseMode = StaticAnimationCloseModes.Find(AnimationId);
+	if (!bOpen && CloseMode != nullptr && *CloseMode == TEXT("stop"))
 	{
-		// catalog 的 closeMode=stop：静态代理同样保持当前姿态。
+		// 静态代理遵循 Catalog closeMode；stop 保持当前姿态。
 		return true;
 	}
 	if (AnimationId == TEXT("hood")
