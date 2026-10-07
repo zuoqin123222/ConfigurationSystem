@@ -48,15 +48,15 @@ test("catalog 使用显式 defaultSelections 消除多标配项的顺序歧义",
   );
 });
 
-test("catalog 声明五个语义交互镜头并校验层级 cameraId 引用", async () => {
+test("catalog 声明八个语义交互镜头并校验层级 cameraId 引用", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   assert.deepEqual(
     catalog.interactionCameras.map((camera) => camera.cameraId),
-    ["exterior", "wheel", "driver", "seat", "front-cabin"]
+    ["exterior", "wheel", "rear-wheel", "engine-bay", "side", "driver", "seat", "front-cabin"]
   );
   assert.deepEqual(
     catalog.interactionCameras.map((camera) => camera.legacyIndex),
-    [0, 2, 4, null, 5]
+    [0, null, null, null, 2, 4, null, 5]
   );
   assert.ok(catalog.interactionCameras.every((camera, index) =>
     camera.order === index
@@ -66,8 +66,30 @@ test("catalog 声明五个语义交互镜头并校验层级 cameraId 引用", as
   ));
   assert.equal(
     catalog.components.find((component) => component.componentId === "wheel").ui.cameraId,
+    "side"
+  );
+  assert.equal(
+    catalog.components.find((component) => component.componentId === "chassis").ui.cameraId,
+    "engine-bay"
+  );
+  assert.equal(
+    catalog.surfaces.find((surface) => surface.surfaceId === "front-caliper-color").ui.cameraId,
     "wheel"
   );
+  assert.equal(
+    catalog.surfaces.find((surface) => surface.surfaceId === "rear-caliper-color").ui.cameraId,
+    "rear-wheel"
+  );
+  assert.equal(
+    catalog.surfaces.find((surface) => surface.surfaceId === "headrest-embroidery").ui.cameraId,
+    "seat"
+  );
+  assert.ok(catalog.surfaces
+    .filter((surface) => [
+      "interior-painted-parts", "door-sill", "embroidered-logo",
+      "door-panel-embroidery", "center-panel-trim", "nameplate", "pedal",
+    ].includes(surface.surfaceId))
+    .every((surface) => surface.ui.cameraId === "front-cabin"));
 
   const invalid = structuredClone(catalog);
   invalid.components[0].ui.cameraId = "missing-camera";

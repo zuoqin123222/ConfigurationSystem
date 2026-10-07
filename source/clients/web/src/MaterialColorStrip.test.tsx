@@ -96,12 +96,13 @@ describe('MaterialColorStrip', () => {
     expect(screen.getAllByText('免费')).toHaveLength(2)
   })
 
-  it('按价格拆分色彩条并保留传入顺序', () => {
+  it('按价格拆分无前置文字的全宽色彩条并保留传入顺序', () => {
     render(<Harness onCommit={() => undefined} />)
 
     expect(screen.getAllByRole('slider')).toHaveLength(2)
-    expect(screen.getByText('价格组 1')).toBeInTheDocument()
-    expect(screen.getByText('价格组 2')).toBeInTheDocument()
+    expect(screen.queryByText('价格组 1')).not.toBeInTheDocument()
+    expect(screen.queryByText('价格组 2')).not.toBeInTheDocument()
+    expect(document.querySelector('.material-strip-label')).toBeNull()
     expect(screen.getByRole('img', { name: 'Black UF7材质实拍' }))
       .toHaveAttribute('src', '/sc01/thumbnails/ultrasuede-black.webp')
   })

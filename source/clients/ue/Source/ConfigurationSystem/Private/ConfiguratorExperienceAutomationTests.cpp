@@ -999,21 +999,16 @@ bool FVehiclePresentationHierarchyAutomationTest::RunTest(const FString& Paramet
 				&& Caliper->GetAttachParent() != SpinPivot);
 	}
 
-	USceneComponent* LeftDoorPivot = FindScene(TEXT("LeftDoorHingePivot"));
-	USceneComponent* RightDoorPivot = FindScene(TEXT("RightDoorHingePivot"));
 	const TCHAR* MirrorNames[] = {
 		TEXT("LeftDoorMirrorBase"), TEXT("LeftDoorMirrorBody"),
 		TEXT("LeftDoorMirrorGlass"), TEXT("RightDoorMirrorBase"),
 		TEXT("RightDoorMirrorBody"), TEXT("RightDoorMirrorGlass")
 	};
-	for (int32 Index = 0; Index < UE_ARRAY_COUNT(MirrorNames); ++Index)
+	for (const TCHAR* MirrorName : MirrorNames)
 	{
-		UStaticMeshComponent* Mirror = FindMesh(MirrorNames[Index]);
-		const USceneComponent* ExpectedDoor =
-			Index < 3 ? LeftDoorPivot : RightDoorPivot;
-		TestTrue(
-			*FString::Printf(TEXT("%s 随对应车门"), MirrorNames[Index]),
-			Mirror != nullptr && Mirror->GetAttachParent() == ExpectedDoor);
+		TestNull(
+			*FString::Printf(TEXT("%s 不再作为重复独立分件加载"), MirrorName),
+			FindMesh(MirrorName));
 	}
 
 	const FVector OpenHoodPoint =

@@ -167,9 +167,6 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
 	TArray<TObjectPtr<UStaticMeshComponent>> BrakeCalipers;
 
-	UPROPERTY(VisibleAnywhere, Category = "占位车辆")
-	TArray<TObjectPtr<UStaticMeshComponent>> DoorMirrorParts;
-
 	/** A5 独立静态分件；语义缺失项仍是明确标识的代理，不代表正式 SC01 几何。 */
 	UPROPERTY(VisibleAnywhere, Category = "占位车辆|Catalog代理")
 	TArray<TObjectPtr<UStaticMeshComponent>> CatalogSurfaceProxyParts;

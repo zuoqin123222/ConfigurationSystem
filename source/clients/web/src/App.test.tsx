@@ -643,7 +643,12 @@ describe('App v2', () => {
     await enterOptions()
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '轮毂' }))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('side'))
+
+    await user.click(screen.getByRole('button', { name: '下一步' }))
     await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('wheel'))
+    await user.click(screen.getByRole('button', { name: '下一步' }))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('rear-wheel'))
 
     fireEvent(window, new CustomEvent('ue-configurator-category', { detail: 'interior' }))
     await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('driver'))
@@ -685,6 +690,50 @@ describe('App v2', () => {
     await user.click(screen.getByRole('button', { name: '上一步' }))
     expect(screen.getByRole('region', { name: '回中标配置' })).toBeInTheDocument()
     await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('driver'))
+  })
+
+  it('embedded 上下步不回写 category，按子项顺序且每次镜头变化只联动一次', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    const setcameraid = vi.fn().mockResolvedValue(true)
+    const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { setcameraid, setconfiguratorcategory } }
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    fireEvent(window, new CustomEvent('ue-configurator-category', { detail: 'exterior' }))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('exterior'))
+    setcameraid.mockClear()
+    await user.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByRole('region', { name: '车架配置' })).toBeInTheDocument()
+    await waitFor(() => expect(setcameraid).toHaveBeenCalledTimes(1))
+    expect(setcameraid).toHaveBeenLastCalledWith('engine-bay')
+    expect(setconfiguratorcategory).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByRole('region', { name: '轮毂材质配置' })).toBeInTheDocument()
+    await waitFor(() => expect(setcameraid).toHaveBeenCalledTimes(2))
+    expect(setcameraid).toHaveBeenLastCalledWith('side')
+    expect(setconfiguratorcategory).not.toHaveBeenCalled()
+  })
+
+  it('个性化除头枕外使用 front-cabin，头枕使用 seat', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    const setcameraid = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { setcameraid } }
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    fireEvent(window, new CustomEvent('ue-configurator-category', { detail: 'personalization' }))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('front-cabin'))
+    const parts = screen.getByRole('region', { name: '部件筛选' })
+    await user.click(within(parts).getByRole('button', { name: '头枕刺绣' }))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('seat'))
+    await user.click(within(parts).getByRole('button', { name: '中板刺绣' }))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('front-cabin'))
   })
 
   it('分类、部件、子项由目录元数据联动且 wheel 三框同页展示', async () => {

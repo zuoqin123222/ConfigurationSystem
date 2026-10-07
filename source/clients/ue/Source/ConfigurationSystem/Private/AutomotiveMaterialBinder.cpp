@@ -243,6 +243,17 @@ bool UAutomotiveMaterialBinder::BuildBoundSlots(AActor* Vehicle)
 			Bound.Component = Match;
 			Bound.MaterialIndex = MatchIndex;
 			Bound.OriginalMaterial = Match->GetMaterial(MatchIndex);
+			Bound.bApplyToAllComponentSlots = Match == Proxy;
+			if (Bound.bApplyToAllComponentSlots)
+			{
+				const int32 MaterialCount = Match->GetNumMaterials();
+				Bound.OriginalComponentMaterials.Reserve(MaterialCount);
+				for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
+				{
+					Bound.OriginalComponentMaterials.Add(
+						Match->GetMaterial(MaterialIndex));
+				}
+			}
 			if (Binding.SurfaceId == PaintSurfaceId && PaintComponent == nullptr)
 			{
 				PaintComponent = Match;
@@ -303,7 +314,21 @@ void UAutomotiveMaterialBinder::Unbind()
 	{
 		if (IsValid(Bound.Component) && Bound.MaterialIndex != INDEX_NONE)
 		{
-			Bound.Component->SetMaterial(Bound.MaterialIndex, Bound.OriginalMaterial);
+			if (Bound.bApplyToAllComponentSlots)
+			{
+				for (int32 MaterialIndex = 0;
+					MaterialIndex < Bound.OriginalComponentMaterials.Num();
+					++MaterialIndex)
+				{
+					Bound.Component->SetMaterial(
+						MaterialIndex,
+						Bound.OriginalComponentMaterials[MaterialIndex]);
+				}
+			}
+			else
+			{
+				Bound.Component->SetMaterial(Bound.MaterialIndex, Bound.OriginalMaterial);
+			}
 		}
 	}
 	State = nullptr;
@@ -647,7 +672,19 @@ bool UAutomotiveMaterialBinder::ApplySurface(
 			}
 			AppliedMaterial = Bound.DynamicInstance;
 		}
-		Bound.Component->SetMaterial(Bound.MaterialIndex, AppliedMaterial);
+		if (Bound.bApplyToAllComponentSlots)
+		{
+			for (int32 MaterialIndex = 0;
+				MaterialIndex < Bound.Component->GetNumMaterials();
+				++MaterialIndex)
+			{
+				Bound.Component->SetMaterial(MaterialIndex, AppliedMaterial);
+			}
+		}
+		else
+		{
+			Bound.Component->SetMaterial(Bound.MaterialIndex, AppliedMaterial);
+		}
 		if (OutAppliedSlots != nullptr)
 		{
 			OutAppliedSlots->Add(Bound.SlotId);
@@ -740,14 +777,25 @@ FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction
 		return LastTransactionResult;
 	}
 
-	TArray<TObjectPtr<UMaterialInterface>> PreviousAppliedMaterials;
+	TArray<TArray<TObjectPtr<UMaterialInterface>>> PreviousAppliedMaterials;
 	PreviousAppliedMaterials.Reserve(BoundSlots.Num());
 	for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
 	{
-		PreviousAppliedMaterials.Add(
-			IsValid(Bound.Component) && Bound.MaterialIndex != INDEX_NONE
-				? Bound.Component->GetMaterial(Bound.MaterialIndex)
-				: nullptr);
+		TArray<TObjectPtr<UMaterialInterface>>& Materials =
+			PreviousAppliedMaterials.AddDefaulted_GetRef();
+		if (!IsValid(Bound.Component) || Bound.MaterialIndex == INDEX_NONE)
+		{
+			continue;
+		}
+		const int32 FirstIndex =
+			Bound.bApplyToAllComponentSlots ? 0 : Bound.MaterialIndex;
+		const int32 EndIndex = Bound.bApplyToAllComponentSlots
+			? Bound.Component->GetNumMaterials()
+			: Bound.MaterialIndex + 1;
+		for (int32 MaterialIndex = FirstIndex; MaterialIndex < EndIndex; ++MaterialIndex)
+		{
+			Materials.Add(Bound.Component->GetMaterial(MaterialIndex));
+		}
 	}
 
 	// 在提交状态前加载并验证本事务所需的所有材质，保证缺资产时零修改。
@@ -864,9 +912,16 @@ FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction
 					FAutomotiveBoundMaterialSlot& Bound = BoundSlots[Index];
 					if (IsValid(Bound.Component) && Bound.MaterialIndex != INDEX_NONE)
 					{
-						Bound.Component->SetMaterial(
-							Bound.MaterialIndex,
-							PreviousAppliedMaterials[Index]);
+						const int32 FirstIndex =
+							Bound.bApplyToAllComponentSlots ? 0 : Bound.MaterialIndex;
+						for (int32 MaterialOffset = 0;
+							MaterialOffset < PreviousAppliedMaterials[Index].Num();
+							++MaterialOffset)
+						{
+							Bound.Component->SetMaterial(
+								FirstIndex + MaterialOffset,
+								PreviousAppliedMaterials[Index][MaterialOffset]);
+						}
 					}
 				}
 				SetFailure(

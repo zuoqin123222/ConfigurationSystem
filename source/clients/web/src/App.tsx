@@ -35,6 +35,7 @@ import {
   usesMaterialStrip,
 } from './configurator'
 import type {
+  CatalogCameraId,
   CatalogV2,
   Customizations,
   LegacyCatalog,
@@ -564,6 +565,7 @@ function Configurator({
   const [renderRefreshKey, setRenderRefreshKey] = useState(0)
   const renderRequestRef = useRef('')
   const focusedAnimationIdRef = useRef<string | null>(null)
+  const focusedCameraIdRef = useRef<CatalogCameraId | null>(null)
   const [renderLoading, setRenderLoading] = useState(!embedded)
   const [renderMessage, setRenderMessage] = useState('')
   const [ueMaterialMessage, setUeMaterialMessage] = useState('')
@@ -644,7 +646,15 @@ function Configurator({
   }) => {
     if (!embedded) return
     const bridge = getUeBridge(true)
-    void setUeCameraId(bridge, cameraIdForSelection(catalog, selection))
+    const nextCameraId = cameraIdForSelection(catalog, selection)
+    if (nextCameraId !== focusedCameraIdRef.current) {
+      focusedCameraIdRef.current = nextCameraId
+      void setUeCameraId(bridge, nextCameraId).then((accepted) => {
+        if (!accepted && focusedCameraIdRef.current === nextCameraId) {
+          focusedCameraIdRef.current = null
+        }
+      })
+    }
     const nextAnimationId = animationIdForSelection(catalog, selection)
     void focusUeAnimation(
       bridge,
@@ -704,6 +714,11 @@ function Configurator({
 
   const selectSurface = (nextSurfaceId: string) => {
     setSurfaceId(nextSurfaceId)
+    focusCatalogNode({
+      categoryId,
+      componentId: currentSurface.componentId,
+      surfaceId: nextSurfaceId,
+    })
   }
 
   const focusSurface = useCallback((
@@ -718,12 +733,10 @@ function Configurator({
     setCategoryId(nextCategoryId)
     setComponentId(nextSurfacesAsComponents ? nextSurface.surfaceId : nextSurface.componentId)
     setSurfaceId(nextSurface.surfaceId)
-    if (embedded) void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
-    const firstSurface = surfacesForComponent(catalog, nextSurface.componentId)[0]
     focusCatalogNode({
       categoryId: nextCategoryId,
       componentId: nextSurfacesAsComponents ? undefined : nextSurface.componentId,
-      surfaceId: firstSurface?.surfaceId ?? nextSurface.surfaceId,
+      surfaceId: nextSurface.surfaceId,
     })
   }, [catalog, embedded, focusCatalogNode])
 
@@ -734,11 +747,7 @@ function Configurator({
         ? nextPage.surfaces.at(-1)
         : nextPage.surfaces[0]
       if (nextSurface) {
-        if (nextPage.componentId === currentSurface.componentId) {
-          setSurfaceId(nextSurface.surfaceId)
-        } else {
-          focusSurface(categoryId, nextSurface)
-        }
+        focusSurface(categoryId, nextSurface)
       }
       return
     }

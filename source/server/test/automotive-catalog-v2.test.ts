@@ -156,13 +156,13 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
     response.json().interactionCameras.map(
       (camera: { cameraId: string }) => camera.cameraId,
     ),
-    ["exterior", "wheel", "driver", "seat", "front-cabin"],
+    ["exterior", "wheel", "rear-wheel", "engine-bay", "side", "driver", "seat", "front-cabin"],
   );
   assert.deepEqual(
     response.json().interactionCameras.map(
       (camera: { legacyIndex: number | null }) => camera.legacyIndex,
     ),
-    [0, 2, 4, null, 5],
+    [0, null, null, null, 2, 4, null, 5],
   );
   assert.deepEqual(
     response.json().animations.map(
@@ -212,7 +212,19 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
     response.json().components.find(
       (component: { componentId: string }) => component.componentId === "wheel",
     ).ui.cameraId,
-    "wheel",
+    "side",
+  );
+  assert.equal(
+    response.json().components.find(
+      (component: { componentId: string }) => component.componentId === "chassis",
+    ).ui.cameraId,
+    "engine-bay",
+  );
+  assert.equal(
+    response.json().surfaces.find(
+      (surface: { surfaceId: string }) => surface.surfaceId === "rear-caliper-color",
+    ).ui.cameraId,
+    "rear-wheel",
   );
   assert.equal(
     response.json().categories.find(

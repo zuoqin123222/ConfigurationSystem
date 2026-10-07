@@ -340,6 +340,21 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 					*FString::Printf(TEXT("%s 不复用其他 surface 目标"), *Binding.SurfaceId),
 					UniqueTargets.Contains(Target));
 				UniqueTargets.Add(Target);
+				UMaterialInterface* FirstMaterial = Target->GetMaterial(0);
+				TestTrue(
+					*FString::Printf(TEXT("%s 代理目标至少包含一个材质槽"), *Binding.SurfaceId),
+					Target->GetNumMaterials() > 0 && IsValid(FirstMaterial));
+				for (int32 MaterialIndex = 1;
+					MaterialIndex < Target->GetNumMaterials();
+					++MaterialIndex)
+				{
+					TestTrue(
+						*FString::Printf(
+							TEXT("%s 代理目标槽 %d 与槽 0 材质一致"),
+							*Binding.SurfaceId,
+							MaterialIndex),
+						Target->GetMaterial(MaterialIndex) == FirstMaterial);
+				}
 			}
 		}
 		UMeshComponent* BoundComponent = nullptr;
@@ -748,6 +763,23 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 					|| (IsValid(AfterDynamic)
 						&& !AfterDynamic->K2_GetVectorParameterValue(
 							TEXT("BaseColor")).Equals(BeforeColor))));
+		UMeshComponent* Target = Vehicle->FindCatalogSurfaceTarget(
+			ExpectedSlots != nullptr && ExpectedSlots->Num() == 1
+				? (*ExpectedSlots)[0]
+				: NAME_None);
+		if (IsValid(Target))
+		{
+			for (int32 MaterialIndex = 0;
+				MaterialIndex < Target->GetNumMaterials();
+				++MaterialIndex)
+			{
+				TestTrue(
+					*FString::Printf(
+						TEXT("%s 切换后所有静态代理槽材质一致"),
+						*SurfaceId),
+					Target->GetMaterial(MaterialIndex) == After);
+			}
+		}
 	}
 	return true;
 }

@@ -114,6 +114,22 @@ function componentForSurface(surfaceId: string): string {
   return 'personalization'
 }
 
+function cameraForSurface(surfaceId: string): string | undefined {
+  if (surfaceId === 'front-caliper-color') return 'wheel'
+  if (surfaceId === 'rear-caliper-color') return 'rear-wheel'
+  if (surfaceId === 'headrest-embroidery') return 'seat'
+  if ([
+    'interior-painted-parts',
+    'door-sill',
+    'embroidered-logo',
+    'door-panel-embroidery',
+    'center-panel-trim',
+    'nameplate',
+    'pedal',
+  ].includes(surfaceId)) return 'front-cabin'
+  return undefined
+}
+
 export const catalogFixture: CatalogV2 = {
   schemaVersion: '2.0.0',
   catalogVersion: 'sc01-draft-20261007',
@@ -173,10 +189,13 @@ export const catalogFixture: CatalogV2 = {
   },
   interactionCameras: [
     { cameraId: 'exterior', legacyIndex: 0, zone: 'exterior', order: 0, displayName: '外观', iconUrl: '/camera-exterior.svg' },
-    { cameraId: 'wheel', legacyIndex: 2, zone: 'exterior', order: 1, displayName: '轮毂', iconUrl: '/camera-wheel.svg' },
-    { cameraId: 'driver', legacyIndex: 4, zone: 'interior', order: 2, displayName: '驾驶位', iconUrl: '/camera-driver.svg' },
-    { cameraId: 'seat', legacyIndex: null, zone: 'interior', order: 3, displayName: '座椅', iconUrl: '/camera-seat.svg' },
-    { cameraId: 'front-cabin', legacyIndex: 5, zone: 'interior', order: 4, displayName: '前舱', iconUrl: '/camera-front-cabin.svg' },
+    { cameraId: 'wheel', legacyIndex: null, zone: 'exterior', order: 1, displayName: '轮毂', iconUrl: '/camera-wheel.svg' },
+    { cameraId: 'rear-wheel', legacyIndex: null, zone: 'exterior', order: 2, displayName: '后轮', iconUrl: '/camera-wheel.svg' },
+    { cameraId: 'engine-bay', legacyIndex: null, zone: 'exterior', order: 3, displayName: '发动机舱', iconUrl: '/camera-exterior.svg' },
+    { cameraId: 'side', legacyIndex: 2, zone: 'exterior', order: 4, displayName: '侧面', iconUrl: '/camera-exterior.svg' },
+    { cameraId: 'driver', legacyIndex: 4, zone: 'interior', order: 5, displayName: '驾驶位', iconUrl: '/camera-driver.svg' },
+    { cameraId: 'seat', legacyIndex: null, zone: 'interior', order: 6, displayName: '座椅', iconUrl: '/camera-seat.svg' },
+    { cameraId: 'front-cabin', legacyIndex: 5, zone: 'interior', order: 7, displayName: '前舱', iconUrl: '/camera-front-cabin.svg' },
   ],
   skeletalMeshPath: '/Game/Configurator/AuthorizedAudiA5/SK_A5_Car.SK_A5_Car',
   sequencePath: '/Game/Configurator/AuthorizedAudiA5/Animations/A_A5_FullVehicle.A_A5_FullVehicle',
@@ -232,8 +251,8 @@ export const catalogFixture: CatalogV2 = {
   ],
   components: [
     { componentId: 'car-paint', categoryId: 'exterior', displayName: '车漆', ui: { order: 0, cameraId: 'exterior' } },
-    { componentId: 'chassis', categoryId: 'exterior', displayName: '车架', ui: { order: 1, cameraId: 'exterior', animationId: 'hood' } },
-    { componentId: 'wheel', categoryId: 'exterior', displayName: '轮毂', ui: { order: 2, cameraId: 'wheel', navigationMode: 'none', layout: 'stack' } },
+    { componentId: 'chassis', categoryId: 'exterior', displayName: '车架', ui: { order: 1, cameraId: 'engine-bay', animationId: 'hood' } },
+    { componentId: 'wheel', categoryId: 'exterior', displayName: '轮毂', ui: { order: 2, cameraId: 'side', navigationMode: 'none', layout: 'stack' } },
     { componentId: 'caliper', categoryId: 'exterior', displayName: '卡钳', ui: { order: 3, cameraId: 'wheel' } },
     { componentId: 'steering-wheel', categoryId: 'interior', displayName: '方向盘', ui: { order: 0, cameraId: 'driver', navigationMode: 'tabs', layout: 'single' } },
     { componentId: 'seat', categoryId: 'interior', displayName: '座椅', ui: { order: 1, cameraId: 'seat', navigationMode: 'tabs', layout: 'single' } },
@@ -256,6 +275,9 @@ export const catalogFixture: CatalogV2 = {
       displayName,
       required: !optionalSurfaceIds.has(surfaceId),
       reviewRequired: false,
+      ...(cameraForSurface(surfaceId)
+        ? { ui: { cameraId: cameraForSurface(surfaceId) } }
+        : {}),
     })),
     { surfaceId: 'steering-wheel-skin', componentId: 'steering-wheel', displayName: '表皮', required: true, reviewRequired: false },
     ...additionalDefaults.slice(6).map(([surfaceId, , displayName]) => ({
@@ -264,6 +286,9 @@ export const catalogFixture: CatalogV2 = {
       displayName,
       required: !optionalSurfaceIds.has(surfaceId),
       reviewRequired: false,
+      ...(cameraForSurface(surfaceId)
+        ? { ui: { cameraId: cameraForSurface(surfaceId) } }
+        : {}),
     })),
   ],
   materialFamilies: [

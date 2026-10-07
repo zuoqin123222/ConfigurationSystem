@@ -129,7 +129,7 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 			World, TEXT("ConfiguratorPlaceholderVehicle_TEMP")),
 		1);
 	TestEqual(
-		TEXT("六个兼容机位与两个独立语义近景机位完整"),
+		TEXT("六个兼容机位与四个独立语义近景机位完整"),
 		ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCamera"))
 			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraRear"))
 			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(World, TEXT("ShowroomCameraLeft"))
@@ -140,8 +140,12 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(
 				World, TEXT("ShowroomCameraSeats"))
 			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(
-				World, TEXT("ShowroomCameraWheel")),
-		8);
+				World, TEXT("ShowroomCameraWheel"))
+			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(
+				World, TEXT("ShowroomCameraRearWheel"))
+			+ ConfigShowroomAutomation::CountByLabel<ACameraActor>(
+				World, TEXT("ShowroomCameraEngineBay")),
+		10);
 	TSet<const AActor*> TaggedCameras;
 	for (int32 CameraIndex = 0; CameraIndex < 6; ++CameraIndex)
 	{
@@ -162,6 +166,9 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 	} SemanticCameras[] = {
 		{TEXT("exterior"), 0, false},
 		{TEXT("wheel"), INDEX_NONE, false},
+		{TEXT("rear-wheel"), INDEX_NONE, false},
+		{TEXT("engine-bay"), INDEX_NONE, false},
+		{TEXT("side"), 2, false},
 		{TEXT("driver"), 4, true},
 		{TEXT("front-cabin"), 5, true},
 		{TEXT("seat"), INDEX_NONE, true}
@@ -195,7 +202,8 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 		TEXT("ShowroomCamera"), TEXT("ShowroomCameraRear"), TEXT("ShowroomCameraLeft"),
 		TEXT("ShowroomCameraRight"), TEXT("ShowroomCameraInterior"),
 		TEXT("ShowroomCameraInteriorPassenger"), TEXT("ShowroomCameraSeats"),
-		TEXT("ShowroomCameraWheel")
+		TEXT("ShowroomCameraWheel"), TEXT("ShowroomCameraRearWheel"),
+		TEXT("ShowroomCameraEngineBay")
 	};
 	const FTransform ExpectedCameraTransforms[] = {
 		FTransform(FRotator(-14.0, -150.0, 0.0), FVector(920.0, 520.0, 310.0)),
@@ -205,10 +213,13 @@ bool FConfigShowroomMapAutomationTest::RunTest(const FString& Parameters)
 		FTransform(FRotator(-4.0, 0.0, 0.0), FVector(-15.0, -42.0, 122.0)),
 		FTransform(FRotator(-6.0, -28.0, 0.0), FVector(-15.0, 48.0, 126.0)),
 		FTransform(FRotator(-5.0, 180.0, 0.0), FVector(185.0, 0.0, 138.0)),
-		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(155.0, 410.0, 92.0))
+		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(155.0, 410.0, 92.0)),
+		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(-235.0, 410.0, 92.0)),
+		FTransform(FRotator(-18.0, 180.0, 0.0), FVector(360.0, 0.0, 245.0))
 	};
 	const float ExpectedCameraFovs[] = {
-		42.0f, 42.0f, 42.0f, 42.0f, 64.0f, 76.0f, 64.0f, 38.0f
+		42.0f, 42.0f, 42.0f, 42.0f, 64.0f, 76.0f, 64.0f, 38.0f,
+		38.0f, 46.0f
 	};
 	for (int32 CameraIndex = 0; CameraIndex < UE_ARRAY_COUNT(ExpectedCameraLabels);
 		++CameraIndex)

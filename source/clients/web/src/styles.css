@@ -491,24 +491,10 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .material-strip-groups { display: grid; gap: 10px; }
 .material-strip-control {
   display: grid;
-  grid-template-columns: 70px minmax(0, 1fr);
-  gap: 7px 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
   align-items: center;
   padding: 3px 0;
-}
-.material-strip-label {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.material-strip-label span {
-  color: #343732;
-  font-size: 11px;
-  font-weight: 600;
-}
-.material-strip-label small {
-  color: #777a73;
-  font-size: 9px;
 }
 .material-strip-track {
   position: relative;
@@ -549,12 +535,20 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   outline-offset: 3px;
 }
 .material-strip-draft-name {
-  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
   overflow: hidden;
   color: #6b6e67;
+  font-size: 10px;
+}
+.material-strip-draft-name span {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10px;
+}
+.material-strip-draft-name small {
+  flex: none;
 }
 .paint-editor { margin-top: 4px; padding: 12px; border: 1px solid #d9d7cf; border-radius: 7px; background: #faf9f5; }
 .paint-editor .section-title { margin-top: 0; }

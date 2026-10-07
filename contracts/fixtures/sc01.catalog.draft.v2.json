@@ -101,17 +101,41 @@
     },
     {
       "cameraId": "wheel",
-      "legacyIndex": 2,
+      "legacyIndex": null,
       "zone": "exterior",
       "order": 1,
       "displayName": "轮毂",
       "iconUrl": "/sc01/option-icons/default.svg"
     },
     {
+      "cameraId": "rear-wheel",
+      "legacyIndex": null,
+      "zone": "exterior",
+      "order": 2,
+      "displayName": "后轮",
+      "iconUrl": "/sc01/option-icons/default.svg"
+    },
+    {
+      "cameraId": "engine-bay",
+      "legacyIndex": null,
+      "zone": "exterior",
+      "order": 3,
+      "displayName": "发动机舱",
+      "iconUrl": "/sc01/option-icons/default.svg"
+    },
+    {
+      "cameraId": "side",
+      "legacyIndex": 2,
+      "zone": "exterior",
+      "order": 4,
+      "displayName": "侧面",
+      "iconUrl": "/sc01/option-icons/default.svg"
+    },
+    {
       "cameraId": "driver",
       "legacyIndex": 4,
       "zone": "interior",
-      "order": 2,
+      "order": 5,
       "displayName": "驾驶位",
       "iconUrl": "/sc01/option-icons/default.svg"
     },
@@ -119,7 +143,7 @@
       "cameraId": "seat",
       "legacyIndex": null,
       "zone": "interior",
-      "order": 3,
+      "order": 6,
       "displayName": "座椅",
       "iconUrl": "/sc01/option-icons/default.svg"
     },
@@ -127,7 +151,7 @@
       "cameraId": "front-cabin",
       "legacyIndex": 5,
       "zone": "interior",
-      "order": 4,
+      "order": 7,
       "displayName": "前舱",
       "iconUrl": "/sc01/option-icons/default.svg"
     }
@@ -377,7 +401,7 @@
       "displayName": "车架",
       "ui": {
         "order": 1,
-        "cameraId": "exterior",
+        "cameraId": "engine-bay",
         "animationId": "hood",
         "navigationMode": "tabs",
         "layout": "single"
@@ -396,7 +420,7 @@
       "displayName": "轮毂",
       "ui": {
         "order": 2,
-        "cameraId": "wheel",
+        "cameraId": "side",
         "navigationMode": "none",
         "layout": "stack"
       },
@@ -738,6 +762,9 @@
       "displayName": "前卡钳",
       "required": true,
       "reviewRequired": false,
+      "ui": {
+        "cameraId": "wheel"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -752,6 +779,9 @@
       "displayName": "后卡钳",
       "required": true,
       "reviewRequired": false,
+      "ui": {
+        "cameraId": "rear-wheel"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -1116,6 +1146,9 @@
       "displayName": "内饰组件",
       "required": false,
       "reviewRequired": false,
+      "ui": {
+        "cameraId": "front-cabin"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -1130,6 +1163,9 @@
       "displayName": "门板口袋",
       "required": true,
       "reviewRequired": true,
+      "ui": {
+        "cameraId": "front-cabin"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -1144,6 +1180,9 @@
       "displayName": "缝线",
       "required": true,
       "reviewRequired": false,
+      "ui": {
+        "cameraId": "front-cabin"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -1158,6 +1197,9 @@
       "displayName": "头枕刺绣",
       "required": true,
       "reviewRequired": false,
+      "ui": {
+        "cameraId": "seat"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -1172,6 +1214,9 @@
       "displayName": "中板刺绣",
       "required": true,
       "reviewRequired": false,
+      "ui": {
+        "cameraId": "front-cabin"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -1186,6 +1231,9 @@
       "displayName": "中板缝线",
       "required": true,
       "reviewRequired": true,
+      "ui": {
+        "cameraId": "front-cabin"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -1200,6 +1248,9 @@
       "displayName": "铭牌",
       "required": true,
       "reviewRequired": false,
+      "ui": {
+        "cameraId": "front-cabin"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
@@ -1214,6 +1265,9 @@
       "displayName": "脚垫",
       "required": false,
       "reviewRequired": false,
+      "ui": {
+        "cameraId": "front-cabin"
+      },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",

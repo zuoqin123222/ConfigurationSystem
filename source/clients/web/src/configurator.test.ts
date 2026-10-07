@@ -215,7 +215,7 @@ describe('v2 动态选配逻辑', () => {
       categoryId: 'exterior',
       componentId: 'wheel',
       surfaceId: 'wheel-material',
-    })).toBe('wheel')
+    })).toBe('side')
     expect(cameraIdForSelection(catalog, { categoryId: 'exterior' })).toBe('exterior')
   })
 

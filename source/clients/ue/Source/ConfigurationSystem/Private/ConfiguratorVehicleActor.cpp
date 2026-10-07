@@ -519,36 +519,6 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 		CatalogSurfaceProxyParts.Add(Proxy);
 	}
 
-	const auto CreateDoorMirrorPart = [this](
-		const TCHAR* ComponentName,
-		const TCHAR* AssetName,
-		USceneComponent* DoorPivot)
-	{
-		UStaticMeshComponent* Mirror =
-			CreateDefaultSubobject<UStaticMeshComponent>(ComponentName);
-		Mirror->SetupAttachment(DoorPivot);
-		UStaticMesh* MirrorMesh =
-			ConfiguratorVehicle::LoadIndependentStaticMesh(AssetName);
-		Mirror->SetStaticMesh(MirrorMesh);
-		Mirror->SetRelativeLocation(-DoorPivot->GetRelativeLocation());
-		Mirror->ComponentTags.Add(
-			MirrorMesh != nullptr ? AuthorizedResourceTag : TemporaryResourceTag);
-		Mirror->ComponentTags.Add(TEXT("Vehicle.Part.DoorMirror"));
-		DoorMirrorParts.Add(Mirror);
-	};
-	CreateDoorMirrorPart(
-		TEXT("LeftDoorMirrorBase"), TEXT("SM_doorMirrorBaseLeft"), LeftDoorPivot);
-	CreateDoorMirrorPart(
-		TEXT("LeftDoorMirrorBody"), TEXT("SM_mirrorBodyLeft"), LeftDoorPivot);
-	CreateDoorMirrorPart(
-		TEXT("LeftDoorMirrorGlass"), TEXT("SM_mirrorLeft"), LeftDoorPivot);
-	CreateDoorMirrorPart(
-		TEXT("RightDoorMirrorBase"), TEXT("SM_doorMirrorBaseRight"), RightDoorPivot);
-	CreateDoorMirrorPart(
-		TEXT("RightDoorMirrorBody"), TEXT("SM_mirrorBodyRight"), RightDoorPivot);
-	CreateDoorMirrorPart(
-		TEXT("RightDoorMirrorGlass"), TEXT("SM_mirrorRight"), RightDoorPivot);
-
 	LeftDoorActuator = CreateDefaultSubobject<UReversiblePartActuatorComponent>(
 		TEXT("LeftDoorActuator"));
 	RightDoorActuator = CreateDefaultSubobject<UReversiblePartActuatorComponent>(
@@ -1342,21 +1312,6 @@ bool AConfiguratorVehicleActor::HasStablePlaceholderBindings(
 			|| BrakeCalipers[Index]->GetAttachParent() != WheelSteeringPivots[Index])
 		{
 			OutErrors.Add(TEXT("车轮轴向或 Steering/Spin/Mesh 层级不正确。"));
-		}
-	}
-	if (DoorMirrorParts.Num() != 6)
-	{
-		OutErrors.Add(TEXT("左右门必须各包含镜座、镜壳与镜片。"));
-	}
-	for (int32 Index = 0; Index < DoorMirrorParts.Num(); ++Index)
-	{
-		const UStaticMeshComponent* Mirror = DoorMirrorParts[Index];
-		const USceneComponent* ExpectedDoor = Index < 3 ? LeftDoorPivot : RightDoorPivot;
-		if (!IsValid(Mirror)
-			|| Mirror->GetStaticMesh() == nullptr
-			|| Mirror->GetAttachParent() != ExpectedDoor)
-		{
-			OutErrors.Add(TEXT("后视镜必须使用可 Cook 独立网格并随对应车门运动。"));
 		}
 	}
 	if (Trunk == nullptr

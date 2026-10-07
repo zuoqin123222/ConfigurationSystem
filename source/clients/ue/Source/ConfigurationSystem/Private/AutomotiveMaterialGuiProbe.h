@@ -8,6 +8,7 @@ class UAutomotiveConfigurationState;
 class UAutomotiveMaterialBinder;
 class UAutomotiveMaterialLibrary;
 class UMaterialInterface;
+class UPathTracingExperienceSubsystem;
 
 struct FAutomotiveMaterialGuiProbeSurfaceResult
 {
@@ -20,8 +21,10 @@ struct FAutomotiveMaterialGuiProbeSurfaceResult
 	FString After;
 	FString ReceiptCode;
 	FString ColorPolicy;
+	int32 ComponentMaterialSlotCount = 0;
 	bool bVisible = false;
 	bool bUniqueSlotHit = false;
+	bool bAllSlotsMatch = false;
 	bool bChanged = false;
 	bool bNeutralProxy = false;
 };
@@ -45,6 +48,7 @@ private:
 	bool Tick(float DeltaTime);
 	bool TryInitializeTraversal();
 	bool ProcessNextSurface(FString& OutFailureReason);
+	bool ValidateAllSurfaceMaterialSlots(FString& OutFailureReason) const;
 	static FString DescribeMaterial(UMaterialInterface* Material);
 	void RequestScreenshot();
 	void WriteReportAndExit(bool bSuccess, const FString& FailureReason);
@@ -59,6 +63,8 @@ private:
 	TObjectPtr<UAutomotiveMaterialBinder> Binder;
 	UPROPERTY(Transient)
 	TObjectPtr<UAutomotiveMaterialLibrary> Library;
+	UPROPERTY(Transient)
+	TObjectPtr<UPathTracingExperienceSubsystem> PathTracing;
 	TArray<FString> SurfaceIds;
 	TArray<FAutomotiveMaterialGuiProbeSurfaceResult> SurfaceResults;
 	TArray<FString> UnsupportedSurfaceIds;
@@ -72,6 +78,7 @@ private:
 	int32 SurfaceIndex = 0;
 	double ElapsedSeconds = 0.0;
 	double TraversalCompletedSeconds = 0.0;
+	double RenderModeChangedSeconds = 0.0;
 	bool bReadinessViewport = false;
 	bool bReadinessWorld = false;
 	bool bReadinessSubsystem = false;
@@ -80,5 +87,7 @@ private:
 	bool bReadinessBinder = false;
 	bool bTraversalInitialized = false;
 	bool bTraversalComplete = false;
+	bool bPathTracingEntered = false;
+	bool bLitRestored = false;
 	bool bScreenshotRequested = false;
 };

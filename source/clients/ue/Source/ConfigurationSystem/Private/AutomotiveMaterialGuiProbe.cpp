@@ -19,6 +19,7 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
+#include "PathTracingExperienceSubsystem.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "ShaderCompiler.h"
@@ -105,11 +106,63 @@ bool UAutomotiveMaterialGuiProbe::Tick(const float DeltaTime)
 		}
 	}
 	if (bTraversalComplete
+		&& !bPathTracingEntered
+		&& ElapsedSeconds - TraversalCompletedSeconds >= 2.0)
+	{
+		FString FailureReason;
+		if (!ValidateAllSurfaceMaterialSlots(FailureReason))
+		{
+			WriteReportAndExit(false, TEXT("Lit 全槽检查失败：") + FailureReason);
+			return false;
+		}
+		FString PathTracingError;
+		if (IsValid(PathTracing)
+			&& PathTracing->SetPathTracingEnabled(true, PathTracingError))
+		{
+			bPathTracingEntered = true;
+			RenderModeChangedSeconds = ElapsedSeconds;
+		}
+		else if (!IsValid(PathTracing)
+			|| PathTracing->GetAvailability() == TEXT("unavailable"))
+		{
+			WriteReportAndExit(
+				false,
+				TEXT("无法进入 Path Tracing：") + PathTracingError);
+			return false;
+		}
+	}
+	if (bPathTracingEntered
+		&& !bLitRestored
+		&& ElapsedSeconds - RenderModeChangedSeconds >= 3.0)
+	{
+		FString FailureReason;
+		if (!ValidateAllSurfaceMaterialSlots(FailureReason))
+		{
+			WriteReportAndExit(false, TEXT("Path Tracing 全槽检查失败：") + FailureReason);
+			return false;
+		}
+		FString RestoreError;
+		if (!IsValid(PathTracing)
+			|| !PathTracing->SetPathTracingEnabled(false, RestoreError))
+		{
+			WriteReportAndExit(false, TEXT("无法恢复 Lit：") + RestoreError);
+			return false;
+		}
+		bLitRestored = true;
+		RenderModeChangedSeconds = ElapsedSeconds;
+	}
+	if (bLitRestored
 		&& !bScreenshotRequested
-		&& ElapsedSeconds - TraversalCompletedSeconds >= 2.0
+		&& ElapsedSeconds - RenderModeChangedSeconds >= 2.0
 		&& (GShaderCompilingManager == nullptr
 			|| !GShaderCompilingManager->IsCompiling()))
 	{
+		FString FailureReason;
+		if (!ValidateAllSurfaceMaterialSlots(FailureReason))
+		{
+			WriteReportAndExit(false, TEXT("恢复 Lit 后全槽检查失败：") + FailureReason);
+			return false;
+		}
 		RequestScreenshot();
 	}
 	if (bScreenshotRequested
@@ -118,7 +171,7 @@ bool UAutomotiveMaterialGuiProbe::Tick(const float DeltaTime)
 		WriteReportAndExit(true, FString());
 		return false;
 	}
-	if (ElapsedSeconds >= 120.0)
+	if (ElapsedSeconds >= 180.0)
 	{
 		WriteReportAndExit(
 			false,
@@ -175,6 +228,10 @@ bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 		IsValid(Configurator)
 			? Configurator->GetAutomotiveMaterialLibrary()
 			: nullptr;
+	UPathTracingExperienceSubsystem* CandidatePathTracing =
+		IsValid(GameInstance)
+			? GameInstance->GetSubsystem<UPathTracingExperienceSubsystem>()
+			: nullptr;
 	bReadinessState =
 		IsValid(CandidateState) && CandidateState->IsInitialized();
 	bReadinessLibrary = IsValid(CandidateLibrary);
@@ -188,7 +245,8 @@ bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 		IsValid(CandidateBinder) ? CandidateBinder->GetLastError() : FString();
 	ReadinessBoundSlotCounts.Reset();
 	bReadinessBinder =
-		IsValid(CandidateBinder) && bReadinessState && bReadinessLibrary;
+		IsValid(CandidateBinder) && bReadinessState && bReadinessLibrary
+			&& IsValid(CandidatePathTracing);
 	if (!bReadinessState || !IsValid(CandidateBinder) || !bReadinessLibrary)
 	{
 		return false;
@@ -219,10 +277,57 @@ bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 	State = CandidateState;
 	Binder = CandidateBinder;
 	Library = CandidateLibrary;
+	PathTracing = CandidatePathTracing;
 	SurfaceIds = CandidateSurfaceIds;
 	SurfaceResults.Reset(SurfaceIds.Num());
 	UnsupportedSurfaceIds.Reset();
 	SurfaceIndex = 0;
+	return true;
+}
+
+bool UAutomotiveMaterialGuiProbe::ValidateAllSurfaceMaterialSlots(
+	FString& OutFailureReason) const
+{
+	OutFailureReason.Reset();
+	for (const FString& SurfaceId : SurfaceIds)
+	{
+		UMeshComponent* Component = nullptr;
+		FName SlotId;
+		int32 MaterialIndex = INDEX_NONE;
+		if (!IsValid(Binder)
+			|| !Binder->GetSingleBoundSlot(
+				SurfaceId,
+				Component,
+				SlotId,
+				MaterialIndex)
+			|| !IsValid(Component)
+			|| Component->GetNumMaterials() <= 0)
+		{
+			OutFailureReason = FString::Printf(
+				TEXT("surfaceId=%s 没有有效静态代理材质槽。"),
+				*SurfaceId);
+			return false;
+		}
+		UMaterialInterface* ExpectedMaterial = Component->GetMaterial(0);
+		if (!IsValid(ExpectedMaterial))
+		{
+			OutFailureReason = FString::Printf(
+				TEXT("surfaceId=%s 的槽 0 材质为空。"),
+				*SurfaceId);
+			return false;
+		}
+		for (int32 Index = 1; Index < Component->GetNumMaterials(); ++Index)
+		{
+			if (Component->GetMaterial(Index) != ExpectedMaterial)
+			{
+				OutFailureReason = FString::Printf(
+					TEXT("surfaceId=%s 的槽 %d 与槽 0 材质不一致。"),
+					*SurfaceId,
+					Index);
+				return false;
+			}
+		}
+	}
 	return true;
 }
 
@@ -414,6 +519,12 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 				&& FMath::IsNearlyEqual(Color.G, Color.B, 0.0001f);
 		}
 	}
+	bool bAllSlotsMatch = IsValid(AfterMaterial);
+	for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+	{
+		bAllSlotsMatch = bAllSlotsMatch
+			&& Component->GetMaterial(Index) == AfterMaterial;
+	}
 	const bool bReceiptValid =
 		Result.bSuccess
 		&& Result.Code == TEXT("APPLIED")
@@ -421,14 +532,16 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 		&& Result.AppliedSlotIds == TArray<FName>({SlotId})
 		&& Result.UnsupportedSurfaceIds.IsEmpty();
 	const bool bChanged = IsValid(AfterMaterial) && Before != After;
-	if (!bReceiptValid || !bVisible || !bChanged || !bNeutralProxyColorValid)
+	if (!bReceiptValid || !bVisible || !bChanged
+		|| !bNeutralProxyColorValid || !bAllSlotsMatch)
 	{
 		OutFailureReason = FString::Printf(
-			TEXT("surfaceId=%s 验证失败：receipt=%s visible=%s neutralProxyColor=%s before=%s after=%s"),
+			TEXT("surfaceId=%s 验证失败：receipt=%s visible=%s neutralProxyColor=%s allSlotsMatch=%s before=%s after=%s"),
 			*SurfaceId,
 			*Result.ToJson(),
 			bVisible ? TEXT("true") : TEXT("false"),
 			bNeutralProxyColorValid ? TEXT("true") : TEXT("false"),
+			bAllSlotsMatch ? TEXT("true") : TEXT("false"),
 			*Before,
 			*After);
 		return false;
@@ -445,8 +558,10 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 	Report.After = After;
 	Report.ReceiptCode = Result.Code;
 	Report.ColorPolicy = ColorPolicy;
+	Report.ComponentMaterialSlotCount = Component->GetNumMaterials();
 	Report.bVisible = bVisible;
 	Report.bUniqueSlotHit = bUniqueSlot;
+	Report.bAllSlotsMatch = bAllSlotsMatch;
 	Report.bChanged = bChanged;
 	Report.bNeutralProxy = bNeutralProxy;
 	++SurfaceIndex;
@@ -476,6 +591,8 @@ void UAutomotiveMaterialGuiProbe::WriteReportAndExit(
 	Root->SetNumberField(TEXT("expectedSurfaceCount"),
 		AutomotiveCatalog::RequiredSelectionCount);
 	Root->SetNumberField(TEXT("validatedSurfaceCount"), SurfaceResults.Num());
+	Root->SetBoolField(TEXT("pathTracingEntered"), bPathTracingEntered);
+	Root->SetBoolField(TEXT("litRestored"), bLitRestored);
 	TSharedRef<FJsonObject> Readiness = MakeShared<FJsonObject>();
 	Readiness->SetBoolField(TEXT("viewport"), bReadinessViewport);
 	Readiness->SetBoolField(TEXT("world"), bReadinessWorld);
@@ -526,10 +643,14 @@ void UAutomotiveMaterialGuiProbe::WriteReportAndExit(
 		Item->SetStringField(TEXT("before"), Result.Before);
 		Item->SetStringField(TEXT("after"), Result.After);
 		Item->SetStringField(TEXT("colorPolicy"), Result.ColorPolicy);
+		Item->SetNumberField(
+			TEXT("componentMaterialSlotCount"),
+			Result.ComponentMaterialSlotCount);
 		Item->SetBoolField(TEXT("neutralProxy"), Result.bNeutralProxy);
 		Item->SetBoolField(TEXT("change"), Result.bChanged);
 		Item->SetBoolField(TEXT("visible"), Result.bVisible);
 		Item->SetBoolField(TEXT("uniqueSlotHit"), Result.bUniqueSlotHit);
+		Item->SetBoolField(TEXT("allSlotsMatch"), Result.bAllSlotsMatch);
 		Item->SetStringField(TEXT("receiptCode"), Result.ReceiptCode);
 		SurfaceValues.Add(MakeShared<FJsonValueObject>(Item));
 	}

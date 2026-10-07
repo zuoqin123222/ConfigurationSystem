@@ -76,7 +76,7 @@ describe('ExperienceControls', () => {
 
     await user.hover(within(toolbar).getByRole('button', { name: '镜头' }))
     const cameraMenu = await screen.findByRole('menu', { name: '镜头预设' })
-    expect(within(cameraMenu).getAllByRole('menuitemradio')).toHaveLength(5)
+    expect(within(cameraMenu).getAllByRole('menuitemradio')).toHaveLength(8)
     expect(within(cameraMenu).getByRole('menuitemradio', { name: '轮毂' }))
       .toHaveAttribute('aria-checked', 'true')
     expect(within(cameraMenu).getByRole('menuitemradio', { name: '驾驶位' }).querySelector('img'))
@@ -239,7 +239,7 @@ describe('ExperienceControls', () => {
     const cameraButton = screen.getByRole('button', { name: '镜头' })
     const animationButton = await screen.findByRole('button', { name: '动画' })
     await user.click(cameraButton)
-    await waitFor(() => expect(bridge.setcameraid).toHaveBeenCalledWith('driver'))
+    await waitFor(() => expect(bridge.setcameraid).toHaveBeenCalledWith('rear-wheel'))
     await user.click(animationButton)
     await waitFor(() => expect(bridge.focusanimation).toHaveBeenNthCalledWith(1, 'hood'))
     await user.click(animationButton)
@@ -468,7 +468,7 @@ describe('ExperienceControls', () => {
 
     await user.hover(screen.getByRole('button', { name: '镜头' }))
     const menu = await screen.findByRole('menu', { name: '镜头预设' })
-    expect(within(menu).getByRole('menuitemradio', { name: '轮毂' }))
+    expect(within(menu).getByRole('menuitemradio', { name: '侧面' }))
       .toHaveAttribute('aria-checked', 'true')
 
     fireEvent.click(within(menu).getByRole('menuitemradio', { name: '驾驶位' }))

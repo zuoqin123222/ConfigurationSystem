@@ -38,6 +38,9 @@ struct FAutomotiveBoundMaterialSlot
 	TObjectPtr<UMaterialInterface> OriginalMaterial;
 
 	UPROPERTY(Transient)
+	TArray<TObjectPtr<UMaterialInterface>> OriginalComponentMaterials;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> DynamicInstance;
 
 	UPROPERTY(Transient)
@@ -49,6 +52,7 @@ struct FAutomotiveBoundMaterialSlot
 	FString SurfaceId;
 	FName SlotId;
 	int32 MaterialIndex = INDEX_NONE;
+	bool bApplyToAllComponentSlots = false;
 };
 
 /**

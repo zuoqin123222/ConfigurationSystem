@@ -154,10 +154,6 @@ function MaterialStripRange({
 
   return (
     <div className={`material-strip-control ${selectedIndex >= 0 ? 'selected' : ''}`}>
-      <div className="material-strip-label">
-        <span>{label}</span>
-        <small>{draftChoice ? formatPrice(draftChoice.option) : ''}</small>
-      </div>
       <div
         className="material-strip-track"
         style={{
@@ -178,7 +174,10 @@ function MaterialStripRange({
         />
         <span className="material-strip-indicator" aria-hidden="true" />
       </div>
-      <div className="material-strip-draft-name">{draftChoice?.displayName}</div>
+      <div className="material-strip-draft-name">
+        <span>{draftChoice?.displayName}</span>
+        <small>{draftChoice ? formatPrice(draftChoice.option) : ''}</small>
+      </div>
     </div>
   )
 }

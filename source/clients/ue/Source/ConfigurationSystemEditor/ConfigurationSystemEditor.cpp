@@ -638,7 +638,8 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		TEXT("ShowroomCamera"), TEXT("ShowroomCameraRear"), TEXT("ShowroomCameraLeft"),
 		TEXT("ShowroomCameraRight"), TEXT("ShowroomCameraInterior"),
 		TEXT("ShowroomCameraInteriorPassenger"), TEXT("ShowroomCameraSeats"),
-		TEXT("ShowroomCameraWheel")
+		TEXT("ShowroomCameraWheel"), TEXT("ShowroomCameraRearWheel"),
+		TEXT("ShowroomCameraEngineBay")
 	};
 	const FTransform CameraTransforms[] = {
 		FTransform(FRotator(-14.0, -150.0, 0.0), FVector(920.0, 520.0, 310.0)),
@@ -652,17 +653,23 @@ void FConfigurationSystemEditorModule::CreateConfigShowroomMap()
 		// 从前挡外侧回看前排双座，避免与任一单席视点重合。
 		FTransform(FRotator(-5.0, 180.0, 0.0), FVector(185.0, 0.0, 138.0)),
 		// 右前轮近景；独立于旧 2 号侧面机位，便于新 UI 精看轮毂。
-		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(155.0, 410.0, 92.0))
+		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(155.0, 410.0, 92.0)),
+		// 右后轮近景。
+		FTransform(FRotator(-7.0, -90.0, 0.0), FVector(-235.0, 410.0, 92.0)),
+		// 从车头上方看向打开后的机舱区域。
+		FTransform(FRotator(-18.0, 180.0, 0.0), FVector(360.0, 0.0, 245.0))
 	};
 	const float CameraFovs[] = {
-		42.0f, 42.0f, 42.0f, 42.0f, 64.0f, 76.0f, 64.0f, 38.0f
+		42.0f, 42.0f, 42.0f, 42.0f, 64.0f, 76.0f, 64.0f, 38.0f,
+		38.0f, 46.0f
 	};
 	const TCHAR* SemanticCameraIds[] = {
-		TEXT("exterior"), nullptr, nullptr, nullptr,
-		TEXT("driver"), TEXT("front-cabin"), TEXT("seat"), TEXT("wheel")
+		TEXT("exterior"), nullptr, TEXT("side"), nullptr,
+		TEXT("driver"), TEXT("front-cabin"), TEXT("seat"), TEXT("wheel"),
+		TEXT("rear-wheel"), TEXT("engine-bay")
 	};
 	const bool bInteriorCameras[] = {
-		false, false, false, false, true, true, true, false
+		false, false, false, false, true, true, true, false, false, false
 	};
 	bool bAllCamerasCreated = true;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(CameraLabels); ++Index)
