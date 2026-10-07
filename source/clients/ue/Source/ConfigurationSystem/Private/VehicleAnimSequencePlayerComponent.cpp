@@ -40,13 +40,29 @@ bool UVehicleAnimSequencePlayerComponent::SetSequenceAndClips(
 	bClosing = false;
 	bHasPendingFocus = false;
 	FrameAccumulator = 0.0;
+	LastSetupError.Reset();
 
 	const USkeletalMesh* SkeletalMesh = IsValid(Mesh)
 		? Mesh->GetSkeletalMeshAsset()
 		: nullptr;
-	if (!IsValid(InSequence) || SkeletalMesh == nullptr
-		|| InSequence->GetSkeleton() != SkeletalMesh->GetSkeleton())
+	if (!IsValid(InSequence))
 	{
+		LastSetupError = TEXT("sequence-invalid");
+		return false;
+	}
+	if (!IsValid(Mesh))
+	{
+		LastSetupError = TEXT("mesh-component-invalid");
+		return false;
+	}
+	if (SkeletalMesh == nullptr)
+	{
+		LastSetupError = TEXT("component-skeletal-mesh-null");
+		return false;
+	}
+	if (InSequence->GetSkeleton() != SkeletalMesh->GetSkeleton())
+	{
+		LastSetupError = TEXT("component-sequence-skeleton-mismatch");
 		return false;
 	}
 
@@ -57,12 +73,24 @@ bool UVehicleAnimSequencePlayerComponent::SetSequenceAndClips(
 		if (!IsStableAnimationId(Clip.AnimationId.ToString()) || Clip.FrameRate <= 0.0f
 			|| !NormalizeFrameRange(Clip.StartFrame, Clip.EndFrame, MaxFrame))
 		{
+			LastSetupError = FString::Printf(
+				TEXT("clip-invalid id=%s frameRate=%g start=%d end=%d max=%d"),
+				*Clip.AnimationId.ToString(),
+				Clip.FrameRate,
+				Clip.StartFrame,
+				Clip.EndFrame,
+				MaxFrame);
 			return false;
 		}
 	}
 	Sequence = InSequence;
 	Clips = MoveTemp(NormalizedClips);
-	return !Clips.IsEmpty();
+	if (Clips.IsEmpty())
+	{
+		LastSetupError = TEXT("clips-empty");
+		return false;
+	}
+	return true;
 }
 
 const FVehicleAnimationClip*

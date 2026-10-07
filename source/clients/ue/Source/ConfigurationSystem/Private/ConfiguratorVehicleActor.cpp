@@ -676,7 +676,7 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 	if (!bAnimationSequenceReady)
 	{
 		AnimationLoadFailureReason = FString::Printf(
-			TEXT("sequence-setup clips=%s skeletonMatch=%s sampledKeys=%d meshSkeleton=%s sequenceSkeleton=%s"),
+			TEXT("sequence-setup clips=%s skeletonMatch=%s sampledKeys=%d meshSkeleton=%s sequenceSkeleton=%s player=%s"),
 			bClipsBuilt ? TEXT("true") : TEXT("false"),
 			bSkeletonMatches ? TEXT("true") : TEXT("false"),
 			FullVehicleSequence->GetNumberOfSampledKeys(),
@@ -685,7 +685,8 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 				: TEXT("<null>"),
 			IsValid(FullVehicleSequence->GetSkeleton())
 				? *FullVehicleSequence->GetSkeleton()->GetPathName()
-				: TEXT("<null>"));
+				: TEXT("<null>"),
+			*AnimationPlayer->GetLastSetupError());
 		UE_LOG(
 			LogTemp,
 			Warning,

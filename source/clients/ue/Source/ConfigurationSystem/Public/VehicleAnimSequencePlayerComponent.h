@@ -132,6 +132,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Vehicle Animation")
 	int32 GetDirection() const { return Direction; }
 
+	const FString& GetLastSetupError() const { return LastSetupError; }
+
 private:
 	const FVehicleAnimationClip* FindClip(FName AnimationId) const;
 	void ApplyCurrentFrame();
@@ -155,4 +157,5 @@ private:
 	bool bPlaying = false;
 	bool bClosing = false;
 	bool bHasPendingFocus = false;
+	FString LastSetupError;
 };
