@@ -888,7 +888,7 @@ bool AConfiguratorVehicleActor::FocusVehicleAnimation(const FName NextAnimationI
 {
 	if (!NextAnimationId.IsNone()
 		&& !UVehicleAnimSequencePlayerComponent::IsStableAnimationId(
-			NextAnimationId.ToString()))
+			NextAnimationId.ToString().ToLower()))
 	{
 		return false;
 	}
@@ -1002,7 +1002,7 @@ bool AConfiguratorVehicleActor::CanPlayVehicleAnimation(
 	const FName AnimationId) const
 {
 	if (!UVehicleAnimSequencePlayerComponent::IsStableAnimationId(
-		AnimationId.ToString()))
+		AnimationId.ToString().ToLower()))
 	{
 		return false;
 	}
@@ -1021,7 +1021,7 @@ FString AConfiguratorVehicleActor::GetAnimationExecutorStateJson(
 	const FName AnimationId) const
 {
 	TSharedRef<FJsonObject> State = MakeShared<FJsonObject>();
-	State->SetStringField(TEXT("animationId"), AnimationId.ToString());
+	State->SetStringField(TEXT("animationId"), AnimationId.ToString().ToLower());
 	State->SetBoolField(TEXT("canPlay"), CanPlayVehicleAnimation(AnimationId));
 	State->SetBoolField(
 		TEXT("active"),

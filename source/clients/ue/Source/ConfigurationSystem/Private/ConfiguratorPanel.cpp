@@ -944,7 +944,9 @@ FString UConfiguratorPanel::GetExperienceStateJson()
 	}
 	else
 	{
-		State->SetStringField(TEXT("animationId"), FocusedAnimationId.ToString());
+		State->SetStringField(
+			TEXT("animationId"),
+			FocusedAnimationId.ToString().ToLower());
 	}
 	State->SetStringField(TEXT("lightPreset"), Controller->GetLightPreset());
 	State->SetStringField(TEXT("renderMode"), Controller->GetRenderMode());

@@ -750,6 +750,11 @@ bool FControllerVehicleHoodTrunkAutomationTest::RunTest(
 
 	TestTrue(TEXT("Controller 可探测 hood"), Controller->CanPlayAnimation(TEXT("hood")));
 	TestTrue(TEXT("Controller 可探测 trunk"), Controller->CanPlayAnimation(TEXT("trunk")));
+	TestTrue(TEXT("FName 显示大小写不影响 hood 稳定 ID"),
+		Controller->CanPlayAnimation(TEXT("Hood")));
+	TestTrue(TEXT("执行器状态始终输出小写稳定 ID"),
+		Controller->GetAnimationExecutorStateJson(TEXT("Hood")).Contains(
+			TEXT("\"hood\"")));
 	TestTrue(TEXT("Controller→Vehicle 开启 hood"), Controller->PlayAnimation(TEXT("hood")));
 	TestTrue(TEXT("hood 执行器收到开启目标"), HoodActuator->IsOpenRequested());
 	HoodActuator->AdvanceActuation(1.0f);
