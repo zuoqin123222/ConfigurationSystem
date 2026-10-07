@@ -431,8 +431,12 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
   border-bottom: 1px solid #deddd7;
 }
 .color-choice .color-choice-name {
-  display: block; overflow: hidden; padding: 5px; text-overflow: ellipsis; white-space: nowrap;
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 5px;
+  white-space: normal;
   font-size: 11px;
+  line-height: 1.35;
 }
 .color-choice small {
   display: block;
@@ -1351,8 +1355,8 @@ html.controls-document #root::-webkit-scrollbar {
 .preset-card small { color: #7b7e76; font-size: 10px; }
 .summary-list {
   overflow: hidden;
-  border: 1px solid #dfddd6;
-  border-radius: 10px;
+  border: 0;
+  border-radius: 0;
 }
 .summary-row {
   display: flex;

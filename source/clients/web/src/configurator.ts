@@ -44,10 +44,16 @@ function defaultOption(
       )
     : undefined
   if (configured && optionIsAvailable(configured, selections)) return configured
-  return catalog.options.find(
+  const standard = catalog.options.find(
     (item) => item.surfaceId === surfaceId
       && item.pricing.isStandard
       && optionIsAvailable(item, selections),
+  )
+  if (standard) return standard
+  const surface = catalog.surfaces.find((item) => item.surfaceId === surfaceId)
+  if (!surface?.required) return undefined
+  return catalog.options.find(
+    (item) => item.surfaceId === surfaceId && optionIsAvailable(item, selections),
   )
 }
 

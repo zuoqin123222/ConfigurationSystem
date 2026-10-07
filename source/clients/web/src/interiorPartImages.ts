@@ -27,10 +27,13 @@ export const INTERIOR_PART_IMAGES: Readonly<Record<string, string>> = {
   'interior-painted-parts': `${BASE}/interior-painted-parts.webp`,
   'door-sill': `${BASE}/door-sill.webp`,
   'embroidered-logo': `${BASE}/embroidered-logo.webp`,
+  'headrest-embroidery': `${BASE}/headrest-embroidery.webp`,
+  'door-panel-embroidery': `${BASE}/door-panel-embroidery.webp`,
   'center-panel-trim': `${BASE}/center-panel-trim.webp`,
+  nameplate: `${BASE}/nameplate-stainless-preview.webp`,
   'shift-knob': `${BASE}/shift-knob.webp`,
   'brake-handle': `${BASE}/brake-handle.webp`,
   pedal: `${BASE}/pedal.webp`,
 }
 
-export const BLACK_REFERENCE_SURFACES = new Set(['steering-wheel-addon'])
+export const BLACK_REFERENCE_SURFACES = new Set<string>()

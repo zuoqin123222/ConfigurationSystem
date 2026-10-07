@@ -467,7 +467,7 @@ try {
     )
   );
   check(
-    scale.configurationCount === "19591041024000000000000",
+    scale.configurationCount === "29386561536000000000000",
     "SC01 v2 完整组合规模估算必须稳定且不得直接展开"
   );
   check(
@@ -476,11 +476,11 @@ try {
     "SC01 v2 coverage 必须覆盖每个可生成 Bake 的 renderRelevant 选项"
   );
   check(
-    coverage.renderRelevantOptionCount === 165
+    coverage.renderRelevantOptionCount === 168
       && coverage.excludedColorPickerOptionCount === 5
-      && coverage.configurations.length === 482
-      && plan.expectedRenderCount === 1928,
-    "SC01 v2 coverage 规模必须稳定为 165 个 Bake 选项、排除 5 个 color-picker、482 个配置和 1928 个任务"
+      && coverage.configurations.length === 486
+      && plan.expectedRenderCount === 1944,
+    "SC01 v2 coverage 规模必须稳定为 168 个 Bake 选项、排除 5 个 color-picker、486 个配置和 1944 个任务"
   );
   check(
     colorPickerOptions.every((option) => !coveredOptionIds.has(option.optionId)),

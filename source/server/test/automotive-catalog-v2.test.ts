@@ -141,7 +141,7 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().vehicle.vehicleId, "sc01");
   assert.equal(response.json().vehicle.quotable, false);
-  assert.equal(response.json().options.length, 171);
+  assert.equal(response.json().options.length, 174);
   assert.equal(response.json().surfaces.length, 40);
   assert.equal(response.json().selectionOrder.length, 40);
   assert.equal(response.json().categories.map(
@@ -462,7 +462,7 @@ test("任一有备选项的 surface 变化都会改变 configurationId", () => {
           candidateSelections[requiredSurfaceId] === requiredOptionId
       );
       if (requirementsMet) continue;
-      const fallback = data.catalog.options.find(
+      const standardFallback = data.catalog.options.find(
         (option) => option.surfaceId === dependentSurfaceId
           && option.pricing.isStandard
           && option.availability?.status !== "disabled"
@@ -470,6 +470,21 @@ test("任一有备选项的 surface 变化都会改变 configurationId", () => {
             ([requiredSurfaceId, requiredOptionId]) =>
               candidateSelections[requiredSurfaceId] === requiredOptionId
           ),
+      );
+      const dependentSurface = data.catalog.surfaces.find(
+        (surface) => surface.surfaceId === dependentSurfaceId,
+      );
+      const fallback = standardFallback ?? (
+        dependentSurface?.required
+          ? data.catalog.options.find(
+              (option) => option.surfaceId === dependentSurfaceId
+                && option.availability?.status !== "disabled"
+                && Object.entries(option.requiresSelections ?? {}).every(
+                  ([requiredSurfaceId, requiredOptionId]) =>
+                    candidateSelections[requiredSurfaceId] === requiredOptionId
+                ),
+            )
+          : undefined
       );
       if (fallback) candidateSelections[dependentSurfaceId] = fallback.optionId;
     }

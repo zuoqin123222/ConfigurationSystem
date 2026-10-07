@@ -62,7 +62,7 @@
         "exterior-body-cover": "body-cover-silver",
         "rear-wing": "rear-wing-none",
         "wheel-material": "wheel-magnesium-alloy",
-        "wheel-style": "wheel-style-magnesium-default",
+        "wheel-style": "wheel-style-magnesium-1",
         "wheel-color": "wheel-color-bright-silver",
         "lower-skirt": "lower-skirt-aluminum",
         "front-caliper-color": "front-caliper-black",
@@ -100,8 +100,8 @@
         "pedal": "pedal-racing"
       },
       "customizations": {},
-      "configurationId": "cfg-8e72d56ccb7f980057787409",
-      "renderKey": "sc01__sc01-draft-20261007__render-8e72d56ccb7f980057787409"
+      "configurationId": "cfg-797538e68ea477561fb7243b",
+      "renderKey": "sc01__sc01-draft-20261007__render-797538e68ea477561fb7243b"
     }
   ]
 }

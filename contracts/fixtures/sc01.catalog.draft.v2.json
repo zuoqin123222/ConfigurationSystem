@@ -7958,45 +7958,6 @@
       }
     },
     {
-      "optionId": "wheel-style-magnesium-default",
-      "surfaceId": "wheel-style",
-      "requiresSelections": {
-        "wheel-material": "wheel-magnesium-alloy"
-      },
-      "materialFamilyId": "magnesium-alloy",
-      "displayName": "默认同款",
-      "colorCode": null,
-      "finish": null,
-      "renderRelevant": true,
-      "parameters": {
-        "color": null,
-        "material": {
-          "materialFamilyId": "magnesium-alloy",
-          "variantId": null
-        }
-      },
-      "thumbnailUrl": null,
-      "reviewRequired": false,
-      "pricing": {
-        "unitPriceMinor": 0,
-        "quantity": 1,
-        "pricingUnit": "per-piece",
-        "isStandard": true,
-        "status": "confirmed",
-        "quotable": false
-      },
-      "sourceRefs": [
-        {
-          "documentId": "sc01-configuration-list",
-          "page": 1,
-          "locator": "轮毂造型 / 镁合金 / 默认同款 / 免费（用户确认）"
-        }
-      ],
-      "ui": {
-        "control": "swatch"
-      }
-    },
-    {
       "optionId": "wheel-style-magnesium-1",
       "surfaceId": "wheel-style",
       "requiresSelections": {
@@ -8017,18 +7978,18 @@
       "thumbnailUrl": null,
       "reviewRequired": true,
       "pricing": {
-        "unitPriceMinor": null,
+        "unitPriceMinor": 50000,
         "quantity": 1,
         "pricingUnit": "per-piece",
         "isStandard": false,
-        "status": "unconfirmed",
+        "status": "confirmed",
         "quotable": false
       },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂造型 / 镁合金 / 款式1（用户确认，价格待确认）"
+          "locator": "轮毂造型 / 镁合金 / 款式1 / 500 元（用户确认）"
         }
       ],
       "ui": {
@@ -8089,18 +8050,18 @@
       "thumbnailUrl": null,
       "reviewRequired": true,
       "pricing": {
-        "unitPriceMinor": null,
+        "unitPriceMinor": 50000,
         "quantity": 1,
         "pricingUnit": "per-piece",
         "isStandard": false,
-        "status": "unconfirmed",
+        "status": "confirmed",
         "quotable": false
       },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂造型 / 镁合金 / 款式2（用户确认，价格待确认）"
+          "locator": "轮毂造型 / 镁合金 / 款式2 / 500 元（用户确认）"
         }
       ],
       "ui": {
@@ -8128,18 +8089,18 @@
       "thumbnailUrl": null,
       "reviewRequired": true,
       "pricing": {
-        "unitPriceMinor": null,
+        "unitPriceMinor": 50000,
         "quantity": 1,
         "pricingUnit": "per-piece",
         "isStandard": false,
-        "status": "unconfirmed",
+        "status": "confirmed",
         "quotable": false
       },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂造型 / 镁合金 / 款式3（用户确认，价格待确认）"
+          "locator": "轮毂造型 / 镁合金 / 款式3 / 500 元（用户确认）"
         }
       ],
       "ui": {
@@ -8167,18 +8128,18 @@
       "thumbnailUrl": null,
       "reviewRequired": true,
       "pricing": {
-        "unitPriceMinor": null,
+        "unitPriceMinor": 50000,
         "quantity": 1,
         "pricingUnit": "per-piece",
         "isStandard": false,
-        "status": "unconfirmed",
+        "status": "confirmed",
         "quotable": false
       },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂造型 / 镁合金 / 款式4（用户确认，价格待确认）"
+          "locator": "轮毂造型 / 镁合金 / 款式4 / 500 元（用户确认）"
         }
       ],
       "ui": {
@@ -8206,18 +8167,18 @@
       "thumbnailUrl": null,
       "reviewRequired": true,
       "pricing": {
-        "unitPriceMinor": null,
+        "unitPriceMinor": 50000,
         "quantity": 1,
         "pricingUnit": "per-piece",
         "isStandard": false,
-        "status": "unconfirmed",
+        "status": "confirmed",
         "quotable": false
       },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂造型 / 镁合金 / 款式5（用户确认，价格待确认）"
+          "locator": "轮毂造型 / 镁合金 / 款式5 / 500 元（用户确认）"
         }
       ],
       "ui": {
@@ -8245,18 +8206,18 @@
       "thumbnailUrl": null,
       "reviewRequired": true,
       "pricing": {
-        "unitPriceMinor": null,
+        "unitPriceMinor": 50000,
         "quantity": 1,
         "pricingUnit": "per-piece",
         "isStandard": false,
-        "status": "unconfirmed",
+        "status": "confirmed",
         "quotable": false
       },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂造型 / 镁合金 / 款式6（用户确认，价格待确认）"
+          "locator": "轮毂造型 / 镁合金 / 款式6 / 500 元（用户确认）"
         }
       ],
       "ui": {
@@ -8284,18 +8245,18 @@
       "thumbnailUrl": null,
       "reviewRequired": true,
       "pricing": {
-        "unitPriceMinor": null,
+        "unitPriceMinor": 50000,
         "quantity": 1,
         "pricingUnit": "per-piece",
         "isStandard": false,
-        "status": "unconfirmed",
+        "status": "confirmed",
         "quotable": false
       },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂造型 / 镁合金 / 款式7（用户确认，价格待确认）"
+          "locator": "轮毂造型 / 镁合金 / 款式7 / 500 元（用户确认）"
         }
       ],
       "ui": {
@@ -8323,18 +8284,18 @@
       "thumbnailUrl": null,
       "reviewRequired": true,
       "pricing": {
-        "unitPriceMinor": null,
+        "unitPriceMinor": 50000,
         "quantity": 1,
         "pricingUnit": "per-piece",
         "isStandard": false,
-        "status": "unconfirmed",
+        "status": "confirmed",
         "quotable": false
       },
       "sourceRefs": [
         {
           "documentId": "sc01-configuration-list",
           "page": 1,
-          "locator": "轮毂造型 / 镁合金 / 款式8（用户确认，价格待确认）"
+          "locator": "轮毂造型 / 镁合金 / 款式8 / 500 元（用户确认）"
         }
       ],
       "ui": {
@@ -8567,6 +8528,166 @@
           "documentId": "sc01-configuration-list",
           "page": 1,
           "locator": "轮毂颜色 / 黑/深灰/碳纤维/金色/古铜 / 1200 元"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-color-white",
+      "surfaceId": "wheel-color",
+      "materialFamilyId": "paint",
+      "displayName": "白色",
+      "colorCode": "#F2F2EE",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#F2F2EE",
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "paint",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": 120000,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂颜色 / 白色 / 1200 元（用户确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-color-red",
+      "surfaceId": "wheel-color",
+      "materialFamilyId": "paint",
+      "displayName": "红色",
+      "colorCode": "#D71920",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#D71920",
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "paint",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": 120000,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂颜色 / 红色 / 1200 元（用户确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-color-blue",
+      "surfaceId": "wheel-color",
+      "materialFamilyId": "paint",
+      "displayName": "蓝色",
+      "colorCode": "#1D4F91",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#1D4F91",
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "paint",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": 120000,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂颜色 / 蓝色 / 1200 元（用户确认）"
+        }
+      ],
+      "ui": {
+        "control": "swatch"
+      }
+    },
+    {
+      "optionId": "wheel-color-yellow",
+      "surfaceId": "wheel-color",
+      "materialFamilyId": "paint",
+      "displayName": "黄色",
+      "colorCode": "#D6A900",
+      "finish": null,
+      "renderRelevant": true,
+      "parameters": {
+        "color": {
+          "mode": "fixed",
+          "value": "#D6A900",
+          "required": true
+        },
+        "material": {
+          "materialFamilyId": "paint",
+          "variantId": null
+        }
+      },
+      "thumbnailUrl": null,
+      "reviewRequired": true,
+      "pricing": {
+        "unitPriceMinor": 120000,
+        "quantity": 1,
+        "pricingUnit": "per-piece",
+        "isStandard": false,
+        "status": "confirmed",
+        "quotable": false
+      },
+      "sourceRefs": [
+        {
+          "documentId": "sc01-configuration-list",
+          "page": 1,
+          "locator": "轮毂颜色 / 黄色 / 1200 元（用户确认）"
         }
       ],
       "ui": {
@@ -9330,12 +9451,16 @@
       "optionId": "steering-addon-eva",
       "surfaceId": "steering-wheel-addon",
       "materialFamilyId": "eva",
-      "displayName": "加粗(EVA海绵)",
-      "colorCode": null,
+      "displayName": "纯黑色",
+      "colorCode": "#000000",
       "finish": null,
       "renderRelevant": true,
       "parameters": {
-        "color": null,
+        "color": {
+          "mode": "fixed",
+          "value": "#000000",
+          "required": true
+        },
         "material": {
           "materialFamilyId": "eva",
           "variantId": null
@@ -13705,7 +13830,7 @@
       "optionId": "interior-painted-spray",
       "surfaceId": "interior-painted-parts",
       "materialFamilyId": "spray",
-      "displayName": "自定义颜色",
+      "displayName": "内饰全车黑色喷漆",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -14017,7 +14142,7 @@
       "optionId": "headrest-embroidery-custom",
       "surfaceId": "headrest-embroidery",
       "materialFamilyId": null,
-      "displayName": "刺绣",
+      "displayName": "头枕刺绣",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -14025,7 +14150,7 @@
         "color": null,
         "material": null
       },
-      "thumbnailUrl": null,
+      "thumbnailUrl": "/sc01/interior-parts/headrest-embroidery.webp",
       "reviewRequired": false,
       "pricing": {
         "unitPriceMinor": 128800,
@@ -14085,7 +14210,7 @@
       "optionId": "door-panel-embroidery-custom",
       "surfaceId": "door-panel-embroidery",
       "materialFamilyId": null,
-      "displayName": "刺绣",
+      "displayName": "门中板刺绣",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -14093,7 +14218,7 @@
         "color": null,
         "material": null
       },
-      "thumbnailUrl": null,
+      "thumbnailUrl": "/sc01/interior-parts/door-panel-embroidery.webp",
       "reviewRequired": false,
       "pricing": {
         "unitPriceMinor": 168800,
@@ -14215,7 +14340,7 @@
           "variantId": null
         }
       },
-      "thumbnailUrl": null,
+      "thumbnailUrl": "/sc01/interior-parts/nameplate-copper-preview.webp",
       "reviewRequired": false,
       "pricing": {
         "unitPriceMinor": 88000,
@@ -14251,7 +14376,7 @@
           "variantId": null
         }
       },
-      "thumbnailUrl": null,
+      "thumbnailUrl": "/sc01/interior-parts/nameplate-stainless-preview.webp",
       "reviewRequired": false,
       "pricing": {
         "unitPriceMinor": 86000,
@@ -14287,7 +14412,7 @@
           "variantId": null
         }
       },
-      "thumbnailUrl": null,
+      "thumbnailUrl": "/sc01/interior-parts/nameplate-carbon-preview.webp",
       "reviewRequired": false,
       "pricing": {
         "unitPriceMinor": 98000,
@@ -14384,7 +14509,7 @@
       "optionId": "pedal-luxury-carpet",
       "surfaceId": "pedal",
       "materialFamilyId": "carpet",
-      "displayName": "金属板+豪华地毯",
+      "displayName": "豪车毯",
       "colorCode": null,
       "finish": null,
       "renderRelevant": true,
@@ -14409,7 +14534,7 @@
         {
           "documentId": "sc01-configuration-list",
           "page": 4,
-          "locator": "脚垫 / 金属板+豪华地毯 / 1680 元（用户确认文案）"
+          "locator": "脚垫 / 豪车毯 / 1680 元（用户确认文案）"
         }
       ],
       "ui": {
@@ -14430,6 +14555,7 @@
     "ip-center-mark-leather-felt": "ip-center-mark-ultrasuede",
     "seat-headrest-standard": "seat-headrest-mark-ultrasuede",
     "seat-shell-black": "seat-shell-carbon-original",
+    "wheel-style-magnesium-default": "wheel-style-magnesium-1",
     "embroidered-logo-standard": "embroidered-logo-black",
     "embroidered-logo-custom": "embroidered-logo-black"
   }

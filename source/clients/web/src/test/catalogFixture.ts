@@ -348,22 +348,50 @@ export const catalogFixture: CatalogV2 = {
     },
     option('wheel-aluminum-alloy', 'wheel-material', 'aluminum-alloy', '铝合金'),
     option('wheel-magnesium-alloy', 'wheel-material', 'magnesium-alloy', '镁合金', false),
-    ...Array.from({ length: 9 }, (_, index) => ({
+    ...Array.from({ length: 8 }, (_, index) => ({
       ...option(
-        index === 0 ? 'wheel-style-magnesium-default' : `wheel-style-magnesium-${index}`,
+        `wheel-style-magnesium-${index + 1}`,
         'wheel-style',
         'magnesium-alloy',
-        index === 0 ? '默认同款' : `款式${index}`,
-        index === 0,
+        `款式${index + 1}`,
+        false,
       ),
       requiresSelections: { 'wheel-material': 'wheel-magnesium-alloy' },
       pricing: {
         ...pricing,
-        unitPriceMinor: index === 0 ? 0 : null,
+        unitPriceMinor: 50000,
         quantity: 1,
-        isStandard: index === 0,
-        status: index === 0 ? 'confirmed' as const : 'unconfirmed' as const,
+        isStandard: false,
+        status: 'confirmed' as const,
       },
+    })),
+    ...([
+      ['wheel-color-black', '黑色', '#111111', 'paint'],
+      ['wheel-color-dark-gray', '深灰色', '#3A3A3A', 'paint'],
+      ['wheel-color-carbon-fiber', '碳纤维', null, 'carbon-fiber'],
+      ['wheel-color-gold', '金色', '#C6A15B', 'paint'],
+      ['wheel-color-bronze', '古铜色', '#8C6239', 'paint'],
+      ['wheel-color-white', '白色', '#F2F2EE', 'paint'],
+      ['wheel-color-red', '红色', '#D71920', 'paint'],
+      ['wheel-color-blue', '蓝色', '#1D4F91', 'paint'],
+      ['wheel-color-yellow', '黄色', '#D6A900', 'paint'],
+    ] as const).map(([optionId, displayName, colorCode, materialFamilyId]) => ({
+      ...option(optionId, 'wheel-color', materialFamilyId, displayName, false),
+      colorCode,
+      parameters: {
+        color: colorCode
+          ? { mode: 'fixed' as const, value: colorCode, required: true }
+          : null,
+        material: { materialFamilyId, variantId: null },
+      },
+      pricing: {
+        ...pricing,
+        unitPriceMinor: 120000,
+        quantity: 1,
+        isStandard: false,
+        status: 'confirmed' as const,
+      },
+      ui: { control: 'swatch' as const },
     })),
     option('steering-skin-ultrasuede-black', 'steering-wheel-skin', 'ultrasuede', '奥司维（黑）'),
     {
@@ -523,7 +551,8 @@ export const catalogFixture: CatalogV2 = {
       ui: { order: index + 1, control: 'swatch' as const },
     })),
     {
-      ...option('headrest-embroidery-custom', 'headrest-embroidery', null, '刺绣', false),
+      ...option('headrest-embroidery-custom', 'headrest-embroidery', null, '头枕刺绣', false),
+      thumbnailUrl: '/sc01/interior-parts/headrest-embroidery.webp',
       pricing: {
         ...pricing,
         unitPriceMinor: 128800,
@@ -533,7 +562,8 @@ export const catalogFixture: CatalogV2 = {
       },
     },
     {
-      ...option('door-panel-embroidery-custom', 'door-panel-embroidery', null, '刺绣', false),
+      ...option('door-panel-embroidery-custom', 'door-panel-embroidery', null, '门中板刺绣', false),
+      thumbnailUrl: '/sc01/interior-parts/door-panel-embroidery.webp',
       pricing: {
         ...pricing,
         unitPriceMinor: 168800,
@@ -570,7 +600,7 @@ export const catalogFixture: CatalogV2 = {
       },
     },
     {
-      ...option('pedal-luxury-carpet', 'pedal', null, '金属板+豪华地毯', false),
+      ...option('pedal-luxury-carpet', 'pedal', null, '豪车毯', false),
       pricing: {
         ...pricing,
         unitPriceMinor: 168000,
@@ -630,6 +660,31 @@ export const catalogFixture: CatalogV2 = {
           ui: { order: 0, control: 'swatch' as const },
         }
       }
+      if (surfaceId === 'wheel-color') {
+        return {
+          ...result,
+          displayName: '亮银色',
+          colorCode: '#C8CDD0',
+          parameters: {
+            color: { mode: 'fixed' as const, value: '#C8CDD0', required: true },
+            material: { materialFamilyId: 'paint', variantId: null },
+          },
+          pricing: {
+            ...pricing,
+            unitPriceMinor: 0,
+            quantity: 1,
+            isStandard: true,
+            status: 'confirmed' as const,
+          },
+          ui: { order: 0, control: 'swatch' as const },
+        }
+      }
+      if (surfaceId === 'interior-painted-parts') {
+        return {
+          ...result,
+          displayName: '内饰全车黑色喷漆',
+        }
+      }
       if (surfaceId === 'door-sill') {
         return {
           ...result,
@@ -684,7 +739,12 @@ export const catalogFixture: CatalogV2 = {
       if (surfaceId === 'steering-wheel-addon') {
         return {
           ...result,
-          displayName: '加粗(EVA海绵)',
+          displayName: '纯黑色',
+          colorCode: '#000000',
+          parameters: {
+            color: { mode: 'fixed' as const, value: '#000000', required: true },
+            material: { materialFamilyId: 'paint', variantId: null },
+          },
         }
       }
       if (surfaceId === 'embroidered-logo') {

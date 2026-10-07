@@ -1105,6 +1105,7 @@ function Configurator({
       && selectedOption?.optionId === 'seat-shell-custom'
       && currentCustomization
       && !('materialVariantId' in currentCustomization)
+    const emptyOptionName = surface.surfaceId === 'nameplate' ? '无' : '默认'
     const seatBackplateFinish = showSeatBackplateFinish
       ? resolveSeatBackplateFinish(currentCustomization)
       : null
@@ -1174,10 +1175,10 @@ function Configurator({
                 className={`color-choice ${selections[surface.surfaceId] ? '' : 'selected'}`}
                 onClick={() => selectOption(surface.surfaceId)}
                 aria-pressed={!selections[surface.surfaceId]}
-                aria-label="默认，免费"
+                aria-label={`${emptyOptionName}，免费`}
               >
                 <img src={versionStaticAssetUrl(DEFAULT_IMAGE_URL)} alt="" />
-                <span className="color-choice-name">默认</span>
+                <span className="color-choice-name">{emptyOptionName}</span>
                 <small>免费</small>
               </button>
             )}
@@ -1600,7 +1601,12 @@ function Configurator({
                   const option = catalog.options.find(
                     (item) => item.optionId === selections[summarySurfaceId],
                   )
-                  if (!summarySurface || !option) return []
+                  if (
+                    !summarySurface
+                    || !option
+                    || option.pricing.isStandard
+                    || option.pricing.unitPriceMinor === 0
+                  ) return []
                   return [(
                     <div className="summary-row" key={summarySurfaceId}>
                       <span>

@@ -19,7 +19,7 @@ const fixture = (name) =>
 
 test("SC01 v2 草案 catalog、正反配置、价格结果与黄金向量聚合通过", async () => {
   const result = await validateAutomotiveCatalogFixtures(root);
-  assert.deepEqual(result, { optionCount: 171, vectorCount: 2 });
+  assert.deepEqual(result, { optionCount: 174, vectorCount: 2 });
 });
 
 test("catalog 使用显式 defaultSelections 消除多标配项的顺序歧义", async () => {
@@ -90,7 +90,7 @@ test("SC01 文案修订不改变既有轮毂、内饰和性能稳定 ID", async 
   assert.equal(surfaces.get("ip-upper-trim").displayName, "上层软包");
   assert.equal(surfaces.get("roof-surface").displayName, "棚面");
   assert.equal(surfaces.get("steering-wheel-addon").displayName, "加粗(EVA海绵)");
-  assert.equal(options.get("steering-addon-eva").displayName, "加粗(EVA海绵)");
+  assert.equal(options.get("steering-addon-eva").displayName, "纯黑色");
   assert.equal(options.get("lower-skirt-aluminum").displayName, "铝合金");
 
   assert.ok(catalog.selectionOrder.includes("lower-skirt"));
@@ -98,7 +98,7 @@ test("SC01 文案修订不改变既有轮毂、内饰和性能稳定 ID", async 
   assert.equal(Object.hasOwn(catalog.defaultSelections, "lower-skirt"), false);
 });
 
-test("轮毂造型按材质声明 requiresSelections，镁合金九款价格状态完整", async () => {
+test("轮毂造型按材质声明 requiresSelections，镁合金八款均为 500 元", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const styles = catalog.options.filter((option) => option.surfaceId === "wheel-style");
   const aluminum = styles.filter((option) =>
@@ -109,12 +109,10 @@ test("轮毂造型按材质声明 requiresSelections，镁合金九款价格状�
   assert.deepEqual(aluminum.map((option) => option.displayName), ["多条幅轮毂"]);
   assert.deepEqual(
     magnesium.map((option) => option.displayName),
-    ["默认同款", "款式1", "款式2", "款式3", "款式4", "款式5", "款式6", "款式7", "款式8"]
+    ["款式1", "款式2", "款式3", "款式4", "款式5", "款式6", "款式7", "款式8"]
   );
-  assert.equal(magnesium[0].pricing.unitPriceMinor, 0);
-  assert.equal(magnesium[0].pricing.status, "confirmed");
-  assert.ok(magnesium.slice(1).every((option) =>
-    option.pricing.unitPriceMinor === null && option.pricing.status === "unconfirmed"));
+  assert.ok(magnesium.every((option) =>
+    option.pricing.unitPriceMinor === 50000 && option.pricing.status === "confirmed"));
 
   const incompatible = await fixture("sc01.configuration.valid.v2.json");
   incompatible.selections["wheel-material"] = "wheel-magnesium-alloy";
@@ -481,9 +479,15 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
     catalog.options
       .filter((option) => option.surfaceId === "wheel-color")
       .map((option) => option.displayName),
-    ["亮银色", "黑色", "深灰色", "碳纤维", "金色", "古铜色"]
+    ["亮银色", "黑色", "深灰色", "碳纤维", "金色", "古铜色", "白色", "红色", "蓝色", "黄色"]
   );
-  assert.equal(byId.get("interior-painted-spray").displayName, "自定义颜色");
+  assert.equal(byId.get("wheel-color-bright-silver").pricing.unitPriceMinor, 0);
+  assert.ok(catalog.options
+    .filter((option) => option.surfaceId === "wheel-color"
+      && option.optionId !== "wheel-color-bright-silver")
+    .every((option) => option.pricing.unitPriceMinor === 120000));
+  assert.equal(byId.get("steering-addon-eva").colorCode, "#000000");
+  assert.equal(byId.get("interior-painted-spray").displayName, "内饰全车黑色喷漆");
   assert.equal(byId.get("interior-painted-spray").parameters.color.mode, "custom");
   assert.equal(catalog.defaultSelections["door-sill"], "door-sill-none");
   assert.equal(byId.get("door-sill-none").displayName, "无口袋");
@@ -517,8 +521,25 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
       catalog.options.filter((option) => option.surfaceId === surfaceId)
         .map((option) => [option.displayName, option.pricing.unitPriceMinor])),
     [
-      [["无刺绣", 0], ["刺绣", 128800]],
-      [["无刺绣", 0], ["刺绣", 168800]]
+      [["无刺绣", 0], ["头枕刺绣", 128800]],
+      [["无刺绣", 0], ["门中板刺绣", 168800]]
+    ]
+  );
+  assert.equal(
+    byId.get("headrest-embroidery-custom").thumbnailUrl,
+    "/sc01/interior-parts/headrest-embroidery.webp"
+  );
+  assert.equal(
+    byId.get("door-panel-embroidery-custom").thumbnailUrl,
+    "/sc01/interior-parts/door-panel-embroidery.webp"
+  );
+  assert.deepEqual(
+    catalog.options.filter((option) => option.surfaceId === "nameplate")
+      .map((option) => option.thumbnailUrl),
+    [
+      "/sc01/interior-parts/nameplate-copper-preview.webp",
+      "/sc01/interior-parts/nameplate-stainless-preview.webp",
+      "/sc01/interior-parts/nameplate-carbon-preview.webp"
     ]
   );
   assert.equal(
@@ -537,7 +558,7 @@ test("目录全量覆盖区域、表面、材料色卡和关键车漆定价", as
   assert.deepEqual(
     catalog.options.filter((option) => option.surfaceId === "pedal")
       .map((option) => option.displayName),
-    ["赛车版", "短绒毛", "金属板+豪华地毯"]
+    ["赛车版", "短绒毛", "豪车毯"]
   );
   assert.deepEqual(byId.get("rear-wing-gray").availability, {
     status: "disabled",

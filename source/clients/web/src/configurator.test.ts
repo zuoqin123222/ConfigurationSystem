@@ -64,7 +64,7 @@ describe('v2 动态选配逻辑', () => {
     })).toEqual({
       ...initialSelections,
       'wheel-material': 'wheel-magnesium-alloy',
-      'wheel-style': 'wheel-style-magnesium-default',
+      'wheel-style': 'wheel-style-magnesium-1',
     })
   })
 
@@ -236,18 +236,18 @@ describe('v2 动态选配逻辑', () => {
     }
     expect(optionsForSurface(catalogFixture, 'wheel-style', magnesiumSelections)
       .map((option) => option.displayName))
-      .toEqual(['默认同款', '款式1', '款式2', '款式3', '款式4', '款式5', '款式6', '款式7', '款式8'])
+      .toEqual(['款式1', '款式2', '款式3', '款式4', '款式5', '款式6', '款式7', '款式8'])
     expect(optionsForSurface(catalogFixture, 'wheel-color', magnesiumSelections))
       .toHaveLength(optionsForSurface(catalogFixture, 'wheel-color', aluminumSelections).length)
   })
 
-  it('轮毂材质变化时归一化不兼容造型为对应免费默认款', () => {
+  it('轮毂材质变化时归一化不兼容造型为对应首款', () => {
     const magnesium = normalizeSelections(catalogFixture, {
       ...initialSelections,
       'wheel-material': 'wheel-magnesium-alloy',
       'wheel-style': 'wheel-style-multispoke',
     })
-    expect(magnesium['wheel-style']).toBe('wheel-style-magnesium-default')
+    expect(magnesium['wheel-style']).toBe('wheel-style-magnesium-1')
 
     const aluminum = normalizeSelections(catalogFixture, {
       ...magnesium,

@@ -253,10 +253,10 @@ test("SC01 coverage 规模排除五个 color-picker 且保留普通车漆色卡"
   assert.ok(colorPickerIds.every((optionId) => !covered.has(optionId)));
   assert.ok(covered.has("body-cover-red"));
   assert.ok(covered.has("body-cover-silver"));
-  assert.equal(coverage.renderRelevantOptionCount, 165);
+  assert.equal(coverage.renderRelevantOptionCount, 168);
   assert.equal(coverage.excludedColorPickerOptionCount, 5);
   assert.equal(coverage.availableMaterialVariantCount, 352);
   assert.equal(coverage.coveredMaterialVariantCount, 352);
-  assert.equal(coverage.configurations.length, 482);
-  assert.equal(plan.expectedRenderCount, 1928);
+  assert.equal(coverage.configurations.length, 486);
+  assert.equal(plan.expectedRenderCount, 1944);
 });
