@@ -647,7 +647,7 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 			*Catalog.SequencePath);
 		UE_LOG(
 			LogTemp,
-			Error,
+			Warning,
 			TEXT("骨骼整车启用静态回退：%s"),
 			*AnimationLoadFailureReason);
 		SkeletalVehicle->SetSkeletalMeshAsset(nullptr);
@@ -685,7 +685,7 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 				: TEXT("<null>"));
 		UE_LOG(
 			LogTemp,
-			Error,
+			Warning,
 			TEXT("骨骼整车序列配置失败：%s"),
 			*AnimationLoadFailureReason);
 		AnimationPlayer->FreezeAnimation();
