@@ -106,17 +106,12 @@ describe('MaterialColorStrip', () => {
       .toHaveAttribute('src', '/sc01/thumbnails/ultrasuede-black.webp')
   })
 
-  it('拖动时只移动指示器，松开后才提交并更新实拍预览', () => {
+  it('色彩条数值变化时立即提交并更新实拍预览', () => {
     const onCommit = vi.fn()
     render(<Harness onCommit={onCommit} />)
     const firstStrip = screen.getAllByRole('slider')[0]
 
     fireEvent.input(firstStrip, { target: { value: '2' } })
-    expect(screen.getByRole('img', { name: 'Black UF7材质实拍' })).toBeInTheDocument()
-    expect(screen.queryByRole('img', { name: 'Red US3材质实拍' })).not.toBeInTheDocument()
-    expect(onCommit).not.toHaveBeenCalled()
-
-    fireEvent.pointerUp(firstStrip, { pointerId: 1 })
     expect(onCommit).toHaveBeenCalledWith(choices[2])
     expect(screen.getByRole('img', { name: 'Red US3材质实拍' })).toBeInTheDocument()
   })

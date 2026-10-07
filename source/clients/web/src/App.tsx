@@ -66,7 +66,6 @@ import {
   syncUeConfiguratorCategory,
   syncUeConfiguratorHeaderState,
   setUeCameraId,
-  triggerUeConfiguratorHeaderAction,
   type UeConfiguratorCategory,
   type UeConfiguratorHeaderState,
 } from './ueBridge'
@@ -78,8 +77,6 @@ import {
   INTERIOR_PART_IMAGES,
 } from './interiorPartImages'
 
-const CACHE_KEY = 'automotive-v2-configurator'
-const PORTABLE_CACHE_KEY = `${CACHE_KEY}-portable`
 const DEFAULT_IMAGE_URL = '/sc01/option-icons/default.svg'
 const FIXED_OPTION_SWATCHES: Record<string, string> = {
   'body-cover-red': '#FF3B3B',
@@ -122,6 +119,35 @@ type SeatBackplateFinish = keyof typeof SEAT_BACKPLATE_FINISH_PRESETS
 type WorkflowStepId = 'preset' | 'summary' | string
 type TransferMode = 'import' | 'share'
 
+interface ImportedPreset {
+  id: string
+  name: string
+  selections: Selections
+  customizations: Customizations
+}
+
+function configurationReferenceTotal(catalog: CatalogV2, selections: Selections): number {
+  return catalog.vehicle.basePriceMinor + catalog.selectionOrder.reduce(
+    (total, surfaceId) => {
+      const option = catalog.options.find((item) => item.optionId === selections[surfaceId])
+      return total + (
+        option?.pricing.unitPriceMinor === null || option?.pricing.unitPriceMinor === undefined
+          ? 0
+          : option.pricing.unitPriceMinor * (option.pricing.quantity ?? 1)
+      )
+    },
+    0,
+  )
+}
+
+function surfacesInCategoryUiOrder(
+  catalog: CatalogV2,
+  categoryId: string,
+): CatalogV2['surfaces'] {
+  return componentsForCategory(catalog, categoryId).flatMap((component) =>
+    surfacesForComponent(catalog, component.componentId))
+}
+
 interface WorkflowStep {
   id: WorkflowStepId
   label: string
@@ -146,34 +172,6 @@ export function isEmbeddedView(search = window.location.search): boolean {
 
 export function isOfflineEmbeddedRuntime(): boolean {
   return usesBundledCatalog()
-}
-
-function readSavedPortableBaseline(
-  catalog: CatalogV2,
-  selections: Selections,
-  customizations: Customizations,
-): string {
-  const value = localStorage.getItem(PORTABLE_CACHE_KEY)
-  if (!value) return ''
-  try {
-    const imported = parsePortableConfiguration(value, catalog)
-    const importedSelections = normalizeSelections(catalog, imported.selections)
-    const importedCustomizations = normalizeCustomizations(
-      catalog,
-      importedSelections,
-      imported.customizations,
-    )
-    const normalizedSaved = createPortableConfiguration(
-      catalog,
-      importedSelections,
-      importedCustomizations,
-    )
-    const current = createPortableConfiguration(catalog, selections, customizations)
-    return normalizedSaved === current ? current : ''
-  } catch {
-    localStorage.removeItem(PORTABLE_CACHE_KEY)
-    return ''
-  }
 }
 
 export type AppView = 'default' | 'embedded' | 'controls' | 'header'
@@ -254,21 +252,6 @@ function Showroom() {
   )
 }
 
-interface CachedDraft {
-  catalog: CatalogV2
-  selections: Selections
-  customizations?: Customizations
-}
-
-function readCachedDraft(): CachedDraft | null {
-  try {
-    const value = localStorage.getItem(CACHE_KEY)
-    return value ? JSON.parse(value) as CachedDraft : null
-  } catch {
-    return null
-  }
-}
-
 export default function App() {
   const view = getAppView()
   const shouldCorrectUeColor = (view === 'embedded' || view === 'header')
@@ -312,7 +295,7 @@ function ConfiguratorHeader() {
     referenceTotalMinor: 22980000,
     syncState: 'idle',
     syncMessage: '',
-    dirty: true,
+    dirty: false,
     online: true,
   })
 
@@ -359,10 +342,6 @@ function ConfiguratorHeader() {
     }
   }, [])
 
-  const triggerAction = (action: 'save') => {
-    void triggerUeConfiguratorHeaderAction(getUeBridge(true), action)
-  }
-
   const selectCategory = (stepId: string) => {
     if (
       stepId !== 'preset'
@@ -378,7 +357,6 @@ function ConfiguratorHeader() {
       categories={categories}
       activeStepId={headerState.categoryId}
       headerState={headerState}
-      onAction={triggerAction}
       onSelectStep={selectCategory}
     />
   )
@@ -388,14 +366,12 @@ function ConfiguratorTopBar({
   categories,
   activeStepId,
   headerState,
-  onAction,
   onSelectStep,
   standalone = false,
 }: {
   categories: CatalogV2['categories']
   activeStepId: WorkflowStepId
   headerState: UeConfiguratorHeaderState
-  onAction: (action: 'save') => void
   onSelectStep: (stepId: WorkflowStepId) => void
   standalone?: boolean
 }) {
@@ -435,18 +411,7 @@ function ConfiguratorTopBar({
           </div>
         ))}
       </nav>
-      <div className="header-actions">
-        <span className={`header-sync ${headerState.syncState}`}>
-          {headerState.syncMessage || (headerState.dirty ? '未同步更改' : '已同步')}
-        </span>
-        <button
-          className="header-save"
-          onClick={() => onAction('save')}
-          disabled={headerState.syncState === 'saving' || !headerState.dirty}
-        >
-          {headerState.syncState === 'saving' ? '保存中…' : '存草稿'}
-        </button>
-      </div>
+      <div className="header-actions" aria-hidden="true" />
     </header>
   )
 }
@@ -456,10 +421,8 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
   const [legacyCatalog, setLegacyCatalog] = useState<LegacyCatalog | null>(null)
   const [selections, setSelections] = useState<Selections | null>(null)
   const [customizations, setCustomizations] = useState<Customizations>({})
-  const [savedPortableValue, setSavedPortableValue] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [offlineDraft, setOfflineDraft] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const [online, setOnline] = useState(() => navigator.onLine)
 
@@ -480,7 +443,6 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
     const controller = new AbortController()
     setLoading(true)
     setError('')
-    setOfflineDraft(false)
     const initialData = embedded
       ? (
           isOfflineEmbeddedRuntime()
@@ -499,7 +461,6 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
         const configurationId = search.get('configuration')
         let initialSelections = createInitialSelections(nextCatalog)
         let initialCustomizations = normalizeCustomizations(nextCatalog, initialSelections, {})
-        let initialPortableValue = ''
         if (portableValue) {
           const imported = parsePortableConfiguration(portableValue, nextCatalog)
           initialSelections = normalizeSelections(nextCatalog, imported.selections)
@@ -507,11 +468,6 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
             nextCatalog,
             initialSelections,
             imported.customizations,
-          )
-          initialPortableValue = createPortableConfiguration(
-            nextCatalog,
-            initialSelections,
-            initialCustomizations,
           )
         } else if (!embedded && configurationId) {
           const loadedConfiguration = await fetchConfiguration(configurationId, controller.signal)
@@ -521,65 +477,22 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
             initialSelections,
             loadedConfiguration.customizations,
           )
-        } else {
-          const cached = readCachedDraft()
-          if (cached?.catalog.catalogVersion === nextCatalog.catalogVersion) {
-            initialSelections = normalizeSelections(nextCatalog, cached.selections)
-            initialCustomizations = normalizeCustomizations(
-              nextCatalog,
-              initialSelections,
-              cached.customizations ?? {},
-            )
-          }
-        }
-        if (!initialPortableValue) {
-          initialPortableValue = readSavedPortableBaseline(
-            nextCatalog,
-            initialSelections,
-            initialCustomizations,
-          )
         }
         if (controller.signal.aborted) return
         setCatalog(nextCatalog)
         setLegacyCatalog(nextLegacyCatalog)
         setSelections(initialSelections)
         setCustomizations(initialCustomizations)
-        setSavedPortableValue(initialPortableValue)
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return
-        const cached = readCachedDraft()
-        if (!navigator.onLine && cached) {
-          setCatalog(cached.catalog)
-          const cachedSelections = normalizeSelections(cached.catalog, cached.selections)
-          setSelections(cachedSelections)
-          const cachedCustomizations = normalizeCustomizations(
-            cached.catalog,
-            cachedSelections,
-            cached.customizations ?? {},
-          )
-          setCustomizations(cachedCustomizations)
-          setSavedPortableValue(readSavedPortableBaseline(
-            cached.catalog,
-            cachedSelections,
-            cachedCustomizations,
-          ))
-          setOfflineDraft(true)
-        } else {
-          setError(reason instanceof Error ? reason.message : '目录加载失败')
-        }
+        setError(reason instanceof Error ? reason.message : '目录加载失败')
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
   }, [embedded, reloadKey])
-
-  useEffect(() => {
-    if (catalog && selections) {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ catalog, selections, customizations }))
-    }
-  }, [catalog, customizations, selections])
 
   if (loading) {
     return (
@@ -609,10 +522,7 @@ function ConfiguratorApp({ embedded }: { embedded: boolean }) {
       setSelections={setSelections}
       customizations={customizations}
       setCustomizations={setCustomizations}
-      savedPortableValue={savedPortableValue}
-      setSavedPortableValue={setSavedPortableValue}
       online={online}
-      offlineDraft={offlineDraft}
       embedded={embedded}
     />
   )
@@ -625,10 +535,7 @@ interface ConfiguratorProps {
   setSelections: (value: Selections) => void
   customizations: Customizations
   setCustomizations: (value: Customizations) => void
-  savedPortableValue: string
-  setSavedPortableValue: (value: string) => void
   online: boolean
-  offlineDraft: boolean
   embedded: boolean
 }
 
@@ -639,18 +546,16 @@ function Configurator({
   setSelections,
   customizations,
   setCustomizations,
-  savedPortableValue,
-  setSavedPortableValue,
   online,
-  offlineDraft,
   embedded,
 }: ConfiguratorProps) {
   const initialCategoryId = categoriesInUiOrder(catalog)[0]?.categoryId ?? ''
   const [categoryId, setCategoryId] = useState(initialCategoryId)
   const [activeStepId, setActiveStepId] = useState<WorkflowStepId>('preset')
-  const [selectedPresetId, setSelectedPresetId] = useState<'default' | 'imported' | null>(
-    savedPortableValue ? null : 'default',
-  )
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>('default')
+  const [importedPresets, setImportedPresets] = useState<ImportedPreset[]>([])
+  const [pendingDeletePresetId, setPendingDeletePresetId] = useState<string | null>(null)
+  const nextImportedPresetNumberRef = useRef(1)
   const [componentId, setComponentId] = useState('all')
   const [surfaceId, setSurfaceId] = useState(catalog.selectionOrder[0] ?? '')
   const [activeView, setActiveView] = useState<RenderViewId>('front-left')
@@ -664,9 +569,7 @@ function Configurator({
   const [ueMaterialMessage, setUeMaterialMessage] = useState('')
   const ueMaterialTransactionRef = useRef(0)
   const ueMaterialQueueRef = useRef<Promise<void>>(Promise.resolve())
-  const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>(
-    savedPortableValue ? 'saved' : 'idle',
-  )
+  const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [syncMessage, setSyncMessage] = useState('')
   const [transferOpen, setTransferOpen] = useState(false)
   const [transferMode, setTransferMode] = useState<TransferMode>('import')
@@ -702,34 +605,29 @@ function Configurator({
       : '',
     [portableValue, transferMode, transferOpen],
   )
-  const dirty = portableValue !== savedPortableValue
   const renderSelectionKey = createRenderCanonicalKey(catalog, selections, customizations)
-  const referenceTotal = catalog.vehicle.basePriceMinor + catalog.selectionOrder.reduce(
-    (total, id) => {
-      const option = catalog.options.find((item) => item.optionId === selections[id])
-      return total + (
-        option?.pricing.unitPriceMinor === null || option?.pricing.unitPriceMinor === undefined
-          ? 0
-          : option.pricing.unitPriceMinor * (option.pricing.quantity ?? 1)
-      )
-    },
-    0,
+  const referenceTotal = configurationReferenceTotal(catalog, selections)
+  const defaultSelections = useMemo(() => createInitialSelections(catalog), [catalog])
+  const defaultReferenceTotal = useMemo(
+    () => configurationReferenceTotal(catalog, defaultSelections),
+    [catalog, defaultSelections],
   )
-  const categorySurfaces = useMemo(() => {
-    const componentIds = new Set(
-      catalog.components
-        .filter((component) => component.categoryId === categoryId)
-        .map((component) => component.componentId),
-    )
-    return catalog.surfaces
-      .filter((surface) => componentIds.has(surface.componentId))
-      .sort((left, right) =>
-        catalog.selectionOrder.indexOf(left.surfaceId)
-        - catalog.selectionOrder.indexOf(right.surfaceId))
-  }, [catalog.components, catalog.selectionOrder, catalog.surfaces, categoryId])
-  const currentSurfaceIndex = Math.max(
+  const workflowPages = useMemo(() => components.flatMap((component) => {
+    const componentSurfaces = surfacesForComponent(catalog, component.componentId)
+    if (component.ui?.layout === 'stack') {
+      return componentSurfaces.length > 0
+        ? [{ componentId: component.componentId, surfaces: componentSurfaces }]
+        : []
+    }
+    return componentSurfaces.map((surface) => ({
+      componentId: component.componentId,
+      surfaces: [surface],
+    }))
+  }), [catalog, components])
+  const currentPageIndex = Math.max(
     0,
-    categorySurfaces.findIndex((surface) => surface.surfaceId === currentSurface.surfaceId),
+    workflowPages.findIndex((page) =>
+      page.surfaces.some((surface) => surface.surfaceId === currentSurface.surfaceId)),
   )
 
   useEffect(() => {
@@ -759,11 +657,21 @@ function Configurator({
 
   const selectCategory = useCallback((nextCategoryId: string) => {
     if (!catalog.categories.some((category) => category.categoryId === nextCategoryId)) return
+    const firstComponent = componentsForCategory(catalog, nextCategoryId)[0]
+    const firstSurface = firstComponent
+      ? surfacesForComponent(catalog, firstComponent.componentId)[0]
+      : undefined
     setActiveStepId(nextCategoryId)
     setCategoryId(nextCategoryId)
+    setComponentId(firstComponent?.componentId ?? 'all')
+    setSurfaceId(firstSurface?.surfaceId ?? catalog.selectionOrder[0] ?? '')
     if (embedded) {
       void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
-      focusCatalogNode({ categoryId: nextCategoryId })
+      focusCatalogNode({
+        categoryId: nextCategoryId,
+        componentId: firstComponent?.componentId,
+        surfaceId: firstSurface?.surfaceId,
+      })
     }
   }, [catalog, embedded, focusCatalogNode])
 
@@ -777,18 +685,18 @@ function Configurator({
   }, [embedded, selectCategory])
 
   const selectComponent = (nextComponentId: string) => {
+    const firstSurface = surfacesForComponent(catalog, nextComponentId)[0]
     setComponentId(nextComponentId)
-    if (surfacesAsComponents) setSurfaceId(nextComponentId)
+    setSurfaceId(firstSurface?.surfaceId ?? nextComponentId)
     focusCatalogNode({
       categoryId,
       componentId: surfacesAsComponents ? undefined : nextComponentId,
-      surfaceId: surfacesAsComponents ? nextComponentId : undefined,
+      surfaceId: firstSurface?.surfaceId ?? (surfacesAsComponents ? nextComponentId : undefined),
     })
   }
 
   const selectSurface = (nextSurfaceId: string) => {
     setSurfaceId(nextSurfaceId)
-    focusCatalogNode({ categoryId, componentId, surfaceId: nextSurfaceId })
   }
 
   const focusSurface = useCallback((
@@ -804,17 +712,27 @@ function Configurator({
     setComponentId(nextSurfacesAsComponents ? nextSurface.surfaceId : nextSurface.componentId)
     setSurfaceId(nextSurface.surfaceId)
     if (embedded) void syncUeConfiguratorCategory(getUeBridge(true), nextCategoryId)
+    const firstSurface = surfacesForComponent(catalog, nextSurface.componentId)[0]
     focusCatalogNode({
       categoryId: nextCategoryId,
       componentId: nextSurfacesAsComponents ? undefined : nextSurface.componentId,
-      surfaceId: nextSurface.surfaceId,
+      surfaceId: firstSurface?.surfaceId ?? nextSurface.surfaceId,
     })
-  }, [catalog.categories, embedded, focusCatalogNode])
+  }, [catalog, embedded, focusCatalogNode])
 
   const moveBySurface = (direction: -1 | 1) => {
-    const nextSurface = categorySurfaces[currentSurfaceIndex + direction]
-    if (nextSurface) {
-      focusSurface(categoryId, nextSurface)
+    const nextPage = workflowPages[currentPageIndex + direction]
+    if (nextPage) {
+      const nextSurface = direction < 0
+        ? nextPage.surfaces.at(-1)
+        : nextPage.surfaces[0]
+      if (nextSurface) {
+        if (nextPage.componentId === currentSurface.componentId) {
+          setSurfaceId(nextSurface.surfaceId)
+        } else {
+          focusSurface(categoryId, nextSurface)
+        }
+      }
       return
     }
     const categoryIndex = categories.findIndex((category) => category.categoryId === categoryId)
@@ -823,16 +741,7 @@ function Configurator({
       selectWorkflowStep(direction < 0 ? 'preset' : 'summary')
       return
     }
-    const adjacentComponentIds = new Set(
-      catalog.components
-        .filter((component) => component.categoryId === adjacentCategory.categoryId)
-        .map((component) => component.componentId),
-    )
-    const adjacentSurfaces = catalog.surfaces
-      .filter((surface) => adjacentComponentIds.has(surface.componentId))
-      .sort((left, right) =>
-        catalog.selectionOrder.indexOf(left.surfaceId)
-        - catalog.selectionOrder.indexOf(right.surfaceId))
+    const adjacentSurfaces = surfacesInCategoryUiOrder(catalog, adjacentCategory.categoryId)
     const target = direction < 0 ? adjacentSurfaces.at(-1) : adjacentSurfaces[0]
     if (target) focusSurface(adjacentCategory.categoryId, target)
   }
@@ -847,6 +756,7 @@ function Configurator({
     delete nextCustomizations[currentSurface.surfaceId]
     setSelections(nextSelections)
     setCustomizations(normalizeCustomizations(catalog, nextSelections, nextCustomizations))
+    setSelectedPresetId(null)
     setSyncState('idle')
     setSyncMessage(`已复位${currentSurface.displayName}`)
   }
@@ -860,14 +770,12 @@ function Configurator({
         return
       }
       if (catalog.categories.some((category) => category.categoryId === nextCategoryId)) {
-        setActiveStepId(nextCategoryId)
-        setCategoryId(nextCategoryId)
-        focusCatalogNode({ categoryId: nextCategoryId })
+        selectCategory(nextCategoryId)
       }
     }
     window.addEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
     return () => window.removeEventListener(CONFIGURATOR_CATEGORY_EVENT, handleCategory)
-  }, [catalog.categories, embedded, focusCatalogNode])
+  }, [catalog.categories, embedded, selectCategory])
 
   useEffect(() => {
     const firstComponent = components[0]?.componentId
@@ -983,6 +891,7 @@ function Configurator({
       }
     }
     setCustomizations(nextCustomizations)
+    setSelectedPresetId(null)
     setSyncState('idle')
     setSyncMessage('')
   }
@@ -994,6 +903,7 @@ function Configurator({
       ...customizations,
       [surfaceId]: { materialVariantId },
     }))
+    setSelectedPresetId(null)
     setSyncState('idle')
     setSyncMessage('')
   }
@@ -1012,6 +922,7 @@ function Configurator({
       ...customizations,
       [surfaceId]: { ...paint, [key]: value },
     })
+    setSelectedPresetId(null)
     setSyncState('idle')
     setSyncMessage('')
   }
@@ -1029,16 +940,9 @@ function Configurator({
       ...customizations,
       [surfaceId]: { ...paint, ...patch },
     })
+    setSelectedPresetId(null)
     setSyncState('idle')
     setSyncMessage('')
-  }
-
-  const persist = (): string => {
-    localStorage.setItem(PORTABLE_CACHE_KEY, portableValue)
-    setSavedPortableValue(portableValue)
-    setSyncState('saved')
-    setSyncMessage('草稿已保存')
-    return portableValue
   }
 
   const copyPortableValue = async (value: string) => {
@@ -1075,14 +979,21 @@ function Configurator({
       setSelections(nextSelections)
       setCustomizations(nextCustomizations)
       const normalized = createPortableConfiguration(catalog, nextSelections, nextCustomizations)
-      localStorage.setItem(PORTABLE_CACHE_KEY, normalized)
-      setSavedPortableValue(normalized)
       setImportValue(normalized)
-      setSyncState('saved')
+      const sequence = nextImportedPresetNumberRef.current
+      nextImportedPresetNumberRef.current += 1
+      const importedPreset: ImportedPreset = {
+        id: `imported-${sequence}`,
+        name: `导入配置${sequence}`,
+        selections: nextSelections,
+        customizations: nextCustomizations,
+      }
+      setImportedPresets((current) => [...current, importedPreset])
+      setSelectedPresetId(importedPreset.id)
+      setSyncState('idle')
       setSyncMessage('配置已导入')
-      setSelectedPresetId('imported')
       setTransferOpen(false)
-      selectWorkflowStep(categories[0]?.categoryId ?? 'summary')
+      selectWorkflowStep('preset')
     } catch (reason) {
       setSyncState('error')
       setSyncMessage(reason instanceof Error ? reason.message : '配置导入失败')
@@ -1096,11 +1007,8 @@ function Configurator({
     url.searchParams.delete('configuration')
     url.searchParams.delete('config')
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
-    localStorage.removeItem(CACHE_KEY)
-    localStorage.removeItem(PORTABLE_CACHE_KEY)
     setSelections(initialSelections)
     setCustomizations(initialCustomizations)
-    setSavedPortableValue('')
     setCategoryId(categories[0]?.categoryId ?? '')
     setActiveStepId('preset')
     setComponentId('all')
@@ -1117,13 +1025,29 @@ function Configurator({
   }
 
   const applyDefaultPreset = () => {
-    const initialSelections = createInitialSelections(catalog)
+    const initialSelections = defaultSelections
     const initialCustomizations = normalizeCustomizations(catalog, initialSelections, {})
     setSelections(initialSelections)
     setCustomizations(initialCustomizations)
     setSelectedPresetId('default')
     setSyncState('idle')
     setSyncMessage('已选择默认配置')
+  }
+
+  const applyImportedPreset = (preset: ImportedPreset) => {
+    setSelections(preset.selections)
+    setCustomizations(preset.customizations)
+    setSelectedPresetId(preset.id)
+    setSyncState('idle')
+    setSyncMessage(`已选择${preset.name}`)
+  }
+
+  const deleteImportedPreset = (presetId: string) => {
+    setImportedPresets((current) => current.filter((preset) => preset.id !== presetId))
+    if (selectedPresetId === presetId) {
+      setSelectedPresetId(null)
+    }
+    setPendingDeletePresetId(null)
   }
 
   useEffect(() => {
@@ -1133,16 +1057,15 @@ function Configurator({
       referenceTotalMinor: referenceTotal,
       syncState,
       syncMessage,
-      dirty,
+      dirty: false,
       online,
     })
-  }, [activeStepId, dirty, embedded, online, referenceTotal, syncMessage, syncState])
+  }, [activeStepId, embedded, online, referenceTotal, syncMessage, syncState])
 
   useEffect(() => {
     if (!embedded) return
     const handleHeaderAction = (event: Event) => {
       const action = (event as CustomEvent<unknown>).detail
-      if (action === 'save') void persist()
       if (action === 'share') void share()
       if (action === 'reset') resetConfiguration()
     }
@@ -1150,7 +1073,7 @@ function Configurator({
     return () => window.removeEventListener(CONFIGURATOR_HEADER_ACTION_EVENT, handleHeaderAction)
   })
 
-  const visibleSurfaces = [currentSurface]
+  const visibleSurfaces = workflowPages[currentPageIndex]?.surfaces ?? [currentSurface]
 
   const renderSurfaceOptions = (surface: CatalogV2['surfaces'][number]) => {
     const options = optionsForSurface(catalog, surface.surfaceId, selections)
@@ -1499,16 +1422,9 @@ function Configurator({
             categoryId: activeStepId as UeConfiguratorCategory,
             referenceTotalMinor: referenceTotal,
             syncState,
-            syncMessage: syncMessage || (
-              online
-                ? (offlineDraft ? '本地草稿' : (dirty ? '未保存更改' : '已保存'))
-                : '离线 · 已保存本地'
-            ),
-            dirty,
+            syncMessage,
+            dirty: false,
             online,
-          }}
-          onAction={(action) => {
-            if (action === 'save') void persist()
           }}
           onSelectStep={selectWorkflowStep}
         />
@@ -1572,6 +1488,9 @@ function Configurator({
           {embedded && ueMaterialMessage && (
             <p className="render-message" role="status">{ueMaterialMessage}</p>
           )}
+          {syncMessage && (
+            <p className={`configurator-notice ${syncState}`} role="status">{syncMessage}</p>
+          )}
 
           <div className="panel-scroll">
           {activeStepId === 'preset' && (
@@ -1599,8 +1518,36 @@ function Configurator({
                     />
                   </span>
                   <strong>默认配置</strong>
-                  <small>¥{(catalog.vehicle.basePriceMinor / 100).toLocaleString('zh-CN')}</small>
+                  <small>¥{(defaultReferenceTotal / 100).toLocaleString('zh-CN')}</small>
                 </button>
+                {importedPresets.map((preset) => (
+                  <div
+                    className={`preset-card imported-preset ${selectedPresetId === preset.id ? 'selected' : ''}`}
+                    key={preset.id}
+                  >
+                    <button
+                      className="imported-preset-select"
+                      aria-label={preset.name}
+                      aria-pressed={selectedPresetId === preset.id}
+                      onClick={() => applyImportedPreset(preset)}
+                    >
+                      <strong>{preset.name}</strong>
+                      <small>
+                        ¥{(configurationReferenceTotal(catalog, preset.selections) / 100)
+                          .toLocaleString('zh-CN')}
+                      </small>
+                    </button>
+                    <button
+                      className="imported-preset-delete"
+                      aria-label={`删除${preset.name}`}
+                      onClick={() => setPendingDeletePresetId(preset.id)}
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
                 <button
                   className="preset-card import-preset"
                   aria-label="导入配置"
@@ -1745,6 +1692,28 @@ function Configurator({
                   void copyPortableValue(portableValue)
                 }}>复制当前配置</button>
               )}
+            </div>
+          </section>
+        </div>
+      )}
+      {pendingDeletePresetId && (
+        <div className="portable-dialog-backdrop" role="presentation">
+          <section
+            className="portable-dialog preset-delete-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="确认删除导入配置"
+          >
+            <h2>删除导入配置？</h2>
+            <p>删除后需重新粘贴选配码才能恢复。</p>
+            <div className="portable-dialog-actions">
+              <button onClick={() => setPendingDeletePresetId(null)}>取消</button>
+              <button
+                className="danger"
+                onClick={() => deleteImportedPreset(pendingDeletePresetId)}
+              >
+                确认删除
+              </button>
             </div>
           </section>
         </div>

@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import App, { STANDALONE_LAYOUT, versionStaticAssetUrl } from './App'
 import {
   createPortableConfiguration,
-  parsePortableConfiguration,
 } from './portableConfiguration'
 import {
   catalogFixture,
@@ -140,9 +139,9 @@ describe('App v2', () => {
     expect(screen.queryByRole('region', { name: '分类筛选' })).not.toBeInTheDocument()
     expect(screen.getByText('参考总价')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '复位' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '存草稿' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '存草稿' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '分享' })).not.toBeInTheDocument()
-    expect(screen.getByText('未保存更改')).toBeInTheDocument()
+    expect(screen.queryByText(/草稿|未保存更改|已保存/)).not.toBeInTheDocument()
     const stageNavigation = screen.getByRole('navigation', { name: '选配阶段' })
     expect(within(stageNavigation).getAllByRole('button').map((button) => button.textContent))
       .toEqual(['01预设', '02外饰', '03内饰', '04性能', '05个性化', '06总览'])
@@ -205,40 +204,25 @@ describe('App v2', () => {
     expect(screen.getByText('当前展示烘焙车辆预览')).toBeInTheDocument()
   })
 
-  it('存草稿不打开分享弹窗，分享当前配置且不改变草稿基线', async () => {
+  it('彻底移除草稿入口与本地草稿，分享只复制当前配置', async () => {
     const user = userEvent.setup()
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
-    const fetchMock = mockApi()
+    mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
     await selectStage('外饰')
     await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
-    await user.click(screen.getByRole('button', { name: '存草稿' }))
-    expect(await screen.findByText('草稿已保存')).toBeInTheDocument()
-    const savedValue = localStorage.getItem('automotive-v2-configurator-portable')
-    expect(savedValue).toMatch(/^SC01CFG1\./)
-    expect(screen.queryByAltText('当前配置二维码')).not.toBeInTheDocument()
-    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(false)
-
-    await user.click(screen.getByRole('button', { name: /红色.*免费/ }))
-    expect(screen.getByText('未保存更改')).toBeInTheDocument()
-    const sharedValue = createPortableConfiguration(
-      catalogFixture,
-      initialSelections,
-      {},
-    )
+    expect(screen.queryByRole('button', { name: '存草稿' })).not.toBeInTheDocument()
     await selectStage('总览')
     await user.click(screen.getByRole('button', { name: '分享' }))
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(sharedValue)
+      expect(writeText.mock.calls[0]?.[0]).toMatch(/^SC01CFG1\./)
     })
     expect(screen.getByAltText('当前配置二维码')).toBeInTheDocument()
     expect(screen.getByText('自包含配置字符串已复制')).toBeInTheDocument()
-    expect(localStorage.getItem('automotive-v2-configurator-portable')).toBe(savedValue)
-    expect(parsePortableConfiguration(String(savedValue), catalogFixture).selections)
-      .toMatchObject({ 'exterior-body-cover': 'body-cover-silver' })
+    expect(localStorage.length).toBe(0)
   })
 
   it('可导入自包含配置字符串并恢复选择', async () => {
@@ -266,23 +250,19 @@ describe('App v2', () => {
     })
     await user.click(screen.getByRole('button', { name: '导入' }))
 
-    expect(screen.getByRole('button', { name: /银色.*免费/ }))
-      .toHaveAttribute('aria-pressed', 'true')
+    const importedCard = screen.getByRole('button', { name: '导入配置1' })
+    expect(importedCard).toHaveAttribute('aria-pressed', 'true')
+    expect(importedCard.querySelector('img')).toBeNull()
     expect(screen.getByText('配置已导入')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '删除导入配置1' }))
+    expect(screen.getByRole('alertdialog', { name: '确认删除导入配置' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '导入配置1' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '确认删除' }))
+    expect(screen.queryByRole('button', { name: '导入配置1' })).not.toBeInTheDocument()
   })
 
   it('页内复位只恢复当前 surface，保留分享参数与当前视角', async () => {
     const user = userEvent.setup()
-    const cachedSelections = {
-      ...initialSelections,
-      'exterior-body-cover': 'body-cover-silver',
-      'wheel-material': 'wheel-magnesium-alloy',
-    }
-    localStorage.setItem('automotive-v2-configurator', JSON.stringify({
-      catalog: catalogFixture,
-      selections: cachedSelections,
-      customizations: {},
-    }))
     const fetchMock = mockApi({
       v2ImageUrl: '/assets/v2/renders/review/front-left.png',
     })
@@ -290,8 +270,7 @@ describe('App v2', () => {
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
     await selectStage('外饰')
-    expect(screen.getByRole('button', { name: /银色.*免费/ }))
-      .toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
     await user.click(within(screen.getByRole('group', { name: '车辆视角' }))
       .getByRole('button', { name: '侧面' }))
     window.history.replaceState(null, '', '/?configuration=cfg-old')
@@ -303,24 +282,17 @@ describe('App v2', () => {
     expect(window.location.search).toBe('?configuration=cfg-old')
     expect(screen.getByText('已复位车漆')).toBeInTheDocument()
     await waitFor(() => {
-      const cached = JSON.parse(String(localStorage.getItem('automotive-v2-configurator')))
-      const expectedSelections = {
-        ...initialSelections,
-        'wheel-material': 'wheel-magnesium-alloy',
-        'wheel-style': 'wheel-style-magnesium-default',
-      }
-      expect(cached.selections).toEqual(expectedSelections)
       const resolveCalls = fetchMock.mock.calls.filter(
         ([url]) => url === '/api/v2/renders/resolve',
       )
       const request = JSON.parse(String(resolveCalls.at(-1)?.[1]?.body))
-      expect(request.selections).toEqual(expectedSelections)
+      expect(request.selections).toEqual(initialSelections)
       expect(request.customizations).toEqual({})
       expect(request.renderViewId).toBe('side')
     })
   })
 
-  it('按 surface 粒度前后导航，并可从首项返回预设', async () => {
+  it('按界面顺序前后导航，轮毂三项作为同一页', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
@@ -328,8 +300,13 @@ describe('App v2', () => {
     await user.click(screen.getByRole('button', { name: '下一步' }))
     expect(screen.getByRole('region', { name: '车漆配置' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByRole('region', { name: '车架配置' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '下一步' }))
     expect(screen.getByRole('region', { name: '轮毂材质配置' })).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: '轮毂造型配置' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '轮毂造型配置' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '轮毂颜色配置' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '上一步' }))
+    expect(screen.getByRole('region', { name: '车架配置' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '上一步' }))
     expect(screen.getByRole('region', { name: '车漆配置' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '上一步' }))
@@ -449,10 +426,9 @@ describe('App v2', () => {
 
   it('header 视图从目录渲染阶段导航并可切换', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=header')
-    const triggerconfiguratorheaderaction = vi.fn().mockResolvedValue(true)
     const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
     window.ue = {
-      uebridge: { triggerconfiguratorheaderaction, setconfiguratorcategory },
+      uebridge: { setconfiguratorcategory },
     }
     const user = userEvent.setup()
     mockApi()
@@ -480,8 +456,7 @@ describe('App v2', () => {
     expect(screen.queryByText('¥239,400')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '复位' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '分享' })).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: '存草稿' }))
-    expect(triggerconfiguratorheaderaction).toHaveBeenCalledWith('save')
+    expect(screen.queryByRole('button', { name: '存草稿' })).not.toBeInTheDocument()
 
     expect(document.body).toHaveClass('header-document')
   })
@@ -498,7 +473,7 @@ describe('App v2', () => {
 
     expect(await within(screen.getByRole('region', { name: '部件筛选' }))
       .findByRole('button', { name: '方向盘' })).toBeInTheDocument()
-    await waitFor(() => expect(setcameraid).toHaveBeenCalledWith('front-cabin'))
+    await waitFor(() => expect(setcameraid).toHaveBeenCalledWith('driver'))
     const scrollRegion = panel.querySelector('.panel-scroll')
     const summary = panel.querySelector('.summary')
     expect(scrollRegion).not.toBeNull()
@@ -632,14 +607,44 @@ describe('App v2', () => {
     await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('wheel'))
 
     fireEvent(window, new CustomEvent('ue-configurator-category', { detail: 'interior' }))
-    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('front-cabin'))
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('driver'))
+    const cameraCallCount = setcameraid.mock.calls.length
+    await user.click(within(screen.getByRole('region', { name: '子项筛选' }))
+      .getByRole('button', { name: '加粗(EVA海绵)' }))
+    expect(setcameraid).toHaveBeenCalledTimes(cameraCallCount)
 
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '座椅' }))
     await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('seat'))
   })
 
-  it('分类、部件、子项由目录元数据联动且 wheel 按 surface 单页展示', async () => {
+  it('内饰上下步按部件与子项界面顺序推进并联动组件镜头', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    const setcameraid = vi.fn().mockResolvedValue(true)
+    window.ue = { uebridge: { setcameraid } }
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    fireEvent(window, new CustomEvent('ue-configurator-category', { detail: 'interior' }))
+    expect(await screen.findByRole('region', { name: '表皮配置' })).toBeInTheDocument()
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('driver'))
+    const driverCameraCallCount = setcameraid.mock.calls.length
+    await user.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByRole('region', { name: '加粗(EVA海绵)配置' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByRole('region', { name: '回中标配置' })).toBeInTheDocument()
+    expect(setcameraid).toHaveBeenCalledTimes(driverCameraCallCount)
+    await user.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByRole('region', { name: '接触面配置' })).toBeInTheDocument()
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('seat'))
+    await user.click(screen.getByRole('button', { name: '上一步' }))
+    expect(screen.getByRole('region', { name: '回中标配置' })).toBeInTheDocument()
+    await waitFor(() => expect(setcameraid).toHaveBeenLastCalledWith('driver'))
+  })
+
+  it('分类、部件、子项由目录元数据联动且 wheel 三框同页展示', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
@@ -651,8 +656,8 @@ describe('App v2', () => {
       .getByRole('button', { name: '轮毂' }))
     expect(screen.queryByRole('region', { name: '子项筛选' })).not.toBeInTheDocument()
     expect(screen.getByRole('region', { name: '轮毂材质配置' })).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: '轮毂造型配置' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: '轮毂颜色配置' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '轮毂造型配置' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: '轮毂颜色配置' })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: '材质系列筛选' })).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: '铝合金材质' })).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: '镁合金材质' })).not.toBeInTheDocument()
@@ -660,13 +665,14 @@ describe('App v2', () => {
     await user.click(magnesiumOption)
     expect(magnesiumOption)
       .toHaveAttribute('aria-pressed', 'true')
-    await user.click(screen.getByRole('button', { name: '下一步' }))
     const wheelStyles = screen.getByRole('region', { name: '轮毂造型配置' })
     expect(wheelStyles).toBeInTheDocument()
     expect(within(wheelStyles).queryByRole('button', { name: /多条幅轮毂/ }))
       .not.toBeInTheDocument()
     expect(within(wheelStyles).getAllByRole('button')).toHaveLength(9)
     expect(within(wheelStyles).getByRole('button', { name: /款式1，/ })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByRole('region', { name: '前卡钳配置' })).toBeInTheDocument()
 
     await selectStage('内饰')
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
@@ -770,10 +776,20 @@ describe('App v2', () => {
       .toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('自定义车漆显示调色盘和受限参数，并随配置保存', async () => {
+  it('自定义车漆显示调色盘和受限参数，并在颜色变化时实时提交', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const user = userEvent.setup()
-    const fetchMock = mockApi()
+    const applyconfigurationtransactionjson = vi.fn().mockResolvedValue(JSON.stringify({
+      ok: true,
+      code: 'APPLIED',
+      message: '配置已应用。',
+      configurationId: 'cfg-custom-paint',
+      appliedSurfaceIds: [],
+      unsupportedSurfaceIds: [],
+      appliedSlotIds: [],
+    }))
+    window.ue = { uebridge: { applyconfigurationtransactionjson } }
+    mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
@@ -789,16 +805,11 @@ describe('App v2', () => {
     fireEvent.change(within(editor).getByLabelText('车漆颜色'), {
       target: { value: '#123456' },
     })
-    fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'save' }))
-    await waitFor(() => expect(
-      localStorage.getItem('automotive-v2-configurator-portable'),
-    ).toMatch(/^SC01CFG1\./))
-    const imported = parsePortableConfiguration(
-      String(localStorage.getItem('automotive-v2-configurator-portable')),
-      catalogFixture,
-    )
-    expect(imported.customizations['exterior-body-cover']).toMatchObject({
-      colorHex: '#123456',
+    await waitFor(() => {
+      const payload = JSON.parse(String(applyconfigurationtransactionjson.mock.lastCall?.[0]))
+      expect(payload.customizations['exterior-body-cover']).toMatchObject({
+        colorHex: '#123456',
+      })
     })
   })
 
@@ -822,7 +833,7 @@ describe('App v2', () => {
       .toBeInTheDocument()
   })
 
-  it('背板自定义颜色支持亮面与哑光切换并随保存提交参数', async () => {
+  it('背板自定义颜色支持亮面与哑光切换', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
@@ -846,18 +857,6 @@ describe('App v2', () => {
     expect(glossButton).toHaveAttribute('aria-pressed', 'true')
     await user.click(matteButton)
     expect(matteButton).toHaveAttribute('aria-pressed', 'true')
-    await user.click(screen.getByRole('button', { name: '存草稿' }))
-    await waitFor(() => expect(
-      localStorage.getItem('automotive-v2-configurator-portable'),
-    ).toMatch(/^SC01CFG1\./))
-    const imported = parsePortableConfiguration(
-      String(localStorage.getItem('automotive-v2-configurator-portable')),
-      catalogFixture,
-    )
-    expect(imported.customizations['seat-shell-back']).toMatchObject({
-      roughness: 0.72,
-      clearCoat: 0.05,
-    })
     expect(screen.getByRole('button', { name: /自定义颜色，¥3,360/ }).querySelector('img'))
       .toHaveAttribute('src', '/sc01/option-icons/rainbow.svg')
   })
@@ -911,55 +910,45 @@ describe('App v2', () => {
     expect(fetchMock.mock.calls.some(([url]) => url === '/health')).toBe(false)
   })
 
-  it('保存配置并生成可分享字符串与二维码', async () => {
+  it('embedded 分享生成可分享字符串与二维码且不落草稿', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const user = userEvent.setup()
     const writeText = vi.fn().mockResolvedValue(undefined)
     const setconfiguratorheaderstatejson = vi.fn().mockResolvedValue(true)
     window.ue = { uebridge: { setconfiguratorheaderstatejson } }
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
-    const fetchMock = mockApi()
+    mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
 
     await enterOptions()
     await user.click(screen.getByRole('button', { name: /银色/ }))
-    fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'save' }))
-    await waitFor(() => {
-      const state = JSON.parse(String(setconfiguratorheaderstatejson.mock.lastCall?.[0]))
-      expect(state.syncMessage).toBe('草稿已保存')
-      expect(state.dirty).toBe(false)
-    })
-    const savedValue = localStorage.getItem('automotive-v2-configurator-portable')
-    expect(savedValue).toMatch(/^SC01CFG1\./)
-    expect(screen.queryByAltText('当前配置二维码')).not.toBeInTheDocument()
-    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(false)
-
     fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'share' }))
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(savedValue)
+      expect(writeText.mock.calls[0]?.[0]).toMatch(/^SC01CFG1\./)
     })
     expect(screen.getByAltText('当前配置二维码')).toBeInTheDocument()
+    expect(localStorage.length).toBe(0)
   })
 
-  it('离线时仍可生成自包含配置且不请求远端保存', async () => {
-    window.history.replaceState(null, '', '/?source=ue&view=embedded')
-    const user = userEvent.setup()
-    const setconfiguratorheaderstatejson = vi.fn().mockResolvedValue(true)
-    window.ue = { uebridge: { setconfiguratorheaderstatejson } }
-    const fetchMock = mockApi()
+  it('进入页面忽略旧草稿并始终使用默认配置与默认价格', async () => {
+    localStorage.setItem('automotive-v2-configurator', JSON.stringify({
+      catalog: catalogFixture,
+      selections: {
+        ...initialSelections,
+        'exterior-body-cover': 'body-cover-custom',
+      },
+      customizations: {},
+    }))
+    mockApi()
     render(<App />)
     await screen.findByRole('heading', { name: 'SC01 定制' })
-    fireEvent(window, new Event('offline'))
 
-    await enterOptions()
-    await user.click(screen.getByRole('button', { name: /银色/ }))
-    fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'save' }))
-    await waitFor(() => {
-      const state = JSON.parse(String(setconfiguratorheaderstatejson.mock.lastCall?.[0]))
-      expect(state.online).toBe(false)
-      expect(state.syncMessage).toBe('草稿已保存')
-    })
-    expect(fetchMock.mock.calls.some(([url]) => url === '/api/v2/configurations')).toBe(false)
+    expect(screen.getByRole('button', { name: '默认配置' }))
+      .toHaveAttribute('aria-pressed', 'true')
+    expect(within(screen.getByRole('button', { name: '默认配置' })).getByText('¥229,800'))
+      .toBeInTheDocument()
+    expect(within(document.querySelector('.panel-reference-total') as HTMLElement)
+      .getByText('¥229,800')).toBeInTheDocument()
   })
 })

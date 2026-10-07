@@ -201,6 +201,15 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .eyebrow { color: #656861; font-size: 11px; letter-spacing: .24em; }
 .panel-head h2 { margin: 7px 0 0; font-size: 30px; font-weight: 600; letter-spacing: -.02em; }
 .step { padding: 8px 11px; border-radius: 5px; color: #595c56; background: #f1f0ec; font-size: 12px; }
+.configurator-notice {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: #58702b;
+  background: #f1f5e7;
+  font-size: 11px;
+}
+.configurator-notice.error { color: #9d3028; background: #faecea; }
 .section-title { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 12px; }
 .section-title h3 { margin: 0; font-size: 15px; }
 .section-title > span { color: #74776f; font-size: 12px; }
@@ -1244,7 +1253,7 @@ html.controls-document #root::-webkit-scrollbar {
 .preset-card {
   display: grid;
   gap: 5px;
-  min-height: 174px;
+  min-height: 218px;
   align-content: end;
   border: 1px solid #d8d6ce;
   border-radius: 12px;
@@ -1263,7 +1272,7 @@ html.controls-document #root::-webkit-scrollbar {
   display: grid;
   grid-template-columns: 1fr;
   gap: 4px;
-  min-height: 176px;
+  min-height: 220px;
   margin: -2px -2px 8px;
   align-items: stretch;
   border-radius: 8px;
@@ -1273,7 +1282,7 @@ html.controls-document #root::-webkit-scrollbar {
 .preset-card-visual img {
   display: block;
   width: 100%;
-  height: 86px;
+  height: 108px;
   object-fit: cover;
 }
 .preset-plus {
@@ -1287,6 +1296,56 @@ html.controls-document #root::-webkit-scrollbar {
   background: #f7f6f2;
   font-size: 34px;
   font-weight: 300;
+}
+.imported-preset {
+  grid-template-columns: minmax(0, 1fr) 42px;
+  min-height: 76px;
+  align-content: stretch;
+  padding: 0;
+  overflow: hidden;
+}
+.preset-grid .imported-preset-select {
+  display: grid;
+  gap: 5px;
+  align-content: center;
+  min-width: 0;
+  min-height: 74px;
+  border: 0;
+  padding: 14px;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+.preset-grid .imported-preset-delete {
+  display: grid;
+  width: 42px;
+  min-width: 42px;
+  min-height: 74px;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid #e0ded7;
+  color: #777a73;
+  background: #f7f6f2;
+  cursor: pointer;
+}
+.preset-grid .imported-preset-delete:hover {
+  color: #a22d2d;
+  background: #f7e9e7;
+}
+.imported-preset-delete svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.portable-dialog-actions .danger {
+  border-color: #9e2f2f;
+  color: #fff;
+  background: #9e2f2f;
 }
 .preset-card strong { font-size: 14px; }
 .preset-card small { color: #7b7e76; font-size: 10px; }

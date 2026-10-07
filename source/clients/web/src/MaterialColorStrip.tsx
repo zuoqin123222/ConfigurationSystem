@@ -1,11 +1,8 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent,
-  type PointerEvent,
   type SyntheticEvent,
 } from 'react'
 import type { CatalogOption } from './types'
@@ -140,31 +137,17 @@ function MaterialStripRange({
 }: MaterialStripRangeProps) {
   const initialIndex = selectedIndex >= 0 ? selectedIndex : 0
   const [draftIndex, setDraftIndex] = useState(initialIndex)
-  const draftIndexRef = useRef(initialIndex)
 
   useEffect(() => {
     const nextIndex = selectedIndex >= 0 ? selectedIndex : 0
-    draftIndexRef.current = nextIndex
     setDraftIndex(nextIndex)
   }, [selectedIndex])
 
-  const setDraft = (value: string) => {
+  const selectValue = (value: string) => {
     const nextIndex = Math.max(0, Math.min(choices.length - 1, Number(value)))
-    draftIndexRef.current = nextIndex
     setDraftIndex(nextIndex)
-  }
-  const commit = () => {
-    const choice = choices[draftIndexRef.current]
+    const choice = choices[nextIndex]
     if (choice) onCommit(choice)
-  }
-  const handlePointerUp = (event: PointerEvent<HTMLInputElement>) => {
-    event.currentTarget.releasePointerCapture?.(event.pointerId)
-    commit()
-  }
-  const handleKeyUp = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) {
-      commit()
-    }
   }
   const position = choices.length <= 1 ? 50 : (draftIndex / (choices.length - 1)) * 100
   const draftChoice = choices[draftIndex]
@@ -191,12 +174,7 @@ function MaterialStripRange({
           value={draftIndex}
           aria-label={`${label}，拖动选择材质颜色`}
           aria-valuetext={draftChoice?.displayName}
-          onInput={(event) => setDraft(event.currentTarget.value)}
-          onChange={(event) => setDraft(event.currentTarget.value)}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={commit}
-          onKeyUp={handleKeyUp}
-          onBlur={commit}
+          onInput={(event) => selectValue(event.currentTarget.value)}
         />
         <span className="material-strip-indicator" aria-hidden="true" />
       </div>

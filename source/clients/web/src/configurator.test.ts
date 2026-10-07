@@ -72,7 +72,7 @@ describe('v2 动态选配逻辑', () => {
     expect(componentsForCategory(catalogFixture, 'exterior').map((item) => item.componentId))
       .toEqual(['car-paint', 'chassis', 'wheel', 'caliper'])
     expect(componentsForCategory(catalogFixture, 'interior').map((item) => item.displayName))
-      .toEqual(['方向盘', '仪表台', 'A柱', '座椅', '门板', '储物盒盖', '副仪表台', '车顶'])
+      .toEqual(['方向盘', '座椅', '门板', '仪表台', '储物盒盖', '副仪表台', '车顶', 'A柱'])
     expect(surfacesForComponent(catalogFixture, 'wheel').map((item) => item.surfaceId))
       .toEqual([
         'wheel-material',
