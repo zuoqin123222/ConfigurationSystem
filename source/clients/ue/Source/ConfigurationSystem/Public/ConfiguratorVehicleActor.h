@@ -235,6 +235,7 @@ private:
 	bool bAnimationCatalogConfigured = false;
 	bool bAnimationSequenceReady = false;
 	bool bStaticAnimationFallbackEnabled = true;
+	FString AnimationLoadFailureReason;
 	TMap<FName, FString> StaticAnimationCloseModes;
 	FName ActiveFallbackAnimationId;
 	FName PendingFallbackAnimationId;

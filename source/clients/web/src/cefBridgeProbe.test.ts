@@ -22,16 +22,15 @@ describe('Shipping CEF bridge probe', () => {
         fullscreen: false,
       })),
       getanimationexecutorstatejson: vi.fn(async (animationId: string) => {
-        const wheel = animationId === 'wheel-spin'
         return JSON.stringify({
           animationId,
           canPlay: true,
           active: focusedId === animationId,
           focused: focusedId === animationId,
-          executor: wheel ? 'wheel' : 'part-actuator',
-          moving: false,
-          openRequested: wheel ? undefined : focusedId === animationId,
-          enabled: wheel ? focusedId === animationId : undefined,
+          executor: 'sequence',
+          currentFrame: focusedId === animationId ? 1 : 0,
+          direction: 1,
+          moving: focusedId === animationId,
         })
       }),
       completecefbridgeprobe,
@@ -67,8 +66,14 @@ describe('Shipping CEF bridge probe', () => {
     expect(report.ok).toBe(true)
     expect(report.steps).toHaveLength(5)
     expect(report.steps.every(
-      (step: { focusPassed: boolean; clearPassed: boolean }) =>
-        step.focusPassed && step.clearPassed,
+      (step: {
+        focusPassed: boolean
+        clearPassed: boolean
+        executor: { executor: string }
+      }) =>
+        step.focusPassed
+        && step.clearPassed
+        && step.executor.executor === 'sequence',
     )).toBe(true)
   })
 })

@@ -55,9 +55,7 @@ export async function runCefBridgeProbe(
         && presentation.animationId === animationId
         && executor.canPlay
         && executor.focused
-        && executor.executor !== 'none'
-        && (executor.executor !== 'part-actuator' || executor.openRequested === true)
-        && (executor.executor !== 'wheel' || executor.enabled === true)
+        && executor.executor === 'sequence'
       const cleared = await bridge.focusanimation('')
       let clearedExecutor = await readExecutor(bridge, animationId)
       for (let attempt = 0;

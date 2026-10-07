@@ -5,6 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/Skeleton.h"
 #include "Engine/GameInstance.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
@@ -620,6 +621,7 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 		return bAnimationSequenceReady;
 	}
 	bAnimationCatalogConfigured = true;
+	AnimationLoadFailureReason.Reset();
 	StaticAnimationCloseModes.Reset();
 	for (const AutomotiveCatalog::FAnimation& Animation : Catalog.Animations)
 	{
@@ -637,6 +639,17 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 		IsValid(FullVehicleSequence));
 	if (bStaticAnimationFallbackEnabled)
 	{
+		AnimationLoadFailureReason = FString::Printf(
+			TEXT("asset-load mesh=%s sequence=%s meshPath=%s sequencePath=%s"),
+			IsValid(WholeVehicleMesh) ? TEXT("true") : TEXT("false"),
+			IsValid(FullVehicleSequence) ? TEXT("true") : TEXT("false"),
+			*Catalog.SkeletalMeshPath,
+			*Catalog.SequencePath);
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("骨骼整车启用静态回退：%s"),
+			*AnimationLoadFailureReason);
 		SkeletalVehicle->SetSkeletalMeshAsset(nullptr);
 		SkeletalVehicle->SetVisibility(false);
 		SkeletalVehicle->SetHiddenInGame(true);
@@ -649,11 +662,32 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 		SkeletalVehicle,
 		WholeVehicleMesh);
 	TArray<FVehicleAnimationClip> Clips;
-	bAnimationSequenceReady =
-		BuildAnimationClips(Catalog, Clips)
+	const bool bClipsBuilt = BuildAnimationClips(Catalog, Clips);
+	const bool bSkeletonMatches =
+		IsValid(WholeVehicleMesh->GetSkeleton())
+		&& IsValid(FullVehicleSequence->GetSkeleton())
+		&& WholeVehicleMesh->GetSkeleton() == FullVehicleSequence->GetSkeleton();
+	const bool bSequenceConfigured = bClipsBuilt
 		&& AnimationPlayer->SetSequenceAndClips(FullVehicleSequence, Clips);
+	bAnimationSequenceReady = bSequenceConfigured;
 	if (!bAnimationSequenceReady)
 	{
+		AnimationLoadFailureReason = FString::Printf(
+			TEXT("sequence-setup clips=%s skeletonMatch=%s sampledKeys=%d meshSkeleton=%s sequenceSkeleton=%s"),
+			bClipsBuilt ? TEXT("true") : TEXT("false"),
+			bSkeletonMatches ? TEXT("true") : TEXT("false"),
+			FullVehicleSequence->GetNumberOfSampledKeys(),
+			IsValid(WholeVehicleMesh->GetSkeleton())
+				? *WholeVehicleMesh->GetSkeleton()->GetPathName()
+				: TEXT("<null>"),
+			IsValid(FullVehicleSequence->GetSkeleton())
+				? *FullVehicleSequence->GetSkeleton()->GetPathName()
+				: TEXT("<null>"));
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("骨骼整车序列配置失败：%s"),
+			*AnimationLoadFailureReason);
 		AnimationPlayer->FreezeAnimation();
 		SkeletalVehicle->SetSkeletalMeshAsset(nullptr);
 		SkeletalVehicle->SetVisibility(false);
@@ -1019,6 +1053,9 @@ FString AConfiguratorVehicleActor::GetAnimationExecutorStateJson(
 	State->SetBoolField(
 		TEXT("focused"),
 		GetFocusedVehicleAnimationId() == AnimationId);
+	State->SetStringField(
+		TEXT("fallbackReason"),
+		AnimationLoadFailureReason);
 
 	const UReversiblePartActuatorComponent* Actuator =
 		AnimationId == TEXT("hood") ? HoodActuator
