@@ -190,11 +190,11 @@ test("GET /api/v2/catalog 返回 SC01 draft 分层目录", async (t) => {
   );
   assert.equal(
     response.json().skeletalMeshPath,
-    "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2.automotive-configurator-audi-a5-rigged-v2",
+    "/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/automotive-configurator-audi-a5-dcc-v2-slotted-zup.automotive-configurator-audi-a5-dcc-v2-slotted-zup",
   );
   assert.equal(
     response.json().sequencePath,
-    "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2_Anim.automotive-configurator-audi-a5-rigged-v2_Anim",
+    "/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/automotive-configurator-audi-a5-dcc-v2-slotted-zup_Anim.automotive-configurator-audi-a5-dcc-v2-slotted-zup_Anim",
   );
   assert.equal(
     response.json().animations.some(

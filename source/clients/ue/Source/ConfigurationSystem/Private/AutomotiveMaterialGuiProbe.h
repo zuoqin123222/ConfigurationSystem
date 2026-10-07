@@ -24,7 +24,7 @@ struct FAutomotiveMaterialGuiProbeSurfaceResult
 	int32 ComponentMaterialSlotCount = 0;
 	bool bVisible = false;
 	bool bUniqueSlotHit = false;
-	bool bAllSlotsMatch = false;
+	bool bTargetSlotIsolated = false;
 	bool bChanged = false;
 	bool bNeutralProxy = false;
 };

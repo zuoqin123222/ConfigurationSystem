@@ -103,7 +103,27 @@ namespace ConfiguratorVehicle
 			{TEXT("CS_Validation_Rubber"),
 				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Rubber.M_A5_Rubber")}
 		};
-		const TCHAR* const* ObjectPath = MaterialPaths.Find(SlotName);
+		FName ResolvedSlotName = SlotName;
+		const FString SlotText = SlotName.ToString();
+		if (SlotText.StartsWith(TEXT("sc01_")))
+		{
+			if (SlotName == TEXT("sc01_exterior_body_cover"))
+			{
+				ResolvedSlotName = TEXT("CS_Validation_Paint");
+			}
+			else if (SlotText.Contains(TEXT("wheel"))
+				|| SlotText.Contains(TEXT("caliper"))
+				|| SlotName == TEXT("sc01_lower_skirt")
+				|| SlotName == TEXT("sc01_pedal"))
+			{
+				ResolvedSlotName = TEXT("CS_Validation_Metal");
+			}
+			else
+			{
+				ResolvedSlotName = TEXT("CS_Validation_Interior");
+			}
+		}
+		const TCHAR* const* ObjectPath = MaterialPaths.Find(ResolvedSlotName);
 		return ObjectPath != nullptr
 			? LoadOptionalAsset<UMaterialInterface>(*ObjectPath)
 			: nullptr;
@@ -608,18 +628,6 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 			Animation.CloseMode);
 	}
 
-	// 当前发布目标是明确标识的 A5 独立静态代理分件。完整 40 surface
-	// 目标存在时，它们必须保持唯一可见材质目标；骨骼整车不能叠在其上遮挡切换。
-	if (GetCatalogSurfaceTargetCount() == AutomotiveCatalog::RequiredSelectionCount)
-	{
-		bStaticAnimationFallbackEnabled = true;
-		SkeletalVehicle->SetSkeletalMeshAsset(nullptr);
-		SkeletalVehicle->SetVisibility(false);
-		SkeletalVehicle->SetHiddenInGame(true);
-		SetStaticProxyVisible(true);
-		return false;
-	}
-
 	USkeletalMesh* WholeVehicleMesh =
 		ConfiguratorVehicle::LoadOptionalAsset<USkeletalMesh>(*Catalog.SkeletalMeshPath);
 	UAnimSequence* FullVehicleSequence =
@@ -644,10 +652,22 @@ bool AConfiguratorVehicleActor::ConfigureAnimationFromCatalog(
 	bAnimationSequenceReady =
 		BuildAnimationClips(Catalog, Clips)
 		&& AnimationPlayer->SetSequenceAndClips(FullVehicleSequence, Clips);
+	if (!bAnimationSequenceReady)
+	{
+		AnimationPlayer->FreezeAnimation();
+		SkeletalVehicle->SetSkeletalMeshAsset(nullptr);
+		SkeletalVehicle->SetVisibility(false);
+		SkeletalVehicle->SetHiddenInGame(true);
+		SetStaticProxyVisible(true);
+		bStaticAnimationFallbackEnabled = true;
+		return false;
+	}
+
+	bStaticAnimationFallbackEnabled = false;
 	SkeletalVehicle->SetVisibility(true);
 	SkeletalVehicle->SetHiddenInGame(false);
 	SetStaticProxyVisible(false);
-	return bAnimationSequenceReady;
+	return true;
 }
 
 bool AConfiguratorVehicleActor::ShouldUseStaticAnimationFallback(
@@ -1006,7 +1026,22 @@ FString AConfiguratorVehicleActor::GetAnimationExecutorStateJson(
 		: AnimationId == TEXT("door-left") ? LeftDoorActuator
 		: AnimationId == TEXT("door-right") ? RightDoorActuator
 		: nullptr;
-	if (AnimationId == TEXT("wheel-spin"))
+	if (!bStaticAnimationFallbackEnabled
+		&& IsValid(AnimationPlayer)
+		&& AnimationPlayer->HasAnimationById(AnimationId))
+	{
+		State->SetStringField(TEXT("executor"), TEXT("sequence"));
+		State->SetNumberField(
+			TEXT("currentFrame"),
+			AnimationPlayer->GetCurrentFrame());
+		State->SetNumberField(
+			TEXT("direction"),
+			AnimationPlayer->GetDirection());
+		State->SetBoolField(
+			TEXT("moving"),
+			AnimationPlayer->IsPlaying());
+	}
+	else if (AnimationId == TEXT("wheel-spin"))
 	{
 		State->SetStringField(TEXT("executor"), TEXT("wheel"));
 		State->SetBoolField(TEXT("enabled"), bWheelsSpinning);

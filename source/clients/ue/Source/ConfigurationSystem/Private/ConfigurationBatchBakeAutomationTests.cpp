@@ -314,10 +314,14 @@ bool FConfigurationBatchBakeBinderTransactionTest::RunTest(
 		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
 	AConfiguratorVehicleActor* Vehicle =
 		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+	TestTrue(TEXT("Batch 测试初始化状态"), State->Initialize(Catalog));
+	TestTrue(
+		TEXT("Batch 测试 Bind 前配置骨骼车"),
+		Vehicle->ConfigureAnimationFromCatalog(
+			State->GetCatalogIndex().GetCatalog()));
 	UAutomotiveMaterialBinder* Binder =
 		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
-	TestTrue(TEXT("Batch 测试初始化状态"), State->Initialize(Catalog));
-	TestTrue(TEXT("Batch 测试绑定 40 surface 代理"), Binder->Bind(State, Library, Vehicle));
+	TestTrue(TEXT("Batch 测试绑定骨骼车 40 个 sc01 槽"), Binder->Bind(State, Library, Vehicle));
 
 	FConfigurationBakeTask Task;
 	Task.Selections = State->GetSelections();
@@ -335,7 +339,7 @@ bool FConfigurationBatchBakeBinderTransactionTest::RunTest(
 		State->GetSelections().FindRef(TEXT("wheel-style")),
 		FString(TEXT("wheel-style-magnesium-1")));
 	TestNotNull(
-		TEXT("Batch Binder 更新独立可见代理目标材质"),
+		TEXT("Batch Binder 更新可见骨骼车命名槽材质"),
 		Binder->GetAppliedMaterialForSurface(TEXT("wheel-style")));
 	return true;
 }

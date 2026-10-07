@@ -85,14 +85,14 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 	TestEqual(TEXT("顶层动画定义数"), Catalog.GetCatalog().Animations.Num(), 5);
 	TestEqual(TEXT("骨骼网格由顶层 Catalog 提供"),
 		Catalog.GetCatalog().SkeletalMeshPath,
-		FString(TEXT("/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
-			"automotive-configurator-audi-a5-rigged-v2."
-			"automotive-configurator-audi-a5-rigged-v2")));
+		FString(TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/"
+			"automotive-configurator-audi-a5-dcc-v2-slotted-zup."
+			"automotive-configurator-audi-a5-dcc-v2-slotted-zup")));
 	TestEqual(TEXT("所有帧段共享顶层完整 AnimSequence"),
 		Catalog.GetCatalog().SequencePath,
-		FString(TEXT("/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/"
-			"automotive-configurator-audi-a5-rigged-v2_Anim."
-			"automotive-configurator-audi-a5-rigged-v2_Anim")));
+		FString(TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/"
+			"automotive-configurator-audi-a5-dcc-v2-slotted-zup_Anim."
+			"automotive-configurator-audi-a5-dcc-v2-slotted-zup_Anim")));
 	const AutomotiveCatalog::FAnimation* HoodAnimation =
 		Catalog.FindAnimation(TEXT("hood"));
 	TestNotNull(TEXT("可按 animationId 查询动画"), HoodAnimation);
@@ -144,14 +144,14 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 	}
 	const TArray<FName>* PaintSlots =
 		Catalog.FindMaterialSlotIdsForSurface(TEXT("exterior-body-cover"));
-	TestTrue(TEXT("代理车漆 surface 命中自己的 SkeletalMesh slot"),
+	TestTrue(TEXT("车漆 surface 命中自己的 SkeletalMesh slot"),
 		PaintSlots != nullptr
-			&& *PaintSlots == TArray<FName>({TEXT("A5Proxy_ExteriorBodyCover")}));
-	TestNotNull(TEXT("原语义缺失项也有独占代理目标"),
+			&& *PaintSlots == TArray<FName>({TEXT("sc01_exterior_body_cover")}));
+	TestNotNull(TEXT("原语义缺失项也有独占 SkeletalMesh slot"),
 		Catalog.FindMaterialSlotIdsForSurface(TEXT("seat-backrest")));
-	TestFalse(TEXT("完整代理映射不再保留 unsupported surface"),
+	TestFalse(TEXT("完整槽映射不再保留 unsupported surface"),
 		Catalog.IsSurfaceBindingExplicitlyUnsupported(TEXT("seat-backrest")));
-	TestTrue(TEXT("40 个 surface 均命中唯一代理 binding"),
+	TestTrue(TEXT("40 个 surface 均命中唯一 sc01 槽 binding"),
 		Algo::AllOf(
 			Catalog.GetCatalog().SelectionOrder,
 			[&Catalog](const FString& SurfaceId)
@@ -160,7 +160,7 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 			}));
 	TMap<FString, TArray<FName>> TransactionTargets;
 	TSet<FString> TransactionGaps;
-	TestTrue(TEXT("选配 transaction 解析到各自代理 binding"),
+	TestTrue(TEXT("选配 transaction 解析到各自 sc01 槽 binding"),
 		Catalog.ResolveSurfaceBindingTransaction(
 			TSet<FString>({TEXT("exterior-body-cover"), TEXT("seat-backrest")}),
 			TransactionTargets,
@@ -168,11 +168,11 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 			Error));
 	TestTrue(TEXT("transaction 车漆只命中车漆 slot"),
 		TransactionTargets.FindRef(TEXT("exterior-body-cover"))
-			== TArray<FName>({TEXT("A5Proxy_ExteriorBodyCover")}));
-	TestTrue(TEXT("语义缺失项命中自己的代理 slot"),
+			== TArray<FName>({TEXT("sc01_exterior_body_cover")}));
+	TestTrue(TEXT("语义缺失项命中自己的 sc01 slot"),
 		TransactionTargets.FindRef(TEXT("seat-backrest"))
-			== TArray<FName>({TEXT("A5Proxy_SeatBackrest")}));
-	TestTrue(TEXT("代理完整映射没有 capability 缺口"),
+			== TArray<FName>({TEXT("sc01_seat_backrest")}));
+	TestTrue(TEXT("完整槽映射没有 capability 缺口"),
 		TransactionGaps.IsEmpty());
 	TestFalse(TEXT("transaction 拒绝未知 surface"),
 		Catalog.ResolveSurfaceBindingTransaction(

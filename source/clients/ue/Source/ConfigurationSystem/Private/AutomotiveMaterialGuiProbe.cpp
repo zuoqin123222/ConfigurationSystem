@@ -301,31 +301,23 @@ bool UAutomotiveMaterialGuiProbe::ValidateAllSurfaceMaterialSlots(
 				SlotId,
 				MaterialIndex)
 			|| !IsValid(Component)
-			|| Component->GetNumMaterials() <= 0)
+			|| MaterialIndex < 0
+			|| MaterialIndex >= Component->GetNumMaterials())
 		{
 			OutFailureReason = FString::Printf(
-				TEXT("surfaceId=%s 没有有效静态代理材质槽。"),
+				TEXT("surfaceId=%s 没有有效唯一材质槽。"),
 				*SurfaceId);
 			return false;
 		}
-		UMaterialInterface* ExpectedMaterial = Component->GetMaterial(0);
+		UMaterialInterface* ExpectedMaterial =
+			Component->GetMaterial(MaterialIndex);
 		if (!IsValid(ExpectedMaterial))
 		{
 			OutFailureReason = FString::Printf(
-				TEXT("surfaceId=%s 的槽 0 材质为空。"),
-				*SurfaceId);
+				TEXT("surfaceId=%s 的目标槽 %d 材质为空。"),
+				*SurfaceId,
+				MaterialIndex);
 			return false;
-		}
-		for (int32 Index = 1; Index < Component->GetNumMaterials(); ++Index)
-		{
-			if (Component->GetMaterial(Index) != ExpectedMaterial)
-			{
-				OutFailureReason = FString::Printf(
-					TEXT("surfaceId=%s 的槽 %d 与槽 0 材质不一致。"),
-					*SurfaceId,
-					Index);
-				return false;
-			}
 		}
 	}
 	return true;
@@ -435,6 +427,12 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 		return false;
 	}
 
+	TArray<UMaterialInterface*> BeforeMaterials;
+	BeforeMaterials.Reserve(Component->GetNumMaterials());
+	for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+	{
+		BeforeMaterials.Add(Component->GetMaterial(Index));
+	}
 	UMaterialInterface* BeforeMaterial = Component->GetMaterial(MaterialIndex);
 	const FString Before = DescribeMaterial(BeforeMaterial);
 	Selections.Add(SurfaceId, *NextOptionId);
@@ -519,11 +517,15 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 				&& FMath::IsNearlyEqual(Color.G, Color.B, 0.0001f);
 		}
 	}
-	bool bAllSlotsMatch = IsValid(AfterMaterial);
+	bool bTargetSlotIsolated = IsValid(AfterMaterial);
 	for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
 	{
-		bAllSlotsMatch = bAllSlotsMatch
-			&& Component->GetMaterial(Index) == AfterMaterial;
+		if (Index != MaterialIndex)
+		{
+			bTargetSlotIsolated = bTargetSlotIsolated
+				&& BeforeMaterials.IsValidIndex(Index)
+				&& Component->GetMaterial(Index) == BeforeMaterials[Index];
+		}
 	}
 	const bool bReceiptValid =
 		Result.bSuccess
@@ -533,15 +535,15 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 		&& Result.UnsupportedSurfaceIds.IsEmpty();
 	const bool bChanged = IsValid(AfterMaterial) && Before != After;
 	if (!bReceiptValid || !bVisible || !bChanged
-		|| !bNeutralProxyColorValid || !bAllSlotsMatch)
+		|| !bNeutralProxyColorValid || !bTargetSlotIsolated)
 	{
 		OutFailureReason = FString::Printf(
-			TEXT("surfaceId=%s 验证失败：receipt=%s visible=%s neutralProxyColor=%s allSlotsMatch=%s before=%s after=%s"),
+			TEXT("surfaceId=%s 验证失败：receipt=%s visible=%s neutralProxyColor=%s targetSlotIsolated=%s before=%s after=%s"),
 			*SurfaceId,
 			*Result.ToJson(),
 			bVisible ? TEXT("true") : TEXT("false"),
 			bNeutralProxyColorValid ? TEXT("true") : TEXT("false"),
-			bAllSlotsMatch ? TEXT("true") : TEXT("false"),
+			bTargetSlotIsolated ? TEXT("true") : TEXT("false"),
 			*Before,
 			*After);
 		return false;
@@ -561,7 +563,7 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 	Report.ComponentMaterialSlotCount = Component->GetNumMaterials();
 	Report.bVisible = bVisible;
 	Report.bUniqueSlotHit = bUniqueSlot;
-	Report.bAllSlotsMatch = bAllSlotsMatch;
+	Report.bTargetSlotIsolated = bTargetSlotIsolated;
 	Report.bChanged = bChanged;
 	Report.bNeutralProxy = bNeutralProxy;
 	++SurfaceIndex;
@@ -650,7 +652,9 @@ void UAutomotiveMaterialGuiProbe::WriteReportAndExit(
 		Item->SetBoolField(TEXT("change"), Result.bChanged);
 		Item->SetBoolField(TEXT("visible"), Result.bVisible);
 		Item->SetBoolField(TEXT("uniqueSlotHit"), Result.bUniqueSlotHit);
-		Item->SetBoolField(TEXT("allSlotsMatch"), Result.bAllSlotsMatch);
+		Item->SetBoolField(
+			TEXT("targetSlotIsolated"),
+			Result.bTargetSlotIsolated);
 		Item->SetStringField(TEXT("receiptCode"), Result.ReceiptCode);
 		SurfaceValues.Add(MakeShared<FJsonValueObject>(Item));
 	}

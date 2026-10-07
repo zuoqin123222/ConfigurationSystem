@@ -10,8 +10,10 @@ interface ExecutorState {
   canPlay: boolean
   active: boolean
   focused: boolean
-  executor: 'part-actuator' | 'wheel' | 'none'
+  executor: 'sequence' | 'part-actuator' | 'wheel' | 'none'
   moving: boolean
+  currentFrame?: number
+  direction?: number
   openRequested?: boolean
   enabled?: boolean
 }

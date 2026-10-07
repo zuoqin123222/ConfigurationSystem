@@ -304,10 +304,14 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("初始化 v2 状态"), State->Initialize(Catalog));
 	AConfiguratorVehicleActor* Vehicle =
 		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+	TestTrue(
+		TEXT("Bind 前配置带 40 个 sc01 槽的骨骼车"),
+		Vehicle->ConfigureAnimationFromCatalog(
+			State->GetCatalogIndex().GetCatalog()));
 	UAutomotiveMaterialBinder* Binder =
 		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
 	const bool bBound = Binder->Bind(State, Library, Vehicle);
-	TestTrue(TEXT("绑定明确车漆/内饰代理槽"), bBound);
+	TestTrue(TEXT("绑定骨骼车明确车漆/内饰槽"), bBound);
 	if (!bBound)
 	{
 		AddError(FString::Printf(
@@ -315,48 +319,29 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			*Binder->GetLastError()));
 		return false;
 	}
-	TestNotNull(TEXT("找到车漆代理槽"), Binder->GetPaintComponent());
-	TestNotNull(TEXT("找到唯一内饰代理槽"), Binder->GetInteriorComponent());
+	TestNotNull(TEXT("找到骨骼车车漆槽"), Binder->GetPaintComponent());
+	TestNotNull(TEXT("找到骨骼车内饰槽"), Binder->GetInteriorComponent());
+	TInlineComponentArray<USkeletalMeshComponent*> SkeletalComponents(Vehicle);
+	int32 VisibleSkeletalComponentCount = 0;
+	for (const USkeletalMeshComponent* Component : SkeletalComponents)
+	{
+		if (IsValid(Component)
+			&& Component->IsVisible()
+			&& !Component->bHiddenInGame)
+		{
+			++VisibleSkeletalComponentCount;
+		}
+	}
 	TestEqual(
-		TEXT("A5 独立分件提供 40 个 Catalog 代理目标"),
-		Vehicle->GetCatalogSurfaceTargetCount(),
-		AutomotiveCatalog::RequiredSelectionCount);
-	TSet<const UMeshComponent*> UniqueTargets;
+		TEXT("车辆仅有一个可见 SkeletalMeshComponent"),
+		VisibleSkeletalComponentCount,
+		1);
+	TSet<FName> UniqueSlots;
+	TSet<int32> UniqueMaterialIndices;
+	USkeletalMeshComponent* BoundSkeletalComponent = nullptr;
 	for (const AutomotiveCatalog::FSurfaceBinding& Binding :
 		State->GetCatalogIndex().GetCatalog().VehicleSurfaceBinding.Bindings)
 	{
-		for (const FName SlotId : Binding.MaterialSlotIds)
-		{
-			UMeshComponent* Target = Vehicle->FindCatalogSurfaceTarget(SlotId);
-			TestNotNull(
-				*FString::Printf(TEXT("%s 有代理目标"), *Binding.SurfaceId),
-				Target);
-			if (Target != nullptr)
-			{
-				TestTrue(
-					*FString::Printf(TEXT("%s 代理目标可见"), *Binding.SurfaceId),
-					Target->IsVisible() && !Target->bHiddenInGame);
-				TestFalse(
-					*FString::Printf(TEXT("%s 不复用其他 surface 目标"), *Binding.SurfaceId),
-					UniqueTargets.Contains(Target));
-				UniqueTargets.Add(Target);
-				UMaterialInterface* FirstMaterial = Target->GetMaterial(0);
-				TestTrue(
-					*FString::Printf(TEXT("%s 代理目标至少包含一个材质槽"), *Binding.SurfaceId),
-					Target->GetNumMaterials() > 0 && IsValid(FirstMaterial));
-				for (int32 MaterialIndex = 1;
-					MaterialIndex < Target->GetNumMaterials();
-					++MaterialIndex)
-				{
-					TestTrue(
-						*FString::Printf(
-							TEXT("%s 代理目标槽 %d 与槽 0 材质一致"),
-							*Binding.SurfaceId,
-							MaterialIndex),
-						Target->GetMaterial(MaterialIndex) == FirstMaterial);
-				}
-			}
-		}
 		UMeshComponent* BoundComponent = nullptr;
 		FName BoundSlot;
 		int32 BoundMaterialIndex = INDEX_NONE;
@@ -372,16 +357,36 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			Binder->GetBoundSlotCount(Binding.SurfaceId),
 			1);
 		TestTrue(
-			*FString::Printf(TEXT("%s Binder 命中可见组件"), *Binding.SurfaceId),
+			*FString::Printf(TEXT("%s Binder 命中可见骨骼组件"), *Binding.SurfaceId),
 			IsValid(BoundComponent)
+				&& Cast<USkeletalMeshComponent>(BoundComponent) != nullptr
 				&& BoundComponent->IsVisible()
 				&& !BoundComponent->bHiddenInGame);
+		USkeletalMeshComponent* CurrentSkeletalComponent =
+			Cast<USkeletalMeshComponent>(BoundComponent);
+		if (BoundSkeletalComponent == nullptr)
+		{
+			BoundSkeletalComponent = CurrentSkeletalComponent;
+		}
+		TestTrue(
+			*FString::Printf(TEXT("%s 复用同一个可见骨骼组件"), *Binding.SurfaceId),
+			CurrentSkeletalComponent == BoundSkeletalComponent);
 		TestEqual(
 			*FString::Printf(TEXT("%s Binder 命中 catalog 槽名"), *Binding.SurfaceId),
 			BoundSlot,
 			Binding.MaterialSlotIds[0]);
+		TestFalse(
+			*FString::Printf(TEXT("%s 不复用其他 surface 槽名"), *Binding.SurfaceId),
+			UniqueSlots.Contains(BoundSlot));
+		UniqueSlots.Add(BoundSlot);
+		TestFalse(
+			*FString::Printf(TEXT("%s 不复用其他 surface 材质索引"), *Binding.SurfaceId),
+			UniqueMaterialIndices.Contains(BoundMaterialIndex));
+		UniqueMaterialIndices.Add(BoundMaterialIndex);
 	}
-	TestEqual(TEXT("40 个 surface 对应 40 个唯一组件"), UniqueTargets.Num(), 40);
+	TestNotNull(TEXT("40 个 surface 绑定单一 SkeletalMeshComponent"), BoundSkeletalComponent);
+	TestEqual(TEXT("骨骼车包含 40 个唯一 sc01 槽"), UniqueSlots.Num(), 40);
+	TestEqual(TEXT("骨骼车包含 40 个唯一材质索引"), UniqueMaterialIndices.Num(), 40);
 	const AutomotiveCatalog::FOption* RedOption =
 		State->GetCatalogIndex().FindOption(TEXT("body-cover-red"));
 	TestTrue(
@@ -413,10 +418,11 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			Binder->GetAppliedInteriorFamilyId(),
 			FString(Case.FamilyId));
 		TestTrue(
-			TEXT("代理槽使用对应材料族的可见实例"),
+			TEXT("骨骼车槽使用对应材料族的可见实例"),
 			IsValid(Binder->GetInteriorComponent())
 				&& IsValid(Case.Expected)
-				&& IsValid(Binder->GetInteriorComponent()->GetMaterial(0)));
+				&& IsValid(Binder->GetAppliedMaterialForSurface(
+					UAutomotiveMaterialBinder::InteriorProxySurfaceId)));
 	}
 	TMap<FString, FString> VariantSelections = State->GetSelections();
 	VariantSelections.Add(
@@ -435,7 +441,8 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("variantId 事务成功"), VariantResult.bSuccess);
 	TestTrue(
 		TEXT("variantId 直接命中阶段3物化 MI"),
-		Binder->GetInteriorComponent()->GetMaterial(0)
+		Binder->GetAppliedMaterialForSurface(
+			UAutomotiveMaterialBinder::InteriorProxySurfaceId)
 			== Library->LoadVariantMaterial(TEXT("leather-p10-1217")));
 	VariantCustomizations.Remove(UAutomotiveMaterialBinder::InteriorProxySurfaceId);
 	TestTrue(
@@ -446,7 +453,8 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("清除 variant 后槽恢复 leather family 的可见实例"),
 		Binder->GetAppliedInteriorFamilyId() == TEXT("leather")
-			&& IsValid(Binder->GetInteriorComponent()->GetMaterial(0)));
+			&& IsValid(Binder->GetAppliedMaterialForSurface(
+				UAutomotiveMaterialBinder::InteriorProxySurfaceId)));
 	TMap<FString, FString> InvalidSelections = State->GetSelections();
 	InvalidSelections.Add(TEXT("exterior-body-cover"), TEXT("unknown-option"));
 	const FAutomotiveMaterialTransactionResult InvalidResult =
@@ -462,7 +470,8 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			&& InvalidResult.Message.Contains(TEXT("optionId")));
 	const FString BeforeRejectedConfigurationId = State->GetConfigurationId();
 	UMaterialInterface* BeforeRejectedMaterial =
-		Binder->GetInteriorComponent()->GetMaterial(0);
+		Binder->GetAppliedMaterialForSurface(
+			UAutomotiveMaterialBinder::InteriorProxySurfaceId);
 	const TSoftObjectPtr<UMaterialInterface> SavedVariant =
 		Library->Variants.FindRef(TEXT("leather-p10-1217"));
 	Library->Variants.Remove(TEXT("leather-p10-1217"));
@@ -484,7 +493,9 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		BeforeRejectedConfigurationId);
 	TestTrue(
 		TEXT("失败事务不修改已显示材质"),
-		Binder->GetInteriorComponent()->GetMaterial(0) == BeforeRejectedMaterial);
+		Binder->GetAppliedMaterialForSurface(
+			UAutomotiveMaterialBinder::InteriorProxySurfaceId)
+			== BeforeRejectedMaterial);
 	Library->Variants.Add(TEXT("leather-p10-1217"), SavedVariant);
 
 	const TArray<FString>* ProxyOptions =
@@ -642,7 +653,7 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("车漆事务回执包含命名槽"),
 		PaintResult.AppliedSlotIds
-			== TArray<FName>({TEXT("A5Proxy_ExteriorBodyCover")}));
+			== TArray<FName>({TEXT("sc01_exterior_body_cover")}));
 
 	PaintInstance = Binder->GetPaintMaterialInstance();
 	TestNotNull(TEXT("车身代理使用动态车漆实例"), PaintInstance);
@@ -688,20 +699,6 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("连续自定义车漆调色复用同一个 MID"),
 		Binder->GetPaintMaterialInstance() == PaintInstance);
-
-	TestFalse(
-		TEXT("40 surface 代理目标启用时不叠加骨骼整车"),
-		Vehicle->ConfigureAnimationFromCatalog(
-			State->GetCatalogIndex().GetCatalog()));
-	TestTrue(TEXT("重新绑定 A5 独立静态代理目标"), Binder->Bind(State, Library, Vehicle));
-	USkeletalMeshComponent* SkeletalComponent =
-		Cast<USkeletalMeshComponent>(Binder->GetPaintComponent());
-	TestNull(TEXT("车漆不再绑定被隐藏的骨骼整车"), SkeletalComponent);
-	TestTrue(
-		TEXT("车漆仍绑定唯一可见 A5 静态分件"),
-		IsValid(Binder->GetPaintComponent())
-			&& Binder->GetPaintComponent()->IsVisible()
-			&& !Binder->GetPaintComponent()->bHiddenInGame);
 
 	for (const FString& SurfaceId :
 		State->GetCatalogIndex().GetCatalog().SelectionOrder)
@@ -763,23 +760,19 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 					|| (IsValid(AfterDynamic)
 						&& !AfterDynamic->K2_GetVectorParameterValue(
 							TEXT("BaseColor")).Equals(BeforeColor))));
-		UMeshComponent* Target = Vehicle->FindCatalogSurfaceTarget(
-			ExpectedSlots != nullptr && ExpectedSlots->Num() == 1
-				? (*ExpectedSlots)[0]
-				: NAME_None);
-		if (IsValid(Target))
-		{
-			for (int32 MaterialIndex = 0;
-				MaterialIndex < Target->GetNumMaterials();
-				++MaterialIndex)
-			{
-				TestTrue(
-					*FString::Printf(
-						TEXT("%s 切换后所有静态代理槽材质一致"),
-						*SurfaceId),
-					Target->GetMaterial(MaterialIndex) == After);
-			}
-		}
+		UMeshComponent* Target = nullptr;
+		FName BoundSlot;
+		int32 MaterialIndex = INDEX_NONE;
+		TestTrue(
+			*FString::Printf(TEXT("%s 切换后仍绑定唯一骨骼车槽"), *SurfaceId),
+			Binder->GetSingleBoundSlot(
+				SurfaceId,
+				Target,
+				BoundSlot,
+				MaterialIndex)
+				&& IsValid(Target)
+				&& Target == BoundSkeletalComponent
+				&& Target->GetMaterial(MaterialIndex) == After);
 	}
 	return true;
 }
@@ -821,9 +814,13 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
 	AConfiguratorVehicleActor* Vehicle =
 		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+	TestTrue(TEXT("穷举测试初始化 Runtime 状态"), State->Initialize(Catalog));
+	TestTrue(
+		TEXT("穷举测试 Bind 前配置骨骼车"),
+		Vehicle->ConfigureAnimationFromCatalog(
+			State->GetCatalogIndex().GetCatalog()));
 	UAutomotiveMaterialBinder* Binder =
 		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
-	TestTrue(TEXT("穷举测试初始化 Runtime 状态"), State->Initialize(Catalog));
 	TestTrue(TEXT("穷举测试绑定真实 AutomotiveMaterialBinder"), Binder->Bind(State, Library, Vehicle));
 	if (!State->IsInitialized() || Binder->GetBoundSlotCount(TEXT("exterior-body-cover")) == 0)
 	{
@@ -831,7 +828,24 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		return false;
 	}
 
-	TSet<const UMeshComponent*> UniqueComponents;
+	TInlineComponentArray<USkeletalMeshComponent*> SkeletalComponents(Vehicle);
+	int32 VisibleSkeletalComponentCount = 0;
+	for (const USkeletalMeshComponent* Component : SkeletalComponents)
+	{
+		if (IsValid(Component)
+			&& Component->IsVisible()
+			&& !Component->bHiddenInGame)
+		{
+			++VisibleSkeletalComponentCount;
+		}
+	}
+	TestEqual(
+		TEXT("穷举车辆仅有一个可见 SkeletalMeshComponent"),
+		VisibleSkeletalComponentCount,
+		1);
+	TSet<FName> UniqueSlots;
+	TSet<int32> UniqueMaterialIndices;
+	USkeletalMeshComponent* BoundSkeletalComponent = nullptr;
 	for (const FString& SurfaceId :
 		State->GetCatalogIndex().GetCatalog().SelectionOrder)
 	{
@@ -850,16 +864,32 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 			Binder->GetBoundSlotCount(SurfaceId),
 			1);
 		TestTrue(
-			*FString::Printf(TEXT("%s 目标组件可见"), *SurfaceId),
+			*FString::Printf(TEXT("%s 目标骨骼组件可见"), *SurfaceId),
 			IsValid(Component)
+				&& Cast<USkeletalMeshComponent>(Component) != nullptr
 				&& Component->IsVisible()
 				&& !Component->bHiddenInGame);
+		USkeletalMeshComponent* CurrentSkeletalComponent =
+			Cast<USkeletalMeshComponent>(Component);
+		if (BoundSkeletalComponent == nullptr)
+		{
+			BoundSkeletalComponent = CurrentSkeletalComponent;
+		}
+		TestTrue(
+			*FString::Printf(TEXT("%s 复用同一个骨骼组件"), *SurfaceId),
+			CurrentSkeletalComponent == BoundSkeletalComponent);
 		TestFalse(
-			*FString::Printf(TEXT("%s 不复用其他 surface 的组件"), *SurfaceId),
-			UniqueComponents.Contains(Component));
-		UniqueComponents.Add(Component);
+			*FString::Printf(TEXT("%s 槽名唯一"), *SurfaceId),
+			UniqueSlots.Contains(SlotId));
+		UniqueSlots.Add(SlotId);
+		TestFalse(
+			*FString::Printf(TEXT("%s 材质索引唯一"), *SurfaceId),
+			UniqueMaterialIndices.Contains(MaterialIndex));
+		UniqueMaterialIndices.Add(MaterialIndex);
 	}
-	TestEqual(TEXT("40 个 surface 使用 40 个唯一可见组件"), UniqueComponents.Num(), 40);
+	TestNotNull(TEXT("40 个 surface 使用单一可见 SkeletalMeshComponent"), BoundSkeletalComponent);
+	TestEqual(TEXT("40 个 surface 使用 40 个唯一槽名"), UniqueSlots.Num(), 40);
+	TestEqual(TEXT("40 个 surface 使用 40 个唯一材质索引"), UniqueMaterialIndices.Num(), 40);
 
 	int32 AppliedOptionCount = 0;
 	int32 FixedColorOptionCount = 0;
@@ -1068,7 +1098,7 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		FixedColorOptionCount,
 		NeutralProxyOptionCount,
 		AppliedVariantCount,
-		UniqueComponents.Num()));
+		UniqueSlots.Num()));
 	return true;
 }
 
