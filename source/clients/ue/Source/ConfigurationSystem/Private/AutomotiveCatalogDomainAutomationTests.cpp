@@ -75,7 +75,7 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 		return false;
 	}
 	TestEqual(TEXT("必选表面数"), Catalog.GetCatalog().SelectionOrder.Num(), 40);
-	TestEqual(TEXT("选项索引覆盖 catalog"), Catalog.GetCatalog().Options.Num(), 171);
+	TestEqual(TEXT("选项索引覆盖 catalog"), Catalog.GetCatalog().Options.Num(), 175);
 	TestEqual(TEXT("色卡索引覆盖 catalog"), Catalog.GetCatalog().MaterialVariants.Num(), 352);
 	TestEqual(TEXT("车辆 displayName"), Catalog.GetCatalog().VehicleDisplayName, FString(TEXT("SC01")));
 	TestEqual(TEXT("基础价读取为 22980000 分"), Catalog.GetCatalog().BasePriceMinor, int64(22980000));
