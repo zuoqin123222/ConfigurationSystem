@@ -53,7 +53,8 @@ public:
 		const FString& InMode,
 		const FString& InOutputDirectory,
 		float InStableWaitSeconds,
-		bool bInExitOnComplete);
+		bool bInExitOnComplete,
+		int32 InMaxVariants = 0);
 	bool AdvanceProbe(float DeltaSeconds);
 	bool IsProbeRunning() const;
 	bool DidProbeSucceed() const;
@@ -70,8 +71,17 @@ public:
 	}
 
 private:
+	bool PrepareControl(FString& OutError);
+	bool CaptureControl(FString& OutError);
 	bool PrepareVariant(FString& OutError);
 	bool CaptureVariant(FString& OutError);
+	bool ReadCapture(
+		TArray<FColor>& OutPixels,
+		FIntPoint& OutSize,
+		double& OutMeanLuminance,
+		double& OutVisiblePixelRatio,
+		double& OutCenterVisiblePixelRatio,
+		FString& OutError) const;
 	bool WriteManifest(const FString& FatalError);
 	void Finish(const FString& FatalError);
 	void AppendRemainingFailures(const FString& Error);
@@ -99,6 +109,7 @@ private:
 	FString ManifestPath;
 	FString CurrentVariantId;
 	FString CurrentMaterialPath;
+	TSharedPtr<class FJsonObject> ControlResult;
 	double TotalElapsedSeconds = 0.0;
 	double VariantElapsedSeconds = 0.0;
 	float StableWaitSeconds = DefaultStableWaitSeconds;
@@ -107,5 +118,7 @@ private:
 	bool bExitOnComplete = false;
 	bool bRunning = false;
 	bool bSucceeded = false;
+	bool bControlPrepared = false;
+	bool bControlCaptured = false;
 	bool bVariantPrepared = false;
 };

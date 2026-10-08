@@ -8,6 +8,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "ImageUtils.h"
+#include "Materials/Material.h"
 #include "Materials/MaterialInterface.h"
 #include "Misc/CommandLine.h"
 #include "Misc/EngineVersion.h"
@@ -29,12 +30,16 @@ namespace MaterialVisualBaseline
 {
 	constexpr double ProbeTimeoutSeconds = 900.0;
 	const FTransform CameraTransform(
-		FRotator(-36.2538, 90.0, 0.0),
-		FVector(0.0, -300.0, 220.0),
+		FRotator(-90.0, 0.0, 0.0),
+		FVector(0.0, 0.0, 650.0),
 		FVector::OneVector);
-	constexpr float CameraFov = 35.0f;
-	constexpr float ExposureBias = 12.0f;
+	constexpr float CameraFov = 55.0f;
+	constexpr float ExposureBias = 0.0f;
 	constexpr float WhiteTemperature = 6500.0f;
+	constexpr double MinimumControlVisiblePixelRatio = 0.20;
+	constexpr double MinimumControlCenterVisiblePixelRatio = 0.50;
+	constexpr TCHAR ControlMaterialPath[] =
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
 }
 
 AMaterialVisualBaselineProbeActor::AMaterialVisualBaselineProbeActor()
@@ -48,7 +53,7 @@ AMaterialVisualBaselineProbeActor::AMaterialVisualBaselineProbeActor()
 	Plane = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaselinePlane"));
 	Plane->SetupAttachment(SceneRoot);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PlaneMesh(
-		TEXT("/Engine/BasicShapes/Plane.Plane"));
+		TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (PlaneMesh.Succeeded())
 	{
 		Plane->SetStaticMesh(PlaneMesh.Object);
@@ -59,13 +64,14 @@ AMaterialVisualBaselineProbeActor::AMaterialVisualBaselineProbeActor()
 	Plane->SetRelativeTransform(FTransform(
 		FRotator::ZeroRotator,
 		FVector::ZeroVector,
-		FVector(4.0, 4.0, 4.0)));
+		FVector(5.0, 5.0, 0.05)));
 
 	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(
 		TEXT("BaselineSceneCapture"));
 	SceneCapture->SetupAttachment(SceneRoot);
 	SceneCapture->SetRelativeTransform(MaterialVisualBaseline::CameraTransform);
 	SceneCapture->FOVAngle = MaterialVisualBaseline::CameraFov;
+	SceneCapture->ProjectionType = ECameraProjectionMode::Perspective;
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
 	SceneCapture->bCaptureEveryFrame = false;
 	SceneCapture->bCaptureOnMovement = false;
@@ -103,7 +109,12 @@ void AMaterialVisualBaselineProbeActor::BeginPlay()
 		FCommandLine::Get(),
 		TEXT("MaterialVisualBaselineStableSeconds="),
 		WaitSeconds);
-	StartProbe(TEXT("runtime"), Output, WaitSeconds, true);
+	int32 MaxVariants = 0;
+	FParse::Value(
+		FCommandLine::Get(),
+		TEXT("MaterialVisualBaselineMaxVariants="),
+		MaxVariants);
+	StartProbe(TEXT("runtime"), Output, WaitSeconds, true, MaxVariants);
 }
 
 void AMaterialVisualBaselineProbeActor::Tick(const float DeltaSeconds)
@@ -165,7 +176,8 @@ bool AMaterialVisualBaselineProbeActor::StartProbe(
 	const FString& InMode,
 	const FString& InOutputDirectory,
 	const float InStableWaitSeconds,
-	const bool bInExitOnComplete)
+	const bool bInExitOnComplete,
+	const int32 InMaxVariants)
 {
 	if (bRunning)
 	{
@@ -193,6 +205,10 @@ bool AMaterialVisualBaselineProbeActor::StartProbe(
 		Finish(Error);
 		return false;
 	}
+	if (InMaxVariants > 0 && InMaxVariants < Variants.Num())
+	{
+		Variants.SetNum(InMaxVariants);
+	}
 	if (!IsValid(SceneCapture))
 	{
 		Finish(TEXT("离屏 SceneCaptureComponent2D 无效。"));
@@ -216,10 +232,40 @@ bool AMaterialVisualBaselineProbeActor::StartProbe(
 	RenderTarget->UpdateResourceImmediate(true);
 	SceneCapture->TextureTarget = RenderTarget;
 
-	Results.Reset(ExpectedVariantCount);
+	const FBoxSphereBounds PlaneBounds =
+		Plane->CalcBounds(Plane->GetComponentTransform());
+	const FVector CaptureLocation = SceneCapture->GetComponentLocation();
+	const FVector CaptureForward = SceneCapture->GetForwardVector();
+	const FVector DirectionToPlane =
+		(PlaneBounds.Origin - CaptureLocation).GetSafeNormal();
+	const double ForwardAlignment =
+		FVector::DotProduct(CaptureForward, DirectionToPlane);
+	UE_LOG(
+		LogMaterialVisualBaseline,
+		Display,
+		TEXT("离屏构图诊断：captureLocation=%s captureRotation=%s forward=%s "
+			"planeOrigin=%s planeExtent=%s forwardAlignment=%.6f"),
+		*CaptureLocation.ToCompactString(),
+		*SceneCapture->GetComponentRotation().ToCompactString(),
+		*CaptureForward.ToCompactString(),
+		*PlaneBounds.Origin.ToCompactString(),
+		*PlaneBounds.BoxExtent.ToCompactString(),
+		ForwardAlignment);
+	if (ForwardAlignment < 0.99)
+	{
+		Finish(FString::Printf(
+			TEXT("离屏相机未朝向测试薄片：forwardAlignment=%.6f。"),
+			ForwardAlignment));
+		return false;
+	}
+
+	Results.Reset(Variants.Num());
+	ControlResult.Reset();
 	CurrentVariantIndex = 0;
 	TotalElapsedSeconds = 0.0;
 	bSucceeded = false;
+	bControlPrepared = false;
+	bControlCaptured = false;
 	bVariantPrepared = false;
 	SetActorTickEnabled(Mode == TEXT("runtime"));
 	IFileManager::Get().MakeDirectory(*OutputDirectory, true);
@@ -246,6 +292,40 @@ bool AMaterialVisualBaselineProbeActor::AdvanceProbe(
 	{
 		Finish(TEXT("探针总超时。"));
 		return false;
+	}
+
+	if (!bControlCaptured)
+	{
+		if (!bControlPrepared)
+		{
+			FString Error;
+			if (!PrepareControl(Error))
+			{
+				Finish(Error);
+				return false;
+			}
+			return true;
+		}
+
+		VariantElapsedSeconds += DeltaSeconds;
+		const bool bShadersStable =
+			GShaderCompilingManager == nullptr
+			|| !GShaderCompilingManager->IsCompiling();
+		StableFrameCount = bShadersStable ? StableFrameCount + 1 : 0;
+		if (VariantElapsedSeconds < StableWaitSeconds
+			|| StableFrameCount < RequiredStableFrames)
+		{
+			return true;
+		}
+		FString Error;
+		if (!CaptureControl(Error))
+		{
+			Finish(Error);
+			return false;
+		}
+		bControlCaptured = true;
+		bControlPrepared = false;
+		return true;
 	}
 
 	if (!bVariantPrepared)
@@ -292,6 +372,95 @@ bool AMaterialVisualBaselineProbeActor::AdvanceProbe(
 	return true;
 }
 
+bool AMaterialVisualBaselineProbeActor::PrepareControl(FString& OutError)
+{
+	if (!IsValid(Plane))
+	{
+		OutError = TEXT("control 测试薄片无效。");
+		return false;
+	}
+	UMaterialInterface* ControlMaterial = LoadObject<UMaterialInterface>(
+		nullptr,
+		MaterialVisualBaseline::ControlMaterialPath);
+	if (!IsValid(ControlMaterial))
+	{
+		ControlMaterial = UMaterial::GetDefaultMaterial(MD_Surface);
+	}
+	if (!IsValid(ControlMaterial))
+	{
+		OutError = TEXT("无法加载默认白材质 control。");
+		return false;
+	}
+	Plane->SetMaterial(0, ControlMaterial);
+	Plane->MarkRenderStateDirty();
+	VariantElapsedSeconds = 0.0;
+	StableFrameCount = 0;
+	bControlPrepared = true;
+	return true;
+}
+
+bool AMaterialVisualBaselineProbeActor::CaptureControl(FString& OutError)
+{
+	SceneCapture->CaptureScene();
+	TArray<FColor> Pixels;
+	FIntPoint Size;
+	double MeanLuminance = 0.0;
+	double VisiblePixelRatio = 0.0;
+	double CenterVisiblePixelRatio = 0.0;
+	if (!ReadCapture(
+			Pixels,
+			Size,
+			MeanLuminance,
+			VisiblePixelRatio,
+			CenterVisiblePixelRatio,
+			OutError))
+	{
+		OutError = TEXT("默认白材质 control：") + OutError;
+		return false;
+	}
+	const FString RelativePath = TEXT("control/default-white.png");
+	const FString AbsolutePath = FPaths::Combine(OutputDirectory, RelativePath);
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(AbsolutePath), true);
+	if (!FImageUtils::SaveImageByExtension(
+			*AbsolutePath,
+			FImageView(Pixels.GetData(), Size.X, Size.Y, EGammaSpace::sRGB)))
+	{
+		OutError = TEXT("默认白材质 control PNG 写入失败。");
+		return false;
+	}
+	if (VisiblePixelRatio <=
+			MaterialVisualBaseline::MinimumControlVisiblePixelRatio
+		|| CenterVisiblePixelRatio <
+			MaterialVisualBaseline::MinimumControlCenterVisiblePixelRatio)
+	{
+		OutError = FString::Printf(
+			TEXT("默认白材质 control 未在画面中心大面积可见："
+				"visibleRatio=%.5f（要求 > %.2f），"
+				"centerVisibleRatio=%.5f（要求 >= %.2f）。"),
+			VisiblePixelRatio,
+			MaterialVisualBaseline::MinimumControlVisiblePixelRatio,
+			CenterVisiblePixelRatio,
+			MaterialVisualBaseline::MinimumControlCenterVisiblePixelRatio);
+		return false;
+	}
+
+	ControlResult = MakeShared<FJsonObject>();
+	ControlResult->SetStringField(TEXT("material"), TEXT("engine-default-white"));
+	ControlResult->SetStringField(TEXT("path"), RelativePath);
+	ControlResult->SetNumberField(TEXT("width"), Size.X);
+	ControlResult->SetNumberField(TEXT("height"), Size.Y);
+	ControlResult->SetNumberField(TEXT("meanLuminance"), MeanLuminance);
+	ControlResult->SetNumberField(TEXT("visiblePixelRatio"), VisiblePixelRatio);
+	ControlResult->SetNumberField(
+		TEXT("centerVisiblePixelRatio"),
+		CenterVisiblePixelRatio);
+	ControlResult->SetNumberField(
+		TEXT("minimumVisiblePixelRatioExclusive"),
+		MaterialVisualBaseline::MinimumControlVisiblePixelRatio);
+	ControlResult->SetStringField(TEXT("status"), TEXT("ready"));
+	return true;
+}
+
 bool AMaterialVisualBaselineProbeActor::PrepareVariant(FString& OutError)
 {
 	if (!Variants.IsValidIndex(CurrentVariantIndex) || !IsValid(Plane))
@@ -331,37 +500,23 @@ bool AMaterialVisualBaselineProbeActor::CaptureVariant(
 	}
 
 	SceneCapture->CaptureScene();
-	FTextureRenderTargetResource* RenderTargetResource =
-		RenderTarget->GameThread_GetRenderTargetResource();
-	const FIntPoint Size(RenderTarget->SizeX, RenderTarget->SizeY);
 	TArray<FColor> Pixels;
-	FReadSurfaceDataFlags ReadFlags(RCM_UNorm);
-	ReadFlags.SetLinearToGamma(true);
-	if (Size != FIntPoint(RenderWidth, RenderHeight)
-		|| RenderTargetResource == nullptr
-		|| !RenderTargetResource->ReadPixels(Pixels, ReadFlags)
-		|| Pixels.Num() != static_cast<int64>(Size.X) * Size.Y)
+	FIntPoint Size;
+	double MeanLuminance = 0.0;
+	double VisiblePixelRatio = 0.0;
+	double CenterVisiblePixelRatio = 0.0;
+	if (!ReadCapture(
+			Pixels,
+			Size,
+			MeanLuminance,
+			VisiblePixelRatio,
+			CenterVisiblePixelRatio,
+			OutError))
 	{
-		OutError = FString::Printf(
-			TEXT("variant '%s' 的 RenderTarget 回读失败。"),
-			*CurrentVariantId);
+		OutError = FString::Printf(TEXT("variant '%s'：%s"),
+			*CurrentVariantId, *OutError);
 		return false;
 	}
-	uint64 LuminanceSum = 0;
-	int32 VisiblePixelCount = 0;
-	for (const FColor& Pixel : Pixels)
-	{
-		const uint8 Luminance = static_cast<uint8>(
-			(54 * static_cast<uint32>(Pixel.R)
-				+ 183 * static_cast<uint32>(Pixel.G)
-				+ 19 * static_cast<uint32>(Pixel.B)) >> 8);
-		LuminanceSum += Luminance;
-		VisiblePixelCount += Luminance >= 8 ? 1 : 0;
-	}
-	const double MeanLuminance =
-		static_cast<double>(LuminanceSum) / Pixels.Num();
-	const double VisiblePixelRatio =
-		static_cast<double>(VisiblePixelCount) / Pixels.Num();
 	if (MeanLuminance < 1.0 || VisiblePixelRatio < 0.01)
 	{
 		OutError = FString::Printf(
@@ -402,10 +557,72 @@ bool AMaterialVisualBaselineProbeActor::CaptureVariant(
 	Item->SetStringField(TEXT("colorSpace"), TEXT("sRGB"));
 	Item->SetNumberField(TEXT("meanLuminance"), MeanLuminance);
 	Item->SetNumberField(TEXT("visiblePixelRatio"), VisiblePixelRatio);
+	Item->SetNumberField(
+		TEXT("centerVisiblePixelRatio"),
+		CenterVisiblePixelRatio);
 	Item->SetNumberField(TEXT("stableWaitSeconds"), VariantElapsedSeconds);
 	Item->SetNumberField(TEXT("stableFrames"), StableFrameCount);
 	Item->SetStringField(TEXT("status"), TEXT("ready"));
 	Results.Add(MakeShared<FJsonValueObject>(Item));
+	return true;
+}
+
+bool AMaterialVisualBaselineProbeActor::ReadCapture(
+	TArray<FColor>& OutPixels,
+	FIntPoint& OutSize,
+	double& OutMeanLuminance,
+	double& OutVisiblePixelRatio,
+	double& OutCenterVisiblePixelRatio,
+	FString& OutError) const
+{
+	FTextureRenderTargetResource* RenderTargetResource =
+		RenderTarget->GameThread_GetRenderTargetResource();
+	OutSize = FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY);
+	FReadSurfaceDataFlags ReadFlags(RCM_UNorm);
+	ReadFlags.SetLinearToGamma(true);
+	if (OutSize != FIntPoint(RenderWidth, RenderHeight)
+		|| RenderTargetResource == nullptr
+		|| !RenderTargetResource->ReadPixels(OutPixels, ReadFlags)
+		|| OutPixels.Num() != static_cast<int64>(OutSize.X) * OutSize.Y)
+	{
+		OutError = TEXT("RenderTarget 回读失败。");
+		return false;
+	}
+
+	uint64 LuminanceSum = 0;
+	int32 VisiblePixelCount = 0;
+	int32 CenterVisiblePixelCount = 0;
+	const int32 CenterMinX = OutSize.X / 4;
+	const int32 CenterMaxX = OutSize.X * 3 / 4;
+	const int32 CenterMinY = OutSize.Y / 4;
+	const int32 CenterMaxY = OutSize.Y * 3 / 4;
+	for (int32 Y = 0; Y < OutSize.Y; ++Y)
+	{
+		for (int32 X = 0; X < OutSize.X; ++X)
+		{
+			const FColor& Pixel = OutPixels[Y * OutSize.X + X];
+			const uint8 Luminance = static_cast<uint8>(
+				(54 * static_cast<uint32>(Pixel.R)
+					+ 183 * static_cast<uint32>(Pixel.G)
+					+ 19 * static_cast<uint32>(Pixel.B)) >> 8);
+			const bool bVisible = Luminance >= 8;
+			LuminanceSum += Luminance;
+			VisiblePixelCount += bVisible ? 1 : 0;
+			if (X >= CenterMinX && X < CenterMaxX
+				&& Y >= CenterMinY && Y < CenterMaxY)
+			{
+				CenterVisiblePixelCount += bVisible ? 1 : 0;
+			}
+		}
+	}
+	OutMeanLuminance =
+		static_cast<double>(LuminanceSum) / OutPixels.Num();
+	OutVisiblePixelRatio =
+		static_cast<double>(VisiblePixelCount) / OutPixels.Num();
+	const int32 CenterPixelCount =
+		(CenterMaxX - CenterMinX) * (CenterMaxY - CenterMinY);
+	OutCenterVisiblePixelRatio =
+		static_cast<double>(CenterVisiblePixelCount) / CenterPixelCount;
 	return true;
 }
 
@@ -424,13 +641,15 @@ bool AMaterialVisualBaselineProbeActor::WriteManifest(
 	}
 	TSharedRef<FJsonObject> Scene = MakeShared<FJsonObject>();
 	Scene->SetStringField(TEXT("map"), TEXT("/Game/Maps/L_MaterialVisualBaseline"));
-	Scene->SetStringField(TEXT("plane"), TEXT("origin, normal +Z, scale 4"));
+	Scene->SetStringField(
+		TEXT("plane"),
+		TEXT("origin thin slab, top normal +Z, scale (5,5,0.05)"));
 	Scene->SetStringField(TEXT("directionalLight"), TEXT("vertical-down"));
 	Scene->SetNumberField(TEXT("directionalLightLux"), 20000.0);
 	Scene->SetStringField(
 		TEXT("cameraTransform"),
-		TEXT("Location=(0,-300,220) Rotation=(-36,90,0) FOV=35"));
-	Scene->SetStringField(TEXT("exposure"), TEXT("manual, bias 12, whiteTemp 6500K"));
+		TEXT("Location=(0,0,650) Rotation=(-90,0,0) FOV=55"));
+	Scene->SetStringField(TEXT("exposure"), TEXT("manual, bias 0, whiteTemp 6500K"));
 	Scene->SetStringField(TEXT("renderer"), TEXT("SceneCaptureComponent2D"));
 	Scene->SetNumberField(TEXT("renderWidth"), RenderWidth);
 	Scene->SetNumberField(TEXT("renderHeight"), RenderHeight);
@@ -443,14 +662,20 @@ bool AMaterialVisualBaselineProbeActor::WriteManifest(
 	Root->SetStringField(TEXT("mode"), Mode);
 	Root->SetStringField(TEXT("library"), LibraryObjectPath);
 	Root->SetNumberField(TEXT("expectedVariantCount"), ExpectedVariantCount);
+	Root->SetNumberField(TEXT("plannedVariantCount"), Variants.Num());
 	Root->SetNumberField(TEXT("capturedVariantCount"), ReadyCount);
 	Root->SetBoolField(
 		TEXT("success"),
-		FatalError.IsEmpty() && ReadyCount == ExpectedVariantCount);
+		FatalError.IsEmpty() && ControlResult.IsValid()
+			&& ReadyCount == Variants.Num());
 	Root->SetStringField(TEXT("failureReason"), FatalError);
 	Root->SetNumberField(TEXT("minimumStableWaitSeconds"), StableWaitSeconds);
 	Root->SetNumberField(TEXT("requiredStableFrames"), RequiredStableFrames);
 	Root->SetObjectField(TEXT("scene"), Scene);
+	if (ControlResult.IsValid())
+	{
+		Root->SetObjectField(TEXT("control"), ControlResult.ToSharedRef());
+	}
 	Root->SetArrayField(TEXT("variants"), Results);
 
 	FString Json;
@@ -479,7 +704,8 @@ void AMaterialVisualBaselineProbeActor::Finish(const FString& FatalError)
 	const bool bWritten = WriteManifest(FatalError);
 	bSucceeded =
 		bWritten && FatalError.IsEmpty()
-		&& Results.Num() == ExpectedVariantCount;
+		&& ControlResult.IsValid()
+		&& Results.Num() == Variants.Num();
 	bRunning = false;
 	SetActorTickEnabled(false);
 	if (bSucceeded)

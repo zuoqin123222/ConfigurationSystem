@@ -30,16 +30,16 @@ namespace MaterialVisualBaselineEditor
 		FVector::ZeroVector,
 		FVector::OneVector);
 	const FTransform LightTransform(
-		FRotator(90.0, 0.0, 0.0),
+		FRotator(-90.0, 0.0, 0.0),
 		FVector(0.0, 0.0, 300.0),
 		FVector::OneVector);
 	const FTransform CameraTransform(
-		FRotator(-36.2538, 90.0, 0.0),
-		FVector(0.0, -300.0, 220.0),
+		FRotator(-90.0, 0.0, 0.0),
+		FVector(0.0, 0.0, 650.0),
 		FVector::OneVector);
-	constexpr float CameraFov = 35.0f;
+	constexpr float CameraFov = 55.0f;
 	constexpr float DirectionalLightLux = 20000.0f;
-	constexpr float ExposureBias = 12.0f;
+	constexpr float ExposureBias = 0.0f;
 	constexpr float WhiteTemperature = 6500.0f;
 	constexpr TCHAR CameraTag[] = TEXT("MaterialVisualBaseline.Camera");
 
@@ -174,6 +174,18 @@ bool UMaterialVisualBaselineEditorSubsystem::CreateOrRefreshScene(
 		OutError = TEXT("固定平面、DirectionalLight 或相机创建失败。");
 		return false;
 	}
+	Probe->GetPlaneComponent()->SetRelativeTransform(FTransform(
+		FRotator::ZeroRotator,
+		FVector::ZeroVector,
+		FVector(5.0, 5.0, 0.05)));
+	Probe->GetSceneCaptureComponent()->SetRelativeTransform(CameraTransform);
+	Probe->GetSceneCaptureComponent()->FOVAngle = CameraFov;
+	Probe->GetSceneCaptureComponent()->PostProcessSettings.bOverride_AutoExposureMethod = true;
+	Probe->GetSceneCaptureComponent()->PostProcessSettings.AutoExposureMethod =
+		EAutoExposureMethod::AEM_Manual;
+	Probe->GetSceneCaptureComponent()->PostProcessSettings.bOverride_AutoExposureBias = true;
+	Probe->GetSceneCaptureComponent()->PostProcessSettings.AutoExposureBias =
+		ExposureBias;
 
 	Light->GetLightComponent()->SetMobility(EComponentMobility::Movable);
 	Light->GetLightComponent()->SetIntensity(DirectionalLightLux);
@@ -283,11 +295,14 @@ void UMaterialVisualBaselineEditorSubsystem::RunProbeCommand(
 	FParse::Value(*Arguments, TEXT("StableSeconds="), WaitSeconds);
 	bool bExitOnComplete = false;
 	FParse::Bool(*Arguments, TEXT("ExitOnComplete="), bExitOnComplete);
+	int32 MaxVariants = 0;
+	FParse::Value(*Arguments, TEXT("MaxVariants="), MaxVariants);
 	if (!Probe->StartProbe(
 		TEXT("editor"),
 		Output,
 		WaitSeconds,
-		bExitOnComplete))
+		bExitOnComplete,
+		MaxVariants))
 	{
 		return;
 	}
@@ -385,6 +400,17 @@ bool FMaterialVisualBaselineSceneAutomationTest::RunTest(
 			TEXT("离屏相机 Transform 固定"),
 			SceneCapture->GetRelativeTransform().Equals(CameraTransform, 0.001));
 		TestEqual(TEXT("离屏相机 FOV 固定"), SceneCapture->FOVAngle, CameraFov);
+		TestTrue(
+			TEXT("离屏相机 forward 指向薄片中心"),
+			FVector::DotProduct(
+				SceneCapture->GetForwardVector(),
+				(Probe->GetPlaneComponent()->Bounds.Origin
+					- SceneCapture->GetComponentLocation()).GetSafeNormal())
+				> 0.99);
+		TestTrue(
+			TEXT("薄片 bounds 足以占据画面"),
+			Probe->GetPlaneComponent()->Bounds.BoxExtent.X >= 249.0
+				&& Probe->GetPlaneComponent()->Bounds.BoxExtent.Y >= 249.0);
 		TestEqual(
 			TEXT("离屏相机使用手动曝光"),
 			SceneCapture->PostProcessSettings.AutoExposureMethod,
@@ -393,6 +419,9 @@ bool FMaterialVisualBaselineSceneAutomationTest::RunTest(
 	}
 	TestTrue(TEXT("DirectionalLight 垂直向下"),
 		Light->GetActorRotation().Equals(LightTransform.Rotator(), 0.001));
+	TestTrue(
+		TEXT("DirectionalLight forward 指向 -Z"),
+		Light->GetActorForwardVector().Equals(FVector::DownVector, 0.001));
 	TestTrue(TEXT("固定相机 Transform"),
 		Camera->GetActorTransform().Equals(CameraTransform, 0.001));
 	TestEqual(
