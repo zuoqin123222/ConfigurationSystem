@@ -322,24 +322,26 @@ bool FConfigurationBatchBakeBinderTransactionTest::RunTest(
 			State->GetCatalogIndex().GetCatalog()));
 	UAutomotiveMaterialBinder* Binder =
 		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
-	TestTrue(TEXT("Batch 测试绑定骨骼车 41 个槽"), Binder->Bind(State, Library, Vehicle));
+	TestTrue(TEXT("Batch 测试绑定骨骼车 40 个选配槽"), Binder->Bind(State, Library, Vehicle));
 	TestEqual(
-		TEXT("Batch 车漆 surface 绑定两个槽"),
+		TEXT("Batch 车漆 surface 只绑定主体车漆槽"),
 		Binder->GetBoundSlotCount(UAutomotiveMaterialBinder::PaintSurfaceId),
-		2);
+		1);
 	int32 TotalBoundSlotCount = 0;
 	for (const FString& SurfaceId :
 		State->GetCatalogIndex().GetCatalog().SelectionOrder)
 	{
+		const TArray<FName>* ExpectedSlots =
+			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(SurfaceId);
 		const int32 ExpectedSlotCount =
-			SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
+			ExpectedSlots != nullptr ? ExpectedSlots->Num() : 0;
 		TestEqual(
 			*FString::Printf(TEXT("Batch %s 绑定槽数"), *SurfaceId),
 			Binder->GetBoundSlotCount(SurfaceId),
 			ExpectedSlotCount);
 		TotalBoundSlotCount += Binder->GetBoundSlotCount(SurfaceId);
 	}
-	TestEqual(TEXT("Batch 总绑定槽数为 41"), TotalBoundSlotCount, 41);
+	TestEqual(TEXT("Batch 总绑定槽数为 40"), TotalBoundSlotCount, 40);
 
 	FConfigurationBakeTask Task;
 	Task.Selections = State->GetSelections();
@@ -362,19 +364,16 @@ bool FConfigurationBatchBakeBinderTransactionTest::RunTest(
 	const TArray<FAutomotiveBoundMaterialSlot> PaintSlots =
 		Binder->GetBoundSlots(UAutomotiveMaterialBinder::PaintSurfaceId);
 	TestTrue(
-		TEXT("Batch Binder 更新两个可见车漆槽材质"),
-		PaintSlots.Num() == 2
+		TEXT("Batch Binder 更新主体车漆槽材质"),
+		PaintSlots.Num() == 1
 			&& IsValid(PaintSlots[0].Component)
-			&& IsValid(PaintSlots[1].Component)
 			&& IsValid(PaintSlots[0].Component->GetMaterial(
-				PaintSlots[0].MaterialIndex))
-			&& IsValid(PaintSlots[1].Component->GetMaterial(
-				PaintSlots[1].MaterialIndex)));
+				PaintSlots[0].MaterialIndex)));
 	const FString ReceiptJson = Binder->GetLastTransactionResultJson();
 	TestTrue(
-		TEXT("Batch 车漆回执包含两个命名槽"),
+		TEXT("Batch 车漆回执只包含主体车漆槽"),
 		ReceiptJson.Contains(TEXT("\"sc01_exterior_body_cover\""))
-			&& ReceiptJson.Contains(TEXT("\"CS_Validation_Paint\"")));
+			&& !ReceiptJson.Contains(TEXT("\"CS_Validation_Paint\"")));
 	return true;
 }
 

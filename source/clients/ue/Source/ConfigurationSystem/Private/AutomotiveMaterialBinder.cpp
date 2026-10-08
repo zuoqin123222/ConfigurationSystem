@@ -654,6 +654,15 @@ bool UAutomotiveMaterialBinder::ApplySurface(
 			}
 			Bound.DynamicInstance->SetVectorParameterValue(TEXT("BaseColor"), Color);
 			Bound.DynamicInstance->SetVectorParameterValue(TEXT("Color"), Color);
+			// SubstrateMaterials 的车漆母材质以 Tint 作为主体可见颜色；
+			// BaseColor 只用于兼容 AutomotiveMats 和其他材料族。
+			Bound.DynamicInstance->SetVectorParameterValue(TEXT("Tint"), Color);
+			if (SurfaceId == PaintSurfaceId)
+			{
+				Bound.DynamicInstance->SetVectorParameterValue(
+					TEXT("Primary Glints Color"),
+					Color);
+			}
 			Bound.DynamicColorTexture = UpdateDynamicColorTexture(
 				Bound.DynamicColorTexture,
 				Color);

@@ -343,10 +343,7 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	for (const AutomotiveCatalog::FSurfaceBinding& Binding :
 		State->GetCatalogIndex().GetCatalog().VehicleSurfaceBinding.Bindings)
 	{
-		const int32 ExpectedSlotCount =
-			Binding.SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId
-				? 2
-				: 1;
+		const int32 ExpectedSlotCount = Binding.MaterialSlotIds.Num();
 		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
 			Binder->GetBoundSlots(Binding.SurfaceId);
 		TestEqual(
@@ -400,8 +397,8 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestNotNull(TEXT("40 个 surface 绑定单一 SkeletalMeshComponent"), BoundSkeletalComponent);
-	TestEqual(TEXT("骨骼车包含 41 个唯一槽"), UniqueSlots.Num(), 41);
-	TestEqual(TEXT("骨骼车包含 41 个唯一材质索引"), UniqueMaterialIndices.Num(), 41);
+	TestEqual(TEXT("骨骼车包含 40 个唯一选配槽"), UniqueSlots.Num(), 40);
+	TestEqual(TEXT("骨骼车包含 40 个唯一选配材质索引"), UniqueMaterialIndices.Num(), 40);
 	const AutomotiveCatalog::FOption* RedOption =
 		State->GetCatalogIndex().FindOption(TEXT("body-cover-red"));
 	TestTrue(
@@ -565,6 +562,11 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			PaintInstance->K2_GetVectorParameterValue(TEXT("BaseColor")).Equals(
 				Red,
 				0.001f));
+		TestTrue(
+			TEXT("固定色同步写入 Substrate 车漆可见 Tint"),
+			PaintInstance->K2_GetVectorParameterValue(TEXT("Tint")).Equals(
+				Red,
+				0.001f));
 	}
 	TestTrue(
 		TEXT("选择标准银色"),
@@ -578,6 +580,11 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		TestTrue(
 			TEXT("标准银色写入车漆 BaseColor"),
 			PaintInstance->K2_GetVectorParameterValue(TEXT("BaseColor")).Equals(
+				Silver,
+				0.001f));
+		TestTrue(
+			TEXT("标准银色写入 Substrate 车漆可见 Tint"),
+			PaintInstance->K2_GetVectorParameterValue(TEXT("Tint")).Equals(
 				Silver,
 				0.001f));
 	}
@@ -666,11 +673,10 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		PaintResult.AppliedSurfaceIds
 			== TArray<FString>({TEXT("exterior-body-cover")}));
 	TestTrue(
-		TEXT("车漆事务回执包含两个命名槽"),
+		TEXT("车漆事务回执只包含主体车漆槽"),
 		PaintResult.AppliedSlotIds
 			== TArray<FName>({
-				TEXT("sc01_exterior_body_cover"),
-				TEXT("CS_Validation_Paint")}));
+				TEXT("sc01_exterior_body_cover")}));
 
 	PaintInstance = Binder->GetPaintMaterialInstance();
 	TestNotNull(TEXT("车身代理使用动态车漆实例"), PaintInstance);
@@ -683,6 +689,17 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			PaintInstance->K2_GetVectorParameterValue(TEXT("BaseColor")).Equals(
 				Expected,
 				0.001f));
+		TestTrue(
+			TEXT("Substrate Tint 由 v2 自定义颜色驱动"),
+			PaintInstance->K2_GetVectorParameterValue(TEXT("Tint")).Equals(
+				Expected,
+				0.001f));
+		TestTrue(
+			TEXT("车漆亮片颜色同步自定义颜色"),
+			PaintInstance->K2_GetVectorParameterValue(
+				TEXT("Primary Glints Color")).Equals(
+					Expected,
+					0.001f));
 		TestTrue(TEXT("Metallic 由 v2 参数驱动"),
 			FMath::IsNearlyEqual(
 				PaintInstance->K2_GetScalarParameterValue(TEXT("Metallic")),
@@ -881,8 +898,10 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 	for (const FString& SurfaceId :
 		State->GetCatalogIndex().GetCatalog().SelectionOrder)
 	{
+		const TArray<FName>* ExpectedSlots =
+			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(SurfaceId);
 		const int32 ExpectedSlotCount =
-			SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
+			ExpectedSlots != nullptr ? ExpectedSlots->Num() : 0;
 		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
 			Binder->GetBoundSlots(SurfaceId);
 		TestEqual(
@@ -917,8 +936,8 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		}
 	}
 	TestNotNull(TEXT("40 个 surface 使用单一可见 SkeletalMeshComponent"), BoundSkeletalComponent);
-	TestEqual(TEXT("40 个 surface 使用 41 个唯一槽名"), UniqueSlots.Num(), 41);
-	TestEqual(TEXT("40 个 surface 使用 41 个唯一材质索引"), UniqueMaterialIndices.Num(), 41);
+	TestEqual(TEXT("40 个 surface 使用 40 个唯一槽名"), UniqueSlots.Num(), 40);
+	TestEqual(TEXT("40 个 surface 使用 40 个唯一材质索引"), UniqueMaterialIndices.Num(), 40);
 
 	int32 AppliedOptionCount = 0;
 	int32 FixedColorOptionCount = 0;
@@ -969,9 +988,7 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
 			Binder->GetBoundSlots(Option->SurfaceId);
 		const int32 ExpectedSlotCount =
-			Option->SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId
-				? 2
-				: 1;
+			ExpectedReceiptSlots != nullptr ? ExpectedReceiptSlots->Num() : 0;
 		TestTrue(
 			*FString::Printf(TEXT("%s 应用后槽数符合 binding"), *OptionId),
 			BoundSlots.Num() == ExpectedSlotCount);
@@ -1132,9 +1149,7 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
 			Binder->GetBoundSlots(Option->SurfaceId);
 		const int32 ExpectedSlotCount =
-			Option->SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId
-				? 2
-				: 1;
+			ExpectedReceiptSlots != nullptr ? ExpectedReceiptSlots->Num() : 0;
 		UMaterialInterface* Expected =
 			Library->LoadVariantMaterial(Variant.VariantId);
 		UMaterialInterface* Applied =

@@ -144,11 +144,10 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 	}
 	const TArray<FName>* PaintSlots =
 		Catalog.FindMaterialSlotIdsForSurface(TEXT("exterior-body-cover"));
-	TestTrue(TEXT("车漆 surface 命中两个 SkeletalMesh slot"),
+	TestTrue(TEXT("车漆 surface 只命中 Maya 确认的主体车漆 slot"),
 		PaintSlots != nullptr
 			&& *PaintSlots == TArray<FName>({
-				TEXT("sc01_exterior_body_cover"),
-				TEXT("CS_Validation_Paint")}));
+				TEXT("sc01_exterior_body_cover")}));
 	TestNotNull(TEXT("原语义缺失项也有独占 SkeletalMesh slot"),
 		Catalog.FindMaterialSlotIdsForSurface(TEXT("seat-backrest")));
 	TestFalse(TEXT("完整槽映射不再保留 unsupported surface"),
@@ -162,8 +161,7 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 					Catalog.FindMaterialSlotIdsForSurface(SurfaceId);
 				return Catalog.IsSurfaceBindingCovered(SurfaceId)
 					&& Slots != nullptr
-					&& Slots->Num() == (
-						SurfaceId == TEXT("exterior-body-cover") ? 2 : 1);
+					&& Slots->Num() == 1;
 			}));
 	TSet<FName> UniqueBoundSlots;
 	for (const FString& SurfaceId : Catalog.GetCatalog().SelectionOrder)
@@ -178,7 +176,7 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 			}
 		}
 	}
-	TestEqual(TEXT("40 个 surface 共使用 41 个唯一槽"), UniqueBoundSlots.Num(), 41);
+	TestEqual(TEXT("40 个 surface 共使用 40 个唯一槽"), UniqueBoundSlots.Num(), 40);
 	TMap<FString, TArray<FName>> TransactionTargets;
 	TSet<FString> TransactionGaps;
 	TestTrue(TEXT("选配 transaction 解析到各自 sc01 槽 binding"),
@@ -187,11 +185,10 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 			TransactionTargets,
 			TransactionGaps,
 			Error));
-	TestTrue(TEXT("transaction 车漆命中两个车漆 slot"),
+	TestTrue(TEXT("transaction 车漆只命中主体车漆 slot"),
 		TransactionTargets.FindRef(TEXT("exterior-body-cover"))
 			== TArray<FName>({
-				TEXT("sc01_exterior_body_cover"),
-				TEXT("CS_Validation_Paint")}));
+				TEXT("sc01_exterior_body_cover")}));
 	TestTrue(TEXT("语义缺失项命中自己的 sc01 slot"),
 		TransactionTargets.FindRef(TEXT("seat-backrest"))
 			== TArray<FName>({TEXT("sc01_seat_backrest")}));
@@ -212,7 +209,7 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 	TestTrue(TEXT("一个 surface 可扩展绑定更多 SkeletalMesh slot"),
 		MultiSlotIndex.Initialize(MultiSlotCatalog, Error));
 	TestEqual(TEXT("扩展多槽映射保持完整"),
-		MultiSlotIndex.FindMaterialSlotIdsForSurface(TEXT("exterior-body-cover"))->Num(), 3);
+		MultiSlotIndex.FindMaterialSlotIdsForSurface(TEXT("exterior-body-cover"))->Num(), 2);
 	AutomotiveCatalog::FCatalog CollidingSlotCatalog = MultiSlotCatalog;
 	CollidingSlotCatalog.VehicleSurfaceBinding.Bindings[1].MaterialSlotIds[0] =
 		CollidingSlotCatalog.VehicleSurfaceBinding.Bindings[0].MaterialSlotIds[0];

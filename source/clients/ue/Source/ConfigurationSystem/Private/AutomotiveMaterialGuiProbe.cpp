@@ -264,8 +264,11 @@ bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 	{
 		const int32 BoundSlotCount =
 			CandidateBinder->GetBoundSlotCount(SurfaceId);
+		const TArray<FName>* ExpectedSlots =
+			CandidateState->GetCatalogIndex().FindMaterialSlotIdsForSurface(
+				SurfaceId);
 		const int32 ExpectedSlotCount =
-			SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
+			ExpectedSlots != nullptr ? ExpectedSlots->Num() : 0;
 		ReadinessBoundSlotCounts.Add(SurfaceId, BoundSlotCount);
 		if (BoundSlotCount != ExpectedSlotCount)
 		{
@@ -297,8 +300,13 @@ bool UAutomotiveMaterialGuiProbe::ValidateAllSurfaceMaterialSlots(
 			IsValid(Binder)
 				? Binder->GetBoundSlots(SurfaceId)
 				: TArray<FAutomotiveBoundMaterialSlot>();
+		const TArray<FName>* ExpectedSlots =
+			IsValid(State)
+				? State->GetCatalogIndex().FindMaterialSlotIdsForSurface(
+					SurfaceId)
+				: nullptr;
 		const int32 ExpectedSlotCount =
-			SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
+			ExpectedSlots != nullptr ? ExpectedSlots->Num() : 0;
 		if (BoundSlots.Num() != ExpectedSlotCount)
 		{
 			OutFailureReason = FString::Printf(
@@ -339,9 +347,12 @@ FString UAutomotiveMaterialGuiProbe::DescribeMaterial(
 	{
 		const FLinearColor Color =
 			Dynamic->K2_GetVectorParameterValue(TEXT("BaseColor"));
+		const FLinearColor Tint =
+			Dynamic->K2_GetVectorParameterValue(TEXT("Tint"));
 		Description += FString::Printf(
-			TEXT("|BaseColor=%s"),
-			*Color.ToString());
+			TEXT("|BaseColor=%s|Tint=%s"),
+			*Color.ToString(),
+			*Tint.ToString());
 	}
 	return Description;
 }
@@ -414,8 +425,10 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 
 	const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
 		Binder->GetBoundSlots(SurfaceId);
+	const TArray<FName>* ExpectedSlots =
+		CatalogIndex.FindMaterialSlotIdsForSurface(SurfaceId);
 	const int32 ExpectedSlotCount =
-		SurfaceId == UAutomotiveMaterialBinder::PaintSurfaceId ? 2 : 1;
+		ExpectedSlots != nullptr ? ExpectedSlots->Num() : 0;
 	const bool bExpectedSlotsHit = BoundSlots.Num() == ExpectedSlotCount;
 	if (!bExpectedSlotsHit)
 	{
