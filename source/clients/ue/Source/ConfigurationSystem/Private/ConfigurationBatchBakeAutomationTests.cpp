@@ -322,12 +322,13 @@ bool FConfigurationBatchBakeBinderTransactionTest::RunTest(
 			State->GetCatalogIndex().GetCatalog()));
 	UAutomotiveMaterialBinder* Binder =
 		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
-	TestTrue(TEXT("Batch 测试绑定骨骼车 40 个选配槽"), Binder->Bind(State, Library, Vehicle));
+	TestTrue(TEXT("Batch 测试绑定骨骼车已支持的选配槽"), Binder->Bind(State, Library, Vehicle));
 	TestEqual(
 		TEXT("Batch 车漆 surface 只绑定主体车漆槽"),
 		Binder->GetBoundSlotCount(UAutomotiveMaterialBinder::PaintSurfaceId),
 		1);
 	int32 TotalBoundSlotCount = 0;
+	int32 ExpectedTotalBoundSlotCount = 0;
 	for (const FString& SurfaceId :
 		State->GetCatalogIndex().GetCatalog().SelectionOrder)
 	{
@@ -335,13 +336,17 @@ bool FConfigurationBatchBakeBinderTransactionTest::RunTest(
 			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(SurfaceId);
 		const int32 ExpectedSlotCount =
 			ExpectedSlots != nullptr ? ExpectedSlots->Num() : 0;
+		ExpectedTotalBoundSlotCount += ExpectedSlotCount;
 		TestEqual(
 			*FString::Printf(TEXT("Batch %s 绑定槽数"), *SurfaceId),
 			Binder->GetBoundSlotCount(SurfaceId),
 			ExpectedSlotCount);
 		TotalBoundSlotCount += Binder->GetBoundSlotCount(SurfaceId);
 	}
-	TestEqual(TEXT("Batch 总绑定槽数为 40"), TotalBoundSlotCount, 40);
+	TestEqual(
+		TEXT("Batch 总绑定槽数符合当前 capability"),
+		TotalBoundSlotCount,
+		ExpectedTotalBoundSlotCount);
 
 	FConfigurationBakeTask Task;
 	Task.Selections = State->GetSelections();
