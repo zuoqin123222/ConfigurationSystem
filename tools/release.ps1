@@ -353,6 +353,51 @@ function Assert-UeRuntimeDependencies {
     }
 }
 
+function Optimize-UeArchive {
+    param([Parameter(Mandatory = $true)][string]$ArchiveRoot)
+    $windowsRoot = Join-Path $ArchiveRoot "Windows"
+    if ($DryRun) {
+        Write-Host "[dry-run] remove Shipping PDBs, duplicate Engine redistributables, and unused CEF locales"
+        return
+    }
+
+    Get-ChildItem -LiteralPath $windowsRoot -Recurse -File -Filter "*.pdb" |
+        Remove-Item -Force
+
+    $duplicateRedistRoot = Join-Path $windowsRoot "Engine\Extras\Redist"
+    if (Test-Path -LiteralPath $duplicateRedistRoot) {
+        Remove-Item -LiteralPath $duplicateRedistRoot -Recurse -Force
+    }
+
+    $cefLocales = Get-ChildItem -LiteralPath (
+        Join-Path $windowsRoot "Engine\Binaries\ThirdParty\CEF3"
+    ) -Recurse -Directory -Filter "locales" -ErrorAction SilentlyContinue
+    foreach ($localeRoot in $cefLocales) {
+        Get-ChildItem -LiteralPath $localeRoot.FullName -File -Filter "*.pak" |
+            Where-Object { $_.Name -notin @("en-US.pak", "zh-CN.pak") } |
+            Remove-Item -Force
+    }
+}
+
+function Assert-UePackageSize {
+    param(
+        [Parameter(Mandatory = $true)][string]$ArchiveRoot,
+        [long]$MaximumBytes = 1GB
+    )
+    if ($DryRun) {
+        Write-Host "[dry-run] verify optimized UE archive is at most $MaximumBytes bytes"
+        return
+    }
+    $actualBytes = (
+        Get-ChildItem -LiteralPath $ArchiveRoot -Recurse -File |
+            Measure-Object -Property Length -Sum
+    ).Sum
+    if ($actualBytes -gt $MaximumBytes) {
+        throw "Optimized UE archive is too large: $actualBytes bytes (limit $MaximumBytes)"
+    }
+    Write-Host "[release] optimized UE archive size: $actualBytes bytes"
+}
+
 function Format-Command {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
@@ -761,11 +806,14 @@ function Build-UE {
             "-applocaldirectory=$UeAppLocalDependenciesRoot",
             "-archive",
             "-archivedirectory=$stagingArchive",
+            "-nodebuginfo",
             "-unattended",
             "-utf8output"
         )
+        Optimize-UeArchive -ArchiveRoot $stagingArchive
         Add-UeRuntimePrerequisiteFiles -ArchiveRoot $stagingArchive
         Assert-UeRuntimeDependencies -ArchiveRoot $stagingArchive
+        Assert-UePackageSize -ArchiveRoot $stagingArchive
         $shippingRoot = Join-Path $stagingArchive "Windows"
         $shippingExe = Join-Path $shippingRoot "ConfigurationSystem.exe"
         $cefBridgeProbeReport = Join-Path $stagingArchive "cef-bridge-probe.json"

@@ -9,6 +9,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "HAL/PlatformProperties.h"
 #include "Dom/JsonObject.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -34,6 +35,10 @@ const FName AConfiguratorVehicleActor::AuthorizedResourceTag(TEXT("Configurator.
 
 namespace ConfiguratorVehicle
 {
+	// v4 骨骼整车已覆盖车身、内饰、轮毂、卡钳和全部动画。
+	// 旧静态分件只在 Editor 验证环境保留；Cook 和 Shipping 不再装载它们。
+	// 产品包中的骨骼资产若加载失败，将以 Engine 基础形状明确暴露故障。
+
 	// CDF1A166 审计边界：X[-358.6124268, 109.1891403]，
 	// Y[-102.7749023, 102.7748260]，轮胎最低点 Z=-32.3401680。
 	// 展厅地面顶面统一为 Z=0，因此内容根把轮胎最低点精确抬到零平面。
@@ -41,6 +46,10 @@ namespace ConfiguratorVehicle
 
 	UStaticMesh* LoadOptionalStaticMesh(const TCHAR* ObjectPath)
 	{
+		if (IsRunningCookCommandlet() || FPlatformProperties::RequiresCookedData())
+		{
+			return nullptr;
+		}
 		return Cast<UStaticMesh>(StaticLoadObject(
 			UStaticMesh::StaticClass(),
 			nullptr,

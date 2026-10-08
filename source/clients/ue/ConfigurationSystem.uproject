@@ -25,6 +25,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "NNEDenoiser",
+			"Enabled": false
+		},
+		{
 			"Name": "AndroidFileServer",
 			"Enabled": false
 		}

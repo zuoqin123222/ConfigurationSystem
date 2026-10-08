@@ -1,6 +1,8 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Misc/AutomationTest.h"
+#include "Animation/AnimSequence.h"
+#include "Engine/SkeletalMesh.h"
 #include "UObject/UObjectGlobals.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -11,29 +13,20 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FOfflineVehicleMaterialAutomationTest::RunTest(const FString& Parameters)
 {
 	(void)Parameters;
-	const TCHAR* ExpectedAssets[] = {
-		TEXT("BodyMesh"),
-		TEXT("DoorMesh_FL"),
-		TEXT("DoorMesh_FR"),
-		TEXT("FrameMesh"),
-		TEXT("HoodMesh"),
-		TEXT("InteriorMesh"),
-		TEXT("TrunkMesh"),
-		TEXT("WheelMesh_FL"),
-		TEXT("WheelMesh_FR"),
-		TEXT("WheelMesh_RL"),
-		TEXT("WheelMesh_RR"),
-	};
-	for (const TCHAR* AssetName : ExpectedAssets)
-	{
-		const FString ObjectPath = FString::Printf(
-			TEXT("/Game/Configurator/AuthorizedAudiA5/%s.%s"),
-			AssetName,
-			AssetName);
-		TestNotNull(
-			*FString::Printf(TEXT("主分支 A5 分件 %s 可加载"), AssetName),
-			LoadObject<UObject>(nullptr, *ObjectPath));
-	}
+	TestNotNull(
+		TEXT("离线包可加载 v4 骨骼整车"),
+		LoadObject<USkeletalMesh>(
+			nullptr,
+			TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v4-paint-seat-zup/"
+				"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup."
+				"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup")));
+	TestNotNull(
+		TEXT("离线包可加载 v4 完整动画序列"),
+		LoadObject<UAnimSequence>(
+			nullptr,
+			TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v4-paint-seat-zup/"
+				"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup_Anim."
+				"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup_Anim")));
 
 	const TCHAR* ExpectedMaterials[] = {
 		TEXT("/Game/References/AutomotiveMats/Materials/Exterior/CarPaint/MI_CarPaint_Cherry.MI_CarPaint_Cherry"),
