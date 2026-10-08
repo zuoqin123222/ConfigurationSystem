@@ -137,7 +137,7 @@ namespace AutomotiveMaterialGeneration
 		return true;
 	}
 
-	FName FindVectorParameter(
+	TOptional<FMaterialParameterInfo> FindVectorParameter(
 		UMaterialInterface* Parent,
 		const TArray<FName>& Candidates)
 	{
@@ -146,16 +146,20 @@ namespace AutomotiveMaterialGeneration
 		Parent->GetAllVectorParameterInfo(Parameters, Ids);
 		for (const FName Candidate : Candidates)
 		{
-			if (Parameters.ContainsByPredicate([Candidate](const FMaterialParameterInfo& Info)
-				{ return Info.Name == Candidate; }))
+			if (const FMaterialParameterInfo* Info =
+				Parameters.FindByPredicate(
+					[Candidate](const FMaterialParameterInfo& Value)
+					{
+						return Value.Name == Candidate;
+					}))
 			{
-				return Candidate;
+				return *Info;
 			}
 		}
-		return NAME_None;
+		return {};
 	}
 
-	FName FindTextureParameter(
+	TOptional<FMaterialParameterInfo> FindTextureParameter(
 		UMaterialInterface* Parent,
 		const TArray<FName>& Candidates)
 	{
@@ -164,13 +168,33 @@ namespace AutomotiveMaterialGeneration
 		Parent->GetAllTextureParameterInfo(Parameters, Ids);
 		for (const FName Candidate : Candidates)
 		{
-			if (Parameters.ContainsByPredicate([Candidate](const FMaterialParameterInfo& Info)
-				{ return Info.Name == Candidate; }))
+			if (const FMaterialParameterInfo* Info =
+				Parameters.FindByPredicate(
+					[Candidate](const FMaterialParameterInfo& Value)
+					{
+						return Value.Name == Candidate;
+					}))
 			{
-				return Candidate;
+				return *Info;
 			}
 		}
-		return NAME_None;
+		return {};
+	}
+
+	void SetFirstVector(
+		UMaterialInstanceConstant* Instance,
+		UMaterialInterface* Parent,
+		const TArray<FName>& Candidates,
+		const FLinearColor& Value)
+	{
+		const TOptional<FMaterialParameterInfo> Parameter =
+			FindVectorParameter(Parent, Candidates);
+		if (Parameter.IsSet())
+		{
+			Instance->SetVectorParameterValueEditorOnly(
+				Parameter.GetValue(),
+				Value);
+		}
 	}
 
 	void SetFirstScalar(
@@ -481,17 +505,25 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 		{
 			OutResult.Errors.Add(VariantId + TEXT(" 既无 sortColorHex 也不是羊毛花纹。"));
 		}
-		const FName TextureParameter = FindTextureParameter(
+		const TOptional<FMaterialParameterInfo> TextureParameter =
+			FindTextureParameter(
 			Parent,
 			{TEXT("Diffuse Color Map"), TEXT("Color Map"), TEXT("Base Color Map")});
-		if (ColorTexture == nullptr || TextureParameter.IsNone())
+		if (ColorTexture == nullptr || !TextureParameter.IsSet())
 		{
 			OutResult.Errors.Add(VariantId + TEXT(" 的母材质没有可写颜色纹理参数。"));
 		}
 		else
 		{
 			Instance->SetTextureParameterValueEditorOnly(
-				FMaterialParameterInfo(TextureParameter), ColorTexture);
+				TextureParameter.GetValue(), ColorTexture);
+			// 色卡纹理是最终颜色来源。Black/Charcoal 等母实例通常带有深色 Tint；
+			// 若不显式归一为白色，1x1 色卡纹理会继续被母实例乘暗。
+			SetFirstVector(
+				Instance,
+				Parent,
+				{TEXT("Tint"), TEXT("BaseColor"), TEXT("Color")},
+				FLinearColor::White);
 		}
 		if (FamilyId == TEXT("woven-wool"))
 		{

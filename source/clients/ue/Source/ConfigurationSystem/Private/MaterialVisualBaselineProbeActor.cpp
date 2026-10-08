@@ -645,7 +645,7 @@ bool AMaterialVisualBaselineProbeActor::WriteManifest(
 		TEXT("plane"),
 		TEXT("origin thin slab, top normal +Z, scale (5,5,0.05)"));
 	Scene->SetStringField(TEXT("directionalLight"), TEXT("vertical-down"));
-	Scene->SetNumberField(TEXT("directionalLightLux"), 20000.0);
+	Scene->SetNumberField(TEXT("directionalLightLux"), 2000.0);
 	Scene->SetStringField(
 		TEXT("cameraTransform"),
 		TEXT("Location=(0,0,650) Rotation=(-90,0,0) FOV=55"));

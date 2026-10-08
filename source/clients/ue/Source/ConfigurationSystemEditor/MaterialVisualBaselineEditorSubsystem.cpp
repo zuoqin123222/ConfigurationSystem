@@ -38,7 +38,7 @@ namespace MaterialVisualBaselineEditor
 		FVector(0.0, 0.0, 650.0),
 		FVector::OneVector);
 	constexpr float CameraFov = 55.0f;
-	constexpr float DirectionalLightLux = 20000.0f;
+	constexpr float DirectionalLightLux = 2000.0f;
 	constexpr float ExposureBias = 0.0f;
 	constexpr float WhiteTemperature = 6500.0f;
 	constexpr TCHAR CameraTag[] = TEXT("MaterialVisualBaseline.Camera");
