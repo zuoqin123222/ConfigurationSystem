@@ -24,6 +24,11 @@ public:
 	void StartConfigurationBatchBake(bool bExitOnComplete);
 
 private:
+	void PruneOldRuntimeLogs();
+	void HandleApplicationWillTerminate();
+	void HandlePreExit();
+	void HandleSystemError();
+	void HandleSystemHang();
 	void SchedulePrimaryAssetProbe();
 	bool TickPrimaryAssetProbe(float DeltaTime);
 	void RunPrimaryAssetProbe();
@@ -46,4 +51,10 @@ private:
 	UAutomotiveMaterialGuiProbe* AutomotiveMaterialGuiProbe = nullptr;
 	TUniquePtr<FContentPackMountService> ContentPackProbeService;
 	FTSTicker::FDelegateHandle ContentPackProbeTickerHandle;
+	FDelegateHandle ApplicationWillTerminateHandle;
+	FDelegateHandle PreExitHandle;
+	FDelegateHandle SystemErrorHandle;
+	FDelegateHandle SystemHangHandle;
+	bool bApplicationWillTerminateReceived = false;
+	bool bPreExitLogged = false;
 };

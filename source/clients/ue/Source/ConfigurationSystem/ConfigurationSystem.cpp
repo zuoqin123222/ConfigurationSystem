@@ -6,19 +6,24 @@
 #include "ContentPackMountService.h"
 #include "Dom/JsonObject.h"
 #include "Engine/AssetManager.h"
+#include "HAL/CriticalSection.h"
 #include "HAL/PlatformMisc.h"
+#include "HAL/PlatformProcess.h"
 #include "HAL/PlatformProperties.h"
+#include "Misc/App.h"
 #include "Misc/CommandLine.h"
 #include "Misc/CoreDelegates.h"
 #include "Misc/EngineVersion.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
+#include "Misc/ScopeLock.h"
 #include "Modules/ModuleManager.h"
 #include "PackagingBoundaryProbe.h"
 #include "PathTracingAlphaProbe.h"
 #include "PathTracingProbe.h"
 #include "PrimaryAssetProbeData.h"
+#include "Serialization/Archive.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "VehicleHierarchyProbe.h"
@@ -28,6 +33,10 @@ DEFINE_LOG_CATEGORY_STATIC(LogPrimaryAssetProbe, Log, All);
 
 namespace PrimaryAssetProbe
 {
+	constexpr int32 RuntimeLogRetentionCount = 10;
+	TUniquePtr<FArchive> RuntimeLogWriter;
+	FCriticalSection RuntimeLogMutex;
+
 	const TCHAR* GetBuildConfigurationName()
 	{
 #if UE_BUILD_SHIPPING
@@ -42,6 +51,98 @@ namespace PrimaryAssetProbe
 		return TEXT("Unknown");
 #endif
 	}
+
+	const TCHAR* GetRunMode()
+	{
+		const TCHAR* CommandLine = FCommandLine::Get();
+		if (FParse::Param(CommandLine, TEXT("ConfigurationStateProbe")))
+		{
+			return TEXT("configuration-state-probe");
+		}
+		if (FParse::Param(CommandLine, TEXT("AutomotiveMaterialGuiProbe")))
+		{
+			return TEXT("automotive-material-gui-probe");
+		}
+		if (FParse::Param(CommandLine, TEXT("VehicleHierarchyProbe")))
+		{
+			return TEXT("vehicle-hierarchy-probe");
+		}
+		if (FParse::Param(CommandLine, TEXT("PackagingBoundaryProbe")))
+		{
+			return TEXT("packaging-boundary-probe");
+		}
+		if (FParse::Param(CommandLine, TEXT("PathTracingAlphaProbe")))
+		{
+			return TEXT("path-tracing-alpha-probe");
+		}
+		if (FParse::Param(CommandLine, TEXT("ConfigurationBatchBake")))
+		{
+			return TEXT("configuration-batch-bake");
+		}
+		if (FParse::Param(CommandLine, TEXT("PathTracingProbe")))
+		{
+			return TEXT("path-tracing-probe");
+		}
+		if (FParse::Param(CommandLine, TEXT("ContentPackProbe"))
+			|| FParse::Param(CommandLine, TEXT("ContentPackMountProbe")))
+		{
+			return TEXT("content-pack-probe");
+		}
+		if (FParse::Param(CommandLine, TEXT("PrimaryAssetProbe")))
+		{
+			return TEXT("primary-asset-probe");
+		}
+		return TEXT("interactive");
+	}
+
+	void OpenRuntimeLog()
+	{
+		const FString LogDirectory = FPaths::Combine(
+			FPaths::ProjectSavedDir(),
+			TEXT("Diagnostics"));
+		if (!IFileManager::Get().MakeDirectory(*LogDirectory, true))
+		{
+			return;
+		}
+
+		const FString LogName = FString::Printf(
+			TEXT("ConfigurationSystem-runtime-%s-%u.log"),
+			*FDateTime::UtcNow().ToString(TEXT("%Y%m%d-%H%M%S")),
+			FPlatformProcess::GetCurrentProcessId());
+		RuntimeLogWriter.Reset(IFileManager::Get().CreateFileWriter(
+			*FPaths::Combine(LogDirectory, LogName),
+			FILEWRITE_AllowRead));
+	}
+
+	void WriteRuntimeLog(const TCHAR* Level, const FString& Message)
+	{
+		FScopeLock Lock(&RuntimeLogMutex);
+		if (!RuntimeLogWriter.IsValid())
+		{
+			return;
+		}
+
+		const FString Line = FString::Printf(
+			TEXT("%s [%s] %s\r\n"),
+			*FDateTime::UtcNow().ToIso8601(),
+			Level,
+			*Message);
+		FTCHARToUTF8 Utf8(*Line);
+		RuntimeLogWriter->Serialize(
+			const_cast<ANSICHAR*>(Utf8.Get()),
+			Utf8.Length());
+		RuntimeLogWriter->Flush();
+	}
+
+	void CloseRuntimeLog()
+	{
+		FScopeLock Lock(&RuntimeLogMutex);
+		if (RuntimeLogWriter.IsValid())
+		{
+			RuntimeLogWriter->Flush();
+			RuntimeLogWriter.Reset();
+		}
+	}
 }
 
 IMPLEMENT_PRIMARY_GAME_MODULE(
@@ -53,6 +154,30 @@ IMPLEMENT_PRIMARY_GAME_MODULE(
 void FConfigurationSystemModule::StartupModule()
 {
 	FDefaultGameModuleImpl::StartupModule();
+	PrimaryAssetProbe::OpenRuntimeLog();
+	PruneOldRuntimeLogs();
+
+	ApplicationWillTerminateHandle =
+		FCoreDelegates::GetApplicationWillTerminateDelegate().AddRaw(
+			this,
+			&FConfigurationSystemModule::HandleApplicationWillTerminate);
+	PreExitHandle = FCoreDelegates::OnPreExit.AddRaw(
+		this,
+		&FConfigurationSystemModule::HandlePreExit);
+	SystemErrorHandle = FCoreDelegates::OnHandleSystemError.AddRaw(
+		this,
+		&FConfigurationSystemModule::HandleSystemError);
+	SystemHangHandle = FCoreDelegates::OnHandleSystemHang.AddRaw(
+		this,
+		&FConfigurationSystemModule::HandleSystemHang);
+
+	PrimaryAssetProbe::WriteRuntimeLog(TEXT("INFO"), FString::Printf(
+		TEXT("进程启动：mode=%s，build=%s，engine=%s，buildVersion=%s，pid=%u。"),
+		PrimaryAssetProbe::GetRunMode(),
+		PrimaryAssetProbe::GetBuildConfigurationName(),
+		*FEngineVersion::Current().ToString(),
+		FApp::GetBuildVersion(),
+		FPlatformProcess::GetCurrentProcessId()));
 
 	if (FParse::Param(FCommandLine::Get(), TEXT("ConfigurationStateProbe")))
 	{
@@ -137,6 +262,34 @@ void FConfigurationSystemModule::StartupModule()
 
 void FConfigurationSystemModule::ShutdownModule()
 {
+	if (!bPreExitLogged)
+	{
+		PrimaryAssetProbe::WriteRuntimeLog(
+			TEXT("WARNING"),
+			TEXT("模块关闭时未观察到正常 OnPreExit 标记；可能是模块重载或非标准退出流程。"));
+	}
+
+	if (ApplicationWillTerminateHandle.IsValid())
+	{
+		FCoreDelegates::GetApplicationWillTerminateDelegate().Remove(ApplicationWillTerminateHandle);
+		ApplicationWillTerminateHandle.Reset();
+	}
+	if (PreExitHandle.IsValid())
+	{
+		FCoreDelegates::OnPreExit.Remove(PreExitHandle);
+		PreExitHandle.Reset();
+	}
+	if (SystemErrorHandle.IsValid())
+	{
+		FCoreDelegates::OnHandleSystemError.Remove(SystemErrorHandle);
+		SystemErrorHandle.Reset();
+	}
+	if (SystemHangHandle.IsValid())
+	{
+		FCoreDelegates::OnHandleSystemHang.Remove(SystemHangHandle);
+		SystemHangHandle.Reset();
+	}
+
 	if (ConfigurationStateProbe != nullptr)
 	{
 		// 探针在请求退出前自行解除 Root；此时 UObject 数组可能已开始销毁，
@@ -197,7 +350,92 @@ void FConfigurationSystemModule::ShutdownModule()
 	ContentPackProbeService.Reset();
 
 	ProbeLoadHandle.Reset();
+	PrimaryAssetProbe::WriteRuntimeLog(TEXT("INFO"), TEXT("Runtime 模块关闭完成。"));
+	PrimaryAssetProbe::CloseRuntimeLog();
 	FDefaultGameModuleImpl::ShutdownModule();
+}
+
+void FConfigurationSystemModule::PruneOldRuntimeLogs()
+{
+	struct FRuntimeLogEntry
+	{
+		FString Path;
+		FDateTime Timestamp;
+	};
+
+	const FString LogDirectory = FPaths::Combine(
+		FPaths::ProjectSavedDir(),
+		TEXT("Diagnostics"));
+	TArray<FString> LogNames;
+	IFileManager::Get().FindFiles(
+		LogNames,
+		*FPaths::Combine(LogDirectory, TEXT("ConfigurationSystem-runtime-*.log")),
+		true,
+		false);
+
+	TArray<FRuntimeLogEntry> LogEntries;
+	LogEntries.Reserve(LogNames.Num());
+	for (const FString& LogName : LogNames)
+	{
+		const FString RuntimeLogPath = FPaths::Combine(LogDirectory, LogName);
+		LogEntries.Add({RuntimeLogPath, IFileManager::Get().GetTimeStamp(*RuntimeLogPath)});
+	}
+	LogEntries.Sort([](const FRuntimeLogEntry& Left, const FRuntimeLogEntry& Right)
+	{
+		return Left.Timestamp > Right.Timestamp;
+	});
+
+	int32 DeletedCount = 0;
+	for (int32 Index = PrimaryAssetProbe::RuntimeLogRetentionCount; Index < LogEntries.Num(); ++Index)
+	{
+		if (IFileManager::Get().Delete(*LogEntries[Index].Path, false, true, true))
+		{
+			++DeletedCount;
+		}
+	}
+
+	if (DeletedCount > 0)
+	{
+		PrimaryAssetProbe::WriteRuntimeLog(TEXT("INFO"), FString::Printf(
+			TEXT("主日志留存清理完成：删除 %d 份。"),
+			DeletedCount));
+	}
+}
+
+void FConfigurationSystemModule::HandleApplicationWillTerminate()
+{
+	bApplicationWillTerminateReceived = true;
+	PrimaryAssetProbe::WriteRuntimeLog(
+		TEXT("INFO"),
+		TEXT("收到平台 ApplicationWillTerminate 通知。"));
+}
+
+void FConfigurationSystemModule::HandlePreExit()
+{
+	if (bPreExitLogged)
+	{
+		return;
+	}
+
+	bPreExitLogged = true;
+	PrimaryAssetProbe::WriteRuntimeLog(TEXT("INFO"), FString::Printf(
+		TEXT("进入正常引擎退出流程：platformTerminate=%s，exitRequested=%s。"),
+		bApplicationWillTerminateReceived ? TEXT("true") : TEXT("false"),
+		IsEngineExitRequested() ? TEXT("true") : TEXT("false")));
+}
+
+void FConfigurationSystemModule::HandleSystemError()
+{
+	PrimaryAssetProbe::WriteRuntimeLog(
+		TEXT("FATAL"),
+		TEXT("收到 UE OnHandleSystemError 回调；请结合 CrashContext 或 Windows LocalDump 分析。"));
+}
+
+void FConfigurationSystemModule::HandleSystemHang()
+{
+	PrimaryAssetProbe::WriteRuntimeLog(
+		TEXT("FATAL"),
+		TEXT("收到 UE OnHandleSystemHang 回调；请结合 CrashContext 或 Windows LocalDump 分析。"));
 }
 
 void FConfigurationSystemModule::StartConfigurationBatchBake(const bool bExitOnComplete)
