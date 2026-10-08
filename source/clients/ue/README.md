@@ -193,8 +193,8 @@ DirectionalLight、手动曝光相机和 `AMaterialVisualBaselineProbeActor`。�
   '-ExecCmds=ConfigurationSystem.MaterialVisualBaseline.CreateScene;Quit' -log
 ```
 
-Editor 探针必须在有真实渲染 viewport 的 UE Editor 中运行。打开 Output Log 控制台后
-执行：
+Editor 探针使用 Actor 内固定的 `SceneCaptureComponent2D` 与
+`TextureRenderTarget2D` 离屏渲染，不依赖当前 viewport。打开 Output Log 控制台后执行：
 
 ```text
 ConfigurationSystem.MaterialVisualBaseline.Run
@@ -218,8 +218,9 @@ Runtime 探针从同一地图和同一状态机运行：
 ```
 
 探针按 `variantId` 排序遍历 `DA_SC01MaterialLibrary` 的 352 个 variant。每次同步加载并
-赋给固定平面后，至少等待 `StableSeconds`、连续 3 个真实 viewport 帧且全局 shader
-编译队列为空，再回读 sRGB 像素并写 PNG。输出目录包含 `renders/*.png` 和
+赋给固定平面后，至少等待 `StableSeconds`、连续 3 个稳定 tick 且全局 shader
+编译队列为空，再逐项触发固定 1280×720 SceneCapture、回读 RenderTarget 的 sRGB
+像素并写 PNG。输出目录包含 `renders/*.png` 和
 `manifest.json`；任一失败会保留 352 项清单并以 `failed` 标记尚未完成项。Runtime
 成功退出码为 `0`，失败为 `12`。
 

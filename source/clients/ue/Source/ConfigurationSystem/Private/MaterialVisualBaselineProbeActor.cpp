@@ -1,14 +1,12 @@
 #include "MaterialVisualBaselineProbeActor.h"
 
 #include "AutomotiveMaterialLibrary.h"
-#include "Camera/CameraActor.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Dom/JsonObject.h"
-#include "Engine/Engine.h"
-#include "Engine/GameViewportClient.h"
 #include "Engine/StaticMesh.h"
-#include "EngineUtils.h"
-#include "GameFramework/PlayerController.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "ImageUtils.h"
 #include "Materials/MaterialInterface.h"
 #include "Misc/CommandLine.h"
@@ -20,7 +18,6 @@
 #include "Serialization/JsonWriter.h"
 #include "ShaderCompiler.h"
 #include "UObject/ConstructorHelpers.h"
-#include "UnrealClient.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
@@ -30,8 +27,14 @@ DEFINE_LOG_CATEGORY_STATIC(LogMaterialVisualBaseline, Log, All);
 
 namespace MaterialVisualBaseline
 {
-	constexpr TCHAR CameraTag[] = TEXT("MaterialVisualBaseline.Camera");
 	constexpr double ProbeTimeoutSeconds = 900.0;
+	const FTransform CameraTransform(
+		FRotator(-36.2538, 90.0, 0.0),
+		FVector(0.0, -300.0, 220.0),
+		FVector::OneVector);
+	constexpr float CameraFov = 35.0f;
+	constexpr float ExposureBias = 12.0f;
+	constexpr float WhiteTemperature = 6500.0f;
 }
 
 AMaterialVisualBaselineProbeActor::AMaterialVisualBaselineProbeActor()
@@ -39,8 +42,11 @@ AMaterialVisualBaselineProbeActor::AMaterialVisualBaselineProbeActor()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
+	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
+	SetRootComponent(SceneRoot);
+
 	Plane = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaselinePlane"));
-	SetRootComponent(Plane);
+	Plane->SetupAttachment(SceneRoot);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> PlaneMesh(
 		TEXT("/Engine/BasicShapes/Plane.Plane"));
 	if (PlaneMesh.Succeeded())
@@ -54,6 +60,28 @@ AMaterialVisualBaselineProbeActor::AMaterialVisualBaselineProbeActor()
 		FRotator::ZeroRotator,
 		FVector::ZeroVector,
 		FVector(4.0, 4.0, 4.0)));
+
+	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(
+		TEXT("BaselineSceneCapture"));
+	SceneCapture->SetupAttachment(SceneRoot);
+	SceneCapture->SetRelativeTransform(MaterialVisualBaseline::CameraTransform);
+	SceneCapture->FOVAngle = MaterialVisualBaseline::CameraFov;
+	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
+	SceneCapture->bCaptureEveryFrame = false;
+	SceneCapture->bCaptureOnMovement = false;
+	SceneCapture->bAlwaysPersistRenderingState = true;
+	SceneCapture->PostProcessBlendWeight = 1.0f;
+	SceneCapture->PostProcessSettings.bOverride_AutoExposureMethod = true;
+	SceneCapture->PostProcessSettings.AutoExposureMethod =
+		EAutoExposureMethod::AEM_Manual;
+	SceneCapture->PostProcessSettings.bOverride_AutoExposureBias = true;
+	SceneCapture->PostProcessSettings.AutoExposureBias =
+		MaterialVisualBaseline::ExposureBias;
+	SceneCapture->PostProcessSettings.bOverride_WhiteTemp = true;
+	SceneCapture->PostProcessSettings.WhiteTemp =
+		MaterialVisualBaseline::WhiteTemperature;
+	SceneCapture->PostProcessSettings.bOverride_WhiteTint = true;
+	SceneCapture->PostProcessSettings.WhiteTint = 0.0f;
 }
 
 void AMaterialVisualBaselineProbeActor::BeginPlay()
@@ -63,18 +91,6 @@ void AMaterialVisualBaselineProbeActor::BeginPlay()
 	{
 		SetActorTickEnabled(false);
 		return;
-	}
-
-	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
-	{
-		if (It->ActorHasTag(MaterialVisualBaseline::CameraTag))
-		{
-			if (APlayerController* Controller = GetWorld()->GetFirstPlayerController())
-			{
-				Controller->SetViewTarget(*It);
-			}
-			break;
-		}
 	}
 
 	FString Output;
@@ -97,10 +113,7 @@ void AMaterialVisualBaselineProbeActor::Tick(const float DeltaSeconds)
 	{
 		return;
 	}
-	FViewport* Viewport = GEngine != nullptr && GEngine->GameViewport != nullptr
-		? GEngine->GameViewport->Viewport
-		: nullptr;
-	AdvanceProbe(DeltaSeconds, Viewport);
+	AdvanceProbe(DeltaSeconds);
 }
 
 bool AMaterialVisualBaselineProbeActor::BuildVariantPlan(
@@ -180,6 +193,28 @@ bool AMaterialVisualBaselineProbeActor::StartProbe(
 		Finish(Error);
 		return false;
 	}
+	if (!IsValid(SceneCapture))
+	{
+		Finish(TEXT("离屏 SceneCaptureComponent2D 无效。"));
+		return false;
+	}
+	RenderTarget = NewObject<UTextureRenderTarget2D>(
+		this,
+		TEXT("MaterialVisualBaselineRenderTarget"));
+	if (!IsValid(RenderTarget))
+	{
+		Finish(TEXT("无法创建离屏 TextureRenderTarget2D。"));
+		return false;
+	}
+	RenderTarget->ClearColor = FLinearColor::Black;
+	RenderTarget->TargetGamma = 2.2f;
+	RenderTarget->InitCustomFormat(
+		RenderWidth,
+		RenderHeight,
+		PF_B8G8R8A8,
+		false);
+	RenderTarget->UpdateResourceImmediate(true);
+	SceneCapture->TextureTarget = RenderTarget;
 
 	Results.Reset(ExpectedVariantCount);
 	CurrentVariantIndex = 0;
@@ -200,8 +235,7 @@ bool AMaterialVisualBaselineProbeActor::StartProbe(
 }
 
 bool AMaterialVisualBaselineProbeActor::AdvanceProbe(
-	const float DeltaSeconds,
-	FViewport* Viewport)
+	const float DeltaSeconds)
 {
 	if (!bRunning)
 	{
@@ -229,7 +263,7 @@ bool AMaterialVisualBaselineProbeActor::AdvanceProbe(
 	const bool bShadersStable =
 		GShaderCompilingManager == nullptr
 		|| !GShaderCompilingManager->IsCompiling();
-	if (Viewport != nullptr && bShadersStable)
+	if (bShadersStable)
 	{
 		++StableFrameCount;
 	}
@@ -242,13 +276,8 @@ bool AMaterialVisualBaselineProbeActor::AdvanceProbe(
 	{
 		return true;
 	}
-	if (Viewport == nullptr)
-	{
-		return true;
-	}
-
 	FString Error;
-	if (!CaptureVariant(*Viewport, Error))
+	if (!CaptureVariant(Error))
 	{
 		Finish(Error);
 		return false;
@@ -290,20 +319,56 @@ bool AMaterialVisualBaselineProbeActor::PrepareVariant(FString& OutError)
 }
 
 bool AMaterialVisualBaselineProbeActor::CaptureVariant(
-	FViewport& Viewport,
 	FString& OutError)
 {
-	const FIntPoint Size = Viewport.GetSizeXY();
+	if (!IsValid(SceneCapture) || !IsValid(RenderTarget)
+		|| SceneCapture->TextureTarget != RenderTarget)
+	{
+		OutError = FString::Printf(
+			TEXT("variant '%s' 的离屏渲染资源无效。"),
+			*CurrentVariantId);
+		return false;
+	}
+
+	SceneCapture->CaptureScene();
+	FTextureRenderTargetResource* RenderTargetResource =
+		RenderTarget->GameThread_GetRenderTargetResource();
+	const FIntPoint Size(RenderTarget->SizeX, RenderTarget->SizeY);
 	TArray<FColor> Pixels;
 	FReadSurfaceDataFlags ReadFlags(RCM_UNorm);
 	ReadFlags.SetLinearToGamma(true);
-	if (Size.X <= 0 || Size.Y <= 0
-		|| !Viewport.ReadPixels(Pixels, ReadFlags)
+	if (Size != FIntPoint(RenderWidth, RenderHeight)
+		|| RenderTargetResource == nullptr
+		|| !RenderTargetResource->ReadPixels(Pixels, ReadFlags)
 		|| Pixels.Num() != static_cast<int64>(Size.X) * Size.Y)
 	{
 		OutError = FString::Printf(
-			TEXT("variant '%s' 的 viewport 回读失败。"),
+			TEXT("variant '%s' 的 RenderTarget 回读失败。"),
 			*CurrentVariantId);
+		return false;
+	}
+	uint64 LuminanceSum = 0;
+	int32 VisiblePixelCount = 0;
+	for (const FColor& Pixel : Pixels)
+	{
+		const uint8 Luminance = static_cast<uint8>(
+			(54 * static_cast<uint32>(Pixel.R)
+				+ 183 * static_cast<uint32>(Pixel.G)
+				+ 19 * static_cast<uint32>(Pixel.B)) >> 8);
+		LuminanceSum += Luminance;
+		VisiblePixelCount += Luminance >= 8 ? 1 : 0;
+	}
+	const double MeanLuminance =
+		static_cast<double>(LuminanceSum) / Pixels.Num();
+	const double VisiblePixelRatio =
+		static_cast<double>(VisiblePixelCount) / Pixels.Num();
+	if (MeanLuminance < 1.0 || VisiblePixelRatio < 0.01)
+	{
+		OutError = FString::Printf(
+			TEXT("variant '%s' 截图无有效照明：mean=%.3f visibleRatio=%.5f。"),
+			*CurrentVariantId,
+			MeanLuminance,
+			VisiblePixelRatio);
 		return false;
 	}
 
@@ -335,6 +400,8 @@ bool AMaterialVisualBaselineProbeActor::CaptureVariant(
 	Item->SetNumberField(TEXT("height"), Size.Y);
 	Item->SetStringField(TEXT("format"), TEXT("png"));
 	Item->SetStringField(TEXT("colorSpace"), TEXT("sRGB"));
+	Item->SetNumberField(TEXT("meanLuminance"), MeanLuminance);
+	Item->SetNumberField(TEXT("visiblePixelRatio"), VisiblePixelRatio);
 	Item->SetNumberField(TEXT("stableWaitSeconds"), VariantElapsedSeconds);
 	Item->SetNumberField(TEXT("stableFrames"), StableFrameCount);
 	Item->SetStringField(TEXT("status"), TEXT("ready"));
@@ -359,11 +426,14 @@ bool AMaterialVisualBaselineProbeActor::WriteManifest(
 	Scene->SetStringField(TEXT("map"), TEXT("/Game/Maps/L_MaterialVisualBaseline"));
 	Scene->SetStringField(TEXT("plane"), TEXT("origin, normal +Z, scale 4"));
 	Scene->SetStringField(TEXT("directionalLight"), TEXT("vertical-down"));
-	Scene->SetNumberField(TEXT("directionalLightLux"), 5.0);
+	Scene->SetNumberField(TEXT("directionalLightLux"), 20000.0);
 	Scene->SetStringField(
 		TEXT("cameraTransform"),
 		TEXT("Location=(0,-300,220) Rotation=(-36,90,0) FOV=35"));
-	Scene->SetStringField(TEXT("exposure"), TEXT("manual, bias 8, whiteTemp 6500K"));
+	Scene->SetStringField(TEXT("exposure"), TEXT("manual, bias 12, whiteTemp 6500K"));
+	Scene->SetStringField(TEXT("renderer"), TEXT("SceneCaptureComponent2D"));
+	Scene->SetNumberField(TEXT("renderWidth"), RenderWidth);
+	Scene->SetNumberField(TEXT("renderHeight"), RenderHeight);
 
 	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetStringField(TEXT("schemaVersion"), TEXT("1.0.0"));

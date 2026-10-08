@@ -6,8 +6,10 @@
 
 class UAutomotiveMaterialLibrary;
 class UMaterialInterface;
+class USceneCaptureComponent2D;
+class USceneComponent;
 class UStaticMeshComponent;
-class FViewport;
+class UTextureRenderTarget2D;
 
 USTRUCT()
 struct FMaterialVisualBaselineVariant
@@ -34,6 +36,8 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	static constexpr int32 ExpectedVariantCount = 352;
+	static constexpr int32 RenderWidth = 1280;
+	static constexpr int32 RenderHeight = 720;
 	static constexpr float DefaultStableWaitSeconds = 0.5f;
 	static constexpr int32 RequiredStableFrames = 3;
 	static constexpr TCHAR LibraryObjectPath[] =
@@ -50,7 +54,7 @@ public:
 		const FString& InOutputDirectory,
 		float InStableWaitSeconds,
 		bool bInExitOnComplete);
-	bool AdvanceProbe(float DeltaSeconds, FViewport* Viewport);
+	bool AdvanceProbe(float DeltaSeconds);
 	bool IsProbeRunning() const;
 	bool DidProbeSucceed() const;
 	const FString& GetManifestPath() const;
@@ -60,19 +64,33 @@ public:
 		return Plane;
 	}
 
+	USceneCaptureComponent2D* GetSceneCaptureComponent() const
+	{
+		return SceneCapture;
+	}
+
 private:
 	bool PrepareVariant(FString& OutError);
-	bool CaptureVariant(FViewport& Viewport, FString& OutError);
+	bool CaptureVariant(FString& OutError);
 	bool WriteManifest(const FString& FatalError);
 	void Finish(const FString& FatalError);
 	void AppendRemainingFailures(const FString& Error);
 	static FString MakeSafeFilename(const FString& VariantId);
 
 	UPROPERTY(VisibleAnywhere, Category = "Material Visual Baseline")
+	TObjectPtr<USceneComponent> SceneRoot;
+
+	UPROPERTY(VisibleAnywhere, Category = "Material Visual Baseline")
 	TObjectPtr<UStaticMeshComponent> Plane;
+
+	UPROPERTY(VisibleAnywhere, Category = "Material Visual Baseline")
+	TObjectPtr<USceneCaptureComponent2D> SceneCapture;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAutomotiveMaterialLibrary> Library;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextureRenderTarget2D> RenderTarget;
 
 	TArray<FMaterialVisualBaselineVariant> Variants;
 	TArray<TSharedPtr<class FJsonValue>> Results;

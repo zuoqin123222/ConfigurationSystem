@@ -3,8 +3,8 @@
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DirectionalLightComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "Editor.h"
-#include "EditorViewportClient.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/World.h"
@@ -16,7 +16,6 @@
 #include "MaterialVisualBaselineProbeActor.h"
 #include "Misc/PackageName.h"
 #include "Misc/Parse.h"
-#include "UnrealClient.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
@@ -31,7 +30,7 @@ namespace MaterialVisualBaselineEditor
 		FVector::ZeroVector,
 		FVector::OneVector);
 	const FTransform LightTransform(
-		FRotator(-90.0, 0.0, 0.0),
+		FRotator(90.0, 0.0, 0.0),
 		FVector(0.0, 0.0, 300.0),
 		FVector::OneVector);
 	const FTransform CameraTransform(
@@ -39,8 +38,8 @@ namespace MaterialVisualBaselineEditor
 		FVector(0.0, -300.0, 220.0),
 		FVector::OneVector);
 	constexpr float CameraFov = 35.0f;
-	constexpr float DirectionalLightLux = 5.0f;
-	constexpr float ExposureBias = 8.0f;
+	constexpr float DirectionalLightLux = 20000.0f;
+	constexpr float ExposureBias = 12.0f;
 	constexpr float WhiteTemperature = 6500.0f;
 	constexpr TCHAR CameraTag[] = TEXT("MaterialVisualBaseline.Camera");
 
@@ -109,7 +108,7 @@ void UMaterialVisualBaselineEditorSubsystem::Initialize(
 		ECVF_Default);
 	RunProbeConsoleCommand = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("ConfigurationSystem.MaterialVisualBaseline.Run"),
-		TEXT("在当前 Editor viewport 遍历 352 个 variant；可传 Output= 与 StableSeconds=。"),
+		TEXT("通过固定离屏 SceneCapture 遍历 352 个 variant；可传 Output= 与 StableSeconds=。"),
 		FConsoleCommandWithArgsDelegate::CreateUObject(
 			this,
 			&UMaterialVisualBaselineEditorSubsystem::RunProbeCommand),
@@ -267,27 +266,14 @@ void UMaterialVisualBaselineEditorSubsystem::RunProbeCommand(
 	ACameraActor* Camera = FindActorByLabel<ACameraActor>(
 		World,
 		CameraActorLabel);
-	FViewport* Viewport = GEditor != nullptr ? GEditor->GetActiveViewport() : nullptr;
-	FEditorViewportClient* ViewportClient = Viewport != nullptr
-		? static_cast<FEditorViewportClient*>(Viewport->GetClient())
-		: nullptr;
-	if (!IsValid(Probe) || !IsValid(Camera) || Viewport == nullptr
-		|| ViewportClient == nullptr)
+	if (!IsValid(Probe) || !IsValid(Camera))
 	{
 		UE_LOG(
 			LogMaterialVisualBaselineEditor,
 			Error,
-			TEXT("固定场景或真实 Editor viewport 未就绪。"));
+			TEXT("固定材质视觉基准场景未就绪。"));
 		return;
 	}
-
-	ViewportClient->SetViewLocation(CameraTransform.GetLocation());
-	ViewportClient->SetViewRotation(CameraTransform.Rotator());
-	ViewportClient->ViewFOV = CameraFov;
-	ViewportClient->SetViewMode(VMI_Lit);
-	ViewportClient->SetGameView(true);
-	ViewportClient->SetRealtime(true);
-	ViewportClient->Invalidate();
 
 	const FString Arguments = FString::Join(Args, TEXT(" "));
 	FString Output;
@@ -295,7 +281,13 @@ void UMaterialVisualBaselineEditorSubsystem::RunProbeCommand(
 	float WaitSeconds =
 		AMaterialVisualBaselineProbeActor::DefaultStableWaitSeconds;
 	FParse::Value(*Arguments, TEXT("StableSeconds="), WaitSeconds);
-	if (!Probe->StartProbe(TEXT("editor"), Output, WaitSeconds, false))
+	bool bExitOnComplete = false;
+	FParse::Bool(*Arguments, TEXT("ExitOnComplete="), bExitOnComplete);
+	if (!Probe->StartProbe(
+		TEXT("editor"),
+		Output,
+		WaitSeconds,
+		bExitOnComplete))
 	{
 		return;
 	}
@@ -309,13 +301,8 @@ void UMaterialVisualBaselineEditorSubsystem::RunProbeCommand(
 bool UMaterialVisualBaselineEditorSubsystem::TickProbe(
 	const float DeltaSeconds)
 {
-	FViewport* Viewport = GEditor != nullptr ? GEditor->GetActiveViewport() : nullptr;
-	if (Viewport != nullptr)
-	{
-		Viewport->InvalidateDisplay();
-	}
 	if (!ActiveProbe.IsValid()
-		|| !ActiveProbe->AdvanceProbe(DeltaSeconds, Viewport))
+		|| !ActiveProbe->AdvanceProbe(DeltaSeconds))
 	{
 		if (ActiveProbe.IsValid())
 		{
@@ -389,6 +376,21 @@ bool FMaterialVisualBaselineSceneAutomationTest::RunTest(
 		Probe->GetActorLocation().Equals(FVector::ZeroVector));
 	TestTrue(TEXT("测试平面朝 +Z"),
 		Probe->GetActorRotation().Equals(FRotator::ZeroRotator));
+	USceneCaptureComponent2D* SceneCapture =
+		Probe->GetSceneCaptureComponent();
+	TestNotNull(TEXT("探针包含离屏 SceneCaptureComponent2D"), SceneCapture);
+	if (IsValid(SceneCapture))
+	{
+		TestTrue(
+			TEXT("离屏相机 Transform 固定"),
+			SceneCapture->GetRelativeTransform().Equals(CameraTransform, 0.001));
+		TestEqual(TEXT("离屏相机 FOV 固定"), SceneCapture->FOVAngle, CameraFov);
+		TestEqual(
+			TEXT("离屏相机使用手动曝光"),
+			SceneCapture->PostProcessSettings.AutoExposureMethod,
+			EAutoExposureMethod::AEM_Manual);
+		TestFalse(TEXT("离屏相机不逐帧捕获"), SceneCapture->bCaptureEveryFrame);
+	}
 	TestTrue(TEXT("DirectionalLight 垂直向下"),
 		Light->GetActorRotation().Equals(LightTransform.Rotator(), 0.001));
 	TestTrue(TEXT("固定相机 Transform"),
