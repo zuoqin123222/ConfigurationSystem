@@ -349,10 +349,13 @@ FString UAutomotiveMaterialGuiProbe::DescribeMaterial(
 			Dynamic->K2_GetVectorParameterValue(TEXT("BaseColor"));
 		const FLinearColor Tint =
 			Dynamic->K2_GetVectorParameterValue(TEXT("Tint"));
+		const FLinearColor MetallicColorA =
+			Dynamic->K2_GetVectorParameterValue(TEXT("Metallic Color A"));
 		Description += FString::Printf(
-			TEXT("|BaseColor=%s|Tint=%s"),
+			TEXT("|BaseColor=%s|Tint=%s|MetallicColorA=%s"),
 			*Color.ToString(),
-			*Tint.ToString());
+			*Tint.ToString(),
+			*MetallicColorA.ToString());
 	}
 	return Description;
 }

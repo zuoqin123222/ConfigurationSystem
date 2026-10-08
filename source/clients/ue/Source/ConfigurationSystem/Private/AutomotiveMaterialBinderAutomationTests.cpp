@@ -609,6 +609,13 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 					FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#336699"))),
 					0.001f));
 	TestTrue(
+		TEXT("金属材料同步写入真实 Metallic Color A"),
+		IsValid(DisplayColorMaterial)
+			&& DisplayColorMaterial->K2_GetVectorParameterValue(
+				TEXT("Metallic Color A")).Equals(
+					FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#336699"))),
+					0.001f));
+	TestTrue(
 		TEXT("DisplayColorHex 调色仍保留镁合金母材质"),
 		IsValid(DisplayColorMaterial)
 			&& DisplayColorMaterial->IsChildOf(

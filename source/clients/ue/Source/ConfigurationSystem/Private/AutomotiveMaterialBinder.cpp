@@ -663,6 +663,17 @@ bool UAutomotiveMaterialBinder::ApplySurface(
 					TEXT("Primary Glints Color"),
 					Color);
 			}
+			if (FamilyId == TEXT("aluminum-alloy")
+				|| FamilyId == TEXT("magnesium-alloy")
+				|| FamilyId == TEXT("metal"))
+			{
+				Bound.DynamicInstance->SetVectorParameterValue(
+					TEXT("Metallic Color A"),
+					Color);
+				Bound.DynamicInstance->SetVectorParameterValue(
+					TEXT("Metallic Color B"),
+					Color);
+			}
 			Bound.DynamicColorTexture = UpdateDynamicColorTexture(
 				Bound.DynamicColorTexture,
 				Color);
