@@ -607,6 +607,27 @@ describe('App v2', () => {
     })
   })
 
+  it('embedded bridge 将 unsupported 稳定 ID 转成可读反馈并说明配置已保留', async () => {
+    window.history.replaceState(null, '', '/?source=ue&view=embedded')
+    const applyconfigurationtransactionjson = vi.fn().mockResolvedValue(JSON.stringify({
+      ok: true,
+      code: 'APPLIED_WITH_UNSUPPORTED_SURFACES',
+      message: '配置已应用；1 个 surfaceId 为当前 proxy capability 明确缺口。',
+      configurationId: 'cfg-unsupported',
+      appliedSurfaceIds: [],
+      unsupportedSurfaceIds: ['wheel-style'],
+      appliedSlotIds: [],
+    }))
+    window.ue = { uebridge: { applyconfigurationtransactionjson } }
+    mockApi()
+    render(<App />)
+
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+    expect(await screen.findByText(
+      '当前代理车暂不支持实时预览（配置已保留）：轮毂造型',
+    )).toHaveAttribute('role', 'status')
+  })
+
   it('embedded bridge 串行提交逐项选择，旧事务未完成时不会乱序覆盖新状态', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     let resolveFirst: ((value: string) => void) | undefined

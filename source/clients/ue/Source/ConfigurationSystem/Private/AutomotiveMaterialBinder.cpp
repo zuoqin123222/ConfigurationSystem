@@ -18,6 +18,8 @@ const FName UAutomotiveMaterialBinder::InteriorProxySlotTag(
 	TEXT("Configurator.Slot.automotive_interior_material_proxy"));
 const FString UAutomotiveMaterialBinder::PaintSurfaceId(TEXT("exterior-body-cover"));
 const FString UAutomotiveMaterialBinder::InteriorProxySurfaceId(TEXT("door-middle"));
+const FString UAutomotiveMaterialBinder::WheelMaterialSurfaceId(TEXT("wheel-material"));
+const FString UAutomotiveMaterialBinder::WheelColorSurfaceId(TEXT("wheel-color"));
 
 FName UAutomotiveMaterialBinder::MakeProxyTargetTag(const FName SlotId)
 {
@@ -38,6 +40,10 @@ namespace
 		if (ColorCode.Equals(TEXT("silver"), ESearchCase::IgnoreCase))
 		{
 			return FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#BFC3C7")));
+		}
+		if (ColorCode.Equals(TEXT("bright-silver"), ESearchCase::IgnoreCase))
+		{
+			return FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#D4D7D9")));
 		}
 		const FString Hex = ColorCode.StartsWith(TEXT("#"))
 			? ColorCode.Mid(1)
@@ -452,9 +458,12 @@ bool UAutomotiveMaterialBinder::GetSingleBoundSlot(
 UMaterialInterface* UAutomotiveMaterialBinder::GetAppliedMaterialForSurface(
 	const FString& SurfaceId) const
 {
+	const FString& AppliedSurfaceId = SurfaceId == WheelColorSurfaceId
+		? WheelMaterialSurfaceId
+		: SurfaceId;
 	for (const FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
 	{
-		if (Bound.SurfaceId == SurfaceId
+		if (Bound.SurfaceId == AppliedSurfaceId
 			&& IsValid(Bound.Component)
 			&& Bound.MaterialIndex != INDEX_NONE)
 		{
@@ -467,6 +476,87 @@ UMaterialInterface* UAutomotiveMaterialBinder::GetAppliedMaterialForSurface(
 FString UAutomotiveMaterialBinder::GetLastTransactionResultJson() const
 {
 	return LastTransactionResult.ToJson();
+}
+
+bool UAutomotiveMaterialBinder::ResolveWheelColor(
+	const TMap<FString, FString>& Selections,
+	FLinearColor& OutColor,
+	FString& OutErrorCode,
+	FString& OutErrorMessage) const
+{
+	OutColor = FLinearColor::White;
+	OutErrorCode.Reset();
+	OutErrorMessage.Reset();
+	const FString* OptionId = Selections.Find(WheelColorSurfaceId);
+	const AutomotiveCatalog::FOption* Option = OptionId != nullptr
+		? State->GetCatalogIndex().FindOption(*OptionId)
+		: nullptr;
+	if (Option == nullptr)
+	{
+		OutErrorCode = TEXT("WHEEL_COLOR_UNRESOLVED");
+		OutErrorMessage = TEXT("wheel-color 缺少有效 option。");
+		return false;
+	}
+	const TOptional<FLinearColor> Color = ResolveFixedOptionColor(*Option);
+	if (!Color.IsSet())
+	{
+		OutErrorCode = TEXT("WHEEL_COLOR_UNRESOLVED");
+		OutErrorMessage = FString::Printf(
+			TEXT("wheel-color optionId=%s 缺少可解析固定色。"),
+			**OptionId);
+		return false;
+	}
+	OutColor = Color.GetValue();
+	return true;
+}
+
+bool UAutomotiveMaterialBinder::ApplyWheelColorOverlay(
+	const TMap<FString, FString>& Selections,
+	TArray<FName>* OutAppliedSlots)
+{
+	FLinearColor Color;
+	FString ErrorCode;
+	FString ErrorMessage;
+	if (!ResolveWheelColor(Selections, Color, ErrorCode, ErrorMessage))
+	{
+		SetFailure(ErrorCode, ErrorMessage);
+		return false;
+	}
+
+	bool bFoundTarget = false;
+	for (FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
+	{
+		if (Bound.SurfaceId != WheelMaterialSurfaceId)
+		{
+			continue;
+		}
+		bFoundTarget = true;
+		UMaterialInstanceDynamic* Dynamic = Cast<UMaterialInstanceDynamic>(
+			IsValid(Bound.Component) && Bound.MaterialIndex != INDEX_NONE
+				? Bound.Component->GetMaterial(Bound.MaterialIndex)
+				: nullptr);
+		if (!IsValid(Dynamic))
+		{
+			SetFailure(
+				TEXT("WHEEL_MATERIAL_MID_UNAVAILABLE"),
+				TEXT("wheel-color 只能叠加到 wheel-material 当前 MID。"));
+			return false;
+		}
+		Dynamic->SetVectorParameterValue(TEXT("Metallic Color A"), Color);
+		Dynamic->SetVectorParameterValue(TEXT("Metallic Color B"), Color);
+		if (OutAppliedSlots != nullptr)
+		{
+			OutAppliedSlots->Add(Bound.SlotId);
+		}
+	}
+	if (!bFoundTarget)
+	{
+		SetFailure(
+			TEXT("WHEEL_MATERIAL_TARGET_MISSING"),
+			TEXT("wheel-color 未找到 wheel-material 运行时目标。"));
+		return false;
+	}
+	return true;
 }
 
 bool UAutomotiveMaterialBinder::ResolveSurfaceMaterial(
@@ -588,6 +678,11 @@ bool UAutomotiveMaterialBinder::ApplySurface(
 	const TMap<FString, FAutomotiveCustomization>& Customizations,
 	TArray<FName>* OutAppliedSlots)
 {
+	if (SurfaceId == WheelColorSurfaceId)
+	{
+		return ApplyWheelColorOverlay(Selections, OutAppliedSlots);
+	}
+
 	UMaterialInterface* Material = nullptr;
 	bool bUseDynamic = false;
 	FLinearColor Color;
@@ -839,6 +934,9 @@ FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction
 		{
 			continue;
 		}
+		const FString& EffectiveSurfaceId = SurfaceId == WheelColorSurfaceId
+			? WheelMaterialSurfaceId
+			: SurfaceId;
 		UMaterialInterface* Material = nullptr;
 		bool bUseDynamic = false;
 		FLinearColor Color;
@@ -847,18 +945,25 @@ FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction
 		FString FamilyId;
 		FString ErrorCode;
 		FString ErrorMessage;
-		if (!ResolveSurfaceMaterial(
-			SurfaceId,
-			InSelections,
-			InCustomizations,
-			Material,
-			bUseDynamic,
-			Color,
-			Paint,
-			bHasPaintParameters,
-			FamilyId,
-			ErrorCode,
-			ErrorMessage))
+		const bool bResolved = SurfaceId == WheelColorSurfaceId
+			? ResolveWheelColor(
+				InSelections,
+				Color,
+				ErrorCode,
+				ErrorMessage)
+			: ResolveSurfaceMaterial(
+				SurfaceId,
+				InSelections,
+				InCustomizations,
+				Material,
+				bUseDynamic,
+				Color,
+				Paint,
+				bHasPaintParameters,
+				FamilyId,
+				ErrorCode,
+				ErrorMessage);
+		if (!bResolved)
 		{
 			SetFailure(ErrorCode, ErrorMessage);
 			return LastTransactionResult;
@@ -866,7 +971,7 @@ FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction
 		int32 PreparedSlotCount = 0;
 		for (FAutomotiveBoundMaterialSlot& Bound : BoundSlots)
 		{
-			if (Bound.SurfaceId != SurfaceId)
+			if (Bound.SurfaceId != EffectiveSurfaceId)
 			{
 				continue;
 			}
@@ -966,6 +1071,43 @@ FAutomotiveMaterialTransactionResult UAutomotiveMaterialBinder::ApplyTransaction
 				return LastTransactionResult;
 			}
 			LastTransactionResult.AppliedSurfaceIds.Add(SurfaceId);
+			if (SurfaceId == WheelMaterialSurfaceId
+				&& !ChangedSet.Contains(WheelColorSurfaceId)
+				&& !ApplyWheelColorOverlay(InSelections))
+			{
+				const FString ApplyError = LastError;
+				bApplyingTransaction = true;
+				const bool bRolledBack = State->ApplyTransaction(
+					PreviousSelections,
+					PreviousCustomizations);
+				bApplyingTransaction = false;
+				for (int32 Index = 0;
+					Index < BoundSlots.Num() && Index < PreviousAppliedMaterials.Num();
+					++Index)
+				{
+					FAutomotiveBoundMaterialSlot& Bound = BoundSlots[Index];
+					if (!IsValid(Bound.Component) || Bound.MaterialIndex == INDEX_NONE)
+					{
+						continue;
+					}
+					const int32 FirstIndex =
+						Bound.bApplyToAllComponentSlots ? 0 : Bound.MaterialIndex;
+					for (int32 MaterialOffset = 0;
+						MaterialOffset < PreviousAppliedMaterials[Index].Num();
+						++MaterialOffset)
+					{
+						Bound.Component->SetMaterial(
+							FirstIndex + MaterialOffset,
+							PreviousAppliedMaterials[Index][MaterialOffset]);
+					}
+				}
+				SetFailure(
+					bRolledBack
+						? TEXT("MATERIAL_APPLY_ROLLED_BACK")
+						: TEXT("MATERIAL_APPLY_ROLLBACK_FAILED"),
+					ApplyError);
+				return LastTransactionResult;
+			}
 		}
 		if (UnsupportedSet.Contains(SurfaceId))
 		{

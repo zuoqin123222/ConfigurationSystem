@@ -876,14 +876,19 @@ function Configurator({
         if (!receipt.ok) {
           setUeMaterialMessage(`实时材质未应用：${receipt.message}`)
         } else if (receipt.unsupportedSurfaceIds.length > 0) {
+          const unsupportedNames = receipt.unsupportedSurfaceIds.map(
+            (surfaceId) => catalog.surfaces.find(
+              (surface) => surface.surfaceId === surfaceId,
+            )?.displayName ?? surfaceId,
+          )
           setUeMaterialMessage(
-            `当前代理车未映射：${receipt.unsupportedSurfaceIds.join('、')}`,
+            `当前代理车暂不支持实时预览（配置已保留）：${unsupportedNames.join('、')}`,
           )
         } else {
           setUeMaterialMessage('')
         }
       })
-  }, [customizations, embedded, selections])
+  }, [catalog.surfaces, customizations, embedded, selections])
 
   const selectOption = (surfaceId: string, optionId?: string) => {
     const requestedSelections = { ...selections }

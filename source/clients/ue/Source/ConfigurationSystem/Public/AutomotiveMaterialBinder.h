@@ -70,6 +70,8 @@ public:
 	static const FName InteriorProxySlotTag;
 	static const FString PaintSurfaceId;
 	static const FString InteriorProxySurfaceId;
+	static const FString WheelMaterialSurfaceId;
+	static const FString WheelColorSurfaceId;
 	static FName MakeProxyTargetTag(FName SlotId);
 
 	UFUNCTION(BlueprintCallable, Category = "Automotive|Materials")
@@ -127,6 +129,14 @@ private:
 		const TMap<FString, FString>& Selections,
 		const TMap<FString, FAutomotiveCustomization>& Customizations,
 		TArray<FName>* OutAppliedSlots = nullptr);
+	bool ApplyWheelColorOverlay(
+		const TMap<FString, FString>& Selections,
+		TArray<FName>* OutAppliedSlots = nullptr);
+	bool ResolveWheelColor(
+		const TMap<FString, FString>& Selections,
+		FLinearColor& OutColor,
+		FString& OutErrorCode,
+		FString& OutErrorMessage) const;
 	bool ResolveSurfaceMaterial(
 		const FString& SurfaceId,
 		const TMap<FString, FString>& Selections,

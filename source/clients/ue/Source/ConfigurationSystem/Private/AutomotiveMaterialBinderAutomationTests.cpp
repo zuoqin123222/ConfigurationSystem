@@ -92,21 +92,39 @@ namespace AutomotiveMaterialBinderAutomation
 			return false;
 		}
 		const TArray<TSharedPtr<FJsonValue>>* Options = nullptr;
+		const TSharedPtr<FJsonObject>* SurfaceBinding = nullptr;
+		const TArray<TSharedPtr<FJsonValue>>* UnsupportedValues = nullptr;
 		if (!Root->TryGetArrayField(TEXT("options"), Options)
-			|| Options == nullptr)
+			|| Options == nullptr
+			|| !Root->TryGetObjectField(
+				TEXT("vehicleSurfaceBinding"),
+				SurfaceBinding)
+			|| SurfaceBinding == nullptr
+			|| !(*SurfaceBinding)->TryGetArrayField(
+				TEXT("unsupportedSurfaceIds"),
+				UnsupportedValues)
+			|| UnsupportedValues == nullptr)
 		{
 			return false;
+		}
+		TSet<FString> UnsupportedSurfaceIds;
+		for (const TSharedPtr<FJsonValue>& Value : *UnsupportedValues)
+		{
+			UnsupportedSurfaceIds.Add(Value->AsString());
 		}
 		for (const TSharedPtr<FJsonValue>& Value : *Options)
 		{
 			const TSharedPtr<FJsonObject> Option = Value->AsObject();
 			bool bRenderRelevant = false;
+			FString SurfaceId;
 			if (!Option.IsValid()
 				|| !Option->TryGetBoolField(
 					TEXT("renderRelevant"),
 					bRenderRelevant)
 				|| !bRenderRelevant
-				|| IsDisabled(Option))
+				|| IsDisabled(Option)
+				|| !Option->TryGetStringField(TEXT("surfaceId"), SurfaceId)
+				|| UnsupportedSurfaceIds.Contains(SurfaceId))
 			{
 				continue;
 			}
@@ -146,6 +164,10 @@ namespace AutomotiveMaterialBinderAutomation
 		if (Value.Equals(TEXT("silver"), ESearchCase::IgnoreCase))
 		{
 			return FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#BFC3C7")));
+		}
+		if (Value.Equals(TEXT("bright-silver"), ESearchCase::IgnoreCase))
+		{
+			return FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#D4D7D9")));
 		}
 		const FString Hex = Value.StartsWith(TEXT("#")) ? Value.Mid(1) : Value;
 		bool bValid = Hex.Len() == 6 || Hex.Len() == 8;
@@ -396,9 +418,11 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			UniqueMaterialIndices.Add(Bound.MaterialIndex);
 		}
 	}
-	TestNotNull(TEXT("40 个 surface 绑定单一 SkeletalMeshComponent"), BoundSkeletalComponent);
-	TestEqual(TEXT("骨骼车包含 40 个唯一选配槽"), UniqueSlots.Num(), 40);
-	TestEqual(TEXT("骨骼车包含 40 个唯一选配材质索引"), UniqueMaterialIndices.Num(), 40);
+	TestNotNull(TEXT("31 个 supported surface 绑定单一 SkeletalMeshComponent"),
+		BoundSkeletalComponent);
+	TestEqual(TEXT("骨骼车包含 31 个唯一受支持选配槽"), UniqueSlots.Num(), 31);
+	TestEqual(TEXT("骨骼车包含 31 个唯一受支持材质索引"),
+		UniqueMaterialIndices.Num(), 31);
 	const AutomotiveCatalog::FOption* RedOption =
 		State->GetCatalogIndex().FindOption(TEXT("body-cover-red"));
 	TestTrue(
@@ -522,33 +546,24 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		const FString* Replacement = ProxyOptions->FindByPredicate(
 			[&Current](const FString& Value) { return Value != Current; });
 		TestNotNull(TEXT("找到不同的代理 option"), Replacement);
-		UMaterialInstanceDynamic* ProxyMaterial =
-			Cast<UMaterialInstanceDynamic>(
-				Binder->GetAppliedMaterialForSurface(TEXT("wheel-style")));
-		const FLinearColor BeforeProxyColor = IsValid(ProxyMaterial)
-			? ProxyMaterial->K2_GetVectorParameterValue(TEXT("BaseColor"))
-			: FLinearColor::Transparent;
 		ProxySelections.Add(TEXT("wheel-style"), *Replacement);
 		const FAutomotiveMaterialTransactionResult ProxyResult =
 			Binder->ApplyTransaction(
 				ProxySelections,
 				State->GetCustomizations());
 		TestTrue(TEXT("代理 surface 原子提交成功"), ProxyResult.bSuccess);
-		TestEqual(
-			TEXT("代理 surface 返回完整应用回执"),
+		TestEqual(TEXT("unsupported surface 返回 capability 缺口回执"),
 			ProxyResult.Code,
-			FString(TEXT("APPLIED")));
+			FString(TEXT("APPLIED_WITH_UNSUPPORTED_SURFACES")));
 		TestTrue(
-			TEXT("回执明确列出已切换 surfaceId"),
-			ProxyResult.AppliedSurfaceIds.Contains(TEXT("wheel-style")));
+			TEXT("unsupported 回执不伪报已应用 surface"),
+			ProxyResult.AppliedSurfaceIds.IsEmpty());
 		TestTrue(
-			TEXT("代理选项切换更新可见运行时材质"),
-			IsValid(Cast<UMaterialInstanceDynamic>(
-				Binder->GetAppliedMaterialForSurface(TEXT("wheel-style"))))
-				&& !CastChecked<UMaterialInstanceDynamic>(
-					Binder->GetAppliedMaterialForSurface(TEXT("wheel-style")))
-					->K2_GetVectorParameterValue(TEXT("BaseColor"))
-					.Equals(BeforeProxyColor));
+			TEXT("回执保留 wheel-style 稳定 ID"),
+			ProxyResult.UnsupportedSurfaceIds
+				== TArray<FString>({TEXT("wheel-style")}));
+		TestNull(TEXT("unsupported surface 不绑定代理材质"),
+			Binder->GetAppliedMaterialForSurface(TEXT("wheel-style")));
 	}
 
 	UMaterialInstanceDynamic* PaintInstance = Binder->GetPaintMaterialInstance();
@@ -609,11 +624,11 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 					FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#336699"))),
 					0.001f));
 	TestTrue(
-		TEXT("金属材料同步写入真实 Metallic Color A"),
+		TEXT("切换 wheel-material 后重放当前亮银 wheel-color"),
 		IsValid(DisplayColorMaterial)
 			&& DisplayColorMaterial->K2_GetVectorParameterValue(
 				TEXT("Metallic Color A")).Equals(
-					FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#336699"))),
+					FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#D4D7D9"))),
 					0.001f));
 	TestTrue(
 		TEXT("DisplayColorHex 调色仍保留镁合金母材质"),
@@ -621,29 +636,55 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 			&& DisplayColorMaterial->IsChildOf(
 				Library->LoadInteriorMaterial(TEXT("magnesium-alloy"))));
 
-	TMap<FString, FString> NeutralSelections = State->GetSelections();
-	NeutralSelections.Add(TEXT("wheel-style"), TEXT("wheel-style-magnesium-1"));
-	TestTrue(
-		TEXT("无色值结构/样式代理事务成功"),
+	TMap<FString, FString> WheelColorSelections = State->GetSelections();
+	WheelColorSelections.Add(TEXT("wheel-color"), TEXT("wheel-color-black"));
+	const FAutomotiveMaterialTransactionResult WheelColorResult =
 		Binder->ApplyTransaction(
-			NeutralSelections,
-			State->GetCustomizations()).bSuccess);
-	UMaterialInstanceDynamic* NeutralMaterial =
+			WheelColorSelections,
+			State->GetCustomizations());
+	UMaterialInstanceDynamic* RecoloredWheelMaterial =
 		Cast<UMaterialInstanceDynamic>(
-			Binder->GetAppliedMaterialForSurface(TEXT("wheel-style")));
-	const FLinearColor NeutralColor = IsValid(NeutralMaterial)
-		? NeutralMaterial->K2_GetVectorParameterValue(TEXT("BaseColor"))
-		: FLinearColor::Transparent;
-	TestTrue(
-		TEXT("无色值结构/样式代理使用中性灰阶"),
-		IsValid(NeutralMaterial)
-			&& FMath::IsNearlyEqual(NeutralColor.R, NeutralColor.G)
-			&& FMath::IsNearlyEqual(NeutralColor.G, NeutralColor.B));
-	TestTrue(
-		TEXT("中性灰代理仍保留材料族母材质质感"),
-		IsValid(NeutralMaterial)
-			&& NeutralMaterial->IsChildOf(
+			Binder->GetAppliedMaterialForSurface(TEXT("wheel-material")));
+	const FLinearColor WheelBlack =
+		FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#111111")));
+	TestTrue(TEXT("wheel-color 叠加事务成功"), WheelColorResult.bSuccess);
+	TestTrue(TEXT("wheel-color 回执指向 wheel-material 实际槽"),
+		WheelColorResult.AppliedSlotIds
+			== TArray<FName>({TEXT("sc01_wheel_material")}));
+	TestTrue(TEXT("wheel-color 不更换 wheel-material 当前 MID"),
+		RecoloredWheelMaterial == DisplayColorMaterial);
+	TestTrue(TEXT("wheel-color 同步叠加 Metallic Color A/B"),
+		IsValid(RecoloredWheelMaterial)
+			&& RecoloredWheelMaterial->K2_GetVectorParameterValue(
+				TEXT("Metallic Color A")).Equals(WheelBlack, 0.001f)
+			&& RecoloredWheelMaterial->K2_GetVectorParameterValue(
+				TEXT("Metallic Color B")).Equals(WheelBlack, 0.001f));
+	TestTrue(TEXT("wheel-color 叠加保留镁合金母材质"),
+		IsValid(RecoloredWheelMaterial)
+			&& RecoloredWheelMaterial->IsChildOf(
 				Library->LoadInteriorMaterial(TEXT("magnesium-alloy"))));
+
+	TMap<FString, FString> RebasedWheelSelections = State->GetSelections();
+	RebasedWheelSelections.Add(
+		TEXT("wheel-material"),
+		TEXT("wheel-aluminum-alloy"));
+	TestTrue(TEXT("更换 wheel-material 事务成功"),
+		Binder->ApplyTransaction(
+			RebasedWheelSelections,
+			State->GetCustomizations()).bSuccess);
+	UMaterialInstanceDynamic* RebasedWheelMaterial =
+		Cast<UMaterialInstanceDynamic>(
+			Binder->GetAppliedMaterialForSurface(TEXT("wheel-material")));
+	TestTrue(TEXT("wheel-material 更换到铝合金母材质"),
+		IsValid(RebasedWheelMaterial)
+			&& RebasedWheelMaterial->IsChildOf(
+				Library->LoadInteriorMaterial(TEXT("aluminum-alloy"))));
+	TestTrue(TEXT("更换 wheel-material 后重放当前黑色 wheel-color"),
+		IsValid(RebasedWheelMaterial)
+			&& RebasedWheelMaterial->K2_GetVectorParameterValue(
+				TEXT("Metallic Color A")).Equals(WheelBlack, 0.001f)
+			&& RebasedWheelMaterial->K2_GetVectorParameterValue(
+				TEXT("Metallic Color B")).Equals(WheelBlack, 0.001f));
 
 	const AutomotiveCatalog::FMaterialVariant* DisplayColorVariant =
 		State->GetCatalogIndex().FindMaterialVariant(TEXT("alcantara-p2-2911"));
@@ -766,7 +807,10 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		UMaterialInstanceDynamic* BeforeDynamic =
 			Cast<UMaterialInstanceDynamic>(Before);
 		const FLinearColor BeforeColor = IsValid(BeforeDynamic)
-			? BeforeDynamic->K2_GetVectorParameterValue(TEXT("BaseColor"))
+			? BeforeDynamic->K2_GetVectorParameterValue(
+				SurfaceId == UAutomotiveMaterialBinder::WheelColorSurfaceId
+					? TEXT("Metallic Color A")
+					: TEXT("BaseColor"))
 			: FLinearColor::Transparent;
 		NextSelections.Add(SurfaceId, *NextOption);
 		TMap<FString, FAutomotiveCustomization> NextCustomizations =
@@ -777,11 +821,31 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		TestTrue(
 			*FString::Printf(TEXT("%s 逐项事务成功"), *SurfaceId),
 			Result.bSuccess);
+		if (State->GetCatalogIndex().IsSurfaceBindingExplicitlyUnsupported(
+			SurfaceId))
+		{
+			TestTrue(
+				*FString::Printf(TEXT("%s 返回 unsupported 稳定 ID"), *SurfaceId),
+				Result.Code == TEXT("APPLIED_WITH_UNSUPPORTED_SURFACES")
+					&& Result.AppliedSurfaceIds.IsEmpty()
+					&& Result.AppliedSlotIds.IsEmpty()
+					&& Result.UnsupportedSurfaceIds
+						== TArray<FString>({SurfaceId}));
+			TestNull(
+				*FString::Printf(TEXT("%s 没有运行时材质目标"), *SurfaceId),
+				Binder->GetAppliedMaterialForSurface(SurfaceId));
+			continue;
+		}
 		TestTrue(
 			*FString::Printf(TEXT("%s 回执包含唯一 surface"), *SurfaceId),
 			Result.AppliedSurfaceIds == TArray<FString>({SurfaceId}));
+		const FString EffectiveSurfaceId =
+			SurfaceId == UAutomotiveMaterialBinder::WheelColorSurfaceId
+				? UAutomotiveMaterialBinder::WheelMaterialSurfaceId
+				: SurfaceId;
 		const TArray<FName>* ExpectedSlots =
-			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(SurfaceId);
+			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(
+				EffectiveSurfaceId);
 		TestTrue(
 			*FString::Printf(TEXT("%s 回执包含全部 catalog 槽"), *SurfaceId),
 			ExpectedSlots != nullptr
@@ -799,11 +863,17 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 				&& (After != Before
 					|| (IsValid(AfterDynamic)
 						&& !AfterDynamic->K2_GetVectorParameterValue(
-							TEXT("BaseColor")).Equals(BeforeColor))));
+							SurfaceId
+								== UAutomotiveMaterialBinder::WheelColorSurfaceId
+								? TEXT("Metallic Color A")
+								: TEXT("BaseColor")).Equals(BeforeColor))));
 		const TArray<FAutomotiveBoundMaterialSlot> SurfaceBoundSlots =
-			Binder->GetBoundSlots(SurfaceId);
+			Binder->GetBoundSlots(EffectiveSurfaceId);
 		const FLinearColor AfterColor = IsValid(AfterDynamic)
-			? AfterDynamic->K2_GetVectorParameterValue(TEXT("BaseColor"))
+			? AfterDynamic->K2_GetVectorParameterValue(
+				SurfaceId == UAutomotiveMaterialBinder::WheelColorSurfaceId
+					? TEXT("Metallic Color A")
+					: TEXT("BaseColor"))
 			: FLinearColor::Transparent;
 		TestTrue(
 			*FString::Printf(TEXT("%s 切换后全部绑定槽均更新"), *SurfaceId),
@@ -811,7 +881,8 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 				&& SurfaceBoundSlots.Num() == ExpectedSlots->Num()
 				&& Algo::AllOf(
 					SurfaceBoundSlots,
-					[BoundSkeletalComponent, After, AfterDynamic, AfterColor](
+					[BoundSkeletalComponent, After, AfterDynamic, AfterColor,
+						SurfaceId](
 						const FAutomotiveBoundMaterialSlot& Bound)
 					{
 						if (!IsValid(Bound.Component)
@@ -827,7 +898,11 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 							|| (IsValid(AfterDynamic)
 								&& IsValid(BoundDynamic)
 								&& BoundDynamic->K2_GetVectorParameterValue(
-									TEXT("BaseColor")).Equals(AfterColor));
+									SurfaceId
+										== UAutomotiveMaterialBinder::
+											WheelColorSurfaceId
+										? TEXT("Metallic Color A")
+										: TEXT("BaseColor")).Equals(AfterColor));
 					}));
 	}
 	return true;
@@ -856,12 +931,12 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		AutomotiveMaterialBinderAutomation::ParseCoverageSpec(
 			Catalog->CatalogJson,
 			Coverage));
-	TestEqual(TEXT("可烘焙 option 数"), Coverage.BakeOptionIds.Num(), 168);
+	TestEqual(TEXT("supported 可烘焙 option 数"), Coverage.BakeOptionIds.Num(), 135);
 	TestEqual(
 		TEXT("coverage 排除 color-picker 数"),
 		Coverage.ExcludedColorPickerOptionCount,
 		5);
-	if (Coverage.BakeOptionIds.Num() != 168)
+	if (Coverage.BakeOptionIds.Num() != 135)
 	{
 		return false;
 	}
@@ -942,9 +1017,12 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 			UniqueMaterialIndices.Add(Bound.MaterialIndex);
 		}
 	}
-	TestNotNull(TEXT("40 个 surface 使用单一可见 SkeletalMeshComponent"), BoundSkeletalComponent);
-	TestEqual(TEXT("40 个 surface 使用 40 个唯一槽名"), UniqueSlots.Num(), 40);
-	TestEqual(TEXT("40 个 surface 使用 40 个唯一材质索引"), UniqueMaterialIndices.Num(), 40);
+	TestNotNull(TEXT("31 个 supported surface 使用单一可见 SkeletalMeshComponent"),
+		BoundSkeletalComponent);
+	TestEqual(TEXT("31 个 supported surface 使用 31 个唯一槽名"),
+		UniqueSlots.Num(), 31);
+	TestEqual(TEXT("31 个 supported surface 使用 31 个唯一材质索引"),
+		UniqueMaterialIndices.Num(), 31);
 
 	int32 AppliedOptionCount = 0;
 	int32 FixedColorOptionCount = 0;
@@ -984,16 +1062,21 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 			*FString::Printf(TEXT("%s 回执只包含目标 surface"), *OptionId),
 			Result.AppliedSurfaceIds
 				== TArray<FString>({Option->SurfaceId}));
+		const bool bWheelColor =
+			Option->SurfaceId == UAutomotiveMaterialBinder::WheelColorSurfaceId;
+		const FString EffectiveSurfaceId = bWheelColor
+			? UAutomotiveMaterialBinder::WheelMaterialSurfaceId
+			: Option->SurfaceId;
 		const TArray<FName>* ExpectedReceiptSlots =
 			State->GetCatalogIndex().FindMaterialSlotIdsForSurface(
-				Option->SurfaceId);
+				EffectiveSurfaceId);
 		TestTrue(
 			*FString::Printf(TEXT("%s 回执包含全部目标槽"), *OptionId),
 			ExpectedReceiptSlots != nullptr
 				&& Result.AppliedSlotIds == *ExpectedReceiptSlots);
 
 		const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
-			Binder->GetBoundSlots(Option->SurfaceId);
+			Binder->GetBoundSlots(EffectiveSurfaceId);
 		const int32 ExpectedSlotCount =
 			ExpectedReceiptSlots != nullptr ? ExpectedReceiptSlots->Num() : 0;
 		TestTrue(
@@ -1016,7 +1099,14 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 					}));
 		UMaterialInstanceDynamic* Dynamic =
 			Cast<UMaterialInstanceDynamic>(Applied);
-		const FString FamilyId = Option->MaterialFamilyId.Get(TEXT("paint"));
+		const AutomotiveCatalog::FOption* EffectiveOption = bWheelColor
+			? State->GetCatalogIndex().FindOption(
+				State->GetSelections().FindRef(
+					UAutomotiveMaterialBinder::WheelMaterialSurfaceId))
+			: Option;
+		const FString FamilyId = EffectiveOption != nullptr
+			? EffectiveOption->MaterialFamilyId.Get(TEXT("paint"))
+			: FString();
 		UMaterialInterface* ExpectedParent =
 			Library->LoadInteriorMaterial(FamilyId);
 		TestTrue(
@@ -1036,7 +1126,8 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		const TOptional<FLinearColor> ExpectedColor =
 			AutomotiveMaterialBinderAutomation::ResolveExpectedOptionColor(*Option);
 		const FLinearColor ActualColor = IsValid(Dynamic)
-			? Dynamic->K2_GetVectorParameterValue(TEXT("BaseColor"))
+			? Dynamic->K2_GetVectorParameterValue(
+				bWheelColor ? TEXT("Metallic Color A") : TEXT("BaseColor"))
 			: FLinearColor::Transparent;
 		if (ExpectedColor.IsSet())
 		{
@@ -1049,14 +1140,17 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 					&& ActualColor.Equals(ExpectedColor.GetValue(), 0.001f)
 					&& Algo::AllOf(
 						BoundSlots,
-						[&ExpectedColor](const FAutomotiveBoundMaterialSlot& Bound)
+						[&ExpectedColor, bWheelColor](
+							const FAutomotiveBoundMaterialSlot& Bound)
 						{
 							UMaterialInstanceDynamic* BoundDynamic =
 								Cast<UMaterialInstanceDynamic>(
 									Bound.Component->GetMaterial(Bound.MaterialIndex));
 							return IsValid(BoundDynamic)
 								&& BoundDynamic->K2_GetVectorParameterValue(
-									TEXT("BaseColor")).Equals(
+									bWheelColor
+										? TEXT("Metallic Color A")
+										: TEXT("BaseColor")).Equals(
 										ExpectedColor.GetValue(),
 										0.001f);
 						}));
@@ -1200,13 +1294,15 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 		}
 	}
 
-	TestEqual(TEXT("168 个可烘焙 option 全部通过 Binder"), AppliedOptionCount, 168);
-	TestEqual(TEXT("可解析固定色 option 统计"), FixedColorOptionCount, 30);
-	TestEqual(TEXT("无可解析色值的灰阶代理 option 统计"), NeutralProxyOptionCount, 138);
+	TestEqual(TEXT("135 个 supported 可烘焙 option 全部通过 Binder"),
+		AppliedOptionCount, 135);
+	TestEqual(TEXT("可解析固定色 option 统计"), FixedColorOptionCount, 25);
+	TestEqual(TEXT("无可解析色值的灰阶代理 option 统计"),
+		NeutralProxyOptionCount, 110);
 	TestEqual(TEXT("352 个 material variant 全部通过 Binder"), AppliedVariantCount, 352);
 	AddInfo(FString::Printf(
 		TEXT("Runtime 穷举统计：option=%d（固定色=%d，灰阶代理=%d），"
-			"materialVariant=%d，surface=%d，unsupported=0"),
+			"materialVariant=%d，supportedSurface=%d，unsupportedSurface=9"),
 		AppliedOptionCount,
 		FixedColorOptionCount,
 		NeutralProxyOptionCount,

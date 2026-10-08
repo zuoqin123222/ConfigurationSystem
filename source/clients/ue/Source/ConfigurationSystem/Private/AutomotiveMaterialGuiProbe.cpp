@@ -3,6 +3,7 @@
 #include "AutomotiveConfigurationState.h"
 #include "AutomotiveMaterialBinder.h"
 #include "AutomotiveMaterialLibrary.h"
+#include "Algo/AllOf.h"
 #include "CarConfiguratorSubsystem.h"
 #include "Components/MeshComponent.h"
 #include "Dom/JsonObject.h"
@@ -253,9 +254,28 @@ bool UAutomotiveMaterialGuiProbe::TryInitializeTraversal()
 	}
 	const TArray<FString>& CandidateSurfaceIds =
 		CandidateState->GetCatalogIndex().GetCatalog().SelectionOrder;
+	const TArray<FString>& CandidateUnsupported =
+		CandidateState->GetCatalogIndex().GetCatalog()
+			.VehicleSurfaceBinding.UnsupportedSurfaceIds;
+	const TSet<FString> ExpectedUnsupported({
+		TEXT("wheel-style"),
+		TEXT("steering-wheel-addon"),
+		TEXT("steering-center-mark"),
+		TEXT("seat-headrest-mark"),
+		TEXT("door-sill"),
+		TEXT("embroidered-logo"),
+		TEXT("headrest-embroidery"),
+		TEXT("door-panel-embroidery"),
+		TEXT("nameplate")
+	});
 	if (CandidateSurfaceIds.Num() != AutomotiveCatalog::RequiredSelectionCount
-		|| !CandidateState->GetCatalogIndex().GetCatalog()
-			.VehicleSurfaceBinding.UnsupportedSurfaceIds.IsEmpty())
+		|| CandidateUnsupported.Num() != ExpectedUnsupported.Num()
+		|| !Algo::AllOf(
+			CandidateUnsupported,
+			[&ExpectedUnsupported](const FString& SurfaceId)
+			{
+				return ExpectedUnsupported.Contains(SurfaceId);
+			}))
 	{
 		bReadinessBinder = false;
 		return false;
@@ -351,11 +371,14 @@ FString UAutomotiveMaterialGuiProbe::DescribeMaterial(
 			Dynamic->K2_GetVectorParameterValue(TEXT("Tint"));
 		const FLinearColor MetallicColorA =
 			Dynamic->K2_GetVectorParameterValue(TEXT("Metallic Color A"));
+		const FLinearColor MetallicColorB =
+			Dynamic->K2_GetVectorParameterValue(TEXT("Metallic Color B"));
 		Description += FString::Printf(
-			TEXT("|BaseColor=%s|Tint=%s|MetallicColorA=%s"),
+			TEXT("|BaseColor=%s|Tint=%s|MetallicColorA=%s|MetallicColorB=%s"),
 			*Color.ToString(),
 			*Tint.ToString(),
-			*MetallicColorA.ToString());
+			*MetallicColorA.ToString(),
+			*MetallicColorB.ToString());
 	}
 	return Description;
 }
@@ -426,10 +449,14 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 		return false;
 	}
 
+	const FString EffectiveSurfaceId =
+		SurfaceId == UAutomotiveMaterialBinder::WheelColorSurfaceId
+			? UAutomotiveMaterialBinder::WheelMaterialSurfaceId
+			: SurfaceId;
 	const TArray<FAutomotiveBoundMaterialSlot> BoundSlots =
-		Binder->GetBoundSlots(SurfaceId);
+		Binder->GetBoundSlots(EffectiveSurfaceId);
 	const TArray<FName>* ExpectedSlots =
-		CatalogIndex.FindMaterialSlotIdsForSurface(SurfaceId);
+		CatalogIndex.FindMaterialSlotIdsForSurface(EffectiveSurfaceId);
 	const int32 ExpectedSlotCount =
 		ExpectedSlots != nullptr ? ExpectedSlots->Num() : 0;
 	const bool bExpectedSlotsHit = BoundSlots.Num() == ExpectedSlotCount;
@@ -541,6 +568,36 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 	for (const FString& Unsupported : Result.UnsupportedSurfaceIds)
 	{
 		UnsupportedSurfaceIds.AddUnique(Unsupported);
+	}
+	if (CatalogIndex.IsSurfaceBindingExplicitlyUnsupported(SurfaceId))
+	{
+		const bool bUnsupportedReceiptValid =
+			Result.bSuccess
+			&& Result.Code == TEXT("APPLIED_WITH_UNSUPPORTED_SURFACES")
+			&& Result.AppliedSurfaceIds.IsEmpty()
+			&& Result.AppliedSlotIds.IsEmpty()
+			&& Result.UnsupportedSurfaceIds
+				== TArray<FString>({SurfaceId})
+			&& BoundSlots.IsEmpty()
+			&& ExpectedSlotCount == 0;
+		if (!bUnsupportedReceiptValid)
+		{
+			OutFailureReason = FString::Printf(
+				TEXT("surfaceId=%s unsupported 回执或目标非法：%s"),
+				*SurfaceId,
+				*Result.ToJson());
+			return false;
+		}
+		FAutomotiveMaterialGuiProbeSurfaceResult& Report =
+			SurfaceResults.AddDefaulted_GetRef();
+		Report.SurfaceId = SurfaceId;
+		Report.OptionId = *NextOptionId;
+		Report.MaterialVariantId = VariantId;
+		Report.ReceiptCode = Result.Code;
+		Report.ColorPolicy = TEXT("unsupported");
+		Report.bUniqueSlotHit = true;
+		++SurfaceIndex;
+		return true;
 	}
 	TArray<FString> AfterDescriptions;
 	TArray<UMaterialInterface*> AfterMaterials;

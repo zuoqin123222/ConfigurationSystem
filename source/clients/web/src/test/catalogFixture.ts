@@ -95,6 +95,18 @@ function proxySlotId(surfaceId: string): string {
     .join('')}`
 }
 
+const unsupportedSurfaceIds = [
+  'wheel-style',
+  'steering-wheel-addon',
+  'steering-center-mark',
+  'seat-headrest-mark',
+  'door-sill',
+  'embroidered-logo',
+  'headrest-embroidery',
+  'door-panel-embroidery',
+  'nameplate',
+]
+
 function componentForSurface(surfaceId: string): string {
   if (surfaceId === 'door-sill') return 'personalization'
   if (surfaceId === 'door-panel-embroidery') return 'personalization'
@@ -202,11 +214,13 @@ export const catalogFixture: CatalogV2 = {
   vehicleSurfaceBinding: {
     schemaVersion: '1.0.0',
     capability: 'proxy',
-    bindings: catalogSelectionOrder.map((surfaceId) => ({
-      surfaceId,
-      materialSlotIds: [proxySlotId(surfaceId)],
-    })),
-    unsupportedSurfaceIds: [],
+    bindings: catalogSelectionOrder
+      .filter((surfaceId) => !unsupportedSurfaceIds.includes(surfaceId))
+      .map((surfaceId) => ({
+        surfaceId,
+        materialSlotIds: [proxySlotId(surfaceId)],
+      })),
+    unsupportedSurfaceIds,
   },
   animations: [
     {

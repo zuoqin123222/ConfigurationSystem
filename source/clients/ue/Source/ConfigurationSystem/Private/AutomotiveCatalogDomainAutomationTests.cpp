@@ -150,18 +150,32 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 				TEXT("sc01_exterior_body_cover")}));
 	TestNotNull(TEXT("原语义缺失项也有独占 SkeletalMesh slot"),
 		Catalog.FindMaterialSlotIdsForSurface(TEXT("seat-backrest")));
-	TestFalse(TEXT("完整槽映射不再保留 unsupported surface"),
+	TestFalse(TEXT("已映射 surface 不标为 unsupported"),
 		Catalog.IsSurfaceBindingExplicitlyUnsupported(TEXT("seat-backrest")));
-	TestTrue(TEXT("40 个 surface 均命中完整 slot binding"),
+	const TSet<FString> ExpectedUnsupported({
+		TEXT("wheel-style"),
+		TEXT("steering-wheel-addon"),
+		TEXT("steering-center-mark"),
+		TEXT("seat-headrest-mark"),
+		TEXT("door-sill"),
+		TEXT("embroidered-logo"),
+		TEXT("headrest-embroidery"),
+		TEXT("door-panel-embroidery"),
+		TEXT("nameplate")
+	});
+	TestTrue(TEXT("9 个代理能力缺口保持稳定 surface ID"),
 		Algo::AllOf(
 			Catalog.GetCatalog().SelectionOrder,
-			[&Catalog](const FString& SurfaceId)
+			[&Catalog, &ExpectedUnsupported](const FString& SurfaceId)
 			{
 				const TArray<FName>* Slots =
 					Catalog.FindMaterialSlotIdsForSurface(SurfaceId);
 				return Catalog.IsSurfaceBindingCovered(SurfaceId)
-					&& Slots != nullptr
-					&& Slots->Num() == 1;
+					&& (ExpectedUnsupported.Contains(SurfaceId)
+						? (Slots == nullptr
+							&& Catalog.IsSurfaceBindingExplicitlyUnsupported(
+								SurfaceId))
+						: (Slots != nullptr && Slots->Num() == 1));
 			}));
 	TSet<FName> UniqueBoundSlots;
 	for (const FString& SurfaceId : Catalog.GetCatalog().SelectionOrder)
@@ -176,7 +190,8 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 			}
 		}
 	}
-	TestEqual(TEXT("40 个 surface 共使用 40 个唯一槽"), UniqueBoundSlots.Num(), 40);
+	TestEqual(TEXT("31 个 supported surface 使用 31 个唯一槽"),
+		UniqueBoundSlots.Num(), 31);
 	TMap<FString, TArray<FName>> TransactionTargets;
 	TSet<FString> TransactionGaps;
 	TestTrue(TEXT("选配 transaction 解析到各自 sc01 槽 binding"),
@@ -192,8 +207,18 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 	TestTrue(TEXT("语义缺失项命中自己的 sc01 slot"),
 		TransactionTargets.FindRef(TEXT("seat-backrest"))
 			== TArray<FName>({TEXT("sc01_seat_backrest")}));
-	TestTrue(TEXT("完整槽映射没有 capability 缺口"),
+	TestTrue(TEXT("supported transaction 没有 capability 缺口"),
 		TransactionGaps.IsEmpty());
+	TestTrue(TEXT("unsupported transaction 返回稳定 surface ID"),
+		Catalog.ResolveSurfaceBindingTransaction(
+			TSet<FString>({TEXT("wheel-style"), TEXT("nameplate")}),
+			TransactionTargets,
+			TransactionGaps,
+			Error)
+			&& TransactionTargets.IsEmpty()
+			&& TransactionGaps.Num() == 2
+			&& TransactionGaps.Contains(TEXT("wheel-style"))
+			&& TransactionGaps.Contains(TEXT("nameplate")));
 	TestFalse(TEXT("transaction 拒绝未知 surface"),
 		Catalog.ResolveSurfaceBindingTransaction(
 			TSet<FString>({TEXT("unknown-surface")}),

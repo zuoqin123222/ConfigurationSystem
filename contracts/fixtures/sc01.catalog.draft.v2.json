@@ -166,13 +166,10 @@
       { "surfaceId": "engine-bay-cover", "materialSlotIds": ["sc01_engine_bay_cover"] },
       { "surfaceId": "rear-wing", "materialSlotIds": ["sc01_rear_wing"] },
       { "surfaceId": "wheel-material", "materialSlotIds": ["sc01_wheel_material"] },
-      { "surfaceId": "wheel-style", "materialSlotIds": ["sc01_wheel_style"] },
       { "surfaceId": "wheel-color", "materialSlotIds": ["sc01_wheel_color"] },
       { "surfaceId": "front-caliper-color", "materialSlotIds": ["sc01_front_caliper_color"] },
       { "surfaceId": "rear-caliper-color", "materialSlotIds": ["sc01_rear_caliper_color"] },
       { "surfaceId": "steering-wheel-skin", "materialSlotIds": ["sc01_steering_wheel_skin"] },
-      { "surfaceId": "steering-wheel-addon", "materialSlotIds": ["sc01_steering_wheel_addon"] },
-      { "surfaceId": "steering-center-mark", "materialSlotIds": ["sc01_steering_center_mark"] },
       { "surfaceId": "ip-wings", "materialSlotIds": ["sc01_ip_wings"] },
       { "surfaceId": "ip-middle", "materialSlotIds": ["sc01_ip_middle"] },
       { "surfaceId": "ip-instrument-cover", "materialSlotIds": ["sc01_ip_instrument_cover"] },
@@ -183,7 +180,6 @@
       { "surfaceId": "seat-backrest", "materialSlotIds": ["sc01_seat_backrest"] },
       { "surfaceId": "seat-bolster", "materialSlotIds": ["sc01_seat_bolster"] },
       { "surfaceId": "seat-shell-back", "materialSlotIds": ["sc01_seat_shell_back"] },
-      { "surfaceId": "seat-headrest-mark", "materialSlotIds": ["sc01_seat_headrest_mark"] },
       { "surfaceId": "door-upper", "materialSlotIds": ["sc01_door_upper"] },
       { "surfaceId": "door-middle", "materialSlotIds": ["sc01_door_middle"] },
       { "surfaceId": "door-armrest", "materialSlotIds": ["sc01_door_armrest"] },
@@ -195,15 +191,20 @@
       { "surfaceId": "roof-surface", "materialSlotIds": ["sc01_roof_surface"] },
       { "surfaceId": "lower-skirt", "materialSlotIds": ["sc01_lower_skirt"] },
       { "surfaceId": "interior-painted-parts", "materialSlotIds": ["sc01_interior_painted_parts"] },
-      { "surfaceId": "door-sill", "materialSlotIds": ["sc01_door_sill"] },
-      { "surfaceId": "embroidered-logo", "materialSlotIds": ["sc01_embroidered_logo"] },
-      { "surfaceId": "headrest-embroidery", "materialSlotIds": ["sc01_headrest_embroidery"] },
-      { "surfaceId": "door-panel-embroidery", "materialSlotIds": ["sc01_door_panel_embroidery"] },
       { "surfaceId": "center-panel-trim", "materialSlotIds": ["sc01_center_panel_trim"] },
-      { "surfaceId": "nameplate", "materialSlotIds": ["sc01_nameplate"] },
       { "surfaceId": "pedal", "materialSlotIds": ["sc01_pedal"] }
     ],
-    "unsupportedSurfaceIds": []
+    "unsupportedSurfaceIds": [
+      "wheel-style",
+      "steering-wheel-addon",
+      "steering-center-mark",
+      "seat-headrest-mark",
+      "door-sill",
+      "embroidered-logo",
+      "headrest-embroidery",
+      "door-panel-embroidery",
+      "nameplate"
+    ]
   },
   "animations": [
     {

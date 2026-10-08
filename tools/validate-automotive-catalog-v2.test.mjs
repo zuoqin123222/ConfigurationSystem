@@ -153,11 +153,11 @@ test("catalog 顶层声明完整骨骼网格与动画序列对象路径", async 
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   assert.equal(
     catalog.skeletalMeshPath,
-    "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2.automotive-configurator-audi-a5-rigged-v2"
+    "/Game/Configurator/_ImportStaging/a5-dcc-v4-paint-seat-zup/automotive-configurator-audi-a5-dcc-v4-paint-seat-zup.automotive-configurator-audi-a5-dcc-v4-paint-seat-zup"
   );
   assert.equal(
     catalog.sequencePath,
-    "/Game/Configurator/_ImportStaging/audi-a5-rigged-v2/automotive-configurator-audi-a5-rigged-v2_Anim.automotive-configurator-audi-a5-rigged-v2_Anim"
+    "/Game/Configurator/_ImportStaging/a5-dcc-v4-paint-seat-zup/automotive-configurator-audi-a5-dcc-v4-paint-seat-zup_Anim.automotive-configurator-audi-a5-dcc-v4-paint-seat-zup_Anim"
   );
 
   const incompleteMesh = structuredClone(catalog);
@@ -169,20 +169,35 @@ test("catalog 顶层声明完整骨骼网格与动画序列对象路径", async 
   assert.throws(() => validateCatalog(incompleteSequence), /sequencePath/);
 });
 
-test("catalog 代理车为 40 surface 提供唯一运行时目标且不伪装为正式资产", async () => {
+test("catalog 保留 40 个稳定 surface ID，并显式声明代理车的 9 个 unsupported", async () => {
   const catalog = await fixture("sc01.catalog.draft.v2.json");
   const capability = catalog.vehicleSurfaceBinding;
   assert.equal(capability.capability, "proxy");
-  assert.equal(capability.bindings.length, 40);
-  assert.deepEqual(capability.unsupportedSurfaceIds, []);
+  assert.equal(capability.bindings.length, 31);
+  assert.deepEqual(capability.unsupportedSurfaceIds, [
+    "wheel-style",
+    "steering-wheel-addon",
+    "steering-center-mark",
+    "seat-headrest-mark",
+    "door-sill",
+    "embroidered-logo",
+    "headrest-embroidery",
+    "door-panel-embroidery",
+    "nameplate"
+  ]);
+  assert.ok(capability.unsupportedSurfaceIds.every(
+    (surfaceId) => catalog.selectionOrder.includes(surfaceId)
+      && catalog.surfaces.some((surface) => surface.surfaceId === surfaceId)
+      && catalog.options.some((option) => option.surfaceId === surfaceId)
+  ));
   assert.deepEqual(
     capability.bindings.find((binding) => binding.surfaceId === "door-middle")
       ?.materialSlotIds,
-    ["A5Proxy_DoorMiddle"]
+    ["sc01_door_middle"]
   );
   assert.equal(
     new Set(capability.bindings.flatMap((binding) => binding.materialSlotIds)).size,
-    40
+    31
   );
   assert.doesNotThrow(() => validateCatalog(catalog));
 
