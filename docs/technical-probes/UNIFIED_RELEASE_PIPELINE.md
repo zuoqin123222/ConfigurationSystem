@@ -66,7 +66,8 @@ online 与 embedded 入口。
 - UE Batch Bake 退出码为 0。
 - Server manifest 校验为 4/4 `ready`。
 - 原图均为 1022×664、sRGB、straight Alpha，并记录 SHA-256。
-- 骨骼代理车的 `CS_Validation_*` 引擎回退槽已映射到现有 `M_A5_*` 项目材质；
+- 骨骼代理车的 `CS_Validation_*` 引擎回退槽已映射到本机授权的官方
+  `/Game/References/AutomotiveMats` 材质，并为相关母材质启用 SkeletalMesh 使用标志；
   未知槽仍会被 Bake 预检拒绝。
 
 ![BakeWeb canary](assets/release-pipeline-bake-canary.png)
