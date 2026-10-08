@@ -85,14 +85,14 @@ bool FAutomotiveCatalogGoldenVectorsAutomationTest::RunTest(const FString& Param
 	TestEqual(TEXT("顶层动画定义数"), Catalog.GetCatalog().Animations.Num(), 5);
 	TestEqual(TEXT("骨骼网格由顶层 Catalog 提供"),
 		Catalog.GetCatalog().SkeletalMeshPath,
-		FString(TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/"
-			"automotive-configurator-audi-a5-dcc-v2-slotted-zup."
-			"automotive-configurator-audi-a5-dcc-v2-slotted-zup")));
+		FString(TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v4-paint-seat-zup/"
+			"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup."
+			"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup")));
 	TestEqual(TEXT("所有帧段共享顶层完整 AnimSequence"),
 		Catalog.GetCatalog().SequencePath,
-		FString(TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/"
-			"automotive-configurator-audi-a5-dcc-v2-slotted-zup_Anim."
-			"automotive-configurator-audi-a5-dcc-v2-slotted-zup_Anim")));
+		FString(TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v4-paint-seat-zup/"
+			"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup_Anim."
+			"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup_Anim")));
 	const AutomotiveCatalog::FAnimation* HoodAnimation =
 		Catalog.FindAnimation(TEXT("hood"));
 	TestNotNull(TEXT("可按 animationId 查询动画"), HoodAnimation);

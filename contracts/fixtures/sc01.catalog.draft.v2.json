@@ -156,8 +156,8 @@
       "iconUrl": "/sc01/option-icons/default.svg"
     }
   ],
-  "skeletalMeshPath": "/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/automotive-configurator-audi-a5-dcc-v2-slotted-zup.automotive-configurator-audi-a5-dcc-v2-slotted-zup",
-  "sequencePath": "/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/automotive-configurator-audi-a5-dcc-v2-slotted-zup_Anim.automotive-configurator-audi-a5-dcc-v2-slotted-zup_Anim",
+  "skeletalMeshPath": "/Game/Configurator/_ImportStaging/a5-dcc-v4-paint-seat-zup/automotive-configurator-audi-a5-dcc-v4-paint-seat-zup.automotive-configurator-audi-a5-dcc-v4-paint-seat-zup",
+  "sequencePath": "/Game/Configurator/_ImportStaging/a5-dcc-v4-paint-seat-zup/automotive-configurator-audi-a5-dcc-v4-paint-seat-zup_Anim.automotive-configurator-audi-a5-dcc-v4-paint-seat-zup_Anim",
   "vehicleSurfaceBinding": {
     "schemaVersion": "1.0.0",
     "capability": "proxy",

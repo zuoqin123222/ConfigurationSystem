@@ -101,9 +101,9 @@ bool FAutomotiveVehicleMaterialAssignmentAutomationTest::RunTest(
 	(void)Parameters;
 	USkeletalMesh* Vehicle = LoadObject<USkeletalMesh>(
 		nullptr,
-		TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v2-slotted-zup/"
-			"automotive-configurator-audi-a5-dcc-v2-slotted-zup."
-			"automotive-configurator-audi-a5-dcc-v2-slotted-zup"));
+		TEXT("/Game/Configurator/_ImportStaging/a5-dcc-v4-paint-seat-zup/"
+			"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup."
+			"automotive-configurator-audi-a5-dcc-v4-paint-seat-zup"));
 	TestNotNull(TEXT("加载当前完整骨骼车辆"), Vehicle);
 	if (!IsValid(Vehicle))
 	{
@@ -143,11 +143,11 @@ bool FAutomotiveVehicleMaterialAssignmentAutomationTest::RunTest(
 	UMaterialInterface* BasePaint =
 		FindMaterial(TEXT("CS_Validation_Paint"));
 	TestTrue(
-		TEXT("两个车漆槽均以 M_A5_Paint 为资产基线"),
+		TEXT("两个车漆槽均以官方 A5 车漆为资产基线"),
 		IsValid(ConfigurablePaint)
 			&& IsValid(BasePaint)
-			&& ConfigurablePaint->GetFName() == TEXT("M_A5_Paint")
-			&& BasePaint->GetFName() == TEXT("M_A5_Paint"));
+			&& ConfigurablePaint->GetFName() == TEXT("MI_CarPaint_Cherry")
+			&& BasePaint->GetFName() == TEXT("MI_CarPaint_Cherry"));
 	return true;
 }
 
