@@ -72,7 +72,7 @@ import {
 } from './ueBridge'
 import ExperienceControls from './ExperienceControls'
 import InlineColorPicker from './InlineColorPicker'
-import MaterialColorStrip from './MaterialColorStrip'
+import MaterialColorStrip, { type MaterialStripChoice } from './MaterialColorStrip'
 import {
   BLACK_REFERENCE_SURFACES,
   INTERIOR_PART_IMAGES,
@@ -88,6 +88,10 @@ const UPHOLSTERY_MATERIAL_FAMILIES = new Set([
   'alcantara',
   'microfiber',
   'leather',
+  'woven-wool',
+  'woven-fabric',
+])
+const TEXTURE_CARD_MATERIAL_FAMILIES = new Set([
   'woven-wool',
   'woven-fabric',
 ])
@@ -1114,15 +1118,9 @@ function Configurator({
     const selectedVariant = selectedVariantId
       ? catalog.materialVariants.find((variant) => variant.variantId === selectedVariantId)
       : undefined
-    const selectedMaterialFamily = selectedOption?.materialFamilyId
-      ? catalog.materialFamilies.find(
-          (family) => family.materialFamilyId === selectedOption.materialFamilyId,
-        )
-      : undefined
     const selectedPreviewUrl = selectedVariant?.thumbnailUrl
       ?? selectedOption?.ui?.iconUrl
       ?? selectedOption?.thumbnailUrl
-      ?? referenceImageUrl
     const selectedDisplayName = selectedVariant?.displayName ?? selectedOption?.displayName
     const showSeatBackplateFinish = surface.surfaceId === 'seat-shell-back'
       && selectedOption?.optionId === 'seat-shell-custom'
@@ -1177,30 +1175,35 @@ function Configurator({
         <div className="section-title">
           <h3>{surface.displayName}</h3>
         </div>
-        {(selectedOption || referenceImageUrl || blackReference) && (
-          <div className="selected-material-preview" aria-live="polite">
-            <div
-              className={`surface-reference ${blackReference && !selectedPreviewUrl ? 'surface-reference-black' : ''}`}
-              aria-label={`${surface.displayName}当前选定材质预览`}
-            >
-              {selectedPreviewUrl && (
+        {(referenceImageUrl || blackReference) && (
+          <div
+            className={`surface-reference ${blackReference && !referenceImageUrl ? 'surface-reference-black' : ''}`}
+            aria-label={`${surface.displayName}部件参考图`}
+          >
+            {referenceImageUrl && (
               <img
-                src={versionStaticAssetUrl(selectedPreviewUrl)}
-                alt={`${selectedDisplayName ?? surface.displayName}预览`}
+                src={versionStaticAssetUrl(referenceImageUrl)}
+                alt={`${surface.displayName}定制项目参考`}
                 loading="lazy"
                 onError={useDefaultImage}
               />
-              )}
-            </div>
-            {selectedOption && (
-              <div className="selected-material-copy">
-                <div>
-                  <strong>{selectedDisplayName}</strong>
-                  {selectedMaterialFamily && <span>{selectedMaterialFamily.displayName}</span>}
-                </div>
-                <small>{optionPrice(selectedOption)}</small>
-              </div>
             )}
+          </div>
+        )}
+        {selectedOption && (
+          <div className="selected-material-preview" aria-live="polite">
+            <div className="selected-material-copy">
+              <strong>{selectedDisplayName}</strong>
+              <small>{optionPrice(selectedOption)}</small>
+            </div>
+            <div className="selected-material-thumbnail">
+              <img
+                src={versionStaticAssetUrl(selectedPreviewUrl ?? DEFAULT_IMAGE_URL)}
+                alt={`${selectedDisplayName ?? surface.displayName}材质预览`}
+                loading="lazy"
+                onError={useDefaultImage}
+              />
+            </div>
           </div>
         )}
         {(flatOptions.length > 0 || !surface.required) && (
@@ -1246,7 +1249,7 @@ function Configurator({
             const remainingFamilyOptions = familyOptions.filter(
               (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
             )
-            const stripChoices = [
+            const stripChoices: MaterialStripChoice[] = [
               ...(standardFamilyOption
                 ? [{
                     option: standardFamilyOption,
@@ -1279,6 +1282,9 @@ function Configurator({
                 colorHex: optionSwatch(option),
               })),
             ]
+            const useTextureCards = TEXTURE_CARD_MATERIAL_FAMILIES.has(
+              materialFamily.materialFamilyId,
+            )
             const firstVariantChoice = variantChoices[0]
             const activateFamily = () => {
               if (standardFamilyOption) {
@@ -1317,7 +1323,7 @@ function Configurator({
                   <strong>{materialFamily.displayName}</strong>
                   {familySelected && <span className="check" aria-hidden="true">✓</span>}
                 </button>
-                {stripChoices.length > 0 && (
+                {stripChoices.length > 0 && !useTextureCards && (
                   <MaterialColorStrip
                     choices={stripChoices}
                     selectedOptionId={selectedOption?.optionId}
@@ -1330,6 +1336,42 @@ function Configurator({
                       }
                     }}
                   />
+                )}
+                {stripChoices.length > 0 && useTextureCards && (
+                  <div className="choice-grid material-texture-options">
+                    {stripChoices.map((choice) => {
+                      const choiceSelected = choice.option.optionId === selectedOption?.optionId
+                        && choice.materialVariantId === selectedVariantId
+                      return (
+                        <button
+                          key={choice.choiceId}
+                          className={`color-choice ${choiceSelected ? 'selected' : ''}`}
+                          aria-pressed={choiceSelected}
+                          aria-label={`${choice.displayName}，${optionPrice(choice.option)}`}
+                          onClick={() => {
+                            if (choice.materialVariantId) {
+                              setMaterialVariant(
+                                surface.surfaceId,
+                                choice.materialVariantId,
+                                choice.option.optionId,
+                              )
+                            } else {
+                              selectOption(surface.surfaceId, choice.option.optionId)
+                            }
+                          }}
+                        >
+                          <img
+                            src={versionStaticAssetUrl(choice.imageUrl)}
+                            alt=""
+                            loading="lazy"
+                            onError={useDefaultImage}
+                          />
+                          <span className="color-choice-name">{choice.displayName}</span>
+                          <small>{optionPrice(choice.option)}</small>
+                        </button>
+                      )
+                    })}
+                  </div>
                 )}
               </section>
             )

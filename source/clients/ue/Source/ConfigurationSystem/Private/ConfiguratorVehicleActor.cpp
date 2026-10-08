@@ -88,21 +88,21 @@ namespace ConfiguratorVehicle
 	{
 		static const TMap<FName, const TCHAR*> MaterialPaths = {
 			{TEXT("CS_Validation_Glass"),
-				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Glass.M_A5_Glass")},
+				TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Glass/MI_Glass_Windows.MI_Glass_Windows")},
 			{TEXT("CS_Validation_Interior"),
-				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Interior.M_A5_Interior")},
+				TEXT("/Game/References/AutomotiveMats/Materials/Interior/Leather/MI_Leather_Grey.MI_Leather_Grey")},
 			{TEXT("CS_Validation_LightClear"),
-				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_LightClear.M_A5_LightClear")},
+				TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Glass/MI_Glass_Headlights.MI_Glass_Headlights")},
 			{TEXT("CS_Validation_LightRed"),
-				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_LightRed.M_A5_LightRed")},
+				TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Glass/MI_Glass_Tailights.MI_Glass_Tailights")},
 			{TEXT("CS_Validation_Metal"),
-				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Metal.M_A5_Metal")},
+				TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Metal/MI_Metal_Chrome_01.MI_Metal_Chrome_01")},
 			{TEXT("CS_Validation_Paint"),
-				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Paint.M_A5_Paint")},
+				TEXT("/Game/References/AutomotiveMats/Materials/Exterior/CarPaint/MI_CarPaint_Cherry.MI_CarPaint_Cherry")},
 			{TEXT("CS_Validation_Plastic"),
-				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Plastic.M_A5_Plastic")},
+				TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Plastic/MI_Plastic_Satin.MI_Plastic_Satin")},
 			{TEXT("CS_Validation_Rubber"),
-				TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/M_A5_Rubber.M_A5_Rubber")}
+				TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Rubber/MI_Rubber_Rough.MI_Rubber_Rough")}
 		};
 		FName ResolvedSlotName = SlotName;
 		const FString SlotText = SlotName.ToString();
@@ -143,12 +143,15 @@ namespace ConfiguratorVehicle
 		{
 			const UMaterialInterface* ExistingMaterial =
 				Component->GetMaterial(Index);
+			const FString ExistingPath = IsValid(ExistingMaterial)
+				? ExistingMaterial->GetPathName()
+				: FString();
 			const bool bNeedsProjectMaterial =
 				ExistingMaterial == nullptr
-				|| ExistingMaterial->GetPathName().Contains(
-					TEXT("DefaultMaterial"))
-				|| ExistingMaterial->GetPathName().Contains(
-					TEXT("WorldGridMaterial"));
+				|| ExistingPath.Contains(TEXT("DefaultMaterial"))
+				|| ExistingPath.Contains(TEXT("WorldGridMaterial"))
+				|| ExistingPath.Contains(
+					TEXT("/Configurator/AuthorizedAudiA5/Materials/M_A5_"));
 			if (bNeedsProjectMaterial)
 			{
 				if (UMaterialInterface* Material =

@@ -119,7 +119,7 @@ function MaterialStripRange({
     const choice = choices[nextIndex]
     if (choice) onCommit(choice)
   }
-  const position = choices.length <= 1 ? 50 : (draftIndex / (choices.length - 1)) * 100
+  const positionRatio = choices.length <= 1 ? 0.5 : draftIndex / (choices.length - 1)
   const draftChoice = choices[draftIndex]
 
   return (
@@ -128,7 +128,7 @@ function MaterialStripRange({
         className="material-strip-track"
         style={{
           '--material-strip-gradient': stripGradient(choices),
-          '--material-strip-position': `${position}%`,
+          '--material-strip-position-ratio': positionRatio,
           '--material-strip-color': choiceColor(draftChoice),
         } as CSSProperties}
       >

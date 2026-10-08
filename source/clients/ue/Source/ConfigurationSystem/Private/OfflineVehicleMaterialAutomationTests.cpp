@@ -36,24 +36,20 @@ bool FOfflineVehicleMaterialAutomationTest::RunTest(const FString& Parameters)
 	}
 
 	const TCHAR* ExpectedMaterials[] = {
-		TEXT("M_A5_Paint"),
-		TEXT("M_A5_Metal"),
-		TEXT("M_A5_Rubber"),
-		TEXT("M_A5_Interior"),
-		TEXT("M_A5_Plastic"),
-		TEXT("M_A5_Glass"),
-		TEXT("M_A5_LightClear"),
-		TEXT("M_A5_LightRed"),
+		TEXT("/Game/References/AutomotiveMats/Materials/Exterior/CarPaint/MI_CarPaint_Cherry.MI_CarPaint_Cherry"),
+		TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Metal/MI_Metal_Chrome_01.MI_Metal_Chrome_01"),
+		TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Rubber/MI_Rubber_Rough.MI_Rubber_Rough"),
+		TEXT("/Game/References/AutomotiveMats/Materials/Interior/Leather/MI_Leather_Grey.MI_Leather_Grey"),
+		TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Plastic/MI_Plastic_Satin.MI_Plastic_Satin"),
+		TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Glass/MI_Glass_Windows.MI_Glass_Windows"),
+		TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Glass/MI_Glass_Headlights.MI_Glass_Headlights"),
+		TEXT("/Game/References/AutomotiveMats/Materials/Exterior/Glass/MI_Glass_Tailights.MI_Glass_Tailights"),
 	};
-	for (const TCHAR* MaterialName : ExpectedMaterials)
+	for (const TCHAR* MaterialPath : ExpectedMaterials)
 	{
-		const FString ObjectPath = FString::Printf(
-			TEXT("/Game/Configurator/AuthorizedAudiA5/Materials/%s.%s"),
-			MaterialName,
-			MaterialName);
 		TestNotNull(
-			*FString::Printf(TEXT("主分支 A5 材质 %s 可加载"), MaterialName),
-			LoadObject<UObject>(nullptr, *ObjectPath));
+			*FString::Printf(TEXT("授权官方 A5 材质 %s 可加载"), MaterialPath),
+			LoadObject<UObject>(nullptr, MaterialPath));
 	}
 	return true;
 }

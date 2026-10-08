@@ -13,6 +13,7 @@
 # 内部授权资产（不得推送到公开远端）
 /source/clients/ue/SourceAssets/Authorized/
 /source/clients/ue/Content/Configurator/AuthorizedAudiA5/
+/source/clients/ue/Content/References/AutomotiveMats/
 /source/clients/ue/Content/Configurator/_ImportStaging/03FC3866EEB049DE8A1A14D521E49321/
 /source/clients/ue/Content/Configurator/_ImportStaging/CDF1A16663CD47AF963602DE04499D19/
 /source/clients/ue/Content/Configurator/_ImportStaging/FB0AA0CD468DA10EA08DB7B67A3E141C/

@@ -915,7 +915,7 @@ describe('App v2', () => {
       .not.toBeInTheDocument()
   })
 
-  it('材料标题可直接选择材质，公共预览显示选定项名称和价格', async () => {
+  it('材料标题可直接选择材质，部件图与选中材质摘要独立显示', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
@@ -932,11 +932,32 @@ describe('App v2', () => {
       '9743 Nero',
     )
     await waitFor(() => {
-      const preview = document.querySelector('.selected-material-preview')
+      const preview = document.querySelector('.selected-material-preview') as HTMLElement
       expect(preview).toHaveTextContent('9743 Nero')
-      expect(preview).toHaveTextContent('牛皮')
       expect(preview).toHaveTextContent('¥1,280')
+      expect(preview).not.toHaveTextContent('牛皮')
+      expect(preview.querySelector('.selected-material-copy small')).toHaveTextContent('¥1,280')
+      expect(preview.querySelector('.selected-material-thumbnail img'))
+        .toHaveAttribute('alt', '9743 Nero材质预览')
+      expect(preview.querySelector('.surface-reference')).toBeNull()
     })
+  })
+
+  it('织布和织物羊毛保留方块卡', async () => {
+    const user = userEvent.setup()
+    mockApi()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'SC01 定制' })
+
+    await selectStage('内饰')
+    await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
+      .getByRole('button', { name: '车顶' }))
+
+    expect(within(screen.getByRole('region', { name: '棚面配置' }))
+      .getByRole('button', { name: '棚面，免费' })).toHaveClass('color-choice')
+    const source = readFileSync('src/App.tsx', 'utf8')
+    expect(source).toMatch(/TEXTURE_CARD_MATERIAL_FAMILIES[\s\S]*'woven-wool'[\s\S]*'woven-fabric'/)
+    expect(source).toMatch(/useTextureCards[\s\S]*material-texture-options/)
   })
 
   it('自定义车漆显示调色盘和受限参数，并在颜色变化时实时提交', async () => {

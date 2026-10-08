@@ -89,6 +89,31 @@ describe('MaterialColorStrip', () => {
     )
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(screen.queryByText('免费')).not.toBeInTheDocument()
+    expect(document.querySelector<HTMLElement>('.material-strip-track')?.style
+      .getPropertyValue('--material-strip-position-ratio')).toBe('0')
+  })
+
+  it('首尾选择使用 0 到 1 的轨道内位置比例', () => {
+    const { rerender } = render(
+      <MaterialColorStrip
+        choices={choices}
+        selectedOptionId="seat-ultrasuede-black"
+        onCommit={() => undefined}
+      />,
+    )
+    expect(document.querySelector<HTMLElement>('.material-strip-track')?.style
+      .getPropertyValue('--material-strip-position-ratio')).toBe('0')
+
+    rerender(
+      <MaterialColorStrip
+        choices={choices}
+        selectedOptionId="seat-ultrasuede-main"
+        selectedVariantId="ultrasuede-red"
+        onCommit={() => undefined}
+      />,
+    )
+    expect(document.querySelector<HTMLElement>('.material-strip-track')?.style
+      .getPropertyValue('--material-strip-position-ratio')).toBe('1')
   })
 
   it('按价格拆分无前置文字的全宽色彩条并保留传入顺序', () => {
