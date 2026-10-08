@@ -178,3 +178,57 @@ ConfigurationSystem.BakePublishedConfigurations
 测试固定检查 16 个配置各自包含四视角、64 个任务/路径无重复，以及四个 RenderView
 分别拥有唯一标签和唯一相机 Transform。正式车辆接入时只需替换车辆生成/配置映射，
 不得改变任务键、RenderView ID、输出路径和 straight-alpha 清单契约。
+
+## UE5.8 材质视觉基准
+
+该探针只用于测试，不进入发布流程。固定地图
+`/Game/Maps/L_MaterialVisualBaseline` 包含原点朝 `+Z` 的平面、垂直向下的白色
+DirectionalLight、手动曝光相机和 `AMaterialVisualBaselineProbeActor`。创建命令可重复
+执行，并会从空白地图重建相同场景：
+
+```powershell
+& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' `
+  'D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject' `
+  -Unattended -NoSplash -NoSound `
+  '-ExecCmds=ConfigurationSystem.MaterialVisualBaseline.CreateScene;Quit' -log
+```
+
+Editor 探针必须在有真实渲染 viewport 的 UE Editor 中运行。打开 Output Log 控制台后
+执行：
+
+```text
+ConfigurationSystem.MaterialVisualBaseline.Run
+```
+
+可选参数：
+
+```text
+ConfigurationSystem.MaterialVisualBaseline.Run Output=D:/MaterialBaseline StableSeconds=0.5
+```
+
+Runtime 探针从同一地图和同一状态机运行：
+
+```powershell
+& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor.exe' `
+  'D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject' `
+  /Game/Maps/L_MaterialVisualBaseline -game -windowed -ResX=1280 -ResY=720 `
+  -MaterialVisualBaselineProbe `
+  '-MaterialVisualBaselineOutput=D:\MaterialBaseline' `
+  -MaterialVisualBaselineStableSeconds=0.5 -log
+```
+
+探针按 `variantId` 排序遍历 `DA_SC01MaterialLibrary` 的 352 个 variant。每次同步加载并
+赋给固定平面后，至少等待 `StableSeconds`、连续 3 个真实 viewport 帧且全局 shader
+编译队列为空，再回读 sRGB 像素并写 PNG。输出目录包含 `renders/*.png` 和
+`manifest.json`；任一失败会保留 352 项清单并以 `failed` 标记尚未完成项。Runtime
+成功退出码为 `0`，失败为 `12`。
+
+不依赖 GPU 的计划与固定场景自动化：
+
+```powershell
+& 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' `
+  'D:\ConfigurationSystem\source\clients\ue\ConfigurationSystem.uproject' `
+  -Unattended -NullRHI -NoSplash -NoSound `
+  '-ExecCmds=Automation RunTests ConfigurationSystem.Runtime.MaterialVisualBaseline+ConfigurationSystem.Editor.MaterialVisualBaseline;Quit' `
+  '-TestExit=Automation Test Queue Empty' -log
+```

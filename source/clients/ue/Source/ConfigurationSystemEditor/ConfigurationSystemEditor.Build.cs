@@ -15,6 +15,7 @@ public class ConfigurationSystemEditor : ModuleRules
 				"AssetRegistry",
 				"AssetTools",
 				"DesktopPlatform",
+				"EditorSubsystem",
 				"InputCore",
 				"ImageCore",
 				"Json",
