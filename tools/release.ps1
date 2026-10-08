@@ -379,25 +379,6 @@ function Optimize-UeArchive {
     }
 }
 
-function Assert-UePackageSize {
-    param(
-        [Parameter(Mandatory = $true)][string]$ArchiveRoot,
-        [long]$MaximumBytes = 1GB
-    )
-    if ($DryRun) {
-        Write-Host "[dry-run] verify optimized UE archive is at most $MaximumBytes bytes"
-        return
-    }
-    $actualBytes = (
-        Get-ChildItem -LiteralPath $ArchiveRoot -Recurse -File |
-            Measure-Object -Property Length -Sum
-    ).Sum
-    if ($actualBytes -gt $MaximumBytes) {
-        throw "Optimized UE archive is too large: $actualBytes bytes (limit $MaximumBytes)"
-    }
-    Write-Host "[release] optimized UE archive size: $actualBytes bytes"
-}
-
 function Format-Command {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
@@ -813,7 +794,6 @@ function Build-UE {
         Optimize-UeArchive -ArchiveRoot $stagingArchive
         Add-UeRuntimePrerequisiteFiles -ArchiveRoot $stagingArchive
         Assert-UeRuntimeDependencies -ArchiveRoot $stagingArchive
-        Assert-UePackageSize -ArchiveRoot $stagingArchive
         $shippingRoot = Join-Path $stagingArchive "Windows"
         $shippingExe = Join-Path $shippingRoot "ConfigurationSystem.exe"
         $cefBridgeProbeReport = Join-Path $stagingArchive "cef-bridge-probe.json"

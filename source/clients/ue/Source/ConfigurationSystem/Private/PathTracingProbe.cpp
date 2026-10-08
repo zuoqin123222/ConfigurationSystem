@@ -333,6 +333,10 @@ void FPathTracingProbe::Finish(const bool bSuccess, const FString& FailureReason
 		TEXT("r.PathTracing"),
 		TEXT("r.PathTracing.SamplesPerPixel"),
 		TEXT("r.PathTracing.ProgressDisplay"),
+		TEXT("r.PathTracing.Denoiser"),
+		TEXT("r.PathTracing.SpatialDenoiser"),
+		TEXT("r.PathTracing.Denoiser.Name"),
+		TEXT("NNEDenoiser"),
 		TEXT("r.SkinCache.CompileShaders") })
 	{
 		ConsoleVariables->SetObjectField(Name, PathTracingProbe::ReadConsoleVariable(Name));
