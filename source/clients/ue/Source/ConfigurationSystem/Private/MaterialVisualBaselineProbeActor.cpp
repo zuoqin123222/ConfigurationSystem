@@ -5,8 +5,11 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Dom/JsonObject.h"
+#include "Engine/DirectionalLight.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "EngineUtils.h"
+#include "GameFramework/Pawn.h"
 #include "ImageUtils.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInterface.h"
@@ -34,10 +37,12 @@ namespace MaterialVisualBaseline
 		FVector(0.0, 0.0, 650.0),
 		FVector::OneVector);
 	constexpr float CameraFov = 55.0f;
-	constexpr float ExposureBias = 0.0f;
+	constexpr float ExposureBias = 9.0f;
 	constexpr float WhiteTemperature = 6500.0f;
 	constexpr double MinimumControlVisiblePixelRatio = 0.20;
 	constexpr double MinimumControlCenterVisiblePixelRatio = 0.50;
+	constexpr double MinimumControlBorderVisiblePixelRatio = 0.99;
+	constexpr double MinimumDirectionalLightDownAlignment = 0.999;
 	constexpr TCHAR ControlMaterialPath[] =
 		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
 }
@@ -64,7 +69,7 @@ AMaterialVisualBaselineProbeActor::AMaterialVisualBaselineProbeActor()
 	Plane->SetRelativeTransform(FTransform(
 		FRotator::ZeroRotator,
 		FVector::ZeroVector,
-		FVector(5.0, 5.0, 0.05)));
+		FVector(5.0, 9.0, 0.05)));
 
 	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(
 		TEXT("BaselineSceneCapture"));
@@ -76,6 +81,9 @@ AMaterialVisualBaselineProbeActor::AMaterialVisualBaselineProbeActor()
 	SceneCapture->bCaptureEveryFrame = false;
 	SceneCapture->bCaptureOnMovement = false;
 	SceneCapture->bAlwaysPersistRenderingState = true;
+	SceneCapture->PrimitiveRenderMode =
+		ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
+	SceneCapture->ShowOnlyComponent(Plane);
 	SceneCapture->PostProcessBlendWeight = 1.0f;
 	SceneCapture->PostProcessSettings.bOverride_AutoExposureMethod = true;
 	SceneCapture->PostProcessSettings.AutoExposureMethod =
@@ -97,6 +105,10 @@ void AMaterialVisualBaselineProbeActor::BeginPlay()
 	{
 		SetActorTickEnabled(false);
 		return;
+	}
+	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
+	{
+		It->SetActorHiddenInGame(true);
 	}
 
 	FString Output;
@@ -182,6 +194,36 @@ bool AMaterialVisualBaselineProbeActor::StartProbe(
 	if (bRunning)
 	{
 		UE_LOG(LogMaterialVisualBaseline, Warning, TEXT("材质视觉基准探针已在运行。"));
+		return false;
+	}
+	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
+	{
+		It->SetActorHiddenInGame(true);
+	}
+
+	int32 BaselineLightCount = 0;
+	DirectionalLightDownAlignment = -1.0;
+	for (TActorIterator<ADirectionalLight> It(GetWorld()); It; ++It)
+	{
+		if (!It->ActorHasTag(TEXT("MaterialVisualBaseline")))
+		{
+			continue;
+		}
+		++BaselineLightCount;
+		DirectionalLightDownAlignment = FVector::DotProduct(
+			It->GetActorForwardVector(),
+			FVector::DownVector);
+	}
+	if (BaselineLightCount != 1
+		|| DirectionalLightDownAlignment
+			< MaterialVisualBaseline::MinimumDirectionalLightDownAlignment)
+	{
+		Finish(FString::Printf(
+			TEXT("DirectionalLight 必须唯一且沿世界 -Z：count=%d "
+				"downAlignment=%.6f（要求 >= %.3f）。"),
+			BaselineLightCount,
+			DirectionalLightDownAlignment,
+			MaterialVisualBaseline::MinimumDirectionalLightDownAlignment));
 		return false;
 	}
 
@@ -407,12 +449,14 @@ bool AMaterialVisualBaselineProbeActor::CaptureControl(FString& OutError)
 	double MeanLuminance = 0.0;
 	double VisiblePixelRatio = 0.0;
 	double CenterVisiblePixelRatio = 0.0;
+	double BorderVisiblePixelRatio = 0.0;
 	if (!ReadCapture(
 			Pixels,
 			Size,
 			MeanLuminance,
 			VisiblePixelRatio,
 			CenterVisiblePixelRatio,
+			BorderVisiblePixelRatio,
 			OutError))
 	{
 		OutError = TEXT("默认白材质 control：") + OutError;
@@ -431,16 +475,21 @@ bool AMaterialVisualBaselineProbeActor::CaptureControl(FString& OutError)
 	if (VisiblePixelRatio <=
 			MaterialVisualBaseline::MinimumControlVisiblePixelRatio
 		|| CenterVisiblePixelRatio <
-			MaterialVisualBaseline::MinimumControlCenterVisiblePixelRatio)
+			MaterialVisualBaseline::MinimumControlCenterVisiblePixelRatio
+		|| BorderVisiblePixelRatio <
+			MaterialVisualBaseline::MinimumControlBorderVisiblePixelRatio)
 	{
 		OutError = FString::Printf(
 			TEXT("默认白材质 control 未在画面中心大面积可见："
 				"visibleRatio=%.5f（要求 > %.2f），"
-				"centerVisibleRatio=%.5f（要求 >= %.2f）。"),
+				"centerVisibleRatio=%.5f（要求 >= %.2f），"
+				"borderVisibleRatio=%.5f（要求 >= %.2f）。"),
 			VisiblePixelRatio,
 			MaterialVisualBaseline::MinimumControlVisiblePixelRatio,
 			CenterVisiblePixelRatio,
-			MaterialVisualBaseline::MinimumControlCenterVisiblePixelRatio);
+			MaterialVisualBaseline::MinimumControlCenterVisiblePixelRatio,
+			BorderVisiblePixelRatio,
+			MaterialVisualBaseline::MinimumControlBorderVisiblePixelRatio);
 		return false;
 	}
 
@@ -454,6 +503,10 @@ bool AMaterialVisualBaselineProbeActor::CaptureControl(FString& OutError)
 	ControlResult->SetNumberField(
 		TEXT("centerVisiblePixelRatio"),
 		CenterVisiblePixelRatio);
+	ControlResult->SetNumberField(
+		TEXT("borderVisiblePixelRatio"),
+		BorderVisiblePixelRatio);
+	ControlResult->SetNumberField(TEXT("opaquePixelRatio"), 1.0);
 	ControlResult->SetNumberField(
 		TEXT("minimumVisiblePixelRatioExclusive"),
 		MaterialVisualBaseline::MinimumControlVisiblePixelRatio);
@@ -505,12 +558,14 @@ bool AMaterialVisualBaselineProbeActor::CaptureVariant(
 	double MeanLuminance = 0.0;
 	double VisiblePixelRatio = 0.0;
 	double CenterVisiblePixelRatio = 0.0;
+	double BorderVisiblePixelRatio = 0.0;
 	if (!ReadCapture(
 			Pixels,
 			Size,
 			MeanLuminance,
 			VisiblePixelRatio,
 			CenterVisiblePixelRatio,
+			BorderVisiblePixelRatio,
 			OutError))
 	{
 		OutError = FString::Printf(TEXT("variant '%s'：%s"),
@@ -560,6 +615,10 @@ bool AMaterialVisualBaselineProbeActor::CaptureVariant(
 	Item->SetNumberField(
 		TEXT("centerVisiblePixelRatio"),
 		CenterVisiblePixelRatio);
+	Item->SetNumberField(
+		TEXT("borderVisiblePixelRatio"),
+		BorderVisiblePixelRatio);
+	Item->SetNumberField(TEXT("opaquePixelRatio"), 1.0);
 	Item->SetNumberField(TEXT("stableWaitSeconds"), VariantElapsedSeconds);
 	Item->SetNumberField(TEXT("stableFrames"), StableFrameCount);
 	Item->SetStringField(TEXT("status"), TEXT("ready"));
@@ -573,6 +632,7 @@ bool AMaterialVisualBaselineProbeActor::ReadCapture(
 	double& OutMeanLuminance,
 	double& OutVisiblePixelRatio,
 	double& OutCenterVisiblePixelRatio,
+	double& OutBorderVisiblePixelRatio,
 	FString& OutError) const
 {
 	FTextureRenderTargetResource* RenderTargetResource =
@@ -592,22 +652,35 @@ bool AMaterialVisualBaselineProbeActor::ReadCapture(
 	uint64 LuminanceSum = 0;
 	int32 VisiblePixelCount = 0;
 	int32 CenterVisiblePixelCount = 0;
+	int32 BorderVisiblePixelCount = 0;
+	int32 BorderPixelCount = 0;
 	const int32 CenterMinX = OutSize.X / 4;
 	const int32 CenterMaxX = OutSize.X * 3 / 4;
 	const int32 CenterMinY = OutSize.Y / 4;
 	const int32 CenterMaxY = OutSize.Y * 3 / 4;
+	const int32 BorderWidth = FMath::Max(1, OutSize.X / 20);
+	const int32 BorderHeight = FMath::Max(1, OutSize.Y / 20);
 	for (int32 Y = 0; Y < OutSize.Y; ++Y)
 	{
 		for (int32 X = 0; X < OutSize.X; ++X)
 		{
-			const FColor& Pixel = OutPixels[Y * OutSize.X + X];
+			FColor& Pixel = OutPixels[Y * OutSize.X + X];
+			Pixel.A = 255;
 			const uint8 Luminance = static_cast<uint8>(
 				(54 * static_cast<uint32>(Pixel.R)
 					+ 183 * static_cast<uint32>(Pixel.G)
 					+ 19 * static_cast<uint32>(Pixel.B)) >> 8);
 			const bool bVisible = Luminance >= 8;
+			const bool bBorder =
+				X < BorderWidth || X >= OutSize.X - BorderWidth
+				|| Y < BorderHeight || Y >= OutSize.Y - BorderHeight;
 			LuminanceSum += Luminance;
 			VisiblePixelCount += bVisible ? 1 : 0;
+			if (bBorder)
+			{
+				++BorderPixelCount;
+				BorderVisiblePixelCount += bVisible ? 1 : 0;
+			}
 			if (X >= CenterMinX && X < CenterMaxX
 				&& Y >= CenterMinY && Y < CenterMaxY)
 			{
@@ -623,6 +696,8 @@ bool AMaterialVisualBaselineProbeActor::ReadCapture(
 		(CenterMaxX - CenterMinX) * (CenterMaxY - CenterMinY);
 	OutCenterVisiblePixelRatio =
 		static_cast<double>(CenterVisiblePixelCount) / CenterPixelCount;
+	OutBorderVisiblePixelRatio =
+		static_cast<double>(BorderVisiblePixelCount) / BorderPixelCount;
 	return true;
 }
 
@@ -643,13 +718,16 @@ bool AMaterialVisualBaselineProbeActor::WriteManifest(
 	Scene->SetStringField(TEXT("map"), TEXT("/Game/Maps/L_MaterialVisualBaseline"));
 	Scene->SetStringField(
 		TEXT("plane"),
-		TEXT("origin thin slab, top normal +Z, scale (5,5,0.05)"));
+		TEXT("origin thin slab, top normal +Z, scale (5,9,0.05)"));
 	Scene->SetStringField(TEXT("directionalLight"), TEXT("vertical-down"));
-	Scene->SetNumberField(TEXT("directionalLightLux"), 2000.0);
+	Scene->SetNumberField(TEXT("directionalLightLux"), 3.14);
+	Scene->SetNumberField(
+		TEXT("directionalLightDownAlignment"),
+		DirectionalLightDownAlignment);
 	Scene->SetStringField(
 		TEXT("cameraTransform"),
 		TEXT("Location=(0,0,650) Rotation=(-90,0,0) FOV=55"));
-	Scene->SetStringField(TEXT("exposure"), TEXT("manual, bias 0, whiteTemp 6500K"));
+	Scene->SetStringField(TEXT("exposure"), TEXT("manual, bias 9, whiteTemp 6500K"));
 	Scene->SetStringField(TEXT("renderer"), TEXT("SceneCaptureComponent2D"));
 	Scene->SetNumberField(TEXT("renderWidth"), RenderWidth);
 	Scene->SetNumberField(TEXT("renderHeight"), RenderHeight);

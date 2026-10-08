@@ -65,6 +65,61 @@ namespace AutomotiveMaterialGeneration
 				VariantId + TEXT(".png")));
 	}
 
+	FString ThumbnailColorsFilename()
+	{
+		return FPaths::ConvertRelativePathToFull(
+			FPaths::ProjectDir(),
+			TEXT("../../../contracts/fixtures/sc01.material-thumbnail-colors.json"));
+	}
+
+	bool LoadThumbnailColors(
+		TMap<FString, FString>& OutColors,
+		FString& OutError)
+	{
+		OutColors.Reset();
+		FString Json;
+		const FString Filename = ThumbnailColorsFilename();
+		if (!FFileHelper::LoadFileToString(Json, *Filename))
+		{
+			OutError = TEXT("无法读取材质预览中位色：") + Filename;
+			return false;
+		}
+		TSharedPtr<FJsonObject> Root;
+		if (!FJsonSerializer::Deserialize(
+				TJsonReaderFactory<>::Create(Json),
+				Root)
+			|| !Root.IsValid())
+		{
+			OutError = TEXT("材质预览中位色 JSON 非法：") + Filename;
+			return false;
+		}
+		const TSharedPtr<FJsonObject>* Colors = nullptr;
+		if (!Root->TryGetObjectField(TEXT("colors"), Colors)
+			|| Colors == nullptr)
+		{
+			OutError = TEXT("材质预览中位色缺少 colors：") + Filename;
+			return false;
+		}
+		for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair :
+			(*Colors)->Values)
+		{
+			FString Hex;
+			if (Pair.Value.IsValid() && Pair.Value->TryGetString(Hex))
+			{
+				OutColors.Add(Pair.Key, Hex);
+			}
+		}
+		if (OutColors.Num() != 352)
+		{
+			OutError = FString::Printf(
+				TEXT("材质预览中位色应有 352 项，实际为 %d：%s"),
+				OutColors.Num(),
+				*Filename);
+			return false;
+		}
+		return true;
+	}
+
 	bool Save(UObject* Asset)
 	{
 		UPackage* Package = Asset->GetOutermost();
@@ -137,7 +192,7 @@ namespace AutomotiveMaterialGeneration
 		return true;
 	}
 
-	TOptional<FMaterialParameterInfo> FindVectorParameter(
+	TArray<FMaterialParameterInfo> FindVectorParameters(
 		UMaterialInterface* Parent,
 		const TArray<FName>& Candidates)
 	{
@@ -146,20 +201,21 @@ namespace AutomotiveMaterialGeneration
 		Parent->GetAllVectorParameterInfo(Parameters, Ids);
 		for (const FName Candidate : Candidates)
 		{
-			if (const FMaterialParameterInfo* Info =
-				Parameters.FindByPredicate(
+			TArray<FMaterialParameterInfo> Matches =
+				Parameters.FilterByPredicate(
 					[Candidate](const FMaterialParameterInfo& Value)
 					{
 						return Value.Name == Candidate;
-					}))
+					});
+			if (!Matches.IsEmpty())
 			{
-				return *Info;
+				return Matches;
 			}
 		}
 		return {};
 	}
 
-	TOptional<FMaterialParameterInfo> FindTextureParameter(
+	TArray<FMaterialParameterInfo> FindTextureParameters(
 		UMaterialInterface* Parent,
 		const TArray<FName>& Candidates)
 	{
@@ -168,36 +224,36 @@ namespace AutomotiveMaterialGeneration
 		Parent->GetAllTextureParameterInfo(Parameters, Ids);
 		for (const FName Candidate : Candidates)
 		{
-			if (const FMaterialParameterInfo* Info =
-				Parameters.FindByPredicate(
+			TArray<FMaterialParameterInfo> Matches =
+				Parameters.FilterByPredicate(
 					[Candidate](const FMaterialParameterInfo& Value)
 					{
 						return Value.Name == Candidate;
-					}))
+					});
+			if (!Matches.IsEmpty())
 			{
-				return *Info;
+				return Matches;
 			}
 		}
 		return {};
 	}
 
-	void SetFirstVector(
+	void SetMatchingVectors(
 		UMaterialInstanceConstant* Instance,
 		UMaterialInterface* Parent,
 		const TArray<FName>& Candidates,
 		const FLinearColor& Value)
 	{
-		const TOptional<FMaterialParameterInfo> Parameter =
-			FindVectorParameter(Parent, Candidates);
-		if (Parameter.IsSet())
+		for (const FMaterialParameterInfo& Parameter :
+			FindVectorParameters(Parent, Candidates))
 		{
 			Instance->SetVectorParameterValueEditorOnly(
-				Parameter.GetValue(),
+				Parameter,
 				Value);
 		}
 	}
 
-	void SetFirstScalar(
+	void SetMatchingScalars(
 		UMaterialInstanceConstant* Instance,
 		UMaterialInterface* Parent,
 		const TArray<FName>& Candidates,
@@ -208,11 +264,20 @@ namespace AutomotiveMaterialGeneration
 		Parent->GetAllScalarParameterInfo(Parameters, Ids);
 		for (const FName Candidate : Candidates)
 		{
-			if (Parameters.ContainsByPredicate([Candidate](const FMaterialParameterInfo& Info)
-				{ return Info.Name == Candidate; }))
+			const TArray<FMaterialParameterInfo> Matches =
+				Parameters.FilterByPredicate(
+					[Candidate](const FMaterialParameterInfo& Info)
+					{
+						return Info.Name == Candidate;
+					});
+			if (!Matches.IsEmpty())
 			{
-				Instance->SetScalarParameterValueEditorOnly(
-					FMaterialParameterInfo(Candidate), Value);
+				for (const FMaterialParameterInfo& Parameter : Matches)
+				{
+					Instance->SetScalarParameterValueEditorOnly(
+						Parameter,
+						Value);
+				}
 				return;
 			}
 		}
@@ -360,6 +425,13 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 		OutResult.Errors.Add(MoveTemp(CatalogError));
 		return false;
 	}
+	TMap<FString, FString> ThumbnailColors;
+	FString ThumbnailColorError;
+	if (!LoadThumbnailColors(ThumbnailColors, ThumbnailColorError))
+	{
+		OutResult.Errors.Add(MoveTemp(ThumbnailColorError));
+		return false;
+	}
 
 	TMap<FString, UMaterialInterface*> Parents;
 	TSet<UObject*> SkeletalUsageAssets;
@@ -492,6 +564,27 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 			}
 			else
 			{
+				if (const FString* ThumbnailColorHex =
+					ThumbnailColors.Find(VariantId))
+				{
+					FLinearColor ThumbnailColor;
+					if (ParseHexColor(*ThumbnailColorHex, ThumbnailColor))
+					{
+						Color = ThumbnailColor;
+					}
+					else
+					{
+						OutResult.Errors.Add(
+							VariantId
+							+ TEXT(" 的材质预览中位色非法：")
+							+ *ThumbnailColorHex);
+					}
+				}
+				else if (FamilyId != TEXT("woven-wool"))
+				{
+					OutResult.Errors.Add(
+						VariantId + TEXT(" 缺少材质预览中位色。"));
+				}
 				ColorTexture = LoadOrCreateColorTexture(
 					VariantId, FamilyId, Color, OutResult);
 			}
@@ -505,21 +598,26 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 		{
 			OutResult.Errors.Add(VariantId + TEXT(" 既无 sortColorHex 也不是羊毛花纹。"));
 		}
-		const TOptional<FMaterialParameterInfo> TextureParameter =
-			FindTextureParameter(
+		const TArray<FMaterialParameterInfo> TextureParameters =
+			FindTextureParameters(
 			Parent,
 			{TEXT("Diffuse Color Map"), TEXT("Color Map"), TEXT("Base Color Map")});
-		if (ColorTexture == nullptr || !TextureParameter.IsSet())
+		if (ColorTexture == nullptr || TextureParameters.IsEmpty())
 		{
 			OutResult.Errors.Add(VariantId + TEXT(" 的母材质没有可写颜色纹理参数。"));
 		}
 		else
 		{
-			Instance->SetTextureParameterValueEditorOnly(
-				TextureParameter.GetValue(), ColorTexture);
+			for (const FMaterialParameterInfo& TextureParameter :
+				TextureParameters)
+			{
+				Instance->SetTextureParameterValueEditorOnly(
+					TextureParameter,
+					ColorTexture);
+			}
 			// 色卡纹理是最终颜色来源。Black/Charcoal 等母实例通常带有深色 Tint；
 			// 若不显式归一为白色，1x1 色卡纹理会继续被母实例乘暗。
-			SetFirstVector(
+			SetMatchingVectors(
 				Instance,
 				Parent,
 				{TEXT("Tint"), TEXT("BaseColor"), TEXT("Color")},
@@ -527,11 +625,11 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 		}
 		if (FamilyId == TEXT("woven-wool"))
 		{
-			SetFirstScalar(
+			SetMatchingScalars(
 				Instance, Parent,
 				{TEXT("Tile Uniform Scale"), TEXT("Uniform Scale")},
 				WoolScale(DisplayName));
-			SetFirstScalar(
+			SetMatchingScalars(
 				Instance, Parent,
 				{TEXT("Rotation"), TEXT("UV Rotation")},
 				0.0f);

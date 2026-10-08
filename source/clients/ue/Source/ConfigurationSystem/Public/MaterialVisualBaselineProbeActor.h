@@ -81,6 +81,7 @@ private:
 		double& OutMeanLuminance,
 		double& OutVisiblePixelRatio,
 		double& OutCenterVisiblePixelRatio,
+		double& OutBorderVisiblePixelRatio,
 		FString& OutError) const;
 	bool WriteManifest(const FString& FatalError);
 	void Finish(const FString& FatalError);
@@ -110,6 +111,7 @@ private:
 	FString CurrentVariantId;
 	FString CurrentMaterialPath;
 	TSharedPtr<class FJsonObject> ControlResult;
+	double DirectionalLightDownAlignment = -1.0;
 	double TotalElapsedSeconds = 0.0;
 	double VariantElapsedSeconds = 0.0;
 	float StableWaitSeconds = DefaultStableWaitSeconds;

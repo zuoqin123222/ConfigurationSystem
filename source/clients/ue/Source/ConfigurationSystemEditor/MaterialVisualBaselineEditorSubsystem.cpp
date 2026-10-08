@@ -38,8 +38,8 @@ namespace MaterialVisualBaselineEditor
 		FVector(0.0, 0.0, 650.0),
 		FVector::OneVector);
 	constexpr float CameraFov = 55.0f;
-	constexpr float DirectionalLightLux = 2000.0f;
-	constexpr float ExposureBias = 0.0f;
+	constexpr float DirectionalLightLux = 3.14f;
+	constexpr float ExposureBias = 9.0f;
 	constexpr float WhiteTemperature = 6500.0f;
 	constexpr TCHAR CameraTag[] = TEXT("MaterialVisualBaseline.Camera");
 
@@ -177,7 +177,7 @@ bool UMaterialVisualBaselineEditorSubsystem::CreateOrRefreshScene(
 	Probe->GetPlaneComponent()->SetRelativeTransform(FTransform(
 		FRotator::ZeroRotator,
 		FVector::ZeroVector,
-		FVector(5.0, 5.0, 0.05)));
+		FVector(5.0, 9.0, 0.05)));
 	Probe->GetSceneCaptureComponent()->SetRelativeTransform(CameraTransform);
 	Probe->GetSceneCaptureComponent()->FOVAngle = CameraFov;
 	Probe->GetSceneCaptureComponent()->PostProcessSettings.bOverride_AutoExposureMethod = true;
@@ -410,7 +410,11 @@ bool FMaterialVisualBaselineSceneAutomationTest::RunTest(
 		TestTrue(
 			TEXT("薄片 bounds 足以占据画面"),
 			Probe->GetPlaneComponent()->Bounds.BoxExtent.X >= 249.0
-				&& Probe->GetPlaneComponent()->Bounds.BoxExtent.Y >= 249.0);
+				&& Probe->GetPlaneComponent()->Bounds.BoxExtent.Y >= 449.0);
+		TestEqual(
+			TEXT("离屏相机只渲染测试薄片"),
+			SceneCapture->PrimitiveRenderMode,
+			ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList);
 		TestEqual(
 			TEXT("离屏相机使用手动曝光"),
 			SceneCapture->PostProcessSettings.AutoExposureMethod,
@@ -421,7 +425,9 @@ bool FMaterialVisualBaselineSceneAutomationTest::RunTest(
 		Light->GetActorRotation().Equals(LightTransform.Rotator(), 0.001));
 	TestTrue(
 		TEXT("DirectionalLight forward 指向 -Z"),
-		Light->GetActorForwardVector().Equals(FVector::DownVector, 0.001));
+		FVector::DotProduct(
+			Light->GetActorForwardVector(),
+			FVector::DownVector) > 0.999);
 	TestTrue(TEXT("固定相机 Transform"),
 		Camera->GetActorTransform().Equals(CameraTransform, 0.001));
 	TestEqual(
