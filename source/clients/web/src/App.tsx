@@ -1196,6 +1196,107 @@ function Configurator({
       )
     }
 
+    const materialGroupViews = materialGroups.map(
+      ({ materialFamily, options: unsortedFamilyOptions }) => {
+        const familyOptions = unsortedFamilyOptions.slice().sort((left, right) =>
+          Number(right.pricing.isStandard) - Number(left.pricing.isStandard))
+        const familyOptionIds = new Set(familyOptions.map((option) => option.optionId))
+        const familySelected = selectedOption
+          ? familyOptionIds.has(selectedOption.optionId)
+          : false
+        const standardFamilyOption = familyOptions.find(
+          (option) => option.pricing.isStandard && !supportsMaterialVariants(option),
+        )
+        const variantOptions = familyOptions.filter(supportsMaterialVariants)
+        const variantChoices = variantOptions.flatMap((option) =>
+          sortMaterialVariants(
+            materialVariantsForOption(catalog, option),
+            materialFamily.ui?.variantSort,
+          ).map((variant) => ({ option, variant })))
+        const standardFamilyVariant = materialFamily.ui?.defaultVariantId
+          ? catalog.materialVariants.find(
+              (variant) => variant.variantId === materialFamily.ui?.defaultVariantId,
+            )
+          : undefined
+        const remainingFamilyOptions = familyOptions.filter(
+          (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
+        )
+        const stripChoices: MaterialStripChoice[] = [
+          ...(standardFamilyOption
+            ? [{
+                option: standardFamilyOption,
+                choiceId: standardFamilyOption.optionId,
+                displayName: standardFamilyVariant?.displayName
+                  ?? standardFamilyOption.displayName,
+                imageUrl: standardFamilyVariant?.thumbnailUrl
+                  ?? standardFamilyOption.ui?.iconUrl
+                  ?? standardFamilyOption.thumbnailUrl
+                  ?? DEFAULT_IMAGE_URL,
+                colorHex: standardFamilyVariant?.ui?.sortColorHex
+                  ?? optionSwatch(standardFamilyOption),
+              }]
+            : []),
+          ...variantChoices.map(({ option, variant }) => ({
+            option,
+            choiceId: `${option.optionId}:${variant.variantId}`,
+            displayName: variant.displayName,
+            imageUrl: variant.thumbnailUrl,
+            colorHex: variant.ui?.sortColorHex ?? '#777a74',
+            materialVariantId: variant.variantId,
+          })),
+          ...remainingFamilyOptions.map((option) => ({
+            option,
+            choiceId: option.optionId,
+            displayName: option.displayName,
+            imageUrl: option.ui?.iconUrl
+              ?? option.thumbnailUrl
+              ?? DEFAULT_IMAGE_URL,
+            colorHex: optionSwatch(option),
+          })),
+        ]
+        const firstVariantChoice = variantChoices[0]
+        const activateFamily = () => {
+          if (standardFamilyOption) {
+            selectOption(surface.surfaceId, standardFamilyOption.optionId)
+          } else if (firstVariantChoice) {
+            setMaterialVariant(
+              surface.surfaceId,
+              firstVariantChoice.variant.variantId,
+              firstVariantChoice.option.optionId,
+            )
+          } else if (familyOptions[0]) {
+            selectOption(surface.surfaceId, familyOptions[0].optionId)
+          }
+        }
+        return {
+          activateFamily,
+          familySelected,
+          materialFamily,
+          stripChoices,
+          useTextureCards: TEXTURE_CARD_MATERIAL_FAMILIES.has(
+            materialFamily.materialFamilyId,
+          ),
+        }
+      },
+    )
+    const selectedMaterialGroup = materialGroupViews.find(({ familySelected }) => familySelected)
+    const selectedMaterialPreview = selectedOption && (
+      <div className="selected-material-preview" aria-live="polite">
+        <div className="selected-material-copy">
+          <strong>{selectedDisplayName}</strong>
+          <small>{optionPrice(selectedOption)}</small>
+        </div>
+        <div className="selected-material-thumbnail">
+          <img
+            src={versionStaticAssetUrl(selectedPreviewUrl ?? DEFAULT_IMAGE_URL)}
+            alt={`${selectedDisplayName ?? surface.displayName}材质预览`}
+            loading="lazy"
+            onError={useDefaultImage}
+          />
+        </div>
+      </div>
+    )
+
     return (
       <section className="surface-options" key={surface.surfaceId} aria-label={`${surface.displayName}配置`}>
         <div className="section-title">
@@ -1216,22 +1317,7 @@ function Configurator({
             )}
           </div>
         )}
-        {selectedOption && (
-          <div className="selected-material-preview" aria-live="polite">
-            <div className="selected-material-copy">
-              <strong>{selectedDisplayName}</strong>
-              <small>{optionPrice(selectedOption)}</small>
-            </div>
-            <div className="selected-material-thumbnail">
-              <img
-                src={versionStaticAssetUrl(selectedPreviewUrl ?? DEFAULT_IMAGE_URL)}
-                alt={`${selectedDisplayName ?? surface.displayName}材质预览`}
-                loading="lazy"
-                onError={useDefaultImage}
-              />
-            </div>
-          </div>
-        )}
+        {materialGroupViews.length === 0 && selectedMaterialPreview}
         {(flatOptions.length > 0 || !surface.required) && (
           <div className="choice-grid flat-options">
             {!surface.required && (
@@ -1249,109 +1335,34 @@ function Configurator({
             {flatOptions.map((option) => renderFlatOption(option))}
           </div>
         )}
-        <div className="material-options">
-          {materialGroups.map(({ materialFamily, options: unsortedFamilyOptions }) => {
-            const familyOptions = unsortedFamilyOptions.slice().sort((left, right) =>
-              Number(right.pricing.isStandard) - Number(left.pricing.isStandard))
-            const familyOptionIds = new Set(familyOptions.map((option) => option.optionId))
-            const familySelected = selectedOption
-              ? familyOptionIds.has(selectedOption.optionId)
-              : false
-            const standardFamilyOption = familyOptions.find(
-              (option) => option.pricing.isStandard && !supportsMaterialVariants(option),
-            )
-            const variantOptions = familyOptions.filter(supportsMaterialVariants)
-            const variantChoices = variantOptions.flatMap((option) =>
-              sortMaterialVariants(
-                materialVariantsForOption(catalog, option),
-                materialFamily.ui?.variantSort,
-              )
-                .map((variant) => ({ option, variant })))
-            const standardFamilyVariant = materialFamily.ui?.defaultVariantId
-              ? catalog.materialVariants.find(
-                  (variant) => variant.variantId === materialFamily.ui?.defaultVariantId,
-                )
-              : undefined
-            const remainingFamilyOptions = familyOptions.filter(
-              (option) => option !== standardFamilyOption && !supportsMaterialVariants(option),
-            )
-            const stripChoices: MaterialStripChoice[] = [
-              ...(standardFamilyOption
-                ? [{
-                    option: standardFamilyOption,
-                    choiceId: standardFamilyOption.optionId,
-                    displayName: standardFamilyVariant?.displayName
-                      ?? standardFamilyOption.displayName,
-                    imageUrl: standardFamilyVariant?.thumbnailUrl
-                      ?? standardFamilyOption.ui?.iconUrl
-                      ?? standardFamilyOption.thumbnailUrl
-                      ?? DEFAULT_IMAGE_URL,
-                    colorHex: standardFamilyVariant?.ui?.sortColorHex
-                      ?? optionSwatch(standardFamilyOption),
-                  }]
-                : []),
-              ...variantChoices.map(({ option, variant }) => ({
-                option,
-                choiceId: `${option.optionId}:${variant.variantId}`,
-                displayName: variant.displayName,
-                imageUrl: variant.thumbnailUrl,
-                colorHex: variant.ui?.sortColorHex ?? '#777a74',
-                materialVariantId: variant.variantId,
-              })),
-              ...remainingFamilyOptions.map((option) => ({
-                option,
-                choiceId: option.optionId,
-                displayName: option.displayName,
-                imageUrl: option.ui?.iconUrl
-                  ?? option.thumbnailUrl
-                  ?? DEFAULT_IMAGE_URL,
-                colorHex: optionSwatch(option),
-              })),
-            ]
-            const useTextureCards = TEXTURE_CARD_MATERIAL_FAMILIES.has(
-              materialFamily.materialFamilyId,
-            )
-            const firstVariantChoice = variantChoices[0]
-            const activateFamily = () => {
-              if (standardFamilyOption) {
-                selectOption(surface.surfaceId, standardFamilyOption.optionId)
-              } else if (firstVariantChoice) {
-                setMaterialVariant(
-                  surface.surfaceId,
-                  firstVariantChoice.variant.variantId,
-                  firstVariantChoice.option.optionId,
-                )
-              } else if (familyOptions[0]) {
-                selectOption(surface.surfaceId, familyOptions[0].optionId)
-              }
-            }
-            return (
-              <section
-                className={`material-family clickable ${familySelected ? 'selected' : 'muted'}`}
-                key={materialFamily.materialFamilyId}
-                aria-label={`${materialFamily.displayName}材质`}
-                tabIndex={0}
-                onClick={(event) => {
-                  if (!(event.target as HTMLElement).closest('button, input')) activateFamily()
-                }}
-                onKeyDown={(event) => {
-                  if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
-                    event.preventDefault()
-                    activateFamily()
-                  }
-                }}
-              >
+        {materialGroupViews.length > 0 && (
+          <div className="material-options">
+            <div
+              className="material-family-tabs"
+              role="group"
+              aria-label={`${surface.displayName}面料`}
+            >
+              {materialGroupViews.map(({ activateFamily, familySelected, materialFamily }) => (
                 <button
-                  className="material-family-title"
+                  className={familySelected ? 'selected' : ''}
+                  key={materialFamily.materialFamilyId}
                   onClick={activateFamily}
                   aria-pressed={familySelected}
                 >
-                  <strong>{materialFamily.displayName}</strong>
-                  {familySelected && <span className="check" aria-hidden="true">✓</span>}
+                  {materialFamily.displayName}
                 </button>
-                {stripChoices.length > 0 && !useTextureCards && (
+              ))}
+            </div>
+            {selectedMaterialPreview}
+            {selectedMaterialGroup && (
+              <section
+                className="material-family-detail"
+                aria-label={`${selectedMaterialGroup.materialFamily.displayName}材质`}
+              >
+                {selectedMaterialGroup.stripChoices.length > 0
+                  && !selectedMaterialGroup.useTextureCards && (
                   <MaterialColorStrip
-                    choices={stripChoices}
+                    choices={selectedMaterialGroup.stripChoices}
                     selectedOptionId={selectedOption?.optionId}
                     selectedVariantId={selectedVariantId}
                     onCommit={({ option, materialVariantId }) => {
@@ -1363,9 +1374,10 @@ function Configurator({
                     }}
                   />
                 )}
-                {stripChoices.length > 0 && useTextureCards && (
+                {selectedMaterialGroup.stripChoices.length > 0
+                  && selectedMaterialGroup.useTextureCards && (
                   <div className="choice-grid material-texture-options">
-                    {stripChoices.map((choice) => {
+                    {selectedMaterialGroup.stripChoices.map((choice) => {
                       const choiceSelected = choice.option.optionId === selectedOption?.optionId
                         && choice.materialVariantId === selectedVariantId
                       return (
@@ -1400,9 +1412,9 @@ function Configurator({
                   </div>
                 )}
               </section>
-            )
-          })}
-        </div>
+            )}
+          </div>
+        )}
 
         {(selectedOption?.ui?.control === 'color-picker'
           || (!selectedOption?.ui?.control && selectedOption?.parameters.color?.mode === 'custom'))

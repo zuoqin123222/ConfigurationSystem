@@ -261,46 +261,51 @@ button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 }
 .none-option small { float: right; color: #8b8e86; }
 .none-option.selected { border-color: #8c9086; background: #deded8; color: var(--ink); }
-.material-options { display: grid; gap: 8px; }
+.material-options { display: grid; gap: 10px; }
 .flat-options + .material-options:not(:empty) { margin-top: 10px; }
-.material-family {
-  min-width: 0;
-  padding: 5px 7px 7px;
-  border: 1px solid #d9d7cf;
-  border-radius: 8px;
-  background: #fff;
-  transition: opacity .18s ease, background .18s ease;
-}
-.material-family.clickable { cursor: pointer; }
-.material-family.clickable:focus-visible {
-  outline: 3px solid var(--lime);
-  outline-offset: 2px;
-}
-.material-family.selected {
-  padding: 4px 6px 6px;
-  border: 2px solid #242722;
-}
-.material-family.muted { opacity: .5; background: #efefec; }
-.material-family.muted:focus-within,
-.material-family.muted:hover { opacity: .78; }
-.material-family-title {
-  display: grid;
-  grid-template-columns: 1fr 20px;
-  gap: 8px;
-  align-items: center;
+.material-family-tabs {
+  display: flex;
   width: 100%;
-  margin-bottom: 5px;
-  border: 0;
-  border-radius: 4px;
-  padding: 7px 8px;
-  color: var(--ink);
-  text-align: left;
-  background: #f2f1ed;
-  cursor: pointer;
+  overflow-x: auto;
+  border-bottom: 1px solid #d9d7cf;
+  scrollbar-width: none;
 }
-.material-family.selected .material-family-title { background: #e8e8e3; }
-.material-family-title strong { font-size: 14px; }
-.material-family-title > span:not(.check) { color: #656861; font-size: 11px; }
+.material-family-tabs::-webkit-scrollbar { display: none; }
+.material-family-tabs button {
+  position: relative;
+  flex: 1 0 auto;
+  min-width: 68px;
+  min-height: 38px;
+  border: 0;
+  padding: 8px 11px 10px;
+  color: #72756d;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.material-family-tabs button:hover { color: #252823; background: #f3f2ee; }
+.material-family-tabs button.selected {
+  color: #171916;
+  font-weight: 700;
+}
+.material-family-tabs button.selected::after {
+  content: "";
+  position: absolute;
+  right: 9px;
+  bottom: -1px;
+  left: 9px;
+  height: 3px;
+  background: #252823;
+}
+.material-family-tabs button:focus-visible {
+  outline: 3px solid var(--lime);
+  outline-offset: -3px;
+}
+.material-family-detail {
+  min-width: 0;
+  padding: 2px 1px 1px;
+}
 .surface-options + .surface-options {
   margin-top: 18px;
   padding-top: 4px;
@@ -1107,18 +1112,35 @@ html.controls-document #root::-webkit-scrollbar {
 }
 .controls-view.fullscreen.toolbar-idle .experience-toolbar {
   opacity: 0;
-  transform: translate(-50%, 12px);
+  transform: translateY(12px);
 }
 .controls-view.fullscreen.toolbar-idle .experience-toolbar:hover,
 .controls-view.fullscreen.toolbar-idle .experience-toolbar:focus-within {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
 }
 .controls-view .experience-toolbar {
+  right: 0;
   bottom: 8px;
+  left: 0;
+  width: max-content;
+  margin: auto;
   overflow: visible;
+  transform: none;
   scrollbar-width: none;
 }
+.controls-view .camera-popover {
+  position: fixed;
+  right: auto;
+  bottom: 80px;
+  left: 50vw;
+  max-width: calc(100vw - 16px);
+  min-width: 0;
+  transform: translateX(-50%);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.controls-view .camera-popover::-webkit-scrollbar { display: none; }
 .header-stage button img {
   width: 16px;
   height: 16px;

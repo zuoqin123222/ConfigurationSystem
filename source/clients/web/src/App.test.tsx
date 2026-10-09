@@ -971,7 +971,7 @@ describe('App v2', () => {
       .not.toBeInTheDocument()
   })
 
-  it('材料标题可直接选择材质，部件图与选中材质摘要独立显示', async () => {
+  it('面料标签切换时只显示选中材质的色条、价格与预览', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
@@ -980,9 +980,13 @@ describe('App v2', () => {
     await selectStage('内饰')
     await user.click(within(screen.getByRole('region', { name: '部件筛选' }))
       .getByRole('button', { name: '方向盘' }))
+    const familyTabs = within(screen.getByRole('group', { name: '表皮面料' }))
+    expect(screen.queryByRole('region', { name: '牛皮材质' })).not.toBeInTheDocument()
+    await user.click(familyTabs.getByRole('button', { name: '牛皮' }))
+    expect(familyTabs.getByRole('button', { name: '牛皮' }))
+      .toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('region', { name: '奥司维材质' })).not.toBeInTheDocument()
     const leatherFamily = within(screen.getByRole('region', { name: '牛皮材质' }))
-    await user.click(screen.getByRole('region', { name: '牛皮材质' }))
-    expect(screen.getByRole('region', { name: '牛皮材质' })).toHaveClass('selected')
     expect(leatherFamily.getAllByRole('slider')[0]).toHaveAttribute(
       'aria-valuetext',
       '9743 Nero',
@@ -1101,7 +1105,7 @@ describe('App v2', () => {
       .toHaveAttribute('src', '/sc01/option-icons/rainbow.svg')
   })
 
-  it('回中标按四种材料展示免费完整色卡', async () => {
+  it('回中标四种材料按标签切换且同一时间只挂载一组免费色卡', async () => {
     const user = userEvent.setup()
     mockApi()
     render(<App />)
@@ -1113,15 +1117,22 @@ describe('App v2', () => {
     await user.click(within(screen.getByRole('region', { name: '子项筛选' }))
       .getByRole('button', { name: '回中标' }))
 
-    for (const familyName of ['奥司维', 'Alcantara', '超纤皮', '牛皮']) {
-      const family = within(screen.getByRole('region', { name: `${familyName}材质` }))
+    const materialTabs = within(screen.getByRole('group', { name: '回中标面料' }))
+    const familyNames = ['奥司维', 'Alcantara', '超纤皮', '牛皮']
+    expect(materialTabs.getAllByRole('button').map((button) => button.textContent))
+      .toEqual(['奥司维', 'Alcantara', '牛皮', '超纤皮'])
+    for (const familyName of familyNames) {
+      await user.click(materialTabs.getByRole('button', { name: familyName }))
+      const family = within(await screen.findByRole('region', { name: `${familyName}材质` }))
       expect(family.getAllByRole('slider').length).toBeGreaterThan(0)
       expect(family.queryByText('免费')).not.toBeInTheDocument()
+      expect(materialTabs.getByRole('button', { name: familyName }))
+        .toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getAllByRole('region', { name: /材质$/ })).toHaveLength(1)
     }
     expect(document.querySelector('.selected-material-preview')).toHaveTextContent('免费')
-    expect(document.querySelectorAll('.material-family .check')).toHaveLength(1)
-    expect(screen.getByRole('region', { name: '奥司维材质' })).toHaveClass('selected')
-    expect(screen.getByRole('region', { name: 'Alcantara材质' })).not.toHaveClass('selected')
+    expect(screen.getByRole('region', { name: '牛皮材质' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: '奥司维材质' })).not.toBeInTheDocument()
   })
 
   it('渲染相关配置变化会刷新代理图并保留上一张直到新图就绪', async () => {
