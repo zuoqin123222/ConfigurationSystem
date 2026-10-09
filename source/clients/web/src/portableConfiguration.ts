@@ -3,9 +3,9 @@ import { compressToUint8Array, decompressFromUint8Array } from 'lz-string'
 import type { CatalogV2, Customizations, Selections } from './types'
 
 export const PORTABLE_CONFIGURATION_PREFIX = 'SC01CFG1.'
-// QR Version 40-M 的 Byte 模式理论容量约 2.3 KiB。保留编码开销余量，
+// QR Version 40-L 的 Byte 模式理论容量约 2.9 KiB。保留编码开销余量，
 // 让所有可接受的配置字符串都保证能以同一内容生成二维码。
-const MAX_PORTABLE_CONFIGURATION_LENGTH = 2200
+const MAX_PORTABLE_CONFIGURATION_LENGTH = 2900
 const CHECKSUM_HEX_LENGTH = 8
 
 interface PortableConfiguration {
@@ -238,7 +238,7 @@ export function createPortableConfigurationQr(value: string): string {
     throw new Error('配置字符串过大，无法生成二维码')
   }
   try {
-    const qr = qrcode(0, 'M')
+    const qr = qrcode(0, 'L')
     qr.addData(value, 'Byte')
     qr.make()
     return qr.createDataURL(4, 16)

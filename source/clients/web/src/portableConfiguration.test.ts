@@ -60,6 +60,59 @@ describe('portable configuration', () => {
     })
   })
 
+  it('完整 SC01 非默认材质配置仍可生成同内容二维码', () => {
+    const selections = createInitialSelections(bundledCatalog)
+    for (const surfaceId of bundledCatalog.selectionOrder) {
+      const choices = bundledCatalog.options.filter((option) =>
+        option.surfaceId === surfaceId
+        && option.availability?.status !== 'disabled'
+        && Object.entries(option.requiresSelections ?? {}).every(
+          ([requiredSurfaceId, requiredOptionId]) =>
+            selections[requiredSurfaceId] === requiredOptionId,
+        ))
+      const choice = choices.filter((option) => !option.pricing.isStandard).at(-1)
+        ?? choices.at(-1)
+      if (choice) selections[surfaceId] = choice.optionId
+    }
+    const requestedCustomizations = Object.fromEntries(
+      bundledCatalog.selectionOrder.flatMap((surfaceId) => {
+        const option = bundledCatalog.options.find(
+          (item) => item.optionId === selections[surfaceId],
+        )
+        if (
+          !option?.materialFamilyId
+          || (
+            option.ui?.control !== 'material-variant'
+            && option.parameters.color?.mode !== 'variant'
+          )
+        ) return []
+        const variant = bundledCatalog.materialVariants
+          .filter((item) => item.materialFamilyId === option.materialFamilyId)
+          .at(-1)
+        return variant
+          ? [[surfaceId, { materialVariantId: variant.variantId }]]
+          : []
+      }),
+    )
+    const customizations = normalizeCustomizations(
+      bundledCatalog,
+      selections,
+      requestedCustomizations,
+    )
+    const value = createPortableConfiguration(
+      bundledCatalog,
+      selections,
+      customizations,
+    )
+
+    expect(value.length).toBeLessThan(2953)
+    expect(createPortableConfigurationQr(value)).toMatch(/^data:image\/gif;base64,/)
+    expect(parsePortableConfiguration(value, bundledCatalog)).toEqual({
+      selections,
+      customizations,
+    })
+  })
+
   it('拒绝损坏和跨目录版本字符串', () => {
     expect(() => parsePortableConfiguration('invalid', catalogFixture))
       .toThrow('不是受支持的 SC01 配置字符串')

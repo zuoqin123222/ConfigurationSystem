@@ -588,6 +588,8 @@ function Configurator({
   const [transferOpen, setTransferOpen] = useState(false)
   const [transferMode, setTransferMode] = useState<TransferMode>('import')
   const [importValue, setImportValue] = useState('')
+  const [portableValue, setPortableValue] = useState('')
+  const [portableQr, setPortableQr] = useState('')
   const currentCategory = catalog.categories.find((category) => category.categoryId === categoryId)
   const surfacesAsComponents = currentCategory?.ui?.navigationMode === 'surfaces-as-components'
   const components = useMemo(
@@ -609,16 +611,6 @@ function Configurator({
   const currentSurface = catalog.surfaces.find((surface) => surface.surfaceId === surfaceId)
     ?? surfaces[0]
     ?? catalog.surfaces[0]
-  const portableValue = useMemo(
-    () => createPortableConfiguration(catalog, selections, customizations),
-    [catalog, customizations, selections],
-  )
-  const portableQr = useMemo(
-    () => transferOpen && transferMode === 'share'
-      ? createPortableConfigurationQr(portableValue)
-      : '',
-    [portableValue, transferMode, transferOpen],
-  )
   const renderSelectionKey = createRenderCanonicalKey(catalog, selections, customizations)
   const referenceTotal = configurationReferenceTotal(catalog, selections)
   const defaultSelections = useMemo(() => createInitialSelections(catalog), [catalog])
@@ -993,15 +985,23 @@ function Configurator({
   }
 
   const share = async () => {
-    const value = portableValue
-    setImportValue(value)
-    setTransferMode('share')
-    setTransferOpen(true)
-    const url = new URL(window.location.href)
-    url.searchParams.delete('configuration')
-    url.searchParams.set('config', value)
-    if (!embedded) window.history.replaceState(null, '', url)
-    await copyPortableValue(value)
+    try {
+      const value = createPortableConfiguration(catalog, selections, customizations)
+      const qr = createPortableConfigurationQr(value)
+      setPortableValue(value)
+      setPortableQr(qr)
+      setImportValue(value)
+      setTransferMode('share')
+      setTransferOpen(true)
+      const url = new URL(window.location.href)
+      url.searchParams.delete('configuration')
+      url.searchParams.set('config', value)
+      if (!embedded) window.history.replaceState(null, '', url)
+      await copyPortableValue(value)
+    } catch (reason) {
+      setSyncState('error')
+      setSyncMessage(reason instanceof Error ? reason.message : '配置分享失败')
+    }
   }
 
   const importPortable = () => {
