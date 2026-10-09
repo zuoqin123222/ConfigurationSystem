@@ -537,7 +537,7 @@ describe('App v2', () => {
     expect(document.body).toHaveClass('header-document')
   })
 
-  it('embedded 右栏响应顶部阶段事件并触发目录阶段镜头', async () => {
+  it('embedded 右栏响应顶部阶段事件且不使用整层 SVG 颜色滤镜', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     const setcameraid = vi.fn().mockResolvedValue(true)
     const setconfiguratorcategory = vi.fn().mockResolvedValue(true)
@@ -545,6 +545,7 @@ describe('App v2', () => {
     mockApi()
     render(<App />)
     const panel = await screen.findByRole('complementary', { name: '车辆选配' })
+    expect(document.querySelector('.ue-color-corrected')).toBeNull()
 
     fireEvent(window, new CustomEvent('ue-configurator-category', { detail: 'interior' }))
 

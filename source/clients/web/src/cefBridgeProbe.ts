@@ -28,6 +28,32 @@ interface ConfiguratorProbeResult {
     partsPresent: boolean
     scrollTop: number | null
   }>
+  personalization: ConfiguratorDomCheckpoint[]
+}
+
+interface ConfiguratorDomCheckpoint {
+  id: string
+  name: string
+  regionName: string
+  readyState: DocumentReadyState
+  href: string
+  rootPresent: boolean
+  rootChildCount: number
+  shellPresent: boolean
+  panelPresent: boolean
+  panelScrollPresent: boolean
+  regionPresent: boolean
+  partsPresent: boolean
+  panelTextLength: number
+  display: string
+  visibility: string
+  opacity: string
+  width: number
+  height: number
+  scrollTop: number | null
+  scrollHeight: number | null
+  clientHeight: number | null
+  colorCorrectionApplied: boolean
 }
 
 async function waitForElement(
@@ -46,6 +72,88 @@ async function waitForElement(
 function buttonWithText(name: string): HTMLButtonElement | undefined {
   return Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
     .find((button) => button.textContent?.trim() === name)
+}
+
+function partButtonWithText(name: string): HTMLButtonElement | undefined {
+  return Array.from(
+    document.querySelectorAll<HTMLButtonElement>(
+      '[aria-label="部件筛选"] button',
+    ),
+  ).find((button) => button.textContent?.trim() === name)
+}
+
+async function waitForPartButton(
+  name: string,
+  timeoutMilliseconds = 5000,
+): Promise<HTMLButtonElement | null> {
+  const deadline = Date.now() + timeoutMilliseconds
+  while (Date.now() < deadline) {
+    const button = partButtonWithText(name)
+    if (button) return button
+    await delay(50)
+  }
+  return null
+}
+
+function readConfiguratorCheckpoint(
+  id: string,
+  name: string,
+  regionName: string,
+): ConfiguratorDomCheckpoint {
+  const root = document.querySelector<HTMLElement>('#root')
+  const shell = document.querySelector<HTMLElement>('.app-shell.embedded')
+  const panel = document.querySelector<HTMLElement>('.config-panel')
+  const panelScroll = document.querySelector<HTMLElement>('.panel-scroll')
+  const region = document.querySelector<HTMLElement>(
+    `[aria-label="${regionName}"]`,
+  )
+  const parts = document.querySelector<HTMLElement>('[aria-label="部件筛选"]')
+  const style = panel ? window.getComputedStyle(panel) : null
+  const bounds = panel?.getBoundingClientRect()
+  return {
+    id,
+    name,
+    regionName,
+    readyState: document.readyState,
+    href: window.location.href,
+    rootPresent: root !== null,
+    rootChildCount: root?.childElementCount ?? 0,
+    shellPresent: shell !== null,
+    panelPresent: panel !== null,
+    panelScrollPresent: panelScroll !== null,
+    regionPresent: region !== null,
+    partsPresent: parts !== null,
+    panelTextLength: panel?.innerText.length ?? 0,
+    display: style?.display ?? '',
+    visibility: style?.visibility ?? '',
+    opacity: style?.opacity ?? '',
+    width: Math.round(bounds?.width ?? 0),
+    height: Math.round(bounds?.height ?? 0),
+    scrollTop: panelScroll?.scrollTop ?? null,
+    scrollHeight: panelScroll?.scrollHeight ?? null,
+    clientHeight: panelScroll?.clientHeight ?? null,
+    colorCorrectionApplied:
+      document.querySelector('.ue-color-corrected') !== null,
+  }
+}
+
+function checkpointPassed(checkpoint: ConfiguratorDomCheckpoint): boolean {
+  return checkpoint.readyState !== 'loading'
+    && checkpoint.rootPresent
+    && checkpoint.rootChildCount > 0
+    && checkpoint.shellPresent
+    && checkpoint.panelPresent
+    && checkpoint.panelScrollPresent
+    && checkpoint.regionPresent
+    && checkpoint.partsPresent
+    && checkpoint.panelTextLength > 0
+    && checkpoint.display !== 'none'
+    && checkpoint.visibility !== 'hidden'
+    && checkpoint.opacity !== '0'
+    && checkpoint.width > 0
+    && checkpoint.height > 0
+    && checkpoint.scrollTop === 0
+    && !checkpoint.colorCorrectionApplied
 }
 
 async function readExecutor(
@@ -145,6 +253,7 @@ export async function runConfiguratorCefProbe(
     ok: true,
     error: '',
     stages: [],
+    personalization: [],
   }
   try {
     window.dispatchEvent(new CustomEvent('ue-configurator-category', {
@@ -201,6 +310,59 @@ export async function runConfiguratorCefProbe(
       if (!stage.regionPresent || !stage.partsPresent || stage.scrollTop !== 0) {
         throw new Error(`CONFIGURATOR_STAGE_FAILED:${categoryId}`)
       }
+    }
+
+    window.dispatchEvent(new CustomEvent('ue-configurator-category', {
+      detail: 'personalization',
+    }))
+    const personalizationPages = [
+      ['interior-parts', '内饰组件', '内饰组件配置'],
+      ['door-pocket', '门板口袋', '门板口袋配置'],
+      ['stitching', '缝线', '缝线配置'],
+      ['headrest-embroidery', '头枕刺绣', '头枕刺绣配置'],
+      ['door-panel-embroidery', '中板刺绣', '中板刺绣配置'],
+    ] as const
+    for (const [pageId, pageName, regionName] of personalizationPages) {
+      const partButton = await waitForPartButton(pageName)
+      if (!partButton) {
+        throw new Error(`CONFIGURATOR_PERSONALIZATION_BUTTON_MISSING:${pageName}`)
+      }
+      partButton.click()
+      const region = await waitForElement(`[aria-label="${regionName}"]`)
+      if (!region) {
+        throw new Error(`CONFIGURATOR_PERSONALIZATION_REGION_MISSING:${pageName}`)
+      }
+      await delay(0)
+      const checkpoint = readConfiguratorCheckpoint(
+        pageId,
+        pageName,
+        regionName,
+      )
+      result.personalization.push(checkpoint)
+      if (!checkpointPassed(checkpoint)) {
+        throw new Error(`CONFIGURATOR_PERSONALIZATION_FAILED:${pageName}`)
+      }
+    }
+
+    const embroideryRegion = document.querySelector(
+      '[aria-label="中板刺绣配置"]',
+    )
+    const embroideryOption = Array.from(
+      embroideryRegion?.querySelectorAll<HTMLButtonElement>('button') ?? [],
+    ).find((button) => button.getAttribute('aria-label')?.startsWith('中板刺绣，'))
+    if (!embroideryOption) {
+      throw new Error('CONFIGURATOR_DOOR_EMBROIDERY_OPTION_MISSING')
+    }
+    embroideryOption.click()
+    await delay(0)
+    const selectedCheckpoint = readConfiguratorCheckpoint(
+      'door-panel-embroidery-selected',
+      '中板刺绣-已选择',
+      '中板刺绣配置',
+    )
+    result.personalization.push(selectedCheckpoint)
+    if (!checkpointPassed(selectedCheckpoint)) {
+      throw new Error('CONFIGURATOR_DOOR_EMBROIDERY_SELECTION_FAILED')
     }
   } catch (cause) {
     result.ok = false

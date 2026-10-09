@@ -268,8 +268,9 @@ function Showroom() {
 
 export default function App() {
   const view = getAppView()
-  const shouldCorrectUeColor = (view === 'embedded' || view === 'header')
-    && getUeBridge(true) !== null
+  // Applying the SVG transfer filter to the entire scrolling configurator
+  // can make CEF OSR drop the composed layer after repeated page changes.
+  const shouldCorrectUeColor = view === 'header' && getUeBridge(true) !== null
   let content
   if (view === 'controls') {
     content = <ExperienceControls ueEnabled />

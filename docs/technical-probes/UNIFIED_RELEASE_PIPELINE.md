@@ -48,7 +48,10 @@ online 与 embedded 入口。
   -CefBridgeProbe`。探针必须经真实 CEF 反射 bridge 对 `hood`、`door-left`、
   `door-right`、`trunk`、`wheel-spin` 逐项完成 `canPlay`、`focus`、清除和执行器
   状态验证；同时选择“性能 / 下护板 / 铝合金”，连续切换内饰、外饰、个性化和性能，
-  验证右栏配置区、部件区持续存在且滚动位置归零。结果写入
+  再依次进入个性化的内饰组件、门板口袋、缝线、头枕刺绣和中板刺绣并选择付费
+  中板刺绣。每一步必须验证 React 根节点、Embedded shell、右栏、配置区和部件区
+  持续存在且可见、尺寸与文本非空、滚动位置归零，并拒绝重新挂载整层 SVG gamma
+  滤镜。结果写入
   `cef-bridge-probe.json`，任一项失败或 45 秒超时均拒绝晋升。
 - `package/clients/ue/release-manifest.json` 覆盖归档中的逐文件 SHA-256。
 - 包内 WebUI 与离线保存、分享、二维码验证见
