@@ -268,6 +268,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"ConfigurationSystem.Runtime.AutomotiveMaterials.ExhaustiveCoverage",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FAutomotiveMaterialBinderStaticProxyIsolationAutomationTest,
+	"ConfigurationSystem.Runtime.AutomotiveMaterials.StaticProxyIsolation",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
 bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 {
 	(void)Parameters;
@@ -713,6 +718,26 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	TransactionCustomizations.Add(
 		UAutomotiveMaterialBinder::PaintSurfaceId,
 		PaintCustomization);
+	UMeshComponent* PaintTargetComponent = nullptr;
+	FName PaintTargetSlot;
+	int32 PaintTargetIndex = INDEX_NONE;
+	TestTrue(
+		TEXT("自定义车漆前读取唯一骨骼槽"),
+		Binder->GetSingleBoundSlot(
+			UAutomotiveMaterialBinder::PaintSurfaceId,
+			PaintTargetComponent,
+			PaintTargetSlot,
+			PaintTargetIndex));
+	TArray<TObjectPtr<UMaterialInterface>> MaterialsBeforePaint;
+	if (IsValid(PaintTargetComponent))
+	{
+		for (int32 Index = 0;
+			Index < PaintTargetComponent->GetNumMaterials();
+			++Index)
+		{
+			MaterialsBeforePaint.Add(PaintTargetComponent->GetMaterial(Index));
+		}
+	}
 	const FAutomotiveMaterialTransactionResult PaintResult =
 		Binder->ApplyTransaction(TransactionSelections, TransactionCustomizations);
 	TestTrue(TEXT("Binder 原子提交 v2 selections/customizations"), PaintResult.bSuccess);
@@ -725,6 +750,17 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		PaintResult.AppliedSlotIds
 			== TArray<FName>({
 				TEXT("sc01_exterior_body_cover")}));
+	for (int32 Index = 0; Index < MaterialsBeforePaint.Num(); ++Index)
+	{
+		if (Index == PaintTargetIndex)
+		{
+			continue;
+		}
+		TestTrue(
+			*FString::Printf(TEXT("车漆不修改骨骼车非目标槽 %d"), Index),
+			PaintTargetComponent->GetMaterial(Index)
+				== MaterialsBeforePaint[Index]);
+	}
 
 	PaintInstance = Binder->GetPaintMaterialInstance();
 	TestNotNull(TEXT("车身代理使用动态车漆实例"), PaintInstance);
@@ -904,6 +940,128 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 										? TEXT("Metallic Color A")
 										: TEXT("BaseColor")).Equals(AfterColor));
 					}));
+	}
+	return true;
+}
+
+bool FAutomotiveMaterialBinderStaticProxyIsolationAutomationTest::RunTest(
+	const FString& Parameters)
+{
+	(void)Parameters;
+	UAutomotiveCatalogData* Catalog = LoadObject<UAutomotiveCatalogData>(
+		nullptr,
+		TEXT("/Game/SC01/DA_SC01Catalog.DA_SC01Catalog"));
+	UAutomotiveMaterialLibrary* Library = LoadObject<UAutomotiveMaterialLibrary>(
+		nullptr,
+		TEXT("/Game/SC01/Materials/DA_SC01MaterialLibrary.DA_SC01MaterialLibrary"));
+	TestNotNull(TEXT("静态代理测试加载 catalog"), Catalog);
+	TestNotNull(TEXT("静态代理测试加载材质库"), Library);
+	if (!IsValid(Catalog) || !IsValid(Library))
+	{
+		return false;
+	}
+
+	UAutomotiveConfigurationState* State =
+		NewObject<UAutomotiveConfigurationState>(GetTransientPackage());
+	TestTrue(TEXT("静态代理测试初始化状态"), State->Initialize(Catalog));
+	AConfiguratorVehicleActor* Vehicle =
+		NewObject<AConfiguratorVehicleActor>(GetTransientPackage());
+	TestTrue(
+		TEXT("静态代理测试配置骨骼车"),
+		Vehicle->ConfigureAnimationFromCatalog(
+			State->GetCatalogIndex().GetCatalog()));
+	UMeshComponent* PaintProxy =
+		Vehicle->FindCatalogSurfaceTarget(TEXT("sc01_exterior_body_cover"));
+	TestNotNull(TEXT("找到多槽 BodyMesh 车漆代理"), PaintProxy);
+	if (!IsValid(PaintProxy))
+	{
+		return false;
+	}
+	PaintProxy->SetVisibility(true);
+	PaintProxy->SetHiddenInGame(false);
+	TestTrue(TEXT("BodyMesh 代理在绑定前可见"), PaintProxy->IsVisible());
+	TestFalse(TEXT("BodyMesh 代理在绑定前未隐藏"), PaintProxy->bHiddenInGame);
+	TestTrue(
+		TEXT("BodyMesh 代理声明 CS_Validation_Paint 真实槽标签"),
+		PaintProxy->ComponentHasTag(
+			UAutomotiveMaterialBinder::MakeProxyMaterialSlotTag(
+				TEXT("CS_Validation_Paint"))));
+	const int32 PaintIndex =
+		PaintProxy->GetMaterialIndex(TEXT("CS_Validation_Paint"));
+	TestTrue(
+		TEXT("BodyMesh 包含明确 CS_Validation_Paint 槽"),
+		PaintIndex != INDEX_NONE);
+	TestTrue(TEXT("BodyMesh 确实是多材质组件"), PaintProxy->GetNumMaterials() > 1);
+	if (PaintIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	UAutomotiveMaterialBinder* Binder =
+		NewObject<UAutomotiveMaterialBinder>(GetTransientPackage());
+	const bool bBound = Binder->Bind(State, Library, Vehicle);
+	TestTrue(TEXT("多槽车漆代理按明确真实槽绑定"), bBound);
+	if (!bBound)
+	{
+		AddError(FString::Printf(
+			TEXT("静态代理 Binder 绑定失败：%s"),
+			*Binder->GetLastError()));
+		return false;
+	}
+	UMeshComponent* BoundComponent = nullptr;
+	FName BoundSlot;
+	int32 BoundIndex = INDEX_NONE;
+	TestTrue(
+		TEXT("读取唯一车漆绑定槽"),
+		Binder->GetSingleBoundSlot(
+			UAutomotiveMaterialBinder::PaintSurfaceId,
+			BoundComponent,
+			BoundSlot,
+			BoundIndex));
+	TestTrue(TEXT("车漆绑定到 BodyMesh"), BoundComponent == PaintProxy);
+	TestEqual(TEXT("车漆只绑定 CS_Validation_Paint 索引"), BoundIndex, PaintIndex);
+
+	TArray<TObjectPtr<UMaterialInterface>> BeforeMaterials;
+	for (int32 Index = 0; Index < PaintProxy->GetNumMaterials(); ++Index)
+	{
+		BeforeMaterials.Add(PaintProxy->GetMaterial(Index));
+	}
+	UMaterialInstanceDynamic* PaintDynamicBefore =
+		Cast<UMaterialInstanceDynamic>(BeforeMaterials[PaintIndex]);
+	const FLinearColor PaintColorBefore = IsValid(PaintDynamicBefore)
+		? PaintDynamicBefore->K2_GetVectorParameterValue(TEXT("BaseColor"))
+		: FLinearColor::Transparent;
+	TMap<FString, FString> Selections = State->GetSelections();
+	Selections.Add(
+		UAutomotiveMaterialBinder::PaintSurfaceId,
+		TEXT("body-cover-custom"));
+	TMap<FString, FAutomotiveCustomization> Customizations =
+		State->GetCustomizations();
+	FAutomotiveCustomization Customization =
+		AutomotiveMaterialBinderAutomation::MakeNeutralPaintCustomization();
+	Customization.Paint.ColorHex = TEXT("#123456");
+	Customizations.Add(
+		UAutomotiveMaterialBinder::PaintSurfaceId,
+		Customization);
+	const FAutomotiveMaterialTransactionResult Result =
+		Binder->ApplyTransaction(Selections, Customizations);
+	TestTrue(TEXT("多槽代理车漆事务成功"), Result.bSuccess);
+	UMaterialInstanceDynamic* PaintDynamicAfter =
+		Cast<UMaterialInstanceDynamic>(PaintProxy->GetMaterial(PaintIndex));
+	TestTrue(
+		TEXT("CS_Validation_Paint 槽颜色参数发生更新"),
+		IsValid(PaintDynamicAfter)
+			&& !PaintDynamicAfter->K2_GetVectorParameterValue(TEXT("BaseColor"))
+				.Equals(PaintColorBefore, 0.001f));
+	for (int32 Index = 0; Index < BeforeMaterials.Num(); ++Index)
+	{
+		if (Index == PaintIndex)
+		{
+			continue;
+		}
+		TestTrue(
+			*FString::Printf(TEXT("车漆不修改 BodyMesh 非目标槽 %d"), Index),
+			PaintProxy->GetMaterial(Index) == BeforeMaterials[Index]);
 	}
 	return true;
 }

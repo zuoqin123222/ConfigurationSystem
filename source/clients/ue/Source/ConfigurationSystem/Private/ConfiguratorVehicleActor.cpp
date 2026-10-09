@@ -478,17 +478,34 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 		Component->ComponentTags.AddUnique(
 			UAutomotiveMaterialBinder::MakeProxyTargetTag(SlotId));
 	};
-	MarkCatalogProxyTarget(PaintBody, TEXT("A5Proxy_ExteriorBodyCover"));
-	MarkCatalogProxyTarget(Hood, TEXT("A5Proxy_EngineBayCover"));
-	MarkCatalogProxyTarget(Trunk, TEXT("A5Proxy_RearWing"));
-	MarkCatalogProxyTarget(Wheels[0], TEXT("A5Proxy_WheelMaterial"));
+	const auto MarkProxyMaterialSlot = [](UMeshComponent* Component, const FName SlotId)
+	{
+		check(Component != nullptr);
+		Component->ComponentTags.AddUnique(
+			UAutomotiveMaterialBinder::MakeProxyMaterialSlotTag(SlotId));
+	};
+	MarkCatalogProxyTarget(PaintBody, TEXT("sc01_exterior_body_cover"));
+	MarkProxyMaterialSlot(PaintBody, TEXT("CS_Validation_Paint"));
+	MarkCatalogProxyTarget(Hood, TEXT("sc01_engine_bay_cover"));
+	MarkProxyMaterialSlot(Hood, TEXT("CS_Validation_Paint"));
+	MarkCatalogProxyTarget(Trunk, TEXT("sc01_rear_wing"));
+	MarkProxyMaterialSlot(Trunk, TEXT("CS_Validation_Paint"));
+	MarkCatalogProxyTarget(Wheels[0], TEXT("sc01_wheel_material"));
+	MarkProxyMaterialSlot(Wheels[0], TEXT("CS_Validation_Metal"));
 	MarkCatalogProxyTarget(Wheels[1], TEXT("A5Proxy_WheelStyle"));
-	MarkCatalogProxyTarget(Wheels[2], TEXT("A5Proxy_WheelColor"));
-	MarkCatalogProxyTarget(BrakeCalipers[0], TEXT("A5Proxy_FrontCaliperColor"));
-	MarkCatalogProxyTarget(BrakeCalipers[2], TEXT("A5Proxy_RearCaliperColor"));
-	MarkCatalogProxyTarget(LeftDoor, TEXT("A5Proxy_DoorUpper"));
-	MarkCatalogProxyTarget(InteriorCabin, TEXT("A5Proxy_DoorMiddle"));
-	MarkCatalogProxyTarget(Frame, TEXT("A5Proxy_LowerSkirt"));
+	MarkProxyMaterialSlot(Wheels[1], TEXT("CS_Validation_Metal"));
+	MarkCatalogProxyTarget(Wheels[2], TEXT("sc01_wheel_color"));
+	MarkProxyMaterialSlot(Wheels[2], TEXT("CS_Validation_Metal"));
+	MarkCatalogProxyTarget(BrakeCalipers[0], TEXT("sc01_front_caliper_color"));
+	MarkProxyMaterialSlot(BrakeCalipers[0], TEXT("CS_Validation_Metal"));
+	MarkCatalogProxyTarget(BrakeCalipers[2], TEXT("sc01_rear_caliper_color"));
+	MarkProxyMaterialSlot(BrakeCalipers[2], TEXT("CS_Validation_Metal"));
+	MarkCatalogProxyTarget(LeftDoor, TEXT("sc01_door_upper"));
+	MarkProxyMaterialSlot(LeftDoor, TEXT("CS_Validation_Interior"));
+	MarkCatalogProxyTarget(InteriorCabin, TEXT("sc01_door_middle"));
+	MarkProxyMaterialSlot(InteriorCabin, TEXT("CS_Validation_Interior"));
+	MarkCatalogProxyTarget(Frame, TEXT("sc01_lower_skirt"));
+	MarkProxyMaterialSlot(Frame, TEXT("CS_Validation_Plastic"));
 
 	struct FCatalogProxyDefinition
 	{
@@ -499,35 +516,35 @@ AConfiguratorVehicleActor::AConfiguratorVehicleActor()
 	// 这些都是 Authorized Audi A5 代理分件。名称只描述当前 UI 语义映射；
 	// 对 A5 没有同名语义的项目使用尚未占用的可见分件，绝不表示正式 SC01 几何。
 	const FCatalogProxyDefinition CatalogProxyDefinitions[] = {
-		{TEXT("steering-wheel-skin"), TEXT("A5Proxy_SteeringWheelSkin"), TEXT("SM_steeringwheel")},
+		{TEXT("steering-wheel-skin"), TEXT("sc01_steering_wheel_skin"), TEXT("SM_steeringwheel")},
 		{TEXT("steering-wheel-addon"), TEXT("A5Proxy_SteeringWheelAddon"), TEXT("SM_swColumn")},
 		{TEXT("steering-center-mark"), TEXT("A5Proxy_SteeringCenterMark"), TEXT("SM_gaugeBezel")},
-		{TEXT("ip-wings"), TEXT("A5Proxy_IpWings"), TEXT("SM_leftPanelInt")},
-		{TEXT("ip-middle"), TEXT("A5Proxy_IpMiddle"), TEXT("SM_dashMain")},
-		{TEXT("ip-instrument-cover"), TEXT("A5Proxy_IpInstrumentCover"), TEXT("SM_gaugeGlass")},
-		{TEXT("ip-upper-trim"), TEXT("A5Proxy_IpUpperTrim"), TEXT("SM_dashCenter")},
-		{TEXT("ip-lower-trim"), TEXT("A5Proxy_IpLowerTrim"), TEXT("SM_centerconsoleControl")},
-		{TEXT("ip-center-mark"), TEXT("A5Proxy_IpCenterMark"), TEXT("SM_speedNeedle")},
-		{TEXT("a-pillar-surface"), TEXT("A5Proxy_APillarSurface"), TEXT("SM_windshieldTrim")},
-		{TEXT("seat-backrest"), TEXT("A5Proxy_SeatBackrest"), TEXT("SM_seatFrontLeftBackA")},
-		{TEXT("seat-bolster"), TEXT("A5Proxy_SeatBolster"), TEXT("SM_seatFrontRightBotA")},
-		{TEXT("seat-shell-back"), TEXT("A5Proxy_SeatShellBack"), TEXT("SM_seatFrontRightBackA")},
+		{TEXT("ip-wings"), TEXT("sc01_ip_wings"), TEXT("SM_leftPanelInt")},
+		{TEXT("ip-middle"), TEXT("sc01_ip_middle"), TEXT("SM_dashMain")},
+		{TEXT("ip-instrument-cover"), TEXT("sc01_ip_instrument_cover"), TEXT("SM_gaugeGlass")},
+		{TEXT("ip-upper-trim"), TEXT("sc01_ip_upper_trim"), TEXT("SM_dashCenter")},
+		{TEXT("ip-lower-trim"), TEXT("sc01_ip_lower_trim"), TEXT("SM_centerconsoleControl")},
+		{TEXT("ip-center-mark"), TEXT("sc01_ip_center_mark"), TEXT("SM_speedNeedle")},
+		{TEXT("a-pillar-surface"), TEXT("sc01_a_pillar_surface"), TEXT("SM_windshieldTrim")},
+		{TEXT("seat-backrest"), TEXT("sc01_seat_backrest"), TEXT("SM_seatFrontLeftBackA")},
+		{TEXT("seat-bolster"), TEXT("sc01_seat_bolster"), TEXT("SM_seatFrontRightBotA")},
+		{TEXT("seat-shell-back"), TEXT("sc01_seat_shell_back"), TEXT("SM_seatFrontRightBackA")},
 		{TEXT("seat-headrest-mark"), TEXT("A5Proxy_SeatHeadrestMark"), TEXT("SM_seatfrontLeftHeadA")},
-		{TEXT("door-armrest"), TEXT("A5Proxy_DoorArmrest"), TEXT("SM_armrestCover")},
-		{TEXT("door-armrest-skin"), TEXT("A5Proxy_DoorArmrestSkin"), TEXT("SM_doorPanelIntLeft")},
-		{TEXT("storage-soft-bag"), TEXT("A5Proxy_StorageSoftBag"), TEXT("SM_glovebox")},
-		{TEXT("console-armrest-cover"), TEXT("A5Proxy_ConsoleArmrestCover"), TEXT("SM_centerconsoleInt")},
-		{TEXT("console-armrest-side"), TEXT("A5Proxy_ConsoleArmrestSide"), TEXT("SM_centerconsoleSide")},
-		{TEXT("handbrake"), TEXT("A5Proxy_Handbrake"), TEXT("SM_shifter")},
-		{TEXT("roof-surface"), TEXT("A5Proxy_RoofSurface"), TEXT("SM_sunvisorLeft")},
-		{TEXT("interior-painted-parts"), TEXT("A5Proxy_InteriorPaintedParts"), TEXT("SM_heatingControl")},
+		{TEXT("door-armrest"), TEXT("sc01_door_armrest"), TEXT("SM_armrestCover")},
+		{TEXT("door-armrest-skin"), TEXT("sc01_door_armrest_skin"), TEXT("SM_doorPanelIntLeft")},
+		{TEXT("storage-soft-bag"), TEXT("sc01_storage_soft_bag"), TEXT("SM_glovebox")},
+		{TEXT("console-armrest-cover"), TEXT("sc01_console_armrest_cover"), TEXT("SM_centerconsoleInt")},
+		{TEXT("console-armrest-side"), TEXT("sc01_console_armrest_side"), TEXT("SM_centerconsoleSide")},
+		{TEXT("handbrake"), TEXT("sc01_handbrake"), TEXT("SM_shifter")},
+		{TEXT("roof-surface"), TEXT("sc01_roof_surface"), TEXT("SM_sunvisorLeft")},
+		{TEXT("interior-painted-parts"), TEXT("sc01_interior_painted_parts"), TEXT("SM_heatingControl")},
 		{TEXT("door-sill"), TEXT("A5Proxy_DoorSill"), TEXT("SM_doorTrimLeft")},
 		{TEXT("embroidered-logo"), TEXT("A5Proxy_EmbroideredLogo"), TEXT("SM_infoBezel")},
 		{TEXT("headrest-embroidery"), TEXT("A5Proxy_HeadrestEmbroidery"), TEXT("SM_seatfrontRightHeadA")},
 		{TEXT("door-panel-embroidery"), TEXT("A5Proxy_DoorPanelEmbroidery"), TEXT("SM_doorInteriorAright")},
-		{TEXT("center-panel-trim"), TEXT("A5Proxy_CenterPanelTrim"), TEXT("SM_HMI")},
+		{TEXT("center-panel-trim"), TEXT("sc01_center_panel_trim"), TEXT("SM_HMI")},
 		{TEXT("nameplate"), TEXT("A5Proxy_Nameplate"), TEXT("SM_Screen")},
-		{TEXT("pedal"), TEXT("A5Proxy_Pedal"), TEXT("SM_pedals")}
+		{TEXT("pedal"), TEXT("sc01_pedal"), TEXT("SM_pedals")}
 	};
 	for (const FCatalogProxyDefinition& Definition : CatalogProxyDefinitions)
 	{

@@ -38,9 +38,6 @@ struct CONFIGURATIONSYSTEM_API FAutomotiveBoundMaterialSlot
 	TObjectPtr<UMaterialInterface> OriginalMaterial;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UMaterialInterface>> OriginalComponentMaterials;
-
-	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> DynamicInstance;
 
 	UPROPERTY(Transient)
@@ -52,7 +49,6 @@ struct CONFIGURATIONSYSTEM_API FAutomotiveBoundMaterialSlot
 	FString SurfaceId;
 	FName SlotId;
 	int32 MaterialIndex = INDEX_NONE;
-	bool bApplyToAllComponentSlots = false;
 };
 
 /**
@@ -73,6 +69,7 @@ public:
 	static const FString WheelMaterialSurfaceId;
 	static const FString WheelColorSurfaceId;
 	static FName MakeProxyTargetTag(FName SlotId);
+	static FName MakeProxyMaterialSlotTag(FName MaterialSlotId);
 
 	UFUNCTION(BlueprintCallable, Category = "Automotive|Materials")
 	bool Bind(
