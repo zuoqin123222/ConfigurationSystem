@@ -26,8 +26,9 @@
   兼容回退到 v1 代理图。
 - UE controls 视图提供显式 `Path Tracing` 开关，并仅通过白名单 bridge 切换
   `realtime` / `path-tracing`。
-- 分享生成 `SC01CFG1.` 自包含配置字符串和二维码，可从文本或 URL `config` 参数导入；
-  页面不保存草稿，启动时始终进入默认配置。
+- 分享生成紧凑的 `SC01CFG2.` 自包含配置字符串和高纠错二维码，可从文本或 URL
+  `config` 参数导入；读取端兼容旧版 `SC01CFG1.`。页面不保存草稿，启动时始终进入
+  默认配置。
 
 canonical key 与价格始终根据本地选择即时计算，不等待图片解析。
 

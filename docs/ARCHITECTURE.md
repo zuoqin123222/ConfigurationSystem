@@ -64,10 +64,11 @@ HTML/JavaScript 分叉。
 
 ## 可移植配置
 
-保存与分享统一产生 `SC01CFG1.<base64url>`。编码前的 JSON 固定包含格式版本、
-`catalogVersion`、`vehicleId`、按 `selectionOrder` 排序的 `selections` 和
-`customizations`；不包含 Server 配置 ID、URL、镜头或环境状态。文本框、剪贴板、
-URL `config` 参数和二维码使用完全相同的字符串。
+保存与分享统一产生 `SC01CFG2.<base64url>.<CRC32>`。编码前先将完整稳定 ID 按当前
+catalog 映射为 option/material variant 索引数组，再连同格式版本、`catalogVersion`、
+`vehicleId` 和自定义车漆参数压缩；不包含 Server 配置 ID、URL、镜头或环境状态。
+文本框、剪贴板、URL `config` 参数和二维码使用完全相同的字符串。二维码使用高纠错
+等级，读取端继续兼容旧版 `SC01CFG1`。
 
 导入端先校验前缀、格式版本、车型和目录版本，再按当前 catalog 归一化选择与定制。
 因此二维码或文本可在在线 Web 与离线 UE 间互换，但不会绕过当前目录的 option 和

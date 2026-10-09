@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { catalogFixture, initialSelections } from './test/catalogFixture'
 import {
+  createLegacyPortableConfiguration,
   createPortableConfiguration,
   createPortableConfigurationQr,
+  LEGACY_PORTABLE_CONFIGURATION_PREFIX,
   parsePortableConfiguration,
   PORTABLE_CONFIGURATION_PREFIX,
 } from './portableConfiguration'
@@ -44,15 +46,16 @@ describe('portable configuration', () => {
 
   it('二维码编码完整配置字符串', () => {
     const value = createPortableConfiguration(catalogFixture, initialSelections, {})
+    expect(value).toMatch(/^SC01CFG2\./)
     expect(createPortableConfigurationQr(value)).toMatch(/^data:image\/gif;base64,/)
   })
 
-  it('完整 SC01 目录的默认配置可压缩并生成中等纠错二维码', () => {
+  it('完整 SC01 目录的默认配置可压缩并生成高纠错二维码', () => {
     const selections = createInitialSelections(bundledCatalog)
     const customizations = normalizeCustomizations(bundledCatalog, selections, {})
     const value = createPortableConfiguration(bundledCatalog, selections, customizations)
 
-    expect(value.length).toBeLessThan(2953)
+    expect(value.length).toBeLessThan(700)
     expect(createPortableConfigurationQr(value)).toMatch(/^data:image\/gif;base64,/)
     expect(parsePortableConfiguration(value, bundledCatalog)).toEqual({
       selections,
@@ -104,12 +107,32 @@ describe('portable configuration', () => {
       selections,
       customizations,
     )
+    const legacyValue = createLegacyPortableConfiguration(
+      bundledCatalog,
+      selections,
+      customizations,
+    )
 
-    expect(value.length).toBeLessThan(2953)
+    expect(value.length).toBeLessThan(700)
+    expect(value.length).toBeLessThan(legacyValue.length / 2)
     expect(createPortableConfigurationQr(value)).toMatch(/^data:image\/gif;base64,/)
     expect(parsePortableConfiguration(value, bundledCatalog)).toEqual({
       selections,
       customizations,
+    })
+  })
+
+  it('继续读取旧版 SC01CFG1 选配码并归一化为当前配置', () => {
+    const legacyValue = createLegacyPortableConfiguration(
+      catalogFixture,
+      initialSelections,
+      {},
+    )
+
+    expect(legacyValue.startsWith(LEGACY_PORTABLE_CONFIGURATION_PREFIX)).toBe(true)
+    expect(parsePortableConfiguration(legacyValue, catalogFixture)).toEqual({
+      selections: initialSelections,
+      customizations: {},
     })
   })
 

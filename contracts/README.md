@@ -101,12 +101,14 @@ renders/<publicationVersion>/<vehicleId>/<configurationKey>/<renderViewId>.png
 - UE 内嵌页使用 `file:` 协议和 bundle 内 catalog，不调用 health、catalog、
   configuration 或 render API；在线 HTTP(S) 页面继续由 Server 提供 catalog 与
   Bake resolve/image。
-- 可移植配置字符串格式固定为
-  `SC01CFG1.<LZ 压缩 JSON 的无填充 base64url>.<CRC32>`。JSON 字段固定为
-  `format=sc01-config`、`version=1`、`catalogVersion`、`vehicleId`、
-  `selections`、`customizations`；CRC32 用于发现抄写、扫码和截断错误，不作为签名。
-- 字符串最长 2900 个 ASCII 字符，保证能够生成 QR Version 40-L 范围内的二维码；
-  编码端和解码端都必须拒绝超限内容，二维码保留标准静区。
+- 新生成的可移植配置字符串格式为
+  `SC01CFG2.<LZ 压缩索引载荷的无填充 base64url>.<CRC32>`。索引载荷包含格式版本、
+  `catalogVersion`、`vehicleId`、按 `selectionOrder` 排列的 option 索引，以及材质色卡
+  或自定义车漆参数；解码后必须还原为完整稳定 ID 再校验。读取端继续兼容旧版
+  `SC01CFG1.<LZ 压缩 JSON>.<CRC32>`。
+- 新字符串最长 1200 个 ASCII 字符，保证能够生成 QR Version 40-H 范围内的高纠错
+  二维码；旧版 `SC01CFG1` 读取上限仍为 2900。编码端和解码端都必须拒绝超限内容，
+  二维码保留标准静区。
 - `selections` 与 `customizations` 按 catalog `selectionOrder` 写入。保存、分享、
   URL `config` 参数和二维码必须使用同一字符串，不得把 Server ID 或临时 URL
   作为二维码载荷。

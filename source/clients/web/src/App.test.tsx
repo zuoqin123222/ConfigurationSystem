@@ -253,7 +253,7 @@ describe('App v2', () => {
     await selectStage('总览')
     await user.click(screen.getByRole('button', { name: '分享' }))
     await waitFor(() => {
-      expect(writeText.mock.calls[0]?.[0]).toMatch(/^SC01CFG1\./)
+      expect(writeText.mock.calls[0]?.[0]).toMatch(/^SC01CFG2\./)
     })
     expect(screen.getByAltText('当前配置二维码')).toBeInTheDocument()
     expect(screen.getByText('自包含配置字符串已复制')).toBeInTheDocument()
@@ -1167,7 +1167,7 @@ describe('App v2', () => {
     await user.click(screen.getByRole('button', { name: /银色/ }))
     fireEvent(window, new CustomEvent('ue-configurator-header-action', { detail: 'share' }))
     await waitFor(() => {
-      expect(writeText.mock.calls[0]?.[0]).toMatch(/^SC01CFG1\./)
+      expect(writeText.mock.calls[0]?.[0]).toMatch(/^SC01CFG2\./)
     })
     expect(screen.getByAltText('当前配置二维码')).toBeInTheDocument()
     expect(localStorage.length).toBe(0)

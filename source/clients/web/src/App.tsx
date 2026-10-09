@@ -1626,7 +1626,7 @@ function Configurator({
                 >
                   <span className="preset-plus" aria-hidden="true">＋</span>
                   <strong>导入配置</strong>
-                  <small>粘贴 SC01CFG1 选配码</small>
+                  <small>粘贴 SC01CFG2 选配码</small>
                 </button>
               </div>
             </section>
@@ -1754,7 +1754,7 @@ function Configurator({
               aria-label="配置字符串"
               value={importValue}
               onChange={(event) => setImportValue(event.target.value)}
-              placeholder="粘贴 SC01CFG1. 开头的配置字符串"
+              placeholder="粘贴 SC01CFG2. 或旧版 SC01CFG1. 配置字符串"
             />
             <div className="portable-dialog-actions">
               <button onClick={importPortable}>导入</button>

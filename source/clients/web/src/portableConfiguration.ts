@@ -2,10 +2,12 @@ import qrcode from 'qrcode-generator'
 import { compressToUint8Array, decompressFromUint8Array } from 'lz-string'
 import type { CatalogV2, Customizations, Selections } from './types'
 
-export const PORTABLE_CONFIGURATION_PREFIX = 'SC01CFG1.'
-// QR Version 40-L 的 Byte 模式理论容量约 2.9 KiB。保留编码开销余量，
-// 让所有可接受的配置字符串都保证能以同一内容生成二维码。
-const MAX_PORTABLE_CONFIGURATION_LENGTH = 2900
+export const PORTABLE_CONFIGURATION_PREFIX = 'SC01CFG2.'
+export const LEGACY_PORTABLE_CONFIGURATION_PREFIX = 'SC01CFG1.'
+// QR Version 40-H 的 Byte 模式容量约 1.27 KiB。新格式使用目录索引压缩，
+// 将上限收紧到 1200 字符，确保所有新选配码都能使用高纠错二维码。
+const MAX_PORTABLE_CONFIGURATION_LENGTH = 1200
+const MAX_LEGACY_PORTABLE_CONFIGURATION_LENGTH = 2900
 const CHECKSUM_HEX_LENGTH = 8
 
 interface PortableConfiguration {
@@ -16,6 +18,27 @@ interface PortableConfiguration {
   selections: Selections
   customizations: Customizations
 }
+
+type CompactCustomization =
+  | [surfaceIndex: number, type: 1, variantIndex: number]
+  | [
+      surfaceIndex: number,
+      type: 2,
+      colorHex: string,
+      metallic: number,
+      roughness: number,
+      clearCoat: number,
+      orangePeel: number,
+      flakeIntensity: number,
+    ]
+
+type CompactPortableConfiguration = [
+  version: 2,
+  catalogVersion: string,
+  vehicleId: string,
+  selectionIndexes: number[],
+  customizations: CompactCustomization[],
+]
 
 function encodeBase64Url(bytes: Uint8Array): string {
   let binary = ''
@@ -47,6 +70,22 @@ function crc32(bytes: Uint8Array): number {
 
 function checksum(bytes: Uint8Array): string {
   return crc32(bytes).toString(16).padStart(CHECKSUM_HEX_LENGTH, '0').toUpperCase()
+}
+
+function compareId(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
+function optionsForSurface(catalog: CatalogV2, surfaceId: string) {
+  return catalog.options
+    .filter((option) => option.surfaceId === surfaceId)
+    .sort((left, right) => compareId(left.optionId, right.optionId))
+}
+
+function orderedVariants(catalog: CatalogV2) {
+  return catalog.materialVariants
+    .slice()
+    .sort((left, right) => compareId(left.variantId, right.variantId))
 }
 
 function orderedSelections(catalog: CatalogV2, selections: Selections): Selections {
@@ -169,7 +208,176 @@ function validatePayload(
   return true
 }
 
+function compactPayload(
+  catalog: CatalogV2,
+  selections: Selections,
+  customizations: Customizations,
+): CompactPortableConfiguration {
+  const selectionIndexes = catalog.selectionOrder.map((surfaceId) => {
+    const optionId = selections[surfaceId]
+    if (!optionId) return 0
+    const optionIndex = optionsForSurface(catalog, surfaceId)
+      .findIndex((option) => option.optionId === optionId)
+    if (optionIndex < 0) throw new Error('当前配置包含未知选项')
+    return optionIndex + 1
+  })
+  const variants = orderedVariants(catalog)
+  const compactCustomizations = catalog.selectionOrder.flatMap<CompactCustomization>(
+    (surfaceId, surfaceIndex) => {
+      const customization = customizations[surfaceId]
+      if (!customization) return []
+      if ('materialVariantId' in customization) {
+        const variantIndex = variants.findIndex(
+          (variant) => variant.variantId === customization.materialVariantId,
+        )
+        if (variantIndex < 0) throw new Error('当前配置包含未知材质颜色')
+        return [[surfaceIndex, 1, variantIndex]]
+      }
+      return [[
+        surfaceIndex,
+        2,
+        customization.colorHex.slice(1).toUpperCase(),
+        customization.metallic,
+        customization.roughness,
+        customization.clearCoat,
+        customization.orangePeel,
+        customization.flakeIntensity,
+      ]]
+    },
+  )
+  return [
+    2,
+    catalog.catalogVersion,
+    catalog.vehicle.vehicleId,
+    selectionIndexes,
+    compactCustomizations,
+  ]
+}
+
+function expandCompactPayload(
+  value: unknown,
+  catalog: CatalogV2,
+): Partial<PortableConfiguration> | null {
+  if (!Array.isArray(value) || value.length !== 5) return null
+  const [version, catalogVersion, vehicleId, selectionIndexes, compactCustomizations] = value
+  if (
+    version !== 2
+    || catalogVersion !== catalog.catalogVersion
+    || vehicleId !== catalog.vehicle.vehicleId
+    || !Array.isArray(selectionIndexes)
+    || selectionIndexes.length !== catalog.selectionOrder.length
+    || !Array.isArray(compactCustomizations)
+  ) {
+    return null
+  }
+
+  const selections: Selections = {}
+  for (const [surfaceIndex, surfaceId] of catalog.selectionOrder.entries()) {
+    const optionIndex = selectionIndexes[surfaceIndex]
+    if (!Number.isInteger(optionIndex) || optionIndex < 0) return null
+    if (optionIndex === 0) continue
+    const option = optionsForSurface(catalog, surfaceId)[optionIndex - 1]
+    if (!option) return null
+    selections[surfaceId] = option.optionId
+  }
+
+  const variants = orderedVariants(catalog)
+  const customizations: Customizations = {}
+  const customizedSurfaces = new Set<number>()
+  for (const entry of compactCustomizations) {
+    if (!Array.isArray(entry)) return null
+    const surfaceIndex = entry[0]
+    if (
+      !Number.isInteger(surfaceIndex)
+      || surfaceIndex < 0
+      || surfaceIndex >= catalog.selectionOrder.length
+      || customizedSurfaces.has(surfaceIndex)
+    ) {
+      return null
+    }
+    customizedSurfaces.add(surfaceIndex)
+    const surfaceId = catalog.selectionOrder[surfaceIndex]
+    if (entry[1] === 1 && entry.length === 3) {
+      const variantIndex = entry[2]
+      if (!Number.isInteger(variantIndex) || variantIndex < 0) return null
+      const variant = variants[variantIndex]
+      if (!variant) return null
+      customizations[surfaceId] = { materialVariantId: variant.variantId }
+      continue
+    }
+    if (
+      entry[1] === 2
+      && entry.length === 8
+      && typeof entry[2] === 'string'
+      && /^[0-9A-F]{6}$/.test(entry[2])
+      && entry.slice(3).every((item) => typeof item === 'number' && Number.isFinite(item))
+    ) {
+      customizations[surfaceId] = {
+        colorHex: `#${entry[2]}`,
+        metallic: entry[3],
+        roughness: entry[4],
+        clearCoat: entry[5],
+        orangePeel: entry[6],
+        flakeIntensity: entry[7],
+      }
+      continue
+    }
+    return null
+  }
+
+  return {
+    format: 'sc01-config',
+    version: 1,
+    catalogVersion,
+    vehicleId,
+    selections,
+    customizations,
+  }
+}
+
+function encodeEnvelope(prefix: string, payload: unknown, maximumLength: number): string {
+  const compressed = compressToUint8Array(JSON.stringify(payload))
+  const result = `${prefix}${encodeBase64Url(compressed)}.${checksum(compressed)}`
+  if (result.length > maximumLength) {
+    throw new Error('当前配置过大，无法生成二维码选配码')
+  }
+  return result
+}
+
+function decodeEnvelope(input: string, prefix: string): unknown {
+  const encoded = input.slice(prefix.length)
+  const separator = encoded.lastIndexOf('.')
+  if (separator <= 0) throw new Error('missing checksum')
+  const compressed = decodeBase64Url(encoded.slice(0, separator))
+  const expectedChecksum = encoded.slice(separator + 1).toUpperCase()
+  if (
+    !new RegExp(`^[0-9A-F]{${CHECKSUM_HEX_LENGTH}}$`).test(expectedChecksum)
+    || checksum(compressed) !== expectedChecksum
+  ) {
+    throw new Error('checksum mismatch')
+  }
+  const json = decompressFromUint8Array(compressed)
+  if (!json) throw new Error('decompression failed')
+  return JSON.parse(json) as unknown
+}
+
 export function createPortableConfiguration(
+  catalog: CatalogV2,
+  selections: Selections,
+  customizations: Customizations,
+): string {
+  return encodeEnvelope(
+    PORTABLE_CONFIGURATION_PREFIX,
+    compactPayload(
+      catalog,
+      orderedSelections(catalog, selections),
+      orderedCustomizations(catalog, customizations),
+    ),
+    MAX_PORTABLE_CONFIGURATION_LENGTH,
+  )
+}
+
+export function createLegacyPortableConfiguration(
   catalog: CatalogV2,
   selections: Selections,
   customizations: Customizations,
@@ -182,13 +390,11 @@ export function createPortableConfiguration(
     selections: orderedSelections(catalog, selections),
     customizations: orderedCustomizations(catalog, customizations),
   }
-  const compressed = compressToUint8Array(JSON.stringify(payload))
-  const result =
-    `${PORTABLE_CONFIGURATION_PREFIX}${encodeBase64Url(compressed)}.${checksum(compressed)}`
-  if (result.length > MAX_PORTABLE_CONFIGURATION_LENGTH) {
-    throw new Error('当前配置过大，无法生成二维码选配码')
-  }
-  return result
+  return encodeEnvelope(
+    LEGACY_PORTABLE_CONFIGURATION_PREFIX,
+    payload,
+    MAX_LEGACY_PORTABLE_CONFIGURATION_LENGTH,
+  )
 }
 
 export function parsePortableConfiguration(
@@ -196,28 +402,26 @@ export function parsePortableConfiguration(
   catalog: CatalogV2,
 ): { selections: Selections; customizations: Customizations } {
   const input = value.trim()
-  if (!input.startsWith(PORTABLE_CONFIGURATION_PREFIX)) {
+  const prefix = input.startsWith(PORTABLE_CONFIGURATION_PREFIX)
+    ? PORTABLE_CONFIGURATION_PREFIX
+    : input.startsWith(LEGACY_PORTABLE_CONFIGURATION_PREFIX)
+      ? LEGACY_PORTABLE_CONFIGURATION_PREFIX
+      : null
+  if (!prefix) {
     throw new Error('不是受支持的 SC01 配置字符串')
   }
-  if (input.length > MAX_PORTABLE_CONFIGURATION_LENGTH) {
+  const maximumLength = prefix === PORTABLE_CONFIGURATION_PREFIX
+    ? MAX_PORTABLE_CONFIGURATION_LENGTH
+    : MAX_LEGACY_PORTABLE_CONFIGURATION_LENGTH
+  if (input.length > maximumLength) {
     throw new Error('配置字符串超过长度限制')
   }
   let payload: Partial<PortableConfiguration>
   try {
-    const encoded = input.slice(PORTABLE_CONFIGURATION_PREFIX.length)
-    const separator = encoded.lastIndexOf('.')
-    if (separator <= 0) throw new Error('missing checksum')
-    const compressed = decodeBase64Url(encoded.slice(0, separator))
-    const expectedChecksum = encoded.slice(separator + 1).toUpperCase()
-    if (
-      !new RegExp(`^[0-9A-F]{${CHECKSUM_HEX_LENGTH}}$`).test(expectedChecksum)
-      || checksum(compressed) !== expectedChecksum
-    ) {
-      throw new Error('checksum mismatch')
-    }
-    const json = decompressFromUint8Array(compressed)
-    if (!json) throw new Error('decompression failed')
-    payload = JSON.parse(json) as Partial<PortableConfiguration>
+    const decoded = decodeEnvelope(input, prefix)
+    payload = prefix === PORTABLE_CONFIGURATION_PREFIX
+      ? expandCompactPayload(decoded, catalog) ?? {}
+      : decoded as Partial<PortableConfiguration>
   } catch {
     throw new Error('配置字符串已损坏')
   }
@@ -231,14 +435,18 @@ export function parsePortableConfiguration(
 }
 
 export function createPortableConfigurationQr(value: string): string {
-  if (!value.startsWith(PORTABLE_CONFIGURATION_PREFIX)) {
+  const legacy = value.startsWith(LEGACY_PORTABLE_CONFIGURATION_PREFIX)
+  if (!value.startsWith(PORTABLE_CONFIGURATION_PREFIX) && !legacy) {
     throw new Error('不是受支持的 SC01 配置字符串')
   }
-  if (value.length > MAX_PORTABLE_CONFIGURATION_LENGTH) {
+  const maximumLength = legacy
+    ? MAX_LEGACY_PORTABLE_CONFIGURATION_LENGTH
+    : MAX_PORTABLE_CONFIGURATION_LENGTH
+  if (value.length > maximumLength) {
     throw new Error('配置字符串过大，无法生成二维码')
   }
   try {
-    const qr = qrcode(0, 'L')
+    const qr = qrcode(0, legacy ? 'L' : 'H')
     qr.addData(value, 'Byte')
     qr.make()
     return qr.createDataURL(4, 16)
