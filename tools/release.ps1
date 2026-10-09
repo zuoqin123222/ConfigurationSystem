@@ -145,6 +145,29 @@ function Remove-PreparedReleaseStaging {
     }
 }
 
+function Move-ReleaseDirectoryWithRetry {
+    param(
+        [Parameter(Mandatory = $true)][string]$Source,
+        [Parameter(Mandatory = $true)][string]$Destination,
+        [int]$MaxAttempts = 60,
+        [int]$RetryDelayMilliseconds = 500
+    )
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        try {
+            Move-Item -LiteralPath $Source -Destination $Destination
+            return
+        } catch {
+            if ($attempt -eq $MaxAttempts) {
+                throw
+            }
+            if ($attempt -eq 1) {
+                Write-Warning "Release directory is temporarily locked; waiting before retry: $Source"
+            }
+            Start-Sleep -Milliseconds $RetryDelayMilliseconds
+        }
+    }
+}
+
 function Publish-ReleaseTransaction {
     param(
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Items,
@@ -181,12 +204,16 @@ function Publish-ReleaseTransaction {
             New-Item -ItemType Directory -Path (Split-Path -Parent $item.Destination) -Force |
                 Out-Null
             if ($state.HadPrevious) {
-                Move-Item -LiteralPath $item.Destination -Destination $backupPath
+                Move-ReleaseDirectoryWithRetry `
+                    -Source $item.Destination `
+                    -Destination $backupPath
             }
             if ($index -eq $SimulateFailureAtIndex) {
                 throw "Simulated promotion failure at transaction index $index."
             }
-            Move-Item -LiteralPath $item.StagingPath -Destination $item.Destination
+            Move-ReleaseDirectoryWithRetry `
+                -Source $item.StagingPath `
+                -Destination $item.Destination
             $state.Promoted = $true
         }
     } catch {
@@ -196,12 +223,16 @@ function Publish-ReleaseTransaction {
             $state = $states[$index]
             try {
                 if ($state.Promoted -and (Test-Path -LiteralPath $state.Destination)) {
-                    Move-Item -LiteralPath $state.Destination -Destination $state.StagingPath
+                    Move-ReleaseDirectoryWithRetry `
+                        -Source $state.Destination `
+                        -Destination $state.StagingPath
                 } elseif (Test-Path -LiteralPath $state.Destination) {
                     Remove-Item -LiteralPath $state.Destination -Recurse -Force
                 }
                 if ($state.HadPrevious -and (Test-Path -LiteralPath $state.BackupPath)) {
-                    Move-Item -LiteralPath $state.BackupPath -Destination $state.Destination
+                    Move-ReleaseDirectoryWithRetry `
+                        -Source $state.BackupPath `
+                        -Destination $state.Destination
                 }
             } catch {
                 $rollbackErrors += "$($state.Destination): $($_.Exception.Message)"
