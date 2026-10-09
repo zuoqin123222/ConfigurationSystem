@@ -282,10 +282,30 @@ void UConfiguratorPanel::NativeConstruct()
 	StartupFadeElapsed = 0.0f;
 	bStartupFadeActive = false;
 	bStartupRevealTriggered = false;
+#if WITH_EDITOR
+	const UWorld* World = GetWorld();
+	const bool bBypassStartupCurtain = ShouldBypassStartupCurtain(
+		true,
+		World != nullptr && World->WorldType == EWorldType::PIE);
+#else
+	const bool bBypassStartupCurtain = false;
+#endif
 	if (StartupCurtain != nullptr)
 	{
 		StartupCurtain->SetRenderOpacity(1.0f);
-		StartupCurtain->SetVisibility(ESlateVisibility::HitTestInvisible);
+		StartupCurtain->SetVisibility(
+			bBypassStartupCurtain
+				? ESlateVisibility::Collapsed
+				: ESlateVisibility::HitTestInvisible);
+	}
+	if (bBypassStartupCurtain)
+	{
+		bStartupRevealTriggered = true;
+		if (AConfigShowroomPlayerController* Controller =
+			Cast<AConfigShowroomPlayerController>(GetOwningPlayer()))
+		{
+			Controller->BeginInitialCameraReveal();
+		}
 	}
 	SetExperienceQualityLevel(TEXT("epic"));
 	if (FParse::Param(FCommandLine::Get(), TEXT("CefBridgeProbe"))
@@ -337,6 +357,13 @@ bool UConfiguratorPanel::AreStartupPrerequisitesReady(
 {
 	return bSceneReady && bVehicleReady
 		&& ReadyUiCount >= RequiredStartupUiCount;
+}
+
+bool UConfiguratorPanel::ShouldBypassStartupCurtain(
+	const bool bWithEditor,
+	const bool bIsPlayInEditorWorld)
+{
+	return bWithEditor && bIsPlayInEditorWorld;
 }
 
 bool UConfiguratorPanel::ShouldTriggerStartupReveal(

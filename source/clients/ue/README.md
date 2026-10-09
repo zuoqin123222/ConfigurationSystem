@@ -127,6 +127,10 @@ Editor 的 `Tools > Configuration System 管理员导入` 同时提供材质包 
 
 ## Path Tracing 批量 Bake
 
+产品 Path Tracing 使用 UE5.8 自带的 `OpenImageDenoise`（OIDN）空间降噪，
+不启用 `NNEDenoiser` 或 `NNERuntimeORT`。PIE 直接跳过仅用于产品启动体验的
+全屏就绪遮罩；独立运行和 Shipping 仍等待场景、车辆及三个 Web 视图全部就绪后淡入。
+
 批量入口读取仓库 `contracts/fixtures/published-configurations.mvp.json`，按配置顺序和
 `front`、`front-left`、`side`、`rear-right` 顺序生成 16 × 4 个任务。当前渲染对象是
 明确标识为 Authorized Audi A5 proxy 的独立静态分件，不代表正式 SC01。Catalog 的

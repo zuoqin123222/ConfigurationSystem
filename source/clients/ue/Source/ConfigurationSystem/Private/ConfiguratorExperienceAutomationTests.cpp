@@ -109,6 +109,15 @@ bool FPathTracingWarmupPolicyAutomationTest::RunTest(const FString& Parameters)
 			FPathTracingWarmupPolicy::TimeoutSeconds,
 			0.0),
 		EPathTracingWarmupState::Failed);
+	TestTrue(
+		TEXT("PIE 中绕过产品启动遮罩"),
+		UConfiguratorPanel::ShouldBypassStartupCurtain(true, true));
+	TestFalse(
+		TEXT("编辑器非 PIE 世界不绕过启动遮罩"),
+		UConfiguratorPanel::ShouldBypassStartupCurtain(true, false));
+	TestFalse(
+		TEXT("非编辑器构建不绕过启动遮罩"),
+		UConfiguratorPanel::ShouldBypassStartupCurtain(false, true));
 	return true;
 }
 

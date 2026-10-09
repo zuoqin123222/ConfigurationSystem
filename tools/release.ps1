@@ -410,6 +410,24 @@ function Assert-UeArchiveExcludesNne {
     }
 }
 
+function Assert-UeArchiveIncludesOidn {
+    param([Parameter(Mandatory = $true)][string]$ArchiveRoot)
+    if ($DryRun) {
+        Write-Host "[dry-run] verify UE archive contains OIDN path tracing runtime"
+        return
+    }
+    $requiredFiles = @(
+        "Windows\ConfigurationSystem\Binaries\Win64\OpenImageDenoise.dll",
+        "Windows\ConfigurationSystem\Binaries\Win64\OpenImageDenoise_core.dll",
+        "Windows\ConfigurationSystem\Binaries\Win64\OpenImageDenoise_device_cpu.dll"
+    )
+    foreach ($relativePath in $requiredFiles) {
+        if (-not (Test-Path -LiteralPath (Join-Path $ArchiveRoot $relativePath) -PathType Leaf)) {
+            throw "UE release is missing required OIDN runtime: $relativePath"
+        }
+    }
+}
+
 function Optimize-UeArchive {
     param([Parameter(Mandatory = $true)][string]$ArchiveRoot)
     $windowsRoot = Join-Path $ArchiveRoot "Windows"
@@ -852,6 +870,7 @@ function Build-UE {
         Add-UeRuntimePrerequisiteFiles -ArchiveRoot $stagingArchive
         Assert-UeRuntimeDependencies -ArchiveRoot $stagingArchive
         Assert-UeArchiveExcludesNne -ArchiveRoot $stagingArchive
+        Assert-UeArchiveIncludesOidn -ArchiveRoot $stagingArchive
         $shippingRoot = Join-Path $stagingArchive "Windows"
         $shippingExe = Join-Path $shippingRoot "ConfigurationSystem.exe"
         $cefBridgeProbeReport = Join-Path $stagingArchive "cef-bridge-probe.json"

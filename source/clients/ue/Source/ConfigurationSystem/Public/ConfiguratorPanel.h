@@ -41,6 +41,9 @@ public:
 		bool bSceneReady,
 		bool bVehicleReady,
 		int32 ReadyUiCount);
+	static bool ShouldBypassStartupCurtain(
+		bool bWithEditor,
+		bool bIsPlayInEditorWorld);
 	static bool ShouldTriggerStartupReveal(
 		float PreviousProgress,
 		float CurrentProgress);

@@ -80,6 +80,7 @@ test("All dry-run 编排 Web、Server、UE 与 Bake 全链路", () => {
   assert.match(result.stdout, /-applocaldirectory=.*AppLocalDependencies/);
   assert.match(result.stdout, /verify UE archive contains App-local VC\+\+ runtime DLLs/);
   assert.match(result.stdout, /verify UE archive excludes NNE plugins, models, and ONNX Runtime/);
+  assert.match(result.stdout, /verify UE archive contains OIDN path tracing runtime/);
   assert.match(result.stdout, /ConfigurationSystem\.exe.*-CefBridgeProbe/);
   assert.match(result.stdout, /validate Shipping CEF bridge probe report/);
   assert.match(result.stdout, /generate-published-configurations\.mjs/);
@@ -116,21 +117,27 @@ test("UE 发布配置同时启用安装器和 App-local 运行库", () => {
   const source = readFileSync(gameConfig, "utf8");
   assert.match(source, /^IncludePrerequisites=True$/m);
   assert.match(source, /^IncludeAppLocalPrerequisites=True$/m);
+  assert.match(
+    source,
+    /^ProjectDisplayedTitle=.*"SC01 ConfigurationSystem"\)$/m,
+  );
 });
 
-test("UE 项目显式禁用 NNE 降噪与 ONNX Runtime", () => {
+test("UE 项目禁用 NNE 并使用 OIDN 空间降噪", () => {
   const project = JSON.parse(readFileSync(projectConfig, "utf8"));
   const plugins = new Map(
     project.Plugins.map(({ Name, Enabled }) => [Name, Enabled]),
   );
+  assert.equal(plugins.get("OpenImageDenoise"), true);
   assert.equal(plugins.get("NNEDenoiser"), false);
   assert.equal(plugins.get("NNERuntimeORT"), false);
 
   const engine = readFileSync(engineConfig, "utf8");
   assert.match(engine, /^NNEDenoiser=0$/m);
-  assert.match(engine, /^r\.PathTracing\.Denoiser=0$/m);
-  assert.match(engine, /^r\.PathTracing\.SpatialDenoiser=0$/m);
-  assert.doesNotMatch(engine, /^r\.PathTracing\.Denoiser\.Name=/m);
+  assert.match(engine, /^r\.PathTracing\.Denoiser=1$/m);
+  assert.match(engine, /^r\.PathTracing\.SpatialDenoiser=1$/m);
+  assert.match(engine, /^r\.PathTracing\.Denoiser\.Name=OIDN$/m);
+  assert.match(engine, /^r\.PathTracing\.SpatialDenoiser\.Type=0$/m);
 });
 
 test("UE 发布在写 manifest 前执行 Shipping CEF bridge 五动画探针", () => {
@@ -204,6 +211,22 @@ test("UE 归档包含 NNE 或 ONNX Runtime 时拒绝发布", () => {
     0,
     `${forbiddenResult.stdout}\n${forbiddenResult.stderr}`,
   );
+});
+
+test("UE 归档缺少 OIDN 运行库时拒绝发布", () => {
+  const result = runImportedPowerShell(`
+    $root = Join-Path ([IO.Path]::GetTempPath()) ('ue-oidn-runtime-' + [Guid]::NewGuid().ToString('N'));
+    New-Item -ItemType Directory -Path $root -Force | Out-Null;
+    try {
+      Assert-UeArchiveIncludesOidn -ArchiveRoot $root;
+      exit 91;
+    } catch {
+      if ($_.Exception.Message -notmatch 'missing required OIDN runtime') { exit 92 }
+    } finally {
+      Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+    }
+  `);
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
 
 test("ServerWeb 仅在显式 IncludeRenders 时复制 renders", () => {

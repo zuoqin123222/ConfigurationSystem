@@ -25,6 +25,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "OpenImageDenoise",
+			"Enabled": true
+		},
+		{
 			"Name": "NNEDenoiser",
 			"Enabled": false
 		},
