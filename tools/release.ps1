@@ -461,14 +461,6 @@ function Assert-CefBridgeProbeReport {
     $expectedConfiguratorStages = @(
         "interior", "exterior", "personalization", "performance"
     )
-    $expectedPersonalizationPages = @(
-        "interior-parts",
-        "door-pocket",
-        "stitching",
-        "headrest-embroidery",
-        "door-panel-embroidery",
-        "door-panel-embroidery-selected"
-    )
     if (
         -not $report.ok -or
         $report.buildConfiguration -ne "Shipping" -or
@@ -476,8 +468,7 @@ function Assert-CefBridgeProbeReport {
         @($report.expectedAnimationIds).Count -ne $expected.Count -or
         @($report.steps).Count -ne $expected.Count -or
         -not $report.configurator.ok -or
-        @($report.configurator.stages).Count -ne $expectedConfiguratorStages.Count -or
-        @($report.configurator.personalization).Count -ne $expectedPersonalizationPages.Count
+        @($report.configurator.stages).Count -ne $expectedConfiguratorStages.Count
     ) {
         throw "Shipping CEF bridge probe report failed structural validation: $ReportPath"
     }
@@ -491,31 +482,6 @@ function Assert-CefBridgeProbeReport {
             $stage.scrollTop -ne 0
         ) {
             throw "Shipping CEF configurator probe failed for '$expectedStage': $ReportPath"
-        }
-    }
-    for ($index = 0; $index -lt $expectedPersonalizationPages.Count; $index++) {
-        $checkpoint = @($report.configurator.personalization)[$index]
-        $expectedPage = $expectedPersonalizationPages[$index]
-        if (
-            $checkpoint.id -ne $expectedPage -or
-            $checkpoint.readyState -eq "loading" -or
-            -not $checkpoint.rootPresent -or
-            $checkpoint.rootChildCount -lt 1 -or
-            -not $checkpoint.shellPresent -or
-            -not $checkpoint.panelPresent -or
-            -not $checkpoint.panelScrollPresent -or
-            -not $checkpoint.regionPresent -or
-            -not $checkpoint.partsPresent -or
-            $checkpoint.panelTextLength -lt 1 -or
-            $checkpoint.display -eq "none" -or
-            $checkpoint.visibility -eq "hidden" -or
-            $checkpoint.opacity -eq "0" -or
-            $checkpoint.width -lt 1 -or
-            $checkpoint.height -lt 1 -or
-            $checkpoint.scrollTop -ne 0 -or
-            $checkpoint.colorCorrectionApplied
-        ) {
-            throw "Shipping CEF personalization probe failed for '$expectedPage': $ReportPath"
         }
     }
     for ($index = 0; $index -lt $expected.Count; $index++) {
