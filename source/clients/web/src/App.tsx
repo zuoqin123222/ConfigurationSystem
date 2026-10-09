@@ -663,7 +663,9 @@ function Configurator({
     const bridge = getUeBridge(true)
     if (!bridge) return
     cefBridgeProbeStartedRef.current = true
-    void runConfiguratorCefProbe(bridge, catalog.animations)
+    window.requestAnimationFrame(() => {
+      void runConfiguratorCefProbe(bridge, catalog.animations)
+    })
   }, [catalog.animations, embedded])
 
   const focusCatalogNode = useCallback((selection: {
