@@ -97,22 +97,20 @@ FString UConfiguratorPanel::GetConfiguredWebUrl()
 	{
 		BundlePath = TEXT("/") + BundlePath;
 	}
-	FString Url = FString::Printf(
+	return FString::Printf(
 		TEXT("file://%s?source=ue&view=embedded&assetRevision=%u"),
 		*BundlePath,
 		FPlatformProcess::GetCurrentProcessId());
-	if (FParse::Param(FCommandLine::Get(), TEXT("CefBridgeProbe")))
-	{
-		Url += TEXT("&cefBridgeProbe=1");
-	}
-	return Url;
 }
 
 FString UConfiguratorPanel::GetControlsWebUrl()
 {
 	FString Url = GetConfiguredWebUrl();
 	Url.ReplaceInline(TEXT("view=embedded"), TEXT("view=controls"));
-	Url.ReplaceInline(TEXT("&cefBridgeProbe=1"), TEXT(""));
+	if (FParse::Param(FCommandLine::Get(), TEXT("CefBridgeProbe")))
+	{
+		Url += TEXT("&cefBridgeProbe=1");
+	}
 	if (FParse::Param(FCommandLine::Get(), TEXT("FeedbackGuiProbe")))
 	{
 		Url += TEXT("&feedbackGuiProbe=1");

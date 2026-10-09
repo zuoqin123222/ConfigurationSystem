@@ -685,24 +685,6 @@ export const catalogFixture: CatalogV2 = {
           },
         }
       }
-      if (surfaceId === 'lower-skirt') {
-        return {
-          ...result,
-          displayName: '铝合金',
-          materialFamilyId: 'aluminum-alloy',
-          parameters: {
-            color: null,
-            material: { materialFamilyId: 'aluminum-alloy', variantId: null },
-          },
-          pricing: {
-            ...pricing,
-            unitPriceMinor: 300000,
-            quantity: 1,
-            isStandard: false,
-            status: 'confirmed' as const,
-          },
-        }
-      }
       if (surfaceId === 'wheel-style') {
         return {
           ...result,

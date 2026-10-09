@@ -73,7 +73,6 @@ import {
 import ExperienceControls from './ExperienceControls'
 import InlineColorPicker from './InlineColorPicker'
 import MaterialColorStrip, { type MaterialStripChoice } from './MaterialColorStrip'
-import { runConfiguratorCefProbe } from './cefBridgeProbe'
 import {
   BLACK_REFERENCE_SURFACES,
   INTERIOR_PART_IMAGES,
@@ -159,13 +158,6 @@ interface WorkflowStep {
   id: WorkflowStepId
   label: string
   categoryId?: string
-}
-
-interface ConfiguratorNavigation {
-  activeStepId: WorkflowStepId
-  categoryId: string
-  componentId: string
-  surfaceId: string
 }
 
 function workflowSteps(categories: CatalogV2['categories']): WorkflowStep[] {
@@ -564,23 +556,14 @@ function Configurator({
   embedded,
 }: ConfiguratorProps) {
   const initialCategoryId = categoriesInUiOrder(catalog)[0]?.categoryId ?? ''
-  const [navigation, setNavigation] = useState<ConfiguratorNavigation>({
-    activeStepId: 'preset',
-    categoryId: initialCategoryId,
-    componentId: 'all',
-    surfaceId: catalog.selectionOrder[0] ?? '',
-  })
-  const {
-    activeStepId,
-    categoryId,
-    componentId,
-    surfaceId,
-  } = navigation
+  const [categoryId, setCategoryId] = useState(initialCategoryId)
+  const [activeStepId, setActiveStepId] = useState<WorkflowStepId>('preset')
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>('default')
   const [importedPresets, setImportedPresets] = useState<ImportedPreset[]>([])
   const [pendingDeletePresetId, setPendingDeletePresetId] = useState<string | null>(null)
   const nextImportedPresetNumberRef = useRef(1)
-  const panelScrollRef = useRef<HTMLDivElement>(null)
+  const [componentId, setComponentId] = useState('all')
+  const [surfaceId, setSurfaceId] = useState(catalog.selectionOrder[0] ?? '')
   const [activeView, setActiveView] = useState<RenderViewId>('front-left')
   const [render, setRender] = useState<LegacyRender | null>(null)
   const [pendingRender, setPendingRender] = useState<LegacyRender | null>(null)
@@ -593,7 +576,6 @@ function Configurator({
   const [ueMaterialMessage, setUeMaterialMessage] = useState('')
   const ueMaterialTransactionRef = useRef(0)
   const ueMaterialQueueRef = useRef<Promise<void>>(Promise.resolve())
-  const cefBridgeProbeStartedRef = useRef(false)
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [syncMessage, setSyncMessage] = useState('')
   const [transferOpen, setTransferOpen] = useState(false)
@@ -654,18 +636,6 @@ function Configurator({
     })
   }, [embedded])
 
-  useEffect(() => {
-    if (!embedded
-      || cefBridgeProbeStartedRef.current
-      || new URLSearchParams(window.location.search).get('cefBridgeProbe') !== '1') {
-      return
-    }
-    const bridge = getUeBridge(true)
-    if (!bridge) return
-    cefBridgeProbeStartedRef.current = true
-    void runConfiguratorCefProbe(bridge, catalog.animations)
-  }, [catalog.animations, embedded])
-
   const focusCatalogNode = useCallback((selection: {
     categoryId?: string
     componentId?: string
@@ -696,12 +666,10 @@ function Configurator({
     if (!catalog.categories.some((category) => category.categoryId === nextCategoryId)) return
     const firstPage = workflowPagesForCategory(catalog, nextCategoryId)[0]
     const firstSurface = firstPage?.surfaces[0]
-    setNavigation({
-      activeStepId: nextCategoryId,
-      categoryId: nextCategoryId,
-      componentId: firstPage?.componentId ?? 'all',
-      surfaceId: firstSurface?.surfaceId ?? '',
-    })
+    setActiveStepId(nextCategoryId)
+    setCategoryId(nextCategoryId)
+    setComponentId(firstPage?.componentId ?? 'all')
+    setSurfaceId(firstSurface?.surfaceId ?? '')
     if (embedded) {
       focusCatalogNode({
         categoryId: nextCategoryId,
@@ -721,7 +689,7 @@ function Configurator({
 
   const selectWorkflowStep = useCallback((stepId: WorkflowStepId) => {
     if (stepId === 'preset' || stepId === 'summary') {
-      setNavigation((current) => ({ ...current, activeStepId: stepId }))
+      setActiveStepId(stepId)
       if (embedded) void syncUeConfiguratorCategory(getUeBridge(true), stepId)
       return
     }
@@ -730,11 +698,8 @@ function Configurator({
 
   const selectComponent = (nextComponentId: string) => {
     const firstSurface = surfacesForComponent(catalog, nextComponentId)[0]
-    setNavigation((current) => ({
-      ...current,
-      componentId: nextComponentId,
-      surfaceId: firstSurface?.surfaceId ?? nextComponentId,
-    }))
+    setComponentId(nextComponentId)
+    setSurfaceId(firstSurface?.surfaceId ?? nextComponentId)
     focusCatalogNode({
       categoryId,
       componentId: surfacesAsComponents ? undefined : nextComponentId,
@@ -743,7 +708,7 @@ function Configurator({
   }
 
   const selectSurface = (nextSurfaceId: string) => {
-    setNavigation((current) => ({ ...current, surfaceId: nextSurfaceId }))
+    setSurfaceId(nextSurfaceId)
     focusCatalogNode({
       categoryId,
       componentId: currentSurface.componentId,
@@ -759,12 +724,10 @@ function Configurator({
       (category) => category.categoryId === nextCategoryId,
     )
     const nextSurfacesAsComponents = nextCategory?.ui?.navigationMode === 'surfaces-as-components'
-    setNavigation({
-      activeStepId: nextCategoryId,
-      categoryId: nextCategoryId,
-      componentId: nextSurfacesAsComponents ? nextSurface.surfaceId : nextSurface.componentId,
-      surfaceId: nextSurface.surfaceId,
-    })
+    setActiveStepId(nextCategoryId)
+    setCategoryId(nextCategoryId)
+    setComponentId(nextSurfacesAsComponents ? nextSurface.surfaceId : nextSurface.componentId)
+    setSurfaceId(nextSurface.surfaceId)
     focusCatalogNode({
       categoryId: nextCategoryId,
       componentId: nextSurfacesAsComponents ? undefined : nextSurface.componentId,
@@ -814,7 +777,7 @@ function Configurator({
     const handleCategory = (event: Event) => {
       const nextCategoryId = (event as CustomEvent<string>).detail
       if (nextCategoryId === 'preset' || nextCategoryId === 'summary') {
-        setNavigation((current) => ({ ...current, activeStepId: nextCategoryId }))
+        setActiveStepId(nextCategoryId)
         return
       }
       if (catalog.categories.some((category) => category.categoryId === nextCategoryId)) {
@@ -826,8 +789,18 @@ function Configurator({
   }, [applyCategoryLocally, catalog.categories, embedded])
 
   useEffect(() => {
-    if (panelScrollRef.current) panelScrollRef.current.scrollTop = 0
-  }, [activeStepId, categoryId, componentId, surfaceId])
+    const firstComponent = components[0]?.componentId
+    setComponentId((current) =>
+      components.some((component) => component.componentId === current)
+        ? current
+        : (firstComponent ?? 'all'))
+  }, [categoryId, components])
+
+  useEffect(() => {
+    if (!surfaces.some((surface) => surface.surfaceId === surfaceId)) {
+      setSurfaceId(surfaces[0]?.surfaceId ?? catalog.selectionOrder[0])
+    }
+  }, [catalog.selectionOrder, surfaceId, surfaces])
 
   useEffect(() => {
     if (embedded) {
@@ -1052,12 +1025,10 @@ function Configurator({
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
     setSelections(initialSelections)
     setCustomizations(initialCustomizations)
-    setNavigation({
-      activeStepId: 'preset',
-      categoryId: categories[0]?.categoryId ?? '',
-      componentId: 'all',
-      surfaceId: catalog.selectionOrder[0] ?? '',
-    })
+    setCategoryId(categories[0]?.categoryId ?? '')
+    setActiveStepId('preset')
+    setComponentId('all')
+    setSurfaceId(catalog.selectionOrder[0] ?? '')
     setActiveView('front-left')
     renderRequestRef.current = ''
     setRender(null)
@@ -1565,7 +1536,7 @@ function Configurator({
             <p className={`configurator-notice ${syncState}`} role="status">{syncMessage}</p>
           )}
 
-          <div className="panel-scroll" ref={panelScrollRef}>
+          <div className="panel-scroll">
           {activeStepId === 'preset' && (
             <section className="preset-page" aria-label="预设配置">
               <div className="page-heading">
