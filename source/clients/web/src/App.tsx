@@ -575,7 +575,14 @@ function Configurator({
   const [renderMessage, setRenderMessage] = useState('')
   const [ueMaterialMessage, setUeMaterialMessage] = useState('')
   const ueMaterialTransactionRef = useRef(0)
-  const ueMaterialQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const ueMaterialSyncRef = useRef<{
+    running: boolean
+    pending: {
+      transaction: number
+      selections: Selections
+      customizations: Customizations
+    } | null
+  }>({ running: false, pending: null })
   const [syncState, setSyncState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [syncMessage, setSyncMessage] = useState('')
   const [transferOpen, setTransferOpen] = useState(false)
@@ -869,10 +876,21 @@ function Configurator({
     const bridge = getUeBridge(embedded)
     if (!bridge) return
     const transaction = ++ueMaterialTransactionRef.current
-    ueMaterialQueueRef.current = ueMaterialQueueRef.current
-      .then(() => applyUeConfiguration(bridge, selections, customizations))
-      .then((receipt) => {
-        if (transaction !== ueMaterialTransactionRef.current) return
+    const sync = ueMaterialSyncRef.current
+    sync.pending = { transaction, selections, customizations }
+    if (sync.running) return
+
+    sync.running = true
+    const flushLatestConfiguration = async () => {
+      while (sync.pending) {
+        const request = sync.pending
+        sync.pending = null
+        const receipt = await applyUeConfiguration(
+          bridge,
+          request.selections,
+          request.customizations,
+        )
+        if (request.transaction !== ueMaterialTransactionRef.current) continue
         if (!receipt.ok) {
           setUeMaterialMessage(`实时材质未应用：${receipt.message}`)
         } else if (receipt.unsupportedSurfaceIds.length > 0) {
@@ -887,7 +905,10 @@ function Configurator({
         } else {
           setUeMaterialMessage('')
         }
-      })
+      }
+      sync.running = false
+    }
+    void flushLatestConfiguration()
   }, [catalog.surfaces, customizations, embedded, selections])
 
   const selectOption = (surfaceId: string, optionId?: string) => {

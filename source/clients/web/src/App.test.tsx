@@ -628,7 +628,7 @@ describe('App v2', () => {
     )).toHaveAttribute('role', 'status')
   })
 
-  it('embedded bridge 串行提交逐项选择，旧事务未完成时不会乱序覆盖新状态', async () => {
+  it('embedded 从车漆逐页选择非默认项时合并旧事务并只提交最终配置', async () => {
     window.history.replaceState(null, '', '/?source=ue&view=embedded')
     let resolveFirst: ((value: string) => void) | undefined
     const receipt = (configurationId: string) => JSON.stringify({
@@ -653,7 +653,36 @@ describe('App v2', () => {
     await screen.findByRole('heading', { name: 'SC01 定制' })
     await waitFor(() => expect(applyconfigurationtransactionjson).toHaveBeenCalledTimes(1))
     await enterOptions()
-    await user.click(screen.getByRole('button', { name: /银色.*免费/ }))
+
+    let pageCount = 0
+    while (!screen.queryByRole('region', { name: '配置总览' }) && pageCount < 45) {
+      const surfaceSections = Array.from(
+        document.querySelectorAll<HTMLElement>('.surface-options'),
+      )
+      expect(surfaceSections.length).toBeGreaterThan(0)
+      for (const section of surfaceSections) {
+        const sliders = Array.from(
+          section.querySelectorAll<HTMLInputElement>('input[type="range"]'),
+        )
+        const slider = sliders.at(-1)
+        if (slider && slider.max !== slider.value) {
+          fireEvent.input(slider, { target: { value: slider.max } })
+          continue
+        }
+        const choices = Array.from(
+          section.querySelectorAll<HTMLButtonElement>('button.color-choice'),
+        )
+        const choice = [...choices].reverse().find(
+          (button) => button.getAttribute('aria-pressed') !== 'true',
+        )
+        if (choice) await user.click(choice)
+      }
+      await user.click(screen.getByRole('button', { name: '下一步' }))
+      pageCount += 1
+    }
+
+    expect(screen.getByRole('region', { name: '配置总览' })).toBeInTheDocument()
+    expect(pageCount).toBeGreaterThan(30)
     expect(applyconfigurationtransactionjson).toHaveBeenCalledTimes(1)
 
     await act(async () => {
@@ -663,7 +692,13 @@ describe('App v2', () => {
     const latestPayload = JSON.parse(
       String(applyconfigurationtransactionjson.mock.calls[1][0]),
     )
-    expect(latestPayload.selections['exterior-body-cover']).toBe('body-cover-silver')
+    const changedSelections = Object.entries(initialSelections).filter(
+      ([surfaceId, optionId]) => latestPayload.selections[surfaceId] !== optionId,
+    )
+    const customizedSurfaceCount = Object.keys(latestPayload.customizations).length
+    expect(changedSelections.length).toBeGreaterThan(10)
+    expect(customizedSurfaceCount).toBeGreaterThan(3)
+    expect(changedSelections.length + customizedSurfaceCount).toBeGreaterThan(14)
   })
 
   it('embedded 节点焦点按 catalog ui 联动 chassis 的 hood 动画', async () => {
