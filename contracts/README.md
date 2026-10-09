@@ -105,7 +105,7 @@ renders/<publicationVersion>/<vehicleId>/<configurationKey>/<renderViewId>.png
   `SC01CFG1.<LZ 压缩 JSON 的无填充 base64url>.<CRC32>`。JSON 字段固定为
   `format=sc01-config`、`version=1`、`catalogVersion`、`vehicleId`、
   `selections`、`customizations`；CRC32 用于发现抄写、扫码和截断错误，不作为签名。
-- 字符串最长 2200 个 ASCII 字符，保证能够生成 QR Version 40-M 范围内的二维码；
+- 字符串最长 2900 个 ASCII 字符，保证能够生成 QR Version 40-L 范围内的二维码；
   编码端和解码端都必须拒绝超限内容，二维码保留标准静区。
 - `selections` 与 `customizations` 按 catalog `selectionOrder` 写入。保存、分享、
   URL `config` 参数和二维码必须使用同一字符串，不得把 Server ID 或临时 URL
