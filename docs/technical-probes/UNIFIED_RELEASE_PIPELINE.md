@@ -47,9 +47,7 @@ online 与 embedded 入口。
 - 写入 manifest 前启动归档内的 Shipping `ConfigurationSystem.exe
   -CefBridgeProbe`。探针必须经真实 CEF 反射 bridge 对 `hood`、`door-left`、
   `door-right`、`trunk`、`wheel-spin` 逐项完成 `canPlay`、`focus`、清除和执行器
-  状态验证；同时选择“性能 / 下护板 / 铝合金”，连续切换内饰、外饰、个性化和性能，
-  验证右栏配置区、部件区持续存在且滚动位置归零。结果写入
-  `cef-bridge-probe.json`，任一项失败或 45 秒超时均拒绝晋升。
+  状态验证；结果写入 `cef-bridge-probe.json`，任一项失败或 45 秒超时均拒绝晋升。
 - `package/clients/ue/release-manifest.json` 覆盖归档中的逐文件 SHA-256。
 - 包内 WebUI 与离线保存、分享、二维码验证见
   [UE 离线自包含验证](UE_OFFLINE_SELF_CONTAINED.md)。

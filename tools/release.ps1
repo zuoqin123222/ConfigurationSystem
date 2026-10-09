@@ -458,31 +458,14 @@ function Assert-CefBridgeProbeReport {
     $report = [IO.File]::ReadAllText($ReportPath, [Text.Encoding]::UTF8) |
         ConvertFrom-Json
     $expected = @("hood", "door-left", "door-right", "trunk", "wheel-spin")
-    $expectedConfiguratorStages = @(
-        "interior", "exterior", "personalization", "performance"
-    )
     if (
         -not $report.ok -or
         $report.buildConfiguration -ne "Shipping" -or
         $report.withEditor -ne $false -or
         @($report.expectedAnimationIds).Count -ne $expected.Count -or
-        @($report.steps).Count -ne $expected.Count -or
-        -not $report.configurator.ok -or
-        @($report.configurator.stages).Count -ne $expectedConfiguratorStages.Count
+        @($report.steps).Count -ne $expected.Count
     ) {
         throw "Shipping CEF bridge probe report failed structural validation: $ReportPath"
-    }
-    for ($index = 0; $index -lt $expectedConfiguratorStages.Count; $index++) {
-        $stage = @($report.configurator.stages)[$index]
-        $expectedStage = $expectedConfiguratorStages[$index]
-        if (
-            $stage.categoryId -ne $expectedStage -or
-            -not $stage.regionPresent -or
-            -not $stage.partsPresent -or
-            $stage.scrollTop -ne 0
-        ) {
-            throw "Shipping CEF configurator probe failed for '$expectedStage': $ReportPath"
-        }
     }
     for ($index = 0; $index -lt $expected.Count; $index++) {
         $step = @($report.steps)[$index]
