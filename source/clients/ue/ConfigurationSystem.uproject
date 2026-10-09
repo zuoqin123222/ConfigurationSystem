@@ -26,7 +26,11 @@
 		},
 		{
 			"Name": "NNEDenoiser",
-			"Enabled": true
+			"Enabled": false
+		},
+		{
+			"Name": "NNERuntimeORT",
+			"Enabled": false
 		},
 		{
 			"Name": "AndroidFileServer",

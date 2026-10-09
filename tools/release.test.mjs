@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +18,14 @@ const releaseScript = resolve(toolsRoot, "release.ps1");
 const gameConfig = resolve(
   toolsRoot,
   "../source/clients/ue/Config/DefaultGame.ini",
+);
+const engineConfig = resolve(
+  toolsRoot,
+  "../source/clients/ue/Config/DefaultEngine.ini",
+);
+const projectConfig = resolve(
+  toolsRoot,
+  "../source/clients/ue/ConfigurationSystem.uproject",
 );
 
 function runRelease(args = []) {
@@ -64,6 +79,7 @@ test("All dry-run 编排 Web、Server、UE 与 Bake 全链路", () => {
   assert.match(result.stdout, /-prereqs/);
   assert.match(result.stdout, /-applocaldirectory=.*AppLocalDependencies/);
   assert.match(result.stdout, /verify UE archive contains App-local VC\+\+ runtime DLLs/);
+  assert.match(result.stdout, /verify UE archive excludes NNE plugins, models, and ONNX Runtime/);
   assert.match(result.stdout, /ConfigurationSystem\.exe.*-CefBridgeProbe/);
   assert.match(result.stdout, /validate Shipping CEF bridge probe report/);
   assert.match(result.stdout, /generate-published-configurations\.mjs/);
@@ -102,6 +118,21 @@ test("UE 发布配置同时启用安装器和 App-local 运行库", () => {
   assert.match(source, /^IncludeAppLocalPrerequisites=True$/m);
 });
 
+test("UE 项目显式禁用 NNE 降噪与 ONNX Runtime", () => {
+  const project = JSON.parse(readFileSync(projectConfig, "utf8"));
+  const plugins = new Map(
+    project.Plugins.map(({ Name, Enabled }) => [Name, Enabled]),
+  );
+  assert.equal(plugins.get("NNEDenoiser"), false);
+  assert.equal(plugins.get("NNERuntimeORT"), false);
+
+  const engine = readFileSync(engineConfig, "utf8");
+  assert.match(engine, /^NNEDenoiser=0$/m);
+  assert.match(engine, /^r\.PathTracing\.Denoiser=0$/m);
+  assert.match(engine, /^r\.PathTracing\.SpatialDenoiser=0$/m);
+  assert.doesNotMatch(engine, /^r\.PathTracing\.Denoiser\.Name=/m);
+});
+
 test("UE 发布在写 manifest 前执行 Shipping CEF bridge 五动画探针", () => {
   const source = readFileSync(releaseScript, "utf8");
   const probeIndex = source.indexOf("Invoke-ReleaseProcess $shippingExe");
@@ -130,6 +161,49 @@ test("UE 归档缺少运行库时拒绝写入正式发布", () => {
     }
   `);
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+test("UE 归档包含 NNE 或 ONNX Runtime 时拒绝发布", () => {
+  const root = mkdtempSync(join(tmpdir(), "ue-no-nne-"));
+  const safeDirectory = join(root, "Windows", "ConfigurationSystem");
+  const forbiddenDirectory = join(
+    root,
+    "Windows",
+    "Engine",
+    "Plugins",
+    "NNE",
+    "NNERuntimeORT",
+  );
+  mkdirSync(safeDirectory, { recursive: true });
+  writeFileSync(join(safeDirectory, "safe.bin"), "safe");
+
+  const escapedRoot = root.replaceAll("'", "''");
+  const cleanResult = runImportedPowerShell(
+    `Assert-UeArchiveExcludesNne -ArchiveRoot '${escapedRoot}'`,
+  );
+  assert.equal(
+    cleanResult.status,
+    0,
+    `${cleanResult.stdout}\n${cleanResult.stderr}`,
+  );
+
+  mkdirSync(forbiddenDirectory, { recursive: true });
+  writeFileSync(join(forbiddenDirectory, "onnxruntime.dll"), "forbidden");
+  const forbiddenResult = runImportedPowerShell(`
+    try {
+      Assert-UeArchiveExcludesNne -ArchiveRoot '${escapedRoot}';
+      exit 91;
+    } catch {
+      if ($_.Exception.Message -notmatch 'forbidden NNE/ONNX runtime files') { exit 92 }
+    }
+    exit 0;
+  `);
+  rmSync(root, { recursive: true, force: true });
+  assert.equal(
+    forbiddenResult.status,
+    0,
+    `${forbiddenResult.stdout}\n${forbiddenResult.stderr}`,
+  );
 });
 
 test("ServerWeb 仅在显式 IncludeRenders 时复制 renders", () => {

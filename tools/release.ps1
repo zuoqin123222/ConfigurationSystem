@@ -353,6 +353,32 @@ function Assert-UeRuntimeDependencies {
     }
 }
 
+function Assert-UeArchiveExcludesNne {
+    param([Parameter(Mandatory = $true)][string]$ArchiveRoot)
+    if ($DryRun) {
+        Write-Host "[dry-run] verify UE archive excludes NNE plugins, models, and ONNX Runtime"
+        return
+    }
+
+    $archivePrefix = [IO.Path]::GetFullPath($ArchiveRoot).TrimEnd('\', '/') +
+        [IO.Path]::DirectorySeparatorChar
+    $forbiddenFiles = @(
+        Get-ChildItem -LiteralPath $ArchiveRoot -Recurse -File |
+            Where-Object {
+                $relativePath = $_.FullName.Substring($archivePrefix.Length)
+                $relativePath -match '(^|[\\/])NNE[^\\/]*([\\/]|$)' -or
+                    $relativePath -match '(^|[\\/])[^\\/]*onnx[^\\/]*([\\/]|$)'
+            } |
+            ForEach-Object {
+                $_.FullName.Substring($archivePrefix.Length)
+            }
+    )
+    if ($forbiddenFiles.Count -gt 0) {
+        $summary = ($forbiddenFiles | Select-Object -First 10) -join ", "
+        throw "UE release contains forbidden NNE/ONNX runtime files: $summary"
+    }
+}
+
 function Optimize-UeArchive {
     param([Parameter(Mandatory = $true)][string]$ArchiveRoot)
     $windowsRoot = Join-Path $ArchiveRoot "Windows"
@@ -794,6 +820,7 @@ function Build-UE {
         Optimize-UeArchive -ArchiveRoot $stagingArchive
         Add-UeRuntimePrerequisiteFiles -ArchiveRoot $stagingArchive
         Assert-UeRuntimeDependencies -ArchiveRoot $stagingArchive
+        Assert-UeArchiveExcludesNne -ArchiveRoot $stagingArchive
         $shippingRoot = Join-Path $stagingArchive "Windows"
         $shippingExe = Join-Path $shippingRoot "ConfigurationSystem.exe"
         $cefBridgeProbeReport = Join-Path $stagingArchive "cef-bridge-probe.json"
