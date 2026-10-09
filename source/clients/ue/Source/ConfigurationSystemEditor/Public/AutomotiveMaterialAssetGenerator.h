@@ -8,6 +8,7 @@ class UAutomotiveMaterialLibrary;
 struct FAutomotiveMaterialGenerationResult
 {
 	TArray<UMaterialInstanceConstant*> Variants;
+	TArray<UMaterialInstanceConstant*> OptionMaterials;
 	UAutomotiveMaterialLibrary* Library = nullptr;
 	int32 CreatedAssetCount = 0;
 	int32 UpdatedAssetCount = 0;
@@ -20,6 +21,7 @@ struct FAutomotiveMaterialGenerationResult
 		return Errors.IsEmpty()
 			&& FamilyParentPaths.Num() == 17
 			&& Variants.Num() == 352
+			&& OptionMaterials.Num() == 126
 			&& Library != nullptr;
 	}
 };
@@ -31,12 +33,16 @@ public:
 	static constexpr TCHAR AssetRoot[] = TEXT("/Game/SC01/Materials");
 	static constexpr TCHAR VariantRoot[] = TEXT("/Game/SC01/Materials/Variants");
 	static constexpr TCHAR TextureRoot[] = TEXT("/Game/SC01/Materials/VariantTextures");
+	static constexpr TCHAR OptionRoot[] = TEXT("/Game/SC01/Materials/Options");
+	static constexpr TCHAR OptionTextureRoot[] =
+		TEXT("/Game/SC01/Materials/OptionTextures");
 	static constexpr TCHAR LibraryPackageName[] =
 		TEXT("/Game/SC01/Materials/DA_SC01MaterialLibrary");
 
 	/**
 	 * 审计 17 个材料族的仓库内 SubstrateMaterials 母材质，并按 catalog
-	 * 创建或完全刷新 352 个 MI。不会创建 Master Material，也不会复制母材质。
+	 * 创建或完全刷新 352 个 variant MI 和 126 个固定 option MI。
+	 * 不会创建 Master Material，也不会复制母材质。
 	 */
 	static bool Generate(FAutomotiveMaterialGenerationResult& OutResult);
 

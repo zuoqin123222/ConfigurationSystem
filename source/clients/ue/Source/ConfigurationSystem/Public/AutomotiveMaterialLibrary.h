@@ -27,6 +27,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Automotive|Materials")
 	TMap<FString, TSoftObjectPtr<UMaterialInterface>> Variants;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Automotive|Materials")
+	TMap<FString, TSoftObjectPtr<UMaterialInterface>> OptionMaterials;
+
 	/** materialFamilyId 使用 v2 catalog 的稳定 ID；返回已审计的 Substrate 母材质。 */
 	UFUNCTION(BlueprintCallable, Category = "Automotive|Materials")
 	UMaterialInterface* LoadInteriorMaterial(const FString& MaterialFamilyId) const;
@@ -34,4 +37,8 @@ public:
 	/** variantId 使用 v2 catalog 的稳定 ID；返回 catalog 对应的物化 MI。 */
 	UFUNCTION(BlueprintCallable, Category = "Automotive|Materials")
 	UMaterialInterface* LoadVariantMaterial(const FString& VariantId) const;
+
+	/** optionId 使用 v2 catalog 的稳定 ID；返回可在 Editor 中独立调整的固定选项 MI。 */
+	UFUNCTION(BlueprintCallable, Category = "Automotive|Materials")
+	UMaterialInterface* LoadOptionMaterial(const FString& OptionId) const;
 };

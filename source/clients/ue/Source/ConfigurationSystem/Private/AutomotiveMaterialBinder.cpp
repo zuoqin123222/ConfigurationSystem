@@ -6,7 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
-#include "Misc/Crc.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "AutomotiveMaterialLibrary.h"
@@ -144,15 +143,6 @@ namespace
 			return ResolveCatalogColor(Option.DisplayColorHex.GetValue());
 		}
 		return TOptional<FLinearColor>();
-	}
-
-	FLinearColor ResolveNeutralProxyColor(const FString& OptionId)
-	{
-		// 无固定色的结构/样式代理只在中性灰阶内产生稳定区分，避免把占位效果
-		// 误呈现为彩色设计；实际质感仍来自所选材料族母材质。
-		const uint32 Hash = FCrc::StrCrc32(*OptionId);
-		const uint8 Shade = static_cast<uint8>(88u + Hash % 81u);
-		return FLinearColor::FromSRGBColor(FColor(Shade, Shade, Shade));
 	}
 
 	UTexture2D* UpdateDynamicColorTexture(
@@ -584,15 +574,27 @@ bool UAutomotiveMaterialBinder::ApplyWheelColorOverlay(
 			continue;
 		}
 		bFoundTarget = true;
-		UMaterialInstanceDynamic* Dynamic = Cast<UMaterialInstanceDynamic>(
+		UMaterialInterface* CurrentMaterial =
 			IsValid(Bound.Component) && Bound.MaterialIndex != INDEX_NONE
 				? Bound.Component->GetMaterial(Bound.MaterialIndex)
-				: nullptr);
+				: nullptr;
+		UMaterialInstanceDynamic* Dynamic =
+			Cast<UMaterialInstanceDynamic>(CurrentMaterial);
+		if (!IsValid(Dynamic) && IsValid(CurrentMaterial))
+		{
+			Dynamic = UMaterialInstanceDynamic::Create(CurrentMaterial, this);
+			Bound.DynamicInstance = Dynamic;
+			Bound.DynamicParent = CurrentMaterial;
+			if (IsValid(Dynamic))
+			{
+				Bound.Component->SetMaterial(Bound.MaterialIndex, Dynamic);
+			}
+		}
 		if (!IsValid(Dynamic))
 		{
 			SetFailure(
 				TEXT("WHEEL_MATERIAL_MID_UNAVAILABLE"),
-				TEXT("wheel-color 只能叠加到 wheel-material 当前 MID。"));
+				TEXT("wheel-color 无法基于当前 wheel-material 创建调色 MID。"));
 			return false;
 		}
 		Dynamic->SetVectorParameterValue(TEXT("Metallic Color A"), Color);
@@ -678,20 +680,19 @@ bool UAutomotiveMaterialBinder::ResolveSurfaceMaterial(
 		return true;
 	}
 
-	OutMaterial = Library->LoadInteriorMaterial(OutFamilyId);
-	if (!IsValid(OutMaterial))
-	{
-		OutErrorCode = TEXT("MATERIAL_FAMILY_ASSET_MISSING");
-		OutErrorMessage = FString::Printf(
-			TEXT("surfaceId=%s 的 materialFamilyId=%s 未命中材质库。"),
-			*SurfaceId,
-			*OutFamilyId);
-		return false;
-	}
-
 	if (Customization != nullptr
 		&& Customization->Kind == EAutomotiveCustomizationKind::Paint)
 	{
+		OutMaterial = Library->LoadInteriorMaterial(OutFamilyId);
+		if (!IsValid(OutMaterial))
+		{
+			OutErrorCode = TEXT("MATERIAL_FAMILY_ASSET_MISSING");
+			OutErrorMessage = FString::Printf(
+				TEXT("surfaceId=%s 的 materialFamilyId=%s 未命中材质库。"),
+				*SurfaceId,
+				*OutFamilyId);
+			return false;
+		}
 		bOutUseDynamic = true;
 		bOutHasPaintParameters = true;
 		OutPaint = Customization->Paint;
@@ -699,28 +700,15 @@ bool UAutomotiveMaterialBinder::ResolveSurfaceMaterial(
 			FColor::FromHex(Customization->Paint.ColorHex));
 		return true;
 	}
-	const TOptional<FLinearColor> FixedColor = ResolveFixedOptionColor(*Option);
-	if (FixedColor.IsSet())
+	OutMaterial = Library->LoadOptionMaterial(Option->OptionId);
+	if (!IsValid(OutMaterial))
 	{
-		OutColor = FixedColor.GetValue();
-		bOutUseDynamic = true;
-		if (OutFamilyId == TEXT("paint"))
-		{
-			bOutHasPaintParameters = true;
-			OutPaint.ColorHex = Option->ColorCode.Get(
-				Option->DisplayColorHex.Get(TEXT("#808080")));
-			OutPaint.Metallic = Option->ColorCode.Get(FString()).Equals(
-				TEXT("silver"), ESearchCase::IgnoreCase) ? 0.8 : 0.35;
-			OutPaint.Roughness = 0.22;
-			OutPaint.ClearCoat = 0.85;
-			OutPaint.OrangePeel = 0.12;
-			OutPaint.FlakeIntensity = 0.25;
-		}
-	}
-	else
-	{
-		bOutUseDynamic = true;
-		OutColor = ResolveNeutralProxyColor(Option->OptionId);
+		OutErrorCode = TEXT("OPTION_MATERIAL_ASSET_MISSING");
+		OutErrorMessage = FString::Printf(
+			TEXT("surfaceId=%s 的 optionId=%s 未命中独立材质实例。"),
+			*SurfaceId,
+			*Option->OptionId);
+		return false;
 	}
 	return true;
 }

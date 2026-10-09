@@ -8,6 +8,7 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "Materials/MaterialInterface.h"
+#include "Misc/Crc.h"
 #include "Misc/FileHelper.h"
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
@@ -253,6 +254,27 @@ namespace AutomotiveMaterialGeneration
 		}
 	}
 
+	void SetAllMatchingVectors(
+		UMaterialInstanceConstant* Instance,
+		UMaterialInterface* Parent,
+		const TArray<FName>& Candidates,
+		const FLinearColor& Value)
+	{
+		TArray<FMaterialParameterInfo> Parameters;
+		TArray<FGuid> Ids;
+		Parent->GetAllVectorParameterInfo(Parameters, Ids);
+		for (const FName Candidate : Candidates)
+		{
+			for (const FMaterialParameterInfo& Parameter : Parameters)
+			{
+				if (Parameter.Name == Candidate)
+				{
+					Instance->SetVectorParameterValueEditorOnly(Parameter, Value);
+				}
+			}
+		}
+	}
+
 	void SetMatchingScalars(
 		UMaterialInstanceConstant* Instance,
 		UMaterialInterface* Parent,
@@ -381,6 +403,69 @@ namespace AutomotiveMaterialGeneration
 		}
 		++Result.ImportedTextureCount;
 		return Texture;
+	}
+
+	UTexture2D* LoadOrCreateOptionColorTexture(
+		const FString& OptionId,
+		const FString& FamilyId,
+		const FLinearColor& LinearColor,
+		FAutomotiveMaterialGenerationResult& Result)
+	{
+		const FString AssetName = AssetSafeName(OptionId, TEXT("T_SC01_OPTION_"));
+		const FString PackageName =
+			FString(FAutomotiveMaterialAssetGenerator::OptionTextureRoot)
+			+ TEXT("/") + FamilyId + TEXT("/") + AssetName;
+		bool bCreated = false;
+		UTexture2D* Texture =
+			LoadOrCreate<UTexture2D>(PackageName, AssetName, bCreated);
+		if (Texture == nullptr)
+		{
+			Result.Errors.Add(TEXT("无法创建 option 色卡纹理：") + OptionId);
+			return nullptr;
+		}
+		const FColor Color = LinearColor.ToFColorSRGB();
+		const uint8 Pixel[] = {Color.B, Color.G, Color.R, Color.A};
+		Texture->Source.Init(1, 1, 1, 1, TSF_BGRA8, Pixel);
+		Texture->SRGB = true;
+		Texture->NeverStream = true;
+		Texture->PostEditChange();
+		if (!Save(Texture))
+		{
+			Result.Errors.Add(TEXT("无法保存 option 色卡纹理：") + OptionId);
+			return nullptr;
+		}
+		bCreated ? ++Result.CreatedAssetCount : ++Result.UpdatedAssetCount;
+		return Texture;
+	}
+
+	bool ResolveCatalogColor(const FString& Value, FLinearColor& OutColor)
+	{
+		if (Value.Equals(TEXT("red"), ESearchCase::IgnoreCase))
+		{
+			OutColor =
+				FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#A61D24")));
+			return true;
+		}
+		if (Value.Equals(TEXT("silver"), ESearchCase::IgnoreCase))
+		{
+			OutColor =
+				FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#BFC3C7")));
+			return true;
+		}
+		if (Value.Equals(TEXT("bright-silver"), ESearchCase::IgnoreCase))
+		{
+			OutColor =
+				FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#D4D7D9")));
+			return true;
+		}
+		return ParseHexColor(Value, OutColor);
+	}
+
+	FLinearColor ResolveNeutralOptionColor(const FString& OptionId)
+	{
+		const uint32 Hash = FCrc::StrCrc32(*OptionId);
+		const uint8 Shade = static_cast<uint8>(88u + Hash % 81u);
+		return FLinearColor::FromSRGBColor(FColor(Shade, Shade, Shade));
 	}
 
 	float WoolScale(const FString& DisplayName)
@@ -657,6 +742,194 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 			TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(Instance)));
 	}
 
+	const TSharedPtr<FJsonObject>* SurfaceBinding = nullptr;
+	const TArray<TSharedPtr<FJsonValue>>* Bindings = nullptr;
+	if (!Catalog->TryGetObjectField(TEXT("vehicleSurfaceBinding"), SurfaceBinding)
+		|| SurfaceBinding == nullptr
+		|| !(*SurfaceBinding)->TryGetArrayField(TEXT("bindings"), Bindings)
+		|| Bindings == nullptr)
+	{
+		OutResult.Errors.Add(TEXT("catalog 缺少 vehicleSurfaceBinding.bindings。"));
+		return false;
+	}
+	TSet<FString> BoundSurfaceIds;
+	for (const TSharedPtr<FJsonValue>& Value : *Bindings)
+	{
+		const TSharedPtr<FJsonObject>* Binding = nullptr;
+		FString SurfaceId;
+		if (Value.IsValid() && Value->TryGetObject(Binding)
+			&& (*Binding)->TryGetStringField(TEXT("surfaceId"), SurfaceId))
+		{
+			BoundSurfaceIds.Add(SurfaceId);
+		}
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* Options = nullptr;
+	if (!Catalog->TryGetArrayField(TEXT("options"), Options)
+		|| Options == nullptr)
+	{
+		OutResult.Errors.Add(TEXT("catalog 缺少 options。"));
+		return false;
+	}
+	TMap<FString, TSoftObjectPtr<UMaterialInterface>> OptionReferences;
+	for (const TSharedPtr<FJsonValue>& Value : *Options)
+	{
+		const TSharedPtr<FJsonObject>* Object = nullptr;
+		FString OptionId;
+		FString SurfaceId;
+		if (!Value.IsValid() || !Value->TryGetObject(Object)
+			|| !(*Object)->TryGetStringField(TEXT("optionId"), OptionId)
+			|| !(*Object)->TryGetStringField(TEXT("surfaceId"), SurfaceId))
+		{
+			OutResult.Errors.Add(TEXT("option 缺少稳定字段。"));
+			continue;
+		}
+		if (!BoundSurfaceIds.Contains(SurfaceId)
+			|| SurfaceId == TEXT("wheel-color"))
+		{
+			continue;
+		}
+
+		FString ColorMode;
+		const TSharedPtr<FJsonObject>* Parameters = nullptr;
+		const TSharedPtr<FJsonObject>* ColorParameters = nullptr;
+		if ((*Object)->TryGetObjectField(TEXT("parameters"), Parameters)
+			&& Parameters != nullptr
+			&& (*Parameters)->TryGetObjectField(TEXT("color"), ColorParameters)
+			&& ColorParameters != nullptr)
+		{
+			(*ColorParameters)->TryGetStringField(TEXT("mode"), ColorMode);
+		}
+		if (ColorMode == TEXT("custom"))
+		{
+			continue;
+		}
+
+		FString FamilyId(TEXT("paint"));
+		(*Object)->TryGetStringField(TEXT("materialFamilyId"), FamilyId);
+		UMaterialInterface* Parent = Parents.FindRef(FamilyId);
+		if (Parent == nullptr)
+		{
+			OutResult.Errors.Add(
+				OptionId + TEXT(" 引用了未审计的材料族 ") + FamilyId);
+			continue;
+		}
+
+		FLinearColor Color = ResolveNeutralOptionColor(OptionId);
+		FString ColorValue;
+		if ((*Object)->TryGetStringField(TEXT("colorCode"), ColorValue))
+		{
+			if (!ResolveCatalogColor(ColorValue, Color))
+			{
+				OutResult.Errors.Add(OptionId + TEXT(" 的 colorCode 非法。"));
+				continue;
+			}
+		}
+		else
+		{
+			const TSharedPtr<FJsonObject>* Ui = nullptr;
+			if ((*Object)->TryGetObjectField(TEXT("ui"), Ui)
+				&& Ui != nullptr
+				&& (*Ui)->TryGetStringField(TEXT("sortColorHex"), ColorValue)
+				&& !ResolveCatalogColor(ColorValue, Color))
+			{
+				OutResult.Errors.Add(OptionId + TEXT(" 的 sortColorHex 非法。"));
+				continue;
+			}
+		}
+
+		const FString AssetName =
+			AssetSafeName(OptionId, TEXT("MI_SC01_OPTION_"));
+		const FString PackageName =
+			FString(OptionRoot) + TEXT("/") + FamilyId + TEXT("/") + AssetName;
+		bool bCreated = false;
+		UMaterialInstanceConstant* Instance =
+			LoadOrCreate<UMaterialInstanceConstant>(PackageName, AssetName, bCreated);
+		if (Instance == nullptr)
+		{
+			OutResult.Errors.Add(TEXT("无法创建 option MI：") + OptionId);
+			continue;
+		}
+		bCreated ? ++OutResult.CreatedAssetCount : ++OutResult.UpdatedAssetCount;
+		Instance->Modify();
+		Instance->ClearParameterValuesEditorOnly();
+		Instance->SetParentEditorOnly(Parent);
+
+		UTexture2D* ColorTexture = LoadOrCreateOptionColorTexture(
+			OptionId,
+			FamilyId,
+			Color,
+			OutResult);
+		for (const FMaterialParameterInfo& TextureParameter :
+			FindTextureParameters(
+				Parent,
+				{TEXT("Diffuse Color Map"), TEXT("Color Map"), TEXT("Base Color Map")}))
+		{
+			Instance->SetTextureParameterValueEditorOnly(
+				TextureParameter,
+				ColorTexture);
+		}
+		SetAllMatchingVectors(
+			Instance,
+			Parent,
+			{TEXT("BaseColor"), TEXT("Color"), TEXT("Tint")},
+			Color);
+		if (SurfaceId == TEXT("exterior-body-cover"))
+		{
+			SetAllMatchingVectors(
+				Instance,
+				Parent,
+				{TEXT("Primary Glints Color")},
+				Color);
+		}
+		if (FamilyId == TEXT("aluminum-alloy")
+			|| FamilyId == TEXT("magnesium-alloy")
+			|| FamilyId == TEXT("metal"))
+		{
+			SetAllMatchingVectors(
+				Instance,
+				Parent,
+				{TEXT("Metallic Color A"), TEXT("Metallic Color B")},
+				Color);
+		}
+		if (FamilyId == TEXT("paint"))
+		{
+			const bool bSilver =
+				ColorValue.Equals(TEXT("silver"), ESearchCase::IgnoreCase);
+			SetMatchingScalars(
+				Instance, Parent, {TEXT("Metallic")}, bSilver ? 0.8f : 0.35f);
+			SetMatchingScalars(
+				Instance, Parent, {TEXT("Roughness")}, 0.22f);
+			SetMatchingScalars(
+				Instance, Parent, {TEXT("ClearCoat")}, 0.85f);
+			SetMatchingScalars(
+				Instance, Parent, {TEXT("OrangePeel")}, 0.12f);
+			SetMatchingScalars(
+				Instance, Parent, {TEXT("FlakeIntensity")}, 0.25f);
+		}
+
+		FMetaData& MetaData = Instance->GetOutermost()->GetMetaData();
+		MetaData.SetValue(Instance, TEXT("SC01.OptionId"), *OptionId);
+		MetaData.SetValue(Instance, TEXT("SC01.SurfaceId"), *SurfaceId);
+		MetaData.SetValue(Instance, TEXT("SC01.MaterialFamilyId"), *FamilyId);
+		Instance->PostEditChange();
+		if (!Save(Instance))
+		{
+			OutResult.Errors.Add(TEXT("保存 option MI 失败：") + OptionId);
+		}
+		OutResult.OptionMaterials.Add(Instance);
+		OptionReferences.Add(
+			OptionId,
+			TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(Instance)));
+	}
+	if (OutResult.OptionMaterials.Num() != 126)
+	{
+		OutResult.Errors.Add(FString::Printf(
+			TEXT("固定 option MI 应有 126 个，实际为 %d。"),
+			OutResult.OptionMaterials.Num()));
+		return false;
+	}
+
 	bool bLibraryCreated = false;
 	UAutomotiveMaterialLibrary* Library = LoadOrCreate<UAutomotiveMaterialLibrary>(
 		LibraryPackageName, TEXT("DA_SC01MaterialLibrary"), bLibraryCreated);
@@ -675,6 +948,7 @@ bool FAutomotiveMaterialAssetGenerator::Generate(
 			TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(Pair.Value)));
 	}
 	Library->Variants = MoveTemp(VariantReferences);
+	Library->OptionMaterials = MoveTemp(OptionReferences);
 	Library->PostEditChange();
 	if (!Save(Library))
 	{
@@ -694,6 +968,9 @@ bool FAutomotiveMaterialAssetGenerator::WriteAuditReport(
 	Root->SetStringField(TEXT("policy"), TEXT("reuse-only-no-parent-copy"));
 	Root->SetNumberField(TEXT("familyCount"), Result.FamilyParentPaths.Num());
 	Root->SetNumberField(TEXT("variantInstanceCount"), Result.Variants.Num());
+	Root->SetNumberField(
+		TEXT("optionMaterialInstanceCount"),
+		Result.OptionMaterials.Num());
 	Root->SetNumberField(TEXT("variantTextureCount"), Result.ImportedTextureCount);
 	TArray<TSharedPtr<FJsonValue>> Families;
 	TArray<FString> FamilyIds;

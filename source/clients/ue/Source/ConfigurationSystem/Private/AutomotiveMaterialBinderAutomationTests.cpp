@@ -572,42 +572,25 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	}
 
 	UMaterialInstanceDynamic* PaintInstance = Binder->GetPaintMaterialInstance();
-	TestNotNull(TEXT("默认车漆创建动态实例"), PaintInstance);
-	if (PaintInstance != nullptr)
-	{
-		const FLinearColor Red =
-			FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#A61D24")));
-		TestTrue(
-			TEXT("固定色优先 ColorCode 而非 ui.sortColorHex"),
-			PaintInstance->K2_GetVectorParameterValue(TEXT("BaseColor")).Equals(
-				Red,
-				0.001f));
-		TestTrue(
-			TEXT("固定色同步写入 Substrate 车漆可见 Tint"),
-			PaintInstance->K2_GetVectorParameterValue(TEXT("Tint")).Equals(
-				Red,
-				0.001f));
-	}
+	TestNull(TEXT("默认固定车漆不创建运行时 MID"), PaintInstance);
+	const FString DefaultPaintOption =
+		State->GetSelections().FindRef(UAutomotiveMaterialBinder::PaintSurfaceId);
+	TestTrue(
+		TEXT("默认固定车漆直接使用独立 option MI"),
+		Binder->GetAppliedMaterialForSurface(
+			UAutomotiveMaterialBinder::PaintSurfaceId)
+			== Library->LoadOptionMaterial(DefaultPaintOption));
 	TestTrue(
 		TEXT("选择标准银色"),
 		State->SelectOption(
 			UAutomotiveMaterialBinder::PaintSurfaceId,
 			TEXT("body-cover-silver")));
-	if (PaintInstance != nullptr)
-	{
-		const FLinearColor Silver =
-			FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#BFC3C7")));
-		TestTrue(
-			TEXT("标准银色写入车漆 BaseColor"),
-			PaintInstance->K2_GetVectorParameterValue(TEXT("BaseColor")).Equals(
-				Silver,
-				0.001f));
-		TestTrue(
-			TEXT("标准银色写入 Substrate 车漆可见 Tint"),
-			PaintInstance->K2_GetVectorParameterValue(TEXT("Tint")).Equals(
-				Silver,
-				0.001f));
-	}
+	TestTrue(
+		TEXT("标准银色替换为可编辑的独立 option MI"),
+		Binder->GetAppliedMaterialForSurface(
+			UAutomotiveMaterialBinder::PaintSurfaceId)
+			== Library->LoadOptionMaterial(TEXT("body-cover-silver")));
+	TestNull(TEXT("标准银色仍不创建运行时 MID"), Binder->GetPaintMaterialInstance());
 
 	TMap<FString, FString> DisplayColorSelections = State->GetSelections();
 	DisplayColorSelections.Add(
@@ -622,13 +605,6 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		Cast<UMaterialInstanceDynamic>(
 			Binder->GetAppliedMaterialForSurface(TEXT("wheel-material")));
 	TestTrue(
-		TEXT("固定色在 ColorCode 缺失时使用 ui.sortColorHex"),
-		IsValid(DisplayColorMaterial)
-			&& DisplayColorMaterial->K2_GetVectorParameterValue(TEXT("BaseColor"))
-				.Equals(
-					FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#336699"))),
-					0.001f));
-	TestTrue(
 		TEXT("切换 wheel-material 后重放当前亮银 wheel-color"),
 		IsValid(DisplayColorMaterial)
 			&& DisplayColorMaterial->K2_GetVectorParameterValue(
@@ -636,10 +612,10 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 					FLinearColor::FromSRGBColor(FColor::FromHex(TEXT("#D4D7D9"))),
 					0.001f));
 	TestTrue(
-		TEXT("DisplayColorHex 调色仍保留镁合金母材质"),
+		TEXT("轮毂调色 MID 以独立镁合金 option MI 为父级"),
 		IsValid(DisplayColorMaterial)
 			&& DisplayColorMaterial->IsChildOf(
-				Library->LoadInteriorMaterial(TEXT("magnesium-alloy"))));
+				Library->LoadOptionMaterial(TEXT("wheel-magnesium-alloy"))));
 
 	TMap<FString, FString> WheelColorSelections = State->GetSelections();
 	WheelColorSelections.Add(TEXT("wheel-color"), TEXT("wheel-color-black"));
@@ -664,10 +640,10 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 				TEXT("Metallic Color A")).Equals(WheelBlack, 0.001f)
 			&& RecoloredWheelMaterial->K2_GetVectorParameterValue(
 				TEXT("Metallic Color B")).Equals(WheelBlack, 0.001f));
-	TestTrue(TEXT("wheel-color 叠加保留镁合金母材质"),
+	TestTrue(TEXT("wheel-color 叠加保留镁合金 option MI"),
 		IsValid(RecoloredWheelMaterial)
 			&& RecoloredWheelMaterial->IsChildOf(
-				Library->LoadInteriorMaterial(TEXT("magnesium-alloy"))));
+				Library->LoadOptionMaterial(TEXT("wheel-magnesium-alloy"))));
 
 	TMap<FString, FString> RebasedWheelSelections = State->GetSelections();
 	RebasedWheelSelections.Add(
@@ -680,16 +656,56 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 	UMaterialInstanceDynamic* RebasedWheelMaterial =
 		Cast<UMaterialInstanceDynamic>(
 			Binder->GetAppliedMaterialForSurface(TEXT("wheel-material")));
-	TestTrue(TEXT("wheel-material 更换到铝合金母材质"),
+	TestTrue(TEXT("wheel-material 更换到独立铝合金 option MI"),
 		IsValid(RebasedWheelMaterial)
 			&& RebasedWheelMaterial->IsChildOf(
-				Library->LoadInteriorMaterial(TEXT("aluminum-alloy"))));
+				Library->LoadOptionMaterial(TEXT("wheel-aluminum-alloy"))));
 	TestTrue(TEXT("更换 wheel-material 后重放当前黑色 wheel-color"),
 		IsValid(RebasedWheelMaterial)
 			&& RebasedWheelMaterial->K2_GetVectorParameterValue(
 				TEXT("Metallic Color A")).Equals(WheelBlack, 0.001f)
 			&& RebasedWheelMaterial->K2_GetVectorParameterValue(
 				TEXT("Metallic Color B")).Equals(WheelBlack, 0.001f));
+
+	TArray<FAutomotiveBoundMaterialSlot> SlotsBeforeCaliperBlue;
+	for (const AutomotiveCatalog::FSurfaceBinding& Binding :
+		State->GetCatalogIndex().GetCatalog().VehicleSurfaceBinding.Bindings)
+	{
+		if (Binding.SurfaceId == TEXT("front-caliper-color"))
+		{
+			continue;
+		}
+		for (const FAutomotiveBoundMaterialSlot& Bound :
+			Binder->GetBoundSlots(Binding.SurfaceId))
+		{
+			FAutomotiveBoundMaterialSlot& Snapshot =
+				SlotsBeforeCaliperBlue.Add_GetRef(Bound);
+			Snapshot.OriginalMaterial =
+				Bound.Component->GetMaterial(Bound.MaterialIndex);
+		}
+	}
+	TMap<FString, FString> CaliperSelections = State->GetSelections();
+	CaliperSelections.Add(TEXT("front-caliper-color"), TEXT("front-caliper-blue"));
+	const FAutomotiveMaterialTransactionResult CaliperResult =
+		Binder->ApplyTransaction(CaliperSelections, State->GetCustomizations());
+	TestTrue(TEXT("前卡钳蓝色事务成功"), CaliperResult.bSuccess);
+	UMaterialInterface* CaliperBlue =
+		Binder->GetAppliedMaterialForSurface(TEXT("front-caliper-color"));
+	TestTrue(
+		TEXT("前卡钳蓝色直接替换为独立 option MI"),
+		CaliperBlue
+			== Library->LoadOptionMaterial(TEXT("front-caliper-blue"))
+			&& Cast<UMaterialInstanceDynamic>(CaliperBlue) == nullptr);
+	for (const FAutomotiveBoundMaterialSlot& Snapshot :
+		SlotsBeforeCaliperBlue)
+	{
+		TestTrue(
+			*FString::Printf(
+				TEXT("卡钳蓝色不修改其他材质槽 %s"),
+				*Snapshot.SlotId.ToString()),
+			Snapshot.Component->GetMaterial(Snapshot.MaterialIndex)
+				== Snapshot.OriginalMaterial);
+	}
 
 	const AutomotiveCatalog::FMaterialVariant* DisplayColorVariant =
 		State->GetCatalogIndex().FindMaterialVariant(TEXT("alcantara-p2-2911"));
@@ -852,6 +868,15 @@ bool FAutomotiveMaterialBinderAutomationTest::RunTest(const FString& Parameters)
 		TMap<FString, FAutomotiveCustomization> NextCustomizations =
 			State->GetCustomizations();
 		NextCustomizations.Remove(SurfaceId);
+		const AutomotiveCatalog::FOption* SelectedOption =
+			State->GetCatalogIndex().FindOption(*NextOption);
+		if (SelectedOption != nullptr && SelectedOption->SupportsCustomColor())
+		{
+			NextCustomizations.Add(
+				SurfaceId,
+				AutomotiveMaterialBinderAutomation::
+					MakeNeutralPaintCustomization());
+		}
 		const FAutomotiveMaterialTransactionResult Result =
 			Binder->ApplyTransaction(NextSelections, NextCustomizations);
 		TestTrue(
@@ -1262,82 +1287,60 @@ bool FAutomotiveMaterialBinderExhaustiveCoverageAutomationTest::RunTest(
 				State->GetSelections().FindRef(
 					UAutomotiveMaterialBinder::WheelMaterialSurfaceId))
 			: Option;
-		const FString FamilyId = EffectiveOption != nullptr
-			? EffectiveOption->MaterialFamilyId.Get(TEXT("paint"))
-			: FString();
-		UMaterialInterface* ExpectedParent =
-			Library->LoadInteriorMaterial(FamilyId);
+		const FString EffectiveOptionId =
+			EffectiveOption != nullptr ? EffectiveOption->OptionId : FString();
+		UMaterialInterface* ExpectedOptionMaterial =
+			Library->LoadOptionMaterial(EffectiveOptionId);
+		const bool bUsesWheelColorMid =
+			EffectiveSurfaceId
+				== UAutomotiveMaterialBinder::WheelMaterialSurfaceId;
 		TestTrue(
-			*FString::Printf(TEXT("%s 全部目标槽使用正确材料族 MID"), *OptionId),
-			IsValid(ExpectedParent)
+			*FString::Printf(
+				TEXT("%s 全部目标槽使用独立 option 材质"),
+				*OptionId),
+			IsValid(ExpectedOptionMaterial)
 				&& Algo::AllOf(
 					BoundSlots,
-					[ExpectedParent](const FAutomotiveBoundMaterialSlot& Bound)
+					[ExpectedOptionMaterial, bUsesWheelColorMid](
+						const FAutomotiveBoundMaterialSlot& Bound)
 					{
+						UMaterialInterface* BoundMaterial =
+							Bound.Component->GetMaterial(Bound.MaterialIndex);
+						if (!bUsesWheelColorMid)
+						{
+							return BoundMaterial == ExpectedOptionMaterial
+								&& Cast<UMaterialInstanceDynamic>(BoundMaterial)
+									== nullptr;
+						}
 						UMaterialInstanceDynamic* BoundDynamic =
-							Cast<UMaterialInstanceDynamic>(
-								Bound.Component->GetMaterial(Bound.MaterialIndex));
+							Cast<UMaterialInstanceDynamic>(BoundMaterial);
 						return IsValid(BoundDynamic)
-							&& BoundDynamic->IsChildOf(ExpectedParent);
+							&& BoundDynamic->IsChildOf(ExpectedOptionMaterial);
 					}));
 
 		const TOptional<FLinearColor> ExpectedColor =
 			AutomotiveMaterialBinderAutomation::ResolveExpectedOptionColor(*Option);
-		const FLinearColor ActualColor = IsValid(Dynamic)
-			? Dynamic->K2_GetVectorParameterValue(
-				bWheelColor ? TEXT("Metallic Color A") : TEXT("BaseColor"))
-			: FLinearColor::Transparent;
 		if (ExpectedColor.IsSet())
 		{
 			++FixedColorOptionCount;
 			TestTrue(
 				*FString::Printf(
-					TEXT("%s 固定色遵循 ColorCode/DisplayColorHex"),
+					TEXT("%s 固定色已物化为独立资产"),
 					*OptionId),
-				IsValid(Dynamic)
-					&& ActualColor.Equals(ExpectedColor.GetValue(), 0.001f)
-					&& Algo::AllOf(
-						BoundSlots,
-						[&ExpectedColor, bWheelColor](
-							const FAutomotiveBoundMaterialSlot& Bound)
-						{
-							UMaterialInstanceDynamic* BoundDynamic =
-								Cast<UMaterialInstanceDynamic>(
-									Bound.Component->GetMaterial(Bound.MaterialIndex));
-							return IsValid(BoundDynamic)
-								&& BoundDynamic->K2_GetVectorParameterValue(
-									bWheelColor
-										? TEXT("Metallic Color A")
-										: TEXT("BaseColor")).Equals(
-										ExpectedColor.GetValue(),
-										0.001f);
-						}));
+				IsValid(ExpectedOptionMaterial)
+					&& (!bWheelColor
+						|| (IsValid(Dynamic)
+							&& Dynamic->K2_GetVectorParameterValue(
+								TEXT("Metallic Color A")).Equals(
+								ExpectedColor.GetValue(),
+								0.001f))));
 		}
 		else
 		{
 			++NeutralProxyOptionCount;
 			TestTrue(
-				*FString::Printf(TEXT("%s 无色代理为灰阶"), *OptionId),
-				IsValid(Dynamic)
-					&& FMath::IsNearlyEqual(ActualColor.R, ActualColor.G)
-					&& FMath::IsNearlyEqual(ActualColor.G, ActualColor.B)
-					&& Algo::AllOf(
-						BoundSlots,
-						[](const FAutomotiveBoundMaterialSlot& Bound)
-						{
-							UMaterialInstanceDynamic* BoundDynamic =
-								Cast<UMaterialInstanceDynamic>(
-									Bound.Component->GetMaterial(Bound.MaterialIndex));
-							if (!IsValid(BoundDynamic))
-							{
-								return false;
-							}
-							const FLinearColor Color =
-								BoundDynamic->K2_GetVectorParameterValue(
-									TEXT("BaseColor"));
-							return FMath::IsNearlyEqual(Color.R, Color.G)
-								&& FMath::IsNearlyEqual(Color.G, Color.B);
-						}));
+				*FString::Printf(TEXT("%s 无色代理拥有独立资产"), *OptionId),
+				IsValid(ExpectedOptionMaterial));
 		}
 		if (Result.bSuccess
 			&& Result.Code == TEXT("APPLIED")

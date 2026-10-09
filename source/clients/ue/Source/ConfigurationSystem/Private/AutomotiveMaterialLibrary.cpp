@@ -25,3 +25,11 @@ UMaterialInterface* UAutomotiveMaterialLibrary::LoadVariantMaterial(
 	const TSoftObjectPtr<UMaterialInterface>* Material = Variants.Find(VariantId);
 	return Material != nullptr ? Material->LoadSynchronous() : nullptr;
 }
+
+UMaterialInterface* UAutomotiveMaterialLibrary::LoadOptionMaterial(
+	const FString& OptionId) const
+{
+	const TSoftObjectPtr<UMaterialInterface>* Material =
+		OptionMaterials.Find(OptionId);
+	return Material != nullptr ? Material->LoadSynchronous() : nullptr;
+}

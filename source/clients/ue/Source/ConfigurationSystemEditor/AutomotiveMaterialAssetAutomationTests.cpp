@@ -34,6 +34,7 @@ bool FAutomotiveMaterialAssetGenerationAutomationTest::RunTest(
 	}
 	TestEqual(TEXT("材料族母材质映射数"), First.FamilyParentPaths.Num(), 17);
 	TestEqual(TEXT("catalog MI 数量"), First.Variants.Num(), 352);
+	TestEqual(TEXT("固定 option MI 数量"), First.OptionMaterials.Num(), 126);
 	TestNotNull(TEXT("生成可 Cook 材质库"), First.Library);
 	if (!First.Succeeded())
 	{
@@ -47,6 +48,10 @@ bool FAutomotiveMaterialAssetGenerationAutomationTest::RunTest(
 	}
 	TestEqual(TEXT("材质库包含 17 个母材质"), First.Library->FamilyParents.Num(), 17);
 	TestEqual(TEXT("材质库包含 352 个 MI"), First.Library->Variants.Num(), 352);
+	TestEqual(
+		TEXT("材质库包含 126 个独立 option MI"),
+		First.Library->OptionMaterials.Num(),
+		126);
 
 	int32 WovenWoolCount = 0;
 	for (UMaterialInstanceConstant* Variant : First.Variants)
@@ -82,6 +87,7 @@ bool FAutomotiveMaterialAssetGenerationAutomationTest::RunTest(
 	}
 	TestEqual(TEXT("重复物化不创建新资产"), Second.CreatedAssetCount, 0);
 	TestEqual(TEXT("重复物化仍为 352 个 MI"), Second.Variants.Num(), 352);
+	TestEqual(TEXT("重复物化仍为 126 个 option MI"), Second.OptionMaterials.Num(), 126);
 	TestTrue(TEXT("第一次确实创建了资产或刷新已有资产"),
 		FirstCreatedCount > 0 || First.UpdatedAssetCount > 0);
 

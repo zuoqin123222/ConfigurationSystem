@@ -636,21 +636,20 @@ bool UAutomotiveMaterialGuiProbe::ProcessNextSurface(
 	bool bNeutralProxyColorValid = true;
 	if (bNeutralProxy)
 	{
+		UMaterialInterface* ExpectedOptionMaterial =
+			Library->LoadOptionMaterial(*NextOptionId);
 		for (UMaterialInterface* AfterMaterial : AfterMaterials)
 		{
-			UMaterialInstanceDynamic* Dynamic =
-				Cast<UMaterialInstanceDynamic>(AfterMaterial);
-			if (!IsValid(Dynamic))
-			{
-				bNeutralProxyColorValid = false;
-				break;
-			}
-			const FLinearColor Color =
-				Dynamic->K2_GetVectorParameterValue(TEXT("BaseColor"));
+			UMaterialInstanceDynamic* WheelColorDynamic =
+				SurfaceId == UAutomotiveMaterialBinder::WheelMaterialSurfaceId
+					? Cast<UMaterialInstanceDynamic>(AfterMaterial)
+					: nullptr;
 			bNeutralProxyColorValid = bNeutralProxyColorValid
-				&&
-				FMath::IsNearlyEqual(Color.R, Color.G, 0.0001f)
-				&& FMath::IsNearlyEqual(Color.G, Color.B, 0.0001f);
+				&& IsValid(ExpectedOptionMaterial)
+				&& (AfterMaterial == ExpectedOptionMaterial
+					|| (IsValid(WheelColorDynamic)
+						&& WheelColorDynamic->IsChildOf(
+							ExpectedOptionMaterial)));
 		}
 	}
 	bool bTargetSlotIsolated = true;
